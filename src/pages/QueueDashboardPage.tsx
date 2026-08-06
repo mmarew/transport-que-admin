@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { listQueueOrganizations, getApiError } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -6,8 +7,10 @@ import { disconnectSocket } from "../lib/socket";
 import { useQueueAdminStore } from "../store/queueAdminStore";
 import type { QueueOrganization } from "../types/queue";
 import { QueueBoard } from "../components/queue/QueueBoard";
+import { CreateOrgModal } from "../components/queue/CreateOrgModal";
 
 export function QueueDashboardPage() {
+  const queryClient = useQueryClient();
   const { auth, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -22,6 +25,8 @@ export function QueueDashboardPage() {
     queryKey: ["queue-orgs"],
     queryFn: () => listQueueOrganizations().then((res) => res.data.data),
   });
+
+  const [showCreateOrg, setShowCreateOrg] = useState(false);
 
   const signOut = () => {
     disconnectSocket();
@@ -55,7 +60,17 @@ export function QueueDashboardPage() {
         {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{getApiError(error)}</p>}
 
         <div className="mb-6">
-          <label className="mb-1 block text-sm font-medium text-slate-700">Queue organization</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="mb-1 block text-sm font-medium text-slate-700">Queue organization</label>
+            {!isLoading && orgs && orgs.length === 0 && (
+              <button
+                onClick={() => setShowCreateOrg(true)}
+                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Create organization
+              </button>
+            )}
+          </div>
           <select
             value={selectedOrgId}
             onChange={(e) => setSelectedOrgId(e.target.value)}
@@ -73,6 +88,11 @@ export function QueueDashboardPage() {
               No approved + enabled orgs. Ask an admin to approve and enable one.
             </p>
           )}
+          {!isLoading && orgs && orgs.length === 0 && (
+            <p className="mt-1 text-xs text-slate-500">
+              You don&apos;t have a queue organization yet. Create one above — an admin will approve it.
+            </p>
+          )}
         </div>
 
         {selectedOrgId && <QueueBoard queueOrganizationUniqueId={selectedOrgId} />}
@@ -83,6 +103,13 @@ export function QueueDashboardPage() {
               Manage organization settings →
             </Link>
           </p>
+        )}
+
+        {showCreateOrg && (
+          <CreateOrgModal
+            onClose={() => setShowCreateOrg(false)}
+            onCreated={() => queryClient.invalidateQueries({ queryKey: ["queue-orgs"] })}
+          />
         )}
       </main>
     </div>

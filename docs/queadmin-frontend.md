@@ -665,11 +665,15 @@ src/
     queue.ts               zod schemas (login, otp, checkin, dispatch, override)
   types/queue.ts           TS types (see §6)
   pages/
-    LoginPage.tsx          phone → OTP → passwordless login (react-query mutations)
     QueueDashboardPage.tsx org selector (zustand) + live queue (react-query)
     QueueOrgManagePage.tsx org profile edit + members list + admin approve/suspend/reject (route /orgs/:id)
   components/
     auth/
+      AuthFlow.tsx         config-driven auth: login / register / verify-OTP, design prop
+      AuthShell.tsx        layout shell (4 designs: classic / split / glass / minimal)
+      useAuthFlow.ts       state machine + OTP mutations + validation
+      fields.tsx           dynamic field renderer (text/tel/email + 6-box OTP)
+      themes.ts            per-design class maps
       ProtectedRoute.tsx   redirect to /login if no token
       RoleGuard.tsx        allow roleId 11 / 3 / 6
     queue/

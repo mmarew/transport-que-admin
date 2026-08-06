@@ -58,8 +58,10 @@ is done by a **Super Admin / Admin** (`/api/queueOrganization/:id/approve`,
    `GET /api/queueOrganization/:queueOrganizationUniqueId/members` (add yourself
    with `POST /api/queueOrganization/<id>/members/<userUniqueId>`,
    `{ "roleId": 11 }`).
-3. The org is `approved` and `queueEnabled = true` —
-   `GET /api/queueOrganization?queueOrganizationUniqueId=<id>`.
+ 3. The org is `approved` and `queueEnabled = true` —
+    `GET /api/queueOrganization?queueOrganizationUniqueId=<id>`. The list is
+    scoped to your memberships: a QueueOrgAdmin (11) or CompanyAdmin (7) only
+    ever sees the orgs they belong to; Admin (3) / SuperAdmin (6) see all.
 4. Every driver you register already has a **driver account** and an **active
    vehicle-driver assignment**. Driver/vehicle registration lives in the
    existing driver-registration feature

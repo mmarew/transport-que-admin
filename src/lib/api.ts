@@ -81,6 +81,12 @@ export interface UpdateQueueOrgBody {
   longitude?: number | null;
 }
 
+export const createQueueOrganization = (body: UpdateQueueOrgBody) =>
+  api.post<{ message: string; data: { queueOrganizationUniqueId: string; approvalStatus: string } }>(
+    "/queueOrganization",
+    body,
+  );
+
 export const updateQueueOrganization = (id: string, body: UpdateQueueOrgBody) =>
   api.patch(`/queueOrganization/${id}`, body);
 

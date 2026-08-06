@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { RoleGuard } from "./components/auth/RoleGuard";
-import { LoginPage } from "./pages/LoginPage";
+import { AuthFlow } from "./components/auth/AuthFlow";
 import { QueueDashboardPage } from "./pages/QueueDashboardPage";
 import { QueueOrgManagePage } from "./pages/QueueOrgManagePage";
 
@@ -10,7 +10,8 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<AuthFlow initialMode="login" />} />
+        <Route path="/register" element={<AuthFlow initialMode="register" />} />
         <Route
           path="/"
           element={
