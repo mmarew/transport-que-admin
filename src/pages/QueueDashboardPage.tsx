@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { listQueueOrganizations, getApiError } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { disconnectSocket } from "../lib/socket";
@@ -76,6 +76,14 @@ export function QueueDashboardPage() {
         </div>
 
         {selectedOrgId && <QueueBoard queueOrganizationUniqueId={selectedOrgId} />}
+
+        {selectedOrgId && (
+          <p className="mt-4 text-sm">
+            <Link to={`/orgs/${selectedOrgId}`} className="font-medium text-blue-600 hover:text-blue-700">
+              Manage organization settings →
+            </Link>
+          </p>
+        )}
       </main>
     </div>
   );

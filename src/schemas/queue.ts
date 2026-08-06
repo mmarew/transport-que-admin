@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { QUEUE_ORG_TYPES } from "../types/queue";
 
 export const uuidSchema = z.string().uuid({ message: "Invalid UUID" });
 
@@ -28,6 +29,32 @@ export const overrideSchema = z.object({
   reason: z.string().max(500).optional(),
 });
 
+export const queueOrgProfileSchema = z.object({
+  queueOrganizationName: z
+    .string()
+    .trim()
+    .min(1, "Queue organization name is required")
+    .max(255, "Name too long"),
+  queueOrganizationType: z.enum(QUEUE_ORG_TYPES),
+  queueOrganizationPhone: z.string().max(20, "Phone too long").optional().or(z.literal("")),
+  queueOrganizationAddress: z.string().max(500, "Address too long").optional().or(z.literal("")),
+  latitude: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || (Number.isFinite(Number(v)) && Number(v) >= -90 && Number(v) <= 90), {
+      message: "Latitude must be a number between -90 and 90",
+    }),
+  longitude: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || (Number.isFinite(Number(v)) && Number(v) >= -180 && Number(v) <= 180), {
+      message: "Longitude must be a number between -180 and 180",
+    }),
+});
+
 export type CheckinFormValues = z.infer<typeof checkinSchema>;
 export type DispatchFormValues = z.infer<typeof dispatchSchema>;
 export type OverrideFormValues = z.infer<typeof overrideSchema>;
+export type QueueOrgProfileFormValues = z.infer<typeof queueOrgProfileSchema>;

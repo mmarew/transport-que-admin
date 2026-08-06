@@ -8,6 +8,7 @@ import type {
   QueueStatusResponse,
   QueueOrgMember,
   DriverQueueEntry,
+  QueueOrgType,
 } from "../types/queue";
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -58,14 +59,43 @@ export const requestLoginOtp = (phoneNumber: string) =>
 export const verifyOtp = (phoneNumber: string, OTP: string) =>
   api.post<VerifyOtpResponse>("/user/verifyUserByOTP", { phoneNumber, roleId: 11, OTP });
 
+export const registerUser = (body: { fullName: string; phoneNumber: string; email?: string | null }) =>
+  api.post<LoginResponse>("/user/createUser", {
+    fullName: body.fullName,
+    phoneNumber: body.phoneNumber,
+    email: body.email || undefined,
+    roleId: 11,
+    statusId: 1,
+  });
+
 // --- Queue organizations ---
 export const listQueueOrganizations = (params?: Record<string, string | number | boolean>) =>
   api.get<PaginatedResponse<QueueOrganization>>("/queueOrganization", { params });
 
-export const updateQueueOrganization = (
+export interface UpdateQueueOrgBody {
+  queueOrganizationName?: string;
+  queueOrganizationType?: QueueOrgType;
+  queueOrganizationPhone?: string | null;
+  queueOrganizationAddress?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export const updateQueueOrganization = (id: string, body: UpdateQueueOrgBody) =>
+  api.patch(`/queueOrganization/${id}`, body);
+
+export const approveQueueOrganization = (
   id: string,
-  body: Partial<Pick<QueueOrganization, "queueOrganizationName" | "queueOrganizationType" | "queueOrganizationPhone" | "queueOrganizationAddress" | "latitude" | "longitude">>,
-) => api.patch(`/queueOrganization/${id}`, body);
+  body: {
+    approvalStatus: "approved" | "rejected" | "suspended";
+    approvalReason?: string;
+    queueEnabled?: boolean;
+  },
+) =>
+  api.patch<{ message: string; data: { queueOrganizationUniqueId: string; approvalStatus: string } }>(
+    `/queueOrganization/${id}/approve`,
+    body,
+  );
 
 export const listQueueOrgMembers = (id: string) =>
   api.get<{ message: string; data: QueueOrgMember[] }>(`/queueOrganization/${id}/members`);

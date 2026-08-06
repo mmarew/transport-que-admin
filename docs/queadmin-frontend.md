@@ -422,6 +422,26 @@ Response:
 The front driver is notified over socket (`queue_order_offered`).
 Fails `404` if no one is waiting in that vehicle type.
 
+#### Place a queue order — `POST /api/shipperRequest` (shipper / QA)
+
+Same payload as a normal order, plus `queueOrganizationUniqueId` (and a fixed
+`shippingCost` — queue orders do **not** bid):
+
+```json
+{
+  "queueOrganizationUniqueId": "uuid",
+  "shippingCost": 120000,
+  "vehicleTypeUniqueId": "uuid",
+  "numberOfVehicles": 1,
+  "...": "rest of a normal shipperRequest body"
+}
+```
+
+The backend **auto-offers** it to the front waiting driver of the matching type
+(`handleQueueDispatch`, see Workflow C). If no driver is waiting, the order stays
+`waiting` — re-offer with `dispatch` above. `numberOfVehicles: N` → N rows, each
+offered to the next front driver.
+
 ---
 
 ## 4. Socket.io realtime contract
@@ -612,15 +632,19 @@ Assign:     POST /api/queue/dispatch  { queueOrganizationUniqueId, vehicleTypeUn
 ### Workflow C — Dispatch & offer lifecycle
 
 ```
-1. Order arrives for vehicle type T
-2. QA: POST /api/queue/dispatch  (type T)
-3. Server: front waiting entry of type T → status "offered", offeredAt set,
-   order linked (shipperRequestUniqueId)
-4. Server socket push to that driver: queue (messageTypes=queue_order_offered,
+1. Queue-enabled org places an order → POST /api/shipperRequest
+   with queueOrganizationUniqueId + fixed shippingCost.
+2. Server auto-offers it to the FRONT waiting entry of the order's vehicle type:
+   JourneyDecision (requested, decisionBy='shipper') + DriverRequest created,
+   entry → status "offered", offeredAt set, order linked (shipperRequestUniqueId)
+3. Server socket push to that driver: queue (messageTypes=queue_order_offered,
    data.offerWindowMinutes=3)
-5. Driver accepts → status "loaded" (accept path: ShipperRequest accept flow)
-6. Reject / timeout → auto-advance to next in line (pending: handleQueueDispatch
-   wires automaticTimeout.service.js; until then QA triggers dispatch again)
+4. Driver accepts → entry "loaded" (markEntryLoaded in the accept path)
+5. Driver rejects (or 3-min timeout via releaseExpiredOffers) → entry returns to
+   "waiting" (driver keeps position), decision → rejectedByDriver, order
+   advances to the NEXT waiting driver of that type
+6. Empty queue → order stays waiting; QA re-offers with
+   POST /api/queue/dispatch once a driver checks in
 ```
 
 ---
@@ -643,7 +667,7 @@ src/
   pages/
     LoginPage.tsx          phone → OTP → passwordless login (react-query mutations)
     QueueDashboardPage.tsx org selector (zustand) + live queue (react-query)
-    QueueOrgManagePage.tsx profile / approve-status / members (Admin view) — planned
+    QueueOrgManagePage.tsx org profile edit + members list + admin approve/suspend/reject (route /orgs/:id)
   components/
     auth/
       ProtectedRoute.tsx   redirect to /login if no token

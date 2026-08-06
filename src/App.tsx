@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { RoleGuard } from "./components/auth/RoleGuard";
 import { LoginPage } from "./pages/LoginPage";
 import { QueueDashboardPage } from "./pages/QueueDashboardPage";
+import { QueueOrgManagePage } from "./pages/QueueOrgManagePage";
 
 function App() {
   return (
@@ -16,6 +17,16 @@ function App() {
             <ProtectedRoute>
               <RoleGuard>
                 <QueueDashboardPage />
+              </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orgs/:queueOrganizationUniqueId"
+          element={
+            <ProtectedRoute>
+              <RoleGuard>
+                <QueueOrgManagePage />
               </RoleGuard>
             </ProtectedRoute>
           }
