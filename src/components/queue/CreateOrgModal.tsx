@@ -1,14 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { createQueueOrganization, getApiError } from "../../lib/api";
-import { createQueueOrgSchema, type CreateQueueOrgFormValues } from "../../schemas/queue";
+import { getApiError } from "@/lib/api";
+import { createQueueOrgSchema, type CreateQueueOrgFormValues } from "@/schemas/queue";
 
 interface CreateOrgModalProps {
   onClose: () => void;
   onCreated?: () => void;
+  onCreate: (data: {
+    queueOrganizationName: string;
+    queueOrganizationType: "customs" | "factory" | "cement" | "depot" | "other";
+    queueOrganizationAddress: string;
+    latitude: number;
+    longitude: number;
+    queueOrganizationPhone?: string | null;
+  }) => Promise<void>;
 }
 
 const PHOTON_URL = "https://photon.komoot.io/api/";
@@ -28,8 +35,7 @@ interface PhotonFeature {
   geometry: { coordinates: [number, number] };
 }
 
-export function CreateOrgModal({ onClose, onCreated }: CreateOrgModalProps) {
-  const queryClient = useQueryClient();
+export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalProps) {
   const {
     register,
     handleSubmit,
@@ -48,6 +54,7 @@ export function CreateOrgModal({ onClose, onCreated }: CreateOrgModalProps) {
     },
   });
 
+  const [isPending, setIsPending] = useState(false);
   const [addressQuery, setAddressQuery] = useState("");
   const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -112,34 +119,31 @@ useEffect(() => {
     inputRef.current?.blur();
   };
 
-  const mutation = useMutation({
-    mutationFn: (values: CreateQueueOrgFormValues) => {
-      const body = {
+  const onSubmit = async (values: CreateQueueOrgFormValues) => {
+    setIsPending(true);
+    try {
+      await onCreate({
         queueOrganizationName: values.queueOrganizationName,
         queueOrganizationType: values.queueOrganizationType,
-        queueOrganizationPhone: values.queueOrganizationPhone || null,
         queueOrganizationAddress: values.queueOrganizationAddress,
         latitude: Number(values.latitude),
         longitude: Number(values.longitude),
-      };
-      return createQueueOrganization(body);
-    },
-    onSuccess: () => {
+        queueOrganizationPhone: values.queueOrganizationPhone || null,
+      });
       toast.success("Queue organization created — pending admin approval");
-      queryClient.invalidateQueries({ queryKey: ["queue-orgs"] });
       onCreated?.();
       reset();
       onClose();
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-      >
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <h2 className="text-lg font-semibold text-slate-800">Create queue organization</h2>
         <p className="mt-1 text-xs text-slate-500">
           Name, type, and address are required. Admin will approve before dispatch works.
@@ -256,10 +260,10 @@ useEffect(() => {
           </button>
           <button
             type="submit"
-            disabled={mutation.isPending}
+            disabled={isPending}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {mutation.isPending ? "Creating…" : "Create organization"}
+            {isPending ? "Creating…" : "Create organization"}
           </button>
         </div>
       </form>

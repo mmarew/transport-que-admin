@@ -72,6 +72,7 @@ export interface DriverQueueEntry {
   driverName: string;
   driverPhoneNumber: string;
   vehicleTypeUniqueId: string;
+  vehicleTypeName?: string;
   shipperRequestUniqueId: string | null;
 }
 

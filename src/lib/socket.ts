@@ -48,11 +48,12 @@ type QueueEventServerPayload = {
 
 export function onQueueEvent(handler: QueueEventHandler): () => void {
   socket?.on("queue", (msg: string) => {
+    /* eslint-disable no-empty */
     try {
       handler(JSON.parse(msg) as QueueEventServerPayload);
     } catch {
-      // ignore malformed payloads
     }
+    /* eslint-enable no-empty */
   });
   return () => socket?.off("queue");
 }
