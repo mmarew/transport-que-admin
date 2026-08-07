@@ -3,12 +3,12 @@ import { clearAuth, getToken } from "./auth";
 import type {
   LoginResponse,
   VerifyOtpResponse,
-  QueueOrganization,
   PaginatedResponse,
   QueueStatusResponse,
   QueueOrgMember,
   DriverQueueEntry,
   QueueOrgType,
+  QueueOrgListItem,
 } from "../types/queue";
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -70,7 +70,7 @@ export const registerUser = (body: { fullName: string; phoneNumber: string; emai
 
 // --- Queue organizations ---
 export const listQueueOrganizations = (params?: Record<string, string | number | boolean>) =>
-  api.get<PaginatedResponse<QueueOrganization>>("/queueOrganization", { params });
+  api.get<PaginatedResponse<QueueOrgListItem>>("/queueOrganization", { params });
 
 export interface UpdateQueueOrgBody {
   queueOrganizationName?: string;

@@ -4,8 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { disconnectSocket } from "@/lib/socket";
 import { useQueueAdminStore } from "@/store/queueAdminStore";
 import { createQueueOrganization } from "@/lib/api";
-import type { QueueOrganization } from "@/types/queue";
-import { QueueBoard } from "@/components/queue/QueueBoard";
+import type { QueueOrganization, QueueOrgListItem } from "@/types/queue";
 import { CreateOrgModal } from "@/components/queue/CreateOrgModal";
 import {
   useListQueueOrganizationsQuery,
@@ -14,7 +13,7 @@ import {
 export function QueueDashboardPage() {
   const { auth, logout } = useAuth();
   const navigate = useNavigate();
-  const selectedOrgId = useQueueAdminStore((state: ReturnType<typeof useQueueAdminStore.getState>) => state.selectedOrgId);
+  const setSelectedOrgId = useQueueAdminStore((state: ReturnType<typeof useQueueAdminStore.getState>) => state.setSelectedOrgId);
 
   const {
     data: orgs,
@@ -25,9 +24,10 @@ export function QueueDashboardPage() {
 
   const [showCreateOrg, setShowCreateOrg] = useState(false);
 
-  const allOrgs: QueueOrganization[] = orgs?.data ?? [];
+  const allOrgs: QueueOrgListItem[] = orgs?.data ?? [];
   const activeOrgs: QueueOrganization[] =
-    allOrgs.filter((o) => o.approvalStatus === "approved" && o.queueEnabled === 1) ?? [];
+    allOrgs.filter((item) => item.organization.approvalStatus === "approved" && item.organization.queueEnabled === 1)
+      .map(item => item.organization) ?? [];
 
   const handleCreateOrg = async (data: {
     queueOrganizationName: string;
@@ -126,28 +126,40 @@ export function QueueDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {allOrgs.map((org) => (
-                    <tr key={org.queueOrganizationUniqueId} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-800">{org.queueOrganizationName}</td>
-                      <td className="px-4 py-3 text-slate-600 capitalize">{org.queueOrganizationType}</td>
-                      <td className="px-4 py-3">{getStatusBadge(org)}</td>
-                      <td className="px-4 py-3">
-                        {org.queueEnabled === 1 ? (
-                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Yes</span>
-                        ) : (
-                          <span className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600">No</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          to={`/orgs/${org.queueOrganizationUniqueId}`}
-                          className="font-medium text-blue-600 hover:text-blue-700"
+                  {allOrgs.map((item) => {
+                      const org = item.organization;
+                      return (
+                        <tr
+                          key={org.queueOrganizationUniqueId}
+                          className="hover:bg-slate-50 cursor-pointer"
+                          onClick={() => setSelectedOrgId(org.queueOrganizationUniqueId)}
                         >
-                          Manage
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                          <td className="px-4 py-3 font-medium text-slate-800">{org.queueOrganizationName}</td>
+                          <td className="px-4 py-3 text-slate-600 capitalize">{org.queueOrganizationType}</td>
+                          <td className="px-4 py-3">{getStatusBadge(org)}</td>
+                          <td className="px-4 py-3">
+                            {org.queueEnabled === 1 ? (
+                              <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Yes</span>
+                            ) : (
+                              <span className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600">No</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <Link
+                              to={`/orgs/${org.queueOrganizationUniqueId}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setSelectedOrgId(org.queueOrganizationUniqueId);
+                                navigate(`/orgs/${org.queueOrganizationUniqueId}`);
+                              }}
+                              className="font-medium text-blue-600 hover:text-blue-700"
+                            >
+                              Manage
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -159,16 +171,6 @@ export function QueueDashboardPage() {
             </p>
           )}
         </div>
-
-        {selectedOrgId && <QueueBoard queueOrganizationUniqueId={selectedOrgId} />}
-
-        {selectedOrgId && (
-          <p className="mt-4 text-sm">
-            <Link to={`/orgs/${selectedOrgId}`} className="font-medium text-blue-600 hover:text-blue-700">
-              Manage organization settings →
-            </Link>
-          </p>
-        )}
 
         {showCreateOrg && (
           <CreateOrgModal

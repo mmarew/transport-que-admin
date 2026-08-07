@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getToken, type StoredAuth } from "@/lib/auth";
 import type {
   QueueOrganization,
+  QueueOrgListItem,
   QueueOrgMember,
   QueueStatusResponse,
   DriverQueueEntry,
@@ -63,7 +64,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
 
     // --- Queue Organizations ---
     listQueueOrganizations: builder.query<
-      PaginatedResponse<QueueOrganization>,
+      PaginatedResponse<QueueOrgListItem>,
       Record<string, string | number | boolean> | void
     >({
       query: (params) => {
@@ -74,7 +75,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
     }),
 
     getQueueOrganization: builder.query<
-      { message: string; data: QueueOrganization },
+      { message: string; data: QueueOrgListItem },
       string
     >({
       query: (id) => `/queueOrganization/${id}`,

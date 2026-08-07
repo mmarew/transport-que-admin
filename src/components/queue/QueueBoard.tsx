@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getQueueStatus, getApiError } from "../../lib/api";
+import { getApiError } from "../../lib/api";
 import { onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
-import type { DriverQueueEntry } from "../../types/queue";
+import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
 import { QueueTable } from "./QueueTable";
 import { CheckinModal } from "./CheckinModal";
 import { DispatchModal } from "./DispatchModal";
@@ -13,10 +12,19 @@ import { STATUS_STYLES } from "./QueueTable";
 
 interface QueueBoardProps {
   queueOrganizationUniqueId: string;
+  status?: QueueStatusPayload;
+  isLoading: boolean;
+  error?: unknown;
+  onRefetch: () => void;
 }
 
-export function QueueBoard({ queueOrganizationUniqueId }: QueueBoardProps) {
-  const queryClient = useQueryClient();
+export function QueueBoard({
+  queueOrganizationUniqueId,
+  status,
+  isLoading,
+  error,
+  onRefetch,
+}: QueueBoardProps) {
   const socketConnected = useQueueAdminStore((s) => s.socketConnected);
   const setSocketConnected = useQueueAdminStore((s) => s.setSocketConnected);
 
@@ -28,22 +36,18 @@ export function QueueBoard({ queueOrganizationUniqueId }: QueueBoardProps) {
 
   const invalidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const {
-    data: status,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["queue-status", queueOrganizationUniqueId],
-    queryFn: () => getQueueStatus(queueOrganizationUniqueId).then((res) => res.data.data),
-    enabled: !!queueOrganizationUniqueId,
-  });
+  const onRefetchRef = useRef(onRefetch);
+
+  useEffect(() => {
+    onRefetchRef.current = onRefetch;
+  }, [onRefetch]);
 
   const invalidate = useCallback(() => {
     if (invalidateTimer.current) clearTimeout(invalidateTimer.current);
     invalidateTimer.current = setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: ["queue-status", queueOrganizationUniqueId] });
+      onRefetchRef.current();
     }, 250);
-  }, [queryClient, queueOrganizationUniqueId]);
+  }, []);
 
   useEffect(() => {
     subscribeToQueue(queueOrganizationUniqueId);
@@ -118,7 +122,11 @@ export function QueueBoard({ queueOrganizationUniqueId }: QueueBoardProps) {
         </div>
       </div>
 
-      {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{getApiError(error)}</p>}
+      {error ? (
+        <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {getApiError(error)}
+        </p>
+      ) : null}
       {isLoading && <p className="text-sm text-slate-500">Loading queue…</p>}
       {!isLoading && allEntries.length === 0 && (
         <p className="text-sm text-slate-500">The queue is empty.</p>

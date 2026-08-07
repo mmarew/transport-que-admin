@@ -1,13 +1,29 @@
-export const QUEUE_ORG_TYPES = ["customs", "factory", "cement", "depot", "other"] as const;
+export const QUEUE_ORG_TYPES = [
+  "customs",
+  "factory",
+  "cement",
+  "depot",
+  "other",
+] as const;
 export type QueueOrgType = (typeof QUEUE_ORG_TYPES)[number];
 
-export const APPROVAL_STATUSES = ["pending", "approved", "rejected", "suspended"] as const;
+export const APPROVAL_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+  "suspended",
+] as const;
 export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 
-export const QUEUE_STATUSES = ["waiting", "offered", "loaded", "removed"] as const;
+export const QUEUE_STATUSES = [
+  "waiting",
+  "offered",
+  "loaded",
+  "removed",
+] as const;
 export type QueueStatus = (typeof QUEUE_STATUSES)[number];
 
-export const ROLE_QUEUE_ORG_ADMIN = 11;
+export const QUEUE_ORG_ADMIN_ROLE = 11;
 
 export interface AuthUser {
   userId: number;
@@ -47,7 +63,24 @@ export interface QueueOrganization {
   approvedBy: string | null;
   approvedAt: string | null;
   queueOrganizationCreatedAt: string;
+  queueOrganizationCreatedBy: string;
+  queueOrganizationUpdatedAt?: string;
+  queueOrganizationUpdatedBy?: string;
+  queueOrganizationDeletedAt?: string | null;
+  queueOrganizationDeletedBy?: string | null;
   isDeleted: number;
+}
+
+export interface QueueOrgCreator {
+  userUniqueId: string;
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+}
+
+export interface QueueOrgListItem {
+  organization: QueueOrganization;
+  creator: QueueOrgCreator | null;
 }
 
 export interface QueueOrgMember {
@@ -76,14 +109,16 @@ export interface DriverQueueEntry {
   shipperRequestUniqueId: string | null;
 }
 
+export interface QueueStatusPayload {
+  queueOrganization: QueueOrganization;
+  queueDate: string;
+  totalWaiting: number;
+  queues: Record<string, DriverQueueEntry[]>;
+}
+
 export interface QueueStatusResponse {
   message: string;
-  data: {
-    queueOrganizationUniqueId: string;
-    queueDate: string;
-    totalWaiting: number;
-    queues: Record<string, DriverQueueEntry[]>;
-  };
+  data: QueueStatusPayload;
 }
 
 export interface PaginatedResponse<T> {

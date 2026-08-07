@@ -1,6 +1,12 @@
-import { ROLE_QUEUE_ORG_ADMIN } from "../types/queue";
+import { QUEUE_ORG_ADMIN_ROLE } from "../types/queue";
 
-export type AuthFieldKind = "phone" | "fullName" | "email" | "otp" | "password" | "text";
+export type AuthFieldKind =
+  | "phone"
+  | "fullName"
+  | "email"
+  | "otp"
+  | "password"
+  | "text";
 
 export type AuthFieldType = "text" | "tel" | "email" | "otp" | "password";
 
@@ -35,7 +41,7 @@ export const DESIGN_NAMES = ["classic", "split", "glass", "minimal"] as const;
 export type DesignName = (typeof DESIGN_NAMES)[number];
 
 export const defaultAuthConfig: AuthConfig = {
-  roleId: ROLE_QUEUE_ORG_ADMIN,
+  roleId: QUEUE_ORG_ADMIN_ROLE,
   login: {
     title: "Sign in",
     submitLabel: "Send OTP",
@@ -55,7 +61,13 @@ export const defaultAuthConfig: AuthConfig = {
     title: "Create account",
     submitLabel: "Create account",
     fields: [
-      { name: "fullName", kind: "fullName", label: "Full name", type: "text", required: true },
+      {
+        name: "fullName",
+        kind: "fullName",
+        label: "Full name",
+        type: "text",
+        required: true,
+      },
       {
         name: "phoneNumber",
         kind: "phone",
@@ -65,14 +77,26 @@ export const defaultAuthConfig: AuthConfig = {
         required: true,
         defaultValue: "+251",
       },
-      { name: "email", kind: "email", label: "Email", type: "email", required: false },
+      {
+        name: "email",
+        kind: "email",
+        label: "Email",
+        type: "email",
+        required: false,
+      },
     ],
   },
   otp: {
     title: "Verify your number",
     submitLabel: "Verify & Continue",
     fields: [
-      { name: "otp", kind: "otp", label: "OTP code", type: "otp", required: true },
+      {
+        name: "otp",
+        kind: "otp",
+        label: "OTP code",
+        type: "otp",
+        required: true,
+      },
     ],
   },
 };
@@ -87,7 +111,10 @@ export function normalizePhone(raw: string): string {
   return `+${digits}`;
 }
 
-export function normalizeFieldValue(field: AuthFieldConfig, value: string): string {
+export function normalizeFieldValue(
+  field: AuthFieldConfig,
+  value: string,
+): string {
   if (field.kind === "phone") return normalizePhone(value);
   return value;
 }
