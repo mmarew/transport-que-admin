@@ -127,6 +127,67 @@ export interface PaginatedResponse<T> {
   meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
+export type RequestMode = "individual_target" | "company_target";
+
+export interface VehicleType {
+  vehicleTypeUniqueId: string;
+  vehicleTypeName: string;
+  vehicleTypeDescription: string | null;
+  carryingCapacity: number;
+  vehicleTypeIconName: string | null;
+}
+
+export interface PhotonFeature {
+  geometry: {
+    coordinates: [number, number];
+  };
+  properties: {
+    name?: string;
+    street?: string;
+    housenumber?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postcode?: string;
+  };
+}
+
+export interface CreateOrderPayload {
+  shipperRequestBatchUniqueId: string;
+  numberOfVehicles: number;
+  shippingDate: string;
+  deliveryDate: string;
+  shippingCost: number;
+  shippableItemQtyInQuintal: number;
+  shippableItemName: string;
+  /** Required for admin / queue-org-admin creating on behalf of a shipper */
+  shipperPhoneNumber: string;
+  requestMode: RequestMode;
+  /** Tolerated by the backend schema; the create flow always sends "shipper" */
+  requestType: "shipper";
+  queueOrganizationUniqueId: string;
+  originLocation: {
+    latitude: number;
+    longitude: number;
+    description: string;
+  };
+  destination: {
+    latitude: number;
+    longitude: number;
+    description: string;
+  };
+  vehicle: {
+    vehicleTypeUniqueId: string;
+  };
+}
+
+export interface CreateOrderResponse {
+  message: string;
+  data: {
+    totalRecords: Record<string, number>;
+  };
+}
+
 export type QueueEventMessageType =
   | "queue_checkin_confirmed"
   | "queue_position_changed"

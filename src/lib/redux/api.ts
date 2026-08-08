@@ -8,6 +8,8 @@ import type {
   DriverQueueEntry,
   PaginatedResponse,
   QueueOrgType,
+  CreateOrderPayload,
+  VehicleType,
 } from "@/types/queue";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -28,6 +30,7 @@ export const api = createApi({
     "QueueStatus",
     "DriverQueue",
     "Auth",
+    "VehicleTypes",
   ],
   endpoints: (builder) => ({
     // --- Auth ---
@@ -176,14 +179,22 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
 
     // --- Shipper Request (queue orders) ---
     createQueueOrder: builder.mutation<
-      { message: string; data: { shipperRequestUniqueId: string } },
-      { queueOrganizationUniqueId: string; vehicleTypeUniqueId: string; shippingCost: number; originPlace: string; originLatitude: number; originLongitude: number; destinationPlace: string; destinationLatitude: number; destinationLongitude: number; senderName: string; senderPhone: string; receiverName: string; receiverPhone: string }
+      { message: string; data: { totalRecords: Record<string, number> } },
+      CreateOrderPayload
     >({
-      query: (body) => ({ url: "/shipperRequest/createQueueRequest", method: "POST", body }),
+      query: (body) => ({ url: "/shipperRequest/createRequest", method: "POST", body }),
       invalidatesTags: ["QueueStatus"],
     }),
 
     // --- Vehicle/Driver for checkin ---
+    listVehicleTypes: builder.query<
+      { message: string; data: VehicleType[] },
+      void
+    >({
+      query: () => ({ url: "/admin/vehicleTypes", params: { limit: 100 } }),
+      providesTags: ["VehicleTypes"],
+    }),
+
     listVehicleDrivers: builder.query<
       { message: string; data: Array<{ vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string }> },
       { queueOrganizationUniqueId?: string }
@@ -210,5 +221,6 @@ export const {
   useOverrideEntryMutation,
   useRemoveEntryMutation,
   useCreateQueueOrderMutation,
+  useListVehicleTypesQuery,
   useListVehicleDriversQuery,
 } = api;

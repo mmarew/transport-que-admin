@@ -5,6 +5,7 @@ import { useQueueAdminStore } from "../../store/queueAdminStore";
 import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
 import { QueueTable } from "./QueueTable";
 import { CheckinModal } from "./CheckinModal";
+import { CreateOrderModal } from "./CreateOrderModal";
 import { DispatchModal } from "./DispatchModal";
 import { OverrideModal } from "./OverrideModal";
 import { ConfirmCancel } from "./ConfirmCancel";
@@ -12,6 +13,11 @@ import { STATUS_STYLES } from "./QueueTable";
 
 interface QueueBoardProps {
   queueOrganizationUniqueId: string;
+  origin?: {
+    latitude?: number | null;
+    longitude?: number | null;
+    description?: string | null;
+  };
   status?: QueueStatusPayload;
   isLoading: boolean;
   error?: unknown;
@@ -20,6 +26,7 @@ interface QueueBoardProps {
 
 export function QueueBoard({
   queueOrganizationUniqueId,
+  origin,
   status,
   isLoading,
   error,
@@ -29,6 +36,7 @@ export function QueueBoard({
   const setSocketConnected = useQueueAdminStore((s) => s.setSocketConnected);
 
   const [showCheckin, setShowCheckin] = useState(false);
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [dispatchForType, setDispatchForType] = useState<string | null>(null);
   const [overrideEntry, setOverrideEntry] = useState<DriverQueueEntry | null>(null);
   const [cancelEntry, setCancelEntry] = useState<DriverQueueEntry | null>(null);
@@ -113,6 +121,12 @@ export function QueueBoard({
               All Drivers ({allEntries.length})
             </button>
           </div>
+          <button
+            onClick={() => setShowCreateOrder(true)}
+            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            New order
+          </button>
           <button
             onClick={() => setShowCheckin(true)}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
@@ -220,6 +234,14 @@ export function QueueBoard({
         <CheckinModal
           queueOrganizationUniqueId={queueOrganizationUniqueId}
           onClose={() => setShowCheckin(false)}
+        />
+      )}
+      {showCreateOrder && (
+        <CreateOrderModal
+          queueOrganizationUniqueId={queueOrganizationUniqueId}
+          origin={origin}
+          onCreated={onRefetch}
+          onClose={() => setShowCreateOrder(false)}
         />
       )}
       {dispatchForType && (

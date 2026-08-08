@@ -9,6 +9,8 @@ import type {
   DriverQueueEntry,
   QueueOrgType,
   QueueOrgListItem,
+  CreateOrderPayload,
+  CreateOrderResponse,
 } from "../types/queue";
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -129,3 +131,7 @@ export const dispatch = (body: { queueOrganizationUniqueId: string; vehicleTypeU
     "/queue/dispatch",
     body,
   );
+
+// --- Shipper request (queue order) ---
+export const createShipperRequest = (body: CreateOrderPayload) =>
+  api.post<CreateOrderResponse>("/shipperRequest/createRequest", body);

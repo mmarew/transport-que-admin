@@ -33,6 +33,63 @@ export const dispatchSchema = z.object({
   shipperRequestUniqueId: uuidSchema.optional(),
 });
 
+export const createOrderSchema = z
+  .object({
+    shipperPhoneNumber: z
+      .string()
+      .trim()
+      .min(10, "Shipper phone number is required"),
+    shippableItemName: z.string().trim().min(1, "Item name is required"),
+    shippableItemQtyInQuintal: z
+      .number({ message: "Quantity must be a number" })
+      .positive("Quantity must be greater than 0"),
+    shippingCost: z
+      .number({ message: "Shipping cost must be a number" })
+      .nonnegative("Shipping cost cannot be negative"),
+    shippingDate: z.string().min(1, "Shipping date is required"),
+    deliveryDate: z.string().min(1, "Delivery date is required"),
+    numberOfVehicles: z
+      .number({ message: "Number of vehicles must be a number" })
+      .int("Must be a whole number")
+      .min(1, "At least 1 vehicle"),
+    requestMode: z.enum(["individual_target", "company_target"]),
+    vehicleTypeUniqueId: uuidSchema,
+    originDescription: z.string().trim().min(1, "Origin place is required"),
+    originLatitude: z
+      .string()
+      .trim()
+      .min(1, "Origin latitude is required")
+      .refine((v) => Number.isFinite(Number(v)) && Number(v) >= -90 && Number(v) <= 90, {
+        message: "Latitude must be between -90 and 90",
+      }),
+    originLongitude: z
+      .string()
+      .trim()
+      .min(1, "Origin longitude is required")
+      .refine((v) => Number.isFinite(Number(v)) && Number(v) >= -180 && Number(v) <= 180, {
+        message: "Longitude must be between -180 and 180",
+      }),
+    destinationDescription: z.string().trim().min(1, "Destination place is required"),
+    destinationLatitude: z
+      .string()
+      .trim()
+      .min(1, "Destination latitude is required")
+      .refine((v) => Number.isFinite(Number(v)) && Number(v) >= -90 && Number(v) <= 90, {
+        message: "Latitude must be between -90 and 90",
+      }),
+    destinationLongitude: z
+      .string()
+      .trim()
+      .min(1, "Destination longitude is required")
+      .refine((v) => Number.isFinite(Number(v)) && Number(v) >= -180 && Number(v) <= 180, {
+        message: "Longitude must be between -180 and 180",
+      }),
+  })
+  .refine((v) => v.deliveryDate >= v.shippingDate, {
+    message: "Delivery date cannot be before shipping date",
+    path: ["deliveryDate"],
+  });
+
 export const overrideSchema = z.object({
   queueNumber: z.number().int().min(1, "Queue number must be ≥ 1"),
   reason: z.string().max(500).optional(),
@@ -93,6 +150,7 @@ export type CreateQueueOrgFormValues = z.infer<typeof createQueueOrgSchema>;
 
 export type CheckinFormValues = z.infer<typeof checkinSchema>;
 export type DispatchFormValues = z.infer<typeof dispatchSchema>;
+export type CreateOrderFormValues = z.infer<typeof createOrderSchema>;
 export type OverrideFormValues = z.infer<typeof overrideSchema>;
 export type QueueOrgProfileFormValues = z.infer<typeof queueOrgProfileSchema>;
 export type LoginFormValues = z.infer<typeof loginSchema>;

@@ -478,6 +478,11 @@ export function QueueOrgManagePage() {
         {org && (
           <QueueBoard
             queueOrganizationUniqueId={org.queueOrganizationUniqueId}
+            origin={{
+              latitude: org.latitude ? Number(org.latitude) : null,
+              longitude: org.longitude ? Number(org.longitude) : null,
+              description: org.queueOrganizationAddress ?? "",
+            }}
             status={queueStatus?.data}
             isLoading={queueStatusLoading}
             error={queueStatusError}
