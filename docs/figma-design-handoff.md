@@ -1,458 +1,385 @@
-# QueueAdmin — Figma Design Handoff
+# QueueAdmin — Figma Screen Spec (mobile-first, workflow-driven)
 
 Product: **Queue Admin console** — web app for queue-organization admins to run a
-physical loading/departure line (drivers check in, orders get dispatched to the
-front driver, the board updates live over sockets).
+physical loading/departure line. Drivers check in, orders get dispatched to the
+front driver, and the board updates live over sockets.
 
-- Platform: **Web (responsive)** — desktop-first, mobile must also work.
-- Stack used to build it: React 19 + TypeScript + Tailwind CSS v4.
-- Source screens: `src/pages/` and `src/components/` (see the map in §2).
-- Design token / visual language in use today: §1.
-- Read this top-to-bottom, then build frames per screen (desktop + mobile).
+**Scope of this doc:** screens and their structure, content, and behavior —
+defined from the workflows, **mobile-first**. Typography, colors, button styles,
+icons, and visual polish are the **designer's job** and are intentionally not
+prescribed here. Where a screen has fixed content/labels, they are listed as
+literal copy.
 
----
-
-## 1. Design tokens & visual language (current system)
-
-Keep these consistent unless this document asks for something else.
-
-### 1.1 Color roles
-
-| Role | Tailwind class | Hex (approx) | Used for |
-|---|---|---|---|
-| App background | `bg-slate-100` | `#f1f5f9` | page canvas |
-| Card / panel bg | `bg-white` | `#ffffff` | tables, cards, modals |
-| Header bg | `bg-white` + `shadow-sm` | — | top bar |
-| Border | `border-slate-200` / `border-slate-300` | `#e2e8f0` / `#cbd5e1` | cards, inputs |
-| Primary text | `text-slate-800` | `#1e293b` | headings, driver names |
-| Secondary text | `text-slate-500/600` | `#64748b` | labels, meta |
-| Disabled / placeholder | `text-slate-400` | `#94a3b8` | empty hints, placeholders |
-| **Primary action** | `bg-blue-600` / `hover:bg-blue-700` | `#2563eb` | Sign in, Save, Check in, Create org, Submit |
-| Success / positive | `bg-emerald-600` | `#059669` | New order, Dispatch |
-| Destructive | `bg-red-600` / `text-red-600` | `#dc2626` | Cancel driver, Reject, Sign-out (ghost) |
-| Warning | `bg-amber-500` | `#f59e0b` | Suspend |
-| Info surface | `bg-blue-50` / `border-blue-300` | `#eff6ff` / `#93c5fd` | shipper-phone callout |
-
-### 1.2 Status pills (semantic, used on orgs AND queue rows)
-
-| Status | Style |
-|---|---|
-| `waiting` (queue) | `bg-yellow-100 text-yellow-800` |
-| `offered` (queue) | `bg-blue-100 text-blue-800` |
-| `loaded` (queue) | `bg-green-100 text-green-800` |
-| `removed` (queue) | `bg-slate-200 text-slate-500` + strikethrough |
-| `approved` (org) | `bg-green-100 text-green-700` |
-| `pending` (org) | `bg-amber-100 text-amber-700` |
-| `rejected` (org) | `bg-red-100 text-red-700` |
-| `suspended` (org) | `bg-slate-100 text-slate-600` |
-| org **enabled** | `bg-green-100 text-green-700` ("Yes") |
-| org **disabled** | `bg-slate-100 text-slate-600` ("No") |
-| member **active / inactive** | `bg-green-100 text-green-700` / `bg-slate-200 text-slate-600` |
-| **Live** socket indicator | `bg-green-100 text-green-700` ("live") |
-| **Connecting** indicator | `bg-amber-100 text-amber-700` ("connecting…") |
-
-All pills are `rounded-full px-2 py-0.5 text-xs font-medium`.
-
-### 1.3 Typography
-
-- App brand title (header): `text-lg font-bold`, slate-800.
-- Page/section headings: `text-base`–`text-lg font-semibold`, slate-800.
-- Table header labels: `text-xs uppercase tracking-wide`, slate-500.
-- Body: `text-sm`, slate-700/800.
-- Secondary/helper copy: `text-xs`–`text-sm`, slate-500.
-- Form field labels: `text-sm font-medium`, slate-700.
-- Errors: `text-xs`, red-600.
-- Auth screen heading: `text-2xl font-bold` (desktop), slate-800.
-
-### 1.4 Shape, elevation, spacing
-
-- Inputs / buttons / selects: `rounded-md` (6px), 1px border slate-300, focus ring
-  `focus:border-blue-500`.
-- Cards / sections: `rounded-xl`, `border border-slate-200`, `bg-white`,
-  `p-6` (sections) or `shadow-sm` (header).
-- Modals: `rounded-xl bg-white shadow-xl p-6`, overlay `bg-black/40`, centered,
-  max-width `max-w-sm` (check-in/dispatch/override/cancel) or `max-w-lg`
-  (create order, create org). Modals scroll internally if taller than 90vh.
-- Dropdowns (autocomplete): `rounded-md bg-white shadow-lg border-slate-200`.
-- Buttons: `px-4 py-2 text-sm font-semibold rounded-md`; small inline buttons
-  `px-3 py-1.5 text-sm` or `px-3 py-1 text-xs`.
-- Content column: `max-w-5xl` centered; page padding `px-4 py-6`.
-- Toasts: sonner (`<Toaster />`) top-center/right, success + error.
-
-### 1.5 Icons
-
-Currently minimal — text labels + one arrow (`← Dashboard`). You may introduce
-an icon set (Lucide recommended) for: sign out, search, close (modal ×), live
-pulse, truck/vehicle, user, chevron. Keep icons stroke-based, 16–20px, slate.
+**How to build the screens:** for every screen below, design the **mobile**
+layout first (single column, most-important-first), then define how blocks
+rearrange at **tablet/desktop** (wider, multi-column). Breakpoints: base mobile
+(~360–414px), tablet (~768px), desktop (≥1024px).
 
 ---
 
-## 2. Screen map (routes → components)
+## 1. Workflows (what the product does)
 
-| # | Screen | Route | Source |
-|---|---|---|---|
-| S1 | Auth — Login (request OTP) | `/login` | `AuthFlow initialMode="login"` |
-| S2 | Auth — Register | `/register` | `AuthFlow initialMode="register"` |
-| S3 | Auth — Verify OTP | `/login` + `/register` (mode `otp`) | `AuthFlow` |
-| S4 | Dashboard — your queue organizations | `/` | `QueueDashboardPage` |
-| S5 | Org manage — profile + members + admin actions | `/orgs/:id` | `QueueOrgManagePage` |
-| S6 | Live queue board | (on S5, below the sections) | `QueueBoard` + `QueueTable` |
-| M1 | Modal — Create queue organization | on S4 | `CreateOrgModal` |
-| M2 | Modal — Create order (shipper request) | on S6 | `CreateOrderModal` |
-| M3 | Modal — Manual check-in | on S6 | `CheckinModal` |
-| M4 | Modal — Dispatch to front driver | on S6 | `DispatchModal` |
-| M5 | Modal — Override position | on S6 | `OverrideModal` |
-| M6 | Modal — Cancel driver (confirm) | on S6 | `ConfirmCancel` |
+### Workflow A — First-time onboarding (QueueOrgAdmin)
+
+```
+Open app → Login (phone) → Verify OTP → Dashboard (empty orgs)
+  → Create organization (name, type, address via map search)
+  → [Super Admin approves elsewhere]
+  → Org becomes approved+enabled → Live queue available
+Register path: Login → "Don't have an account? Register"
+  → full name + phone (+optional email) → Verify OTP → Dashboard
+```
+
+Screens: **S1 Login → S3 OTP**, **S2 Register → S3 OTP**, **S4 Dashboard**,
+**M1 Create organization**.
+
+### Workflow B — Daily queue run (the core loop)
+
+```
+Open org → Live queue board (subscribe → snapshot → live updates)
+  1. Driver arrives → Manual check-in (vehicle-driver id) → row appears
+     at the end of its vehicle-type line with a ticket number
+  2. Shipper calls with a load → Create order (item, qty, cost, vehicle type,
+     dates, origin=org location, destination=map search)
+     → order auto-offered to FRONT waiting driver of that type
+  3. Driver accepts → row → "loaded"  (driver rejects/timeout → next driver)
+  4. Disputes:
+       - driver too far back → Override position (new ticket # + reason)
+       - driver no-show/leaves → Cancel driver (confirm)
+       - no driver for a waiting order → Dispatch (offer to front driver)
+```
+
+Screens: **S6 Live queue board**, **M3 Check-in**, **M2 Create order**,
+**M4 Dispatch**, **M5 Override**, **M6 Cancel**.
+
+### Workflow C — Org maintenance (admin & super admin)
+
+```
+Open org → Profile (edit name/type/phone/address/coords)
+        → Members (view admins/shippers, their status)
+Admin only: Approve / Suspend / Reject an org
+```
+
+Screens: **S5 Org manage** (profile + members + admin actions).
 
 ---
 
-## 3. Auth screens (S1–S3)
+## 2. Screen map (mobile-first order)
 
-Three-step: **phone → OTP → in** (register inserts a full-name step first).
-There are **4 visual themes**; the app ships with **"classic"** as default, so
-design at minimum that one, but a Figma variants frame for all four is welcome:
+| #   | Screen                               | Route                  | Opens from               |
+| --- | ------------------------------------ | ---------------------- | ------------------------ |
+| S1  | Login — phone number                 | `/login`               | app entry                |
+| S2  | Register — name, phone, email        | `/register`            | S1 footer link           |
+| S3  | Verify OTP                           | after S1/S2 submit     | —                        |
+| S4  | Dashboard — your organizations       | `/`                    | after OTP verify         |
+| S5  | Org manage — profile, members, admin | `/orgs/:id`            | S4 "Manage"              |
+| S6  | Live queue board                     | on S5 (below sections) | S5                       |
+| M1  | Create organization (modal)          | S4                     | S4 "Create organization" |
+| M2  | Create order (modal)                 | S6                     | S6 "New order"           |
+| M3  | Manual check-in (modal)              | S6                     | S6 "Manual check-in"     |
+| M4  | Dispatch (modal)                     | S6                     | per-type "Dispatch"      |
+| M5  | Override position (modal)            | S6                     | row "Override"           |
+| M6  | Cancel driver (modal)                | S6                     | row "Cancel"             |
 
-- **classic** — centered card on `slate-100`, white card, blue primary.
-- **split** — half-screen gradient panel (`blue-700 → indigo-800 → indigo-950`)
-  with brand title + subtitle on the left, form card on the right (**desktop only
-  panel; hidden below `lg`**).
-- **glass** — dark gradient (`slate-950 → indigo-950 → slate-900`), frosted
-  `bg-white/10` card with backdrop blur, indigo primary.
-- **minimal** — white page, top-aligned, no card; underline inputs,
-  `rounded-full` dark button.
+---
 
-### S1 Login — request OTP
+## 3. Screens
 
-- Brand block: title **"Queue Admin"**, subtitle **"Dispatch queue management
-  console"**.
-- Heading: **Sign in**.
-- Field: **Phone number** (tel), required, placeholder `+251 9 00 00 00 00`.
-  - Phone input is **auto-grouped** `+251 9 22 11 24 80` (country code + pairs),
-    `tracking-widest`.
-- Submit: **Send OTP** (primary, full width). Pending state → **"Please wait…"**.
-- Footer: *"Don't have an account?"* **Register** link.
-- Errors: inline under field (e.g. "Enter a valid phone number").
-- Toast on success: **"OTP sent via SMS"** → transitions to S3.
+### S1 Login
+
+**Flow position:** app entry point; also the destination after sign-out and on 401.
+
+Content (top → bottom, mobile):
+
+1. Brand block — product name + one-line descriptor.
+2. Heading: **Sign in**.
+3. Phone number input (numeric keypad; placeholder `+251 9 00 00 00 00`;
+   auto-grouped as digits are typed; Ethiopia default `+251`).
+4. Primary submit — **Send OTP** (full-width on mobile).
+5. Footer link: _"Don't have an account?"_ → **Register** (goes to S2).
+
+Behavior:
+
+- Validate ≥10 digits; inline error under the field ("Enter a valid phone
+  number").
+- Submit → network; pending state on the button; success toast "OTP sent via
+  SMS" → **S3**; error toast shows backend message.
+
+Desktop: centered column, `~400px` max; can add a brand/side panel (designer's
+call). Mobile: fills viewport height.
 
 ### S2 Register
 
-- Same shell/branding; heading **Create account**.
-- Fields: **Full name** (required), **Phone number** (required, grouped +251),
-  **Email** *(optional — label renders "(optional)")*.
-- Submit: **Create account**. Pending → "Please wait…".
-- Footer: *"Already have an account?"* **Login** link.
-- Toast on success: **"Account created — OTP sent via SMS"** → S3.
-- Note: registration only creates a **pending** user; a Super Admin must still
-  assign the user to a queue org and approve it before they can operate.
+**Flow position:** from S1 footer.
+Content:
+
+1. Same brand block; heading **Create account**.
+2. Fields in order: **Full name** → **Phone number** → **Email** _(optional —
+   label marks "optional")_.
+3. Submit — **Create account**.
+4. Footer link: _"Already have an account?"_ → **Login**.
+
+Behavior: validation per field; success toast "Account created — OTP sent via
+SMS" → **S3**. Account is pending until a Super Admin assigns the org.
 
 ### S3 Verify OTP
 
-- Heading: **Verify your number**.
-- Helper: *"Enter the 6-digit code sent to **+251 9 22 11 24 80**"* (phone
-  highlighted `font-medium`).
-- Input: **6 individual boxes**, `h-12 w-12`, numeric-only, auto-advance on
-  typing, Backspace moves backward, paste fills all 6, `autoComplete=one-time-code`.
-- Submit: **Verify & Continue**. Pending → "Please wait…".
-- Secondary: **Change phone number** (returns to login/register, clears form).
-- Errors: "Enter the full 6-digit code".
-- Success: stores JWT + user, connects socket, toast **"Welcome, {fullName}"**,
-  redirects to `/` (or the originally-requested protected route).
-- Dev/test note: accepted test OTP is `101010`.
+**Flow position:** after S1/S2.
+Content:
 
-### Auth responsive rules
+1. Heading **Verify your number**.
+2. Helper: "Enter the 6-digit code sent to **+251 9 22 11 24 80**" (phone
+   emphasized).
+3. **Six single-digit boxes** side by side. Typing advances focus, Backspace
+   steps back, pasting a 6-digit code fills all boxes, `autofill=one-time-code`.
+4. Submit — **Verify & Continue**.
+5. Secondary action: **Change phone number** (clears form, returns to S1/S2).
 
-- Desktop: card `max-w-sm`, vertically centered.
-- Mobile: same card full-width `px-4`, fills viewport height; **split** theme
-  drops the gradient panel and shows just the centered form.
-- OTP boxes must fit 6 across the narrowest phone (use `w-11` at small).
+Behavior: 6 digits required; success stores session, connects live updates,
+toast "Welcome, {name}", redirect to Dashboard (or the page they tried to open).
 
----
+Mobile note: 6 boxes must fit a 360px screen in a single row.
 
-## 4. Dashboard — queue organizations (S4)
+### S4 Dashboard — your organizations
 
-Header (all pages share this pattern):
-- Left: brand **Queue Admin** + subtitle line with the logged-in user
-  `fullName · phoneNumber`.
-- Right: **Sign out** (ghost button, `border border-slate-300`, slate text).
+**Flow position:** post-login landing.
+Header:
 
-Main content (single column, `max-w-5xl`):
-- Section heading row: **Your Queue Organizations** + **Create organization**
-  (primary blue).
-- Table of organizations:
+- Brand + current user line (name · phone) + **Sign out**.
 
-| Column | Content |
-|---|---|
-| Name | `font-medium slate-800` |
-| Type | `capitalize` (customs / factory / cement / depot / other) |
-| Status | pill (approved / pending / rejected / suspended) |
-| Enabled | pill "Yes" / "No" |
-| Actions | **Manage** link (blue) → `/orgs/:id` |
+Body (mobile order):
 
-- Row click = select org + navigate to manage (whole row `cursor-pointer`,
-  `hover:bg-slate-50`).
-- States:
-  - **Loading:** "Loading organizations…" + button shows "Loading…".
-  - **Empty:** centered card — *"You don't have a queue organization yet."* +
-    *"Create one below — an admin will approve it."*
-  - **No usable orgs:** amber note *"No approved + enabled orgs. Ask an admin to
-    approve and enable one."*
-  - **Error:** red banner with message at top of main.
-- **Mobile:** the table should collapse to a **card list** (name + type on line 1,
-  status + enabled pills on line 2, Manage as a full-width or right-aligned
-  action) — currently it is a plain table and overflows, so design the card list.
+1. Section title: **Your Queue Organizations** + **Create organization** action.
+2. Organization list — one item per org, most-relevant info first:
+   - Primary line: **name** + **type** (capitalized).
+   - Secondary: **status** (approved/pending/rejected/suspended) and
+     **enabled** (Yes/No) as two compact tags.
+   - Action: **Manage** → opens S5.
+   - Tapping the item anywhere selects the org and opens S5.
 
-### M1 Create queue organization (modal, `max-w-md`)
+States:
 
-- Title: **Create queue organization**.
-- Helper: *"Name, type, and address are required. Admin will approve before
-  dispatch works."*
-- Fields:
-  - **Name** (required) — e.g. "National Cement".
-  - **Type** (required, select) — Customs / Factory / Cement / Depot / Other.
-  - **Phone** (optional, tel) — placeholder `+251912345678`.
-  - **Address** (required) — **Photon geocoder autocomplete**:
-    - type ≥3 chars, 250ms debounce, dropdown of results
-    (`name` bold + street/house/city/postcode/country muted on 2nd line);
-    - selecting a result **auto-fills Address + Latitude + Longitude** (lat/lng
-      are NOT shown in this modal — hidden and derived from the pick).
-- Footer: **Cancel** (ghost) + **Create organization** (primary). Pending →
-  "Creating…".
-- Success toast: *"Queue organization created — pending admin approval"*, modal
-  closes, list refetches.
-- Note for design: the address field needs a **search icon** + dropdown caret;
-  show a loading state and an empty-results message inside the dropdown.
+- Loading skeleton/label while fetching.
+- Empty: centered message — "You don't have a queue organization yet." + "Create
+  one below — an admin will approve it."
+- No usable orgs: note — "No approved + enabled orgs. Ask an admin to approve
+  and enable one."
+- Error: full-width error banner above the list.
 
----
+Desktop: list becomes a table (Name | Type | Status | Enabled | Actions).
 
-## 5. Org manage page (S5)
+### M1 Create organization (modal)
 
-Header: `← Dashboard` link (blue) + org **name** + **StatusBadge** (status pill +
-enabled/disabled pill) + **Sign out**.
+**Flow position:** from S4 "Create organization".
+Content:
 
-Body: two-column grid on desktop (`lg:grid-cols-2`), stacked on mobile.
+1. Title: **Create queue organization**; helper: "Name, type, and address are
+   required. Admin will approve before dispatch works."
+2. Fields in order:
+   - **Name** (required).
+   - **Type** (required, select) — Customs / Factory / Cement / Depot / Other.
+   - **Phone** _(optional)_.
+   - **Address** (required) — **map/geocoder search** (min 3 chars): dropdown
+     of place suggestions; selecting one fills **Address + coordinates
+     silently** (lat/lng not shown here).
+3. Footer: **Cancel** + **Create organization**.
 
-### Left column — Profile card (`rounded-xl border p-6`)
-- Heading: **Profile**.
-- Form fields: **Name** (text), **Type** (select), **Phone** (tel), **Address**
-  (text), **Latitude** + **Longitude** (two-col number grid).
-- Save button: **Save changes** (primary), disabled until dirty
-  (`disabled:opacity-50`), pending → "Saving…".
-- Success toast: "Organization updated". Invalid fields: inline red errors
-  (lat must be -90..90, lng -180..180).
+Behavior: success toast "Queue organization created — pending admin approval";
+list refetches.
 
-### Right column — Members card
-- Heading: **Members**; table (Name, Phone, Role, Status).
-  - Roles: `11` → "Queue Org Admin", `1` → "Shipper".
-  - Status: pill active/inactive.
-  - Empty: "No members yet." (centered, muted).
-  - Loading / error states like the rest of the app.
-- Mobile: card list (avatar-initial + name/phone, role + status on line 2).
+Mobile: bottom sheet or centered modal, scrollable; desktop: centered modal
+(~max 32rem).
 
-### Right column (admin only, role 3 or 6) — Admin actions card
-- Heading: **Admin actions**.
-- Helper text: *"Approve enables the queue…"* with inline `<code>`.
-- Buttons: **Approve** (green), **Suspend** (amber), **Reject** (red).
-- Reject/suspend use a `window.confirm`; success toast "Organization status
-  updated". (Design note: replace the browser confirm with a proper
-  confirmation dialog/modal for a production look.)
+### S5 Org manage — profile, members, admin
 
-### States
-- `!orgId`: "No organization selected." + "Go back to the dashboard" link.
-- loading: "Loading…"; org error: red banner; org 404: "Organization not found."
+**Flow position:** from S4 "Manage".
+Header: **← Dashboard** + org name + status tags + **Sign out**.
 
----
+Body (mobile order = most important first):
 
-## 6. Live queue board (S6) — the core screen
+1. **Live queue board** _(the operational screen — placed first on mobile,
+   see S6)._
+2. **Profile** section:
+   - Heading **Profile**.
+   - Fields: **Name**, **Type** (select), **Phone**, **Address**,
+     **Latitude** / **Longitude** (side-by-side pair).
+   - Submit **Save changes** (enabled only when edited).
+3. **Members** section: heading **Members**; list items — **name**, **phone**,
+   **role** (Queue Org Admin / Shipper), **status** (active/inactive).
+   Empty: "No members yet."
+4. **Admin actions** (only for roles 3/6): heading **Admin actions**; actions
+   **Approve**, **Suspend**, **Reject**. Suspend/Reject require a confirmation.
 
-Rendered below the profile/members grid on the same page.
+Desktop: Live queue board below the grid; **Profile** | **Members+Admin** in two
+columns.
 
-### Top bar
-- Left: **Live queue** heading + live pill (**live** green / **connecting…**
-  amber) + meta line `{queueDate} · {totalWaiting} waiting`.
-- Right (actions):
-  - **New order** (emerald)
-  - **Manual check-in** (blue)
-  - **View toggle:** segmented control — **By Vehicle Type | All Drivers (N)**.
+### S6 Live queue board
 
-### By Vehicle Type view
-- One section per vehicle type (grouped by the `vehicleTypeUniqueId` key of
-  `queues`).
-- Section header: type name (`text-sm font-medium`) + **Dispatch →** button
-  (emerald, small) that opens M4 for that type.
-- **QueueTable** per type:
+**Flow position:** on S5; the operator's main screen.
 
-| Column | Content |
-|---|---|
-| # | queue number, `font-mono` |
-| Driver | name, `font-medium` |
-| Phone | muted |
-| Joined | `toLocaleTimeString()` |
-| Status | pill (waiting/offered/loaded/removed) |
-| Actions | **Override** (blue) + **Cancel** (red) — only when `status === "waiting"` |
+Top bar:
 
-- Empty type: "No drivers waiting" centered muted.
-- Table footer: `vehicle type: {typeId}` (muted, `text-xs`) — currently a raw
-  UUID; the design should show a **human-readable vehicle type name** instead
-  (vehicle types load from `GET /api/admin/vehicleTypes`).
+- **Live queue** title + live indicator (connected / connecting) + meta:
+  `{date} · {n} waiting`.
+- Actions: **New order** (primary for this screen) + **Manual check-in**.
+- View toggle: **By Vehicle Type | All Drivers (n)**.
 
-### All Drivers view
-- Flat table with an extra **Vehicle Type** column; same row actions. Sorted by
-  queue number. Card list on mobile.
+Content — **By Vehicle Type** (default):
 
-### Live behavior (UX contract for the designer)
-- Board subscribes to the org's socket room; any `queue` event triggers a
-  debounced refetch. **No manual refresh button needed** — but a subtle
-  "syncing" shimmer is acceptable.
-- Changes to design: use a **highlight animation** on rows that just changed
-  (check-in, offered, loaded, removed) so the operator sees the update.
+- Grouped by vehicle type; each group:
+  - Group header: vehicle type name + **Dispatch** action.
+  - Driver list, ordered by ticket number (#). Each row (mobile, most info
+    first):
+    1. **Ticket #** (prominent).
+    2. **Driver name** (+ phone on a second line).
+    3. **Joined** time.
+    4. **Status** tag: `waiting` / `offered` / `loaded` / `removed`.
+    5. Actions (only while `waiting`): **Override**, **Cancel**.
+  - Empty group: "No drivers waiting."
+- **All Drivers** view: same rows in one flat list, plus vehicle type shown.
 
-### Row-level interaction notes
-- **offered** rows: consider showing the linked `shipperRequestUniqueId` /
-  order summary and remaining offer window; and a **force reassign / clear
-  offer** action for operators.
-- **loaded** rows: show "Loaded" and driver name; no actions currently — design
-  an optional "Done" state.
-- **removed**: strikethrough name + muted; no actions.
+Live behavior:
 
-### Empty / edge states
-- Entire queue empty: "The queue is empty."
-- Queue error: red banner (via `getApiError`).
+- Board joins the org's live room; any change (check-in, offer, accept,
+  removal) updates the list automatically — highlight the row that changed.
+- `offered` rows optionally show the order reference and offer window; `loaded`
+  shows loaded time; `removed` is struck through and dimmed.
 
----
+Empty/edge:
 
-## 7. Modals on the board (M2–M6)
+- Whole queue empty: "The queue is empty."
+- Error: banner at top of the board.
 
-All share: centered overlay `bg-black/40`, `rounded-xl bg-white p-6 shadow-xl`,
-footer right-aligned with **Cancel** (ghost) + primary action. Mobile: full-width
-sheet pinned to bottom or centered with `px-4` — designer's choice, but must be
-thumb-reachable.
+Mobile: rows as cards. Desktop: table (same columns as the card fields).
 
-### M2 Create order (`max-w-lg`, tallest modal, scrolls)
-Helper: *"A new shipper request is created and offered to the front waiting
-driver of the matching vehicle type."*
+### M2 Create order (modal, largest)
 
-1. **Request mode** (card `bg-slate-50`) — radio group:
-   - **Individual target** (default) — offers the order to the front waiting
-     driver of the vehicle type.
-   - **Company target** — only creates a batch header; driver rows are deferred
-     until a company bid is accepted (does NOT dispatch to the queue).
-   - Helper text under the radios explaining the difference.
-2. **Shipper phone number** *(required)* — highlighted callout
-   (`bg-blue-50`, blue border + blue labels); helper: *"Registers the shipper if
-   they do not have an account yet."*
-3. Two-column field grid:
-   - **Item name** (text)
-   - **Quantity (quintal)** (number, step any)
-   - **Shipping cost** (number)
-   - **Number of vehicles** (number, int ≥1, default 1)
-   - **Shipping date** (date picker)
-   - **Delivery date** (date picker)
-   - **Vehicle type** (select, loaded from `/admin/vehicleTypes`, shows name +
-     carrying capacity e.g. "Isuzu (18 quintal)"; disabled + "Loading…" while
-     fetching; "Select a vehicle type" placeholder)
-4. **Origin** card (`bg-slate-50`): labeled "Set from the organization's current
-   location." Fields **Place** (org address), **Latitude**, **Longitude** —
-   pre-filled from the org profile (editable as fallback).
-5. **Destination** card: **Search place** — Photon autocomplete (min 3 chars,
-   350ms debounce, dropdown of 5 results, "Searching…" while loading). Selecting
-   a result shows a **read-only summary**: Place (label) + Latitude + Longitude.
-6. Footer: **Cancel** + **Create order** (primary). Pending → "Creating…".
-- Validation: all required fields; inline red errors; delivery ≥ shipping date.
-- Success toast depends on mode:
-  - individual → **"Order created and offered to the queue"**
-  - company → **"Company target batch created (rows deferred until bid
-    acceptance)"**
-- Design note: the destination read-only block is best rendered as a small map
-  thumbnail + place + coords card.
+**Flow position:** from S6 "New order".
+Content:
 
-### M3 Manual check-in (`max-w-sm`)
-- Title: **Manual check-in**.
-- Fields: **Vehicle-Driver ID** (required, uuid placeholder), **Queue number**
-  *(optional — "auto-assigned").*
-- Footer: Cancel + **Check in** (blue). Pending → "Checking in…".
-- Success toast: `"Driver checked in at #3"` (uses returned queueNumber).
+1. Title **New order**; helper: "A new shipper request is created and offered to
+   the front waiting driver of the matching vehicle type."
+2. **Request mode** radio group:
+   - **Individual target** (default) — offered to the front waiting driver.
+   - **Company target** — batch header only; driver rows deferred until a
+     company bid is accepted.
+   - Short explainer under the radios.
+3. **Shipper phone number** _(required)_ — visually distinct callout; helper:
+   "Registers the shipper if they do not have an account yet."
+4. Fields (two-column on wide, stacked on mobile):
+   - **Item name** · **Quantity (quintal)**
+   - **Shipping cost** · **Number of vehicles** (default 1)
+   - **Shipping date** · **Delivery date** (date pickers)
+   - **Vehicle type** (select, list from backend; shows type + capacity;
+     loading + empty/error states)
+5. **Origin** block — labeled "Set from the organization's current location":
+   **Place**, **Latitude**, **Longitude** pre-filled from the org profile
+   (editable fallback).
+6. **Destination** block — **Search place** (map/geocoder, min 3 chars,
+   debounced): dropdown of results; selecting fills a read-only summary —
+   **Place + Latitude + Longitude** (suggested: small map thumbnail + place +
+   coords).
+7. Footer: **Cancel** + **Create order**.
 
-### M4 Dispatch to front driver (`max-w-sm`)
-- Title: **Dispatch to front driver**.
-- Helper: `Vehicle type: {vehicleTypeId}` (show name, not raw id).
-- Field: **Shipper request ID** *(optional — order link, can be attached later).*
-- Footer: Cancel + **Dispatch** (blue). Pending → "Dispatching…".
-- Success toast: `"Offered to driver #1"`.
-- Error 404 (no waiting driver): toast from backend message.
+Behavior: inline validation (delivery ≥ shipping); success toast differs by
+mode — individual: "Order created and offered to the queue"; company: "Company
+target batch created (rows deferred until bid acceptance)".
 
-### M5 Override position (`max-w-sm`)
-- Title: **Override position**.
-- Helper: `{driverName} — currently #{queueNumber}`.
-- Fields: **New queue number** (number ≥1), **Reason** (textarea, 3 rows,
-  labeled *"(audit logged)"*, placeholder "e.g. physically first, app login
-  failed").
-- Footer: Cancel + **Override** (blue). Pending → "Saving…".
+### M3 Manual check-in (modal)
 
-### M6 Cancel driver (`max-w-sm`)
-- Title: **Cancel driver from queue**.
-- Body: *"Remove **{driverName}** (#{queueNumber}) from the line? This is
-  audit-logged."*
-- Footer: **Keep** (ghost) + **Cancel driver** (red). Pending → "Removing…".
-- Success toast: `"{driverName} removed from queue"`.
+**Flow position:** from S6 "Manual check-in".
+
+- Title **Manual check-in**.
+- **Vehicle-Driver ID** (required).
+- **Queue number** _(optional — "auto-assigned")._
+- Footer: **Cancel** + **Check in**. Success toast: "Driver checked in at #3".
+
+### M4 Dispatch (modal)
+
+**Flow position:** from a type group's **Dispatch**.
+
+- Title **Dispatch to front driver**; helper: the vehicle type (human name).
+- **Shipper request ID** _(optional — links an existing order)._
+- Footer: **Cancel** + **Dispatch**. Success toast: "Offered to driver #1".
+- Error: "no waiting driver" surfaces as a toast.
+
+### M5 Override position (modal)
+
+**Flow position:** row **Override**.
+
+- Title **Override position**; helper: "`{driver} — currently #{n}`".
+- **New queue number** (required, ≥1).
+- **Reason** (textarea) — marked "(audit logged)".
+- Footer: **Cancel** + **Override**.
+
+### M6 Cancel driver (modal)
+
+**Flow position:** row **Cancel**.
+
+- Title **Cancel driver from queue**.
+- Body: "Remove **{driver}** (#{n}) from the line? This is audit-logged."
+- Footer: **Keep** + **Cancel driver** (destructive).
 
 ---
 
-## 8. Responsive behavior summary (desktop vs mobile)
+## 4. Mobile-first layout rules (apply everywhere)
 
-| Region | Desktop (≥1024px) | Mobile (<1024px) |
-|---|---|---|
-| App header | brand left, user line + Sign out right | compact row; consider truncating name, icon-only Sign out |
-| Auth | centered card `max-w-sm`; split theme shows 50% brand panel | full-width card, panel hidden |
-| Dashboard orgs | data table | card list (name/type/pills/action stacked) |
-| Org manage grid | 2 columns (profile | members+admin) | stacked single column |
-| Members | table | card list |
-| Queue board toggle | tabs in top bar | full-width segmented control; actions wrap |
-| By-type sections | table per type | table → card list (or horizontally scrollable table) |
-| All drivers | table | card list |
-| Modals | centered `max-w-sm`/`max-w-lg` | bottom sheet or centered w/ `px-4`, 90vh max, scrollable |
-| Create order grid | 2-col fields | single column |
-| Toasts | top-right | top-center full-width |
+1. **Single column on mobile** — order content by operational importance (the
+   board beats settings; status beats metadata).
+2. **Actions** sit where the thumb can reach (bottom of sheets/cards, or
+   right-aligned in headers); primary action last in a footer with a Cancel.
+3. **Lists over tables** on mobile: every desktop table has a card-list twin
+   with the same fields, stacked.
+4. **Modals** = bottom sheets on mobile / centered dialogs on desktop; scroll
+   when content exceeds ~90vh.
+5. **Forms**: two-field rows collapse to one column; keep field order identical
+   across breakpoints.
+6. **Headers** collapse to a single compact row on mobile (drop secondary text,
+   keep brand + primary action).
+7. **Live board** must remain readable while updating — changed rows get a
+   transient highlight at all breakpoints.
 
-Tables should be avoided on mobile; use stacked cards with the same info density.
+## 5. Shared states to design once, reuse everywhere
+
+- **Loading** — skeleton lines where a list will render.
+- **Empty** — centered icon/illustration + primary message + next-step hint.
+- **Error** — full-width banner near the failed section; field errors inline.
+- **Pending buttons** — in-progress label on the same control.
+- **Live/offline** — connected vs connecting indicator on the board.
+- **Confirmation** — a dedicated dialog for destructive actions (currently a
+  browser confirm; replace with a designed dialog for M6, and Suspend/Reject).
+
+## 6. Literal copy reference (labels, toasts, helpers)
+
+Keep these strings stable across designs:
+
+- Buttons: Send OTP · Create account · Verify & Continue · Change phone number ·
+  Create organization · Save changes · New order · Manual check-in · Dispatch ·
+  Check in · Override · Cancel driver · Keep · Cancel · Create order
+- Toasts: "OTP sent via SMS" · "Account created — OTP sent via SMS" ·
+  "Welcome, {name}" · "Organization updated" · "Organization status updated" ·
+  "Queue organization created — pending admin approval" ·
+  "Driver checked in at #{n}" · "Offered to driver #{n}" · "Position overridden" ·
+  "{driver} removed from queue" · "Order created and offered to the queue" ·
+  "Company target batch created (rows deferred until bid acceptance)"
+- Status labels: waiting · offered · loaded · removed · approved · pending ·
+  rejected · suspended · active · inactive · live · connecting
+- Empty states: "You don't have a queue organization yet." /
+  "No approved + enabled orgs. Ask an admin to approve and enable one." /
+  "No drivers waiting." / "The queue is empty." / "No members yet."
+
+## 7. Frames to deliver (mobile-first)
+
+Auth:
+
+1. S1 Login (empty / error) — mobile + desktop
+2. S2 Register — mobile + desktop
+3. S3 OTP (empty / filled) — mobile + desktop
+
+App: 4. S4 Dashboard (list / empty) — mobile + desktop 5. M1 Create organization (dropdown open) — mobile + desktop 6. S5 Org manage — mobile (stacked) + desktop (grid) 7. S6 Live queue · By Vehicle Type — mobile + desktop 8. S6 Live queue · All Drivers — mobile + desktop 9. M2 Create order (origin + destination state) — mobile + desktop 10. M3 / M4 / M5 / M6 modals — mobile + desktop 11. Shared states sheet — loading / empty / error / live / confirm
 
 ---
 
-## 9. Interaction & micro-copy notes for the designer
-
-- Every destructive action is **confirmed** before executing (M6, reject/suspend).
-- Every mutation gives a **toast** (success + error from backend `message`).
-- Empty states always include a **next action** hint ("Create one below — an
-  admin will approve it").
-- The board updates live — show **status transitions** visibly (pills + row
-  highlight), since operators watch this screen continuously.
-- Loading buttons swap label text ("Please wait… / Creating… / Dispatching…").
-- Phone inputs are Ethiopia-default `+251`, auto-grouped; OTP is 6 boxes.
-- Long UUIDs appear in some places (vehicle type footer, modal helpers) — design
-  should replace them with human-readable labels (names from the vehicle-types
-  and drivers lists).
-
----
-
-## 10. Frames to deliver
-
-Auth (desktop × mobile, per theme):
-1. S1 Login · empty
-2. S1 Login · error (invalid phone)
-3. S2 Register · filled
-4. S3 OTP · empty + filled
-5. S3 OTP · error
-
-App (desktop + mobile):
-6. S4 Dashboard · list with mixed statuses
-7. S4 Dashboard · empty state
-8. S4 M1 Create org · with address dropdown open
-9. S5 Org manage · profile + members + admin actions
-10. S6 Live queue · by vehicle type, mixed statuses (waiting/offered/loaded)
-11. S6 Live queue · all drivers
-12. S6 M2 Create order · request mode + origin/destination
-13. S6 M3 Check-in · M4 Dispatch · M5 Override · M6 Cancel
-14. States set: loading, error banner, offline/connecting pill, row highlight
-
-Component sheet:
-15. Buttons (primary/ghost/destructive/small), pills, inputs (+error/focus),
-    selects, OTP, toasts, modal scaffold, live pill.
+_Visual styling (color, type, button treatment, icons, spacing scale) is owned
+by the designer. This document fixes the information architecture, workflow
+order, content, and mobile→desktop behavior only._
