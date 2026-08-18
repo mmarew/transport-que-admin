@@ -10,7 +10,6 @@ import { useAuth } from "../../context/AuthContext";
 import { verifyOtp, requestLoginOtp } from "../../lib/api";
 import { connectSocket, disconnectSocket } from "../../lib/socket";
 import parseError from "../../utils/parseError";
-import { formatPhoneDisplay, fromE164 } from "../../utils/phoneFormatter";
 import type { LoginFormData } from "./Login";
 import "../../styles/auth.css";
 
@@ -31,26 +30,28 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
   const { setAuth } = useAuth();
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(RESEND_COOLDOWN_SECONDS);
+  const [isResending, setIsResending] = useState(false);
 
-  const boxRefs = useRef<Array<HTMLInputElement | null>>(
-    Array<HTMLInputElement | null>(OTP_LENGTH).fill(null)
-  );
+  const boxRefs = useRef<(HTMLInputElement | null)[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const clearCountdown = useCallback(() => {
-    if (timerRef.current) {
+    if (timerRef.current !== null) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
   }, []);
 
-  const startCountdown = useCallback(() => {
-    clearCountdown();
+  useEffect(() => {
+    const focusId = setTimeout(() => {
+      boxRefs.current[0]?.focus();
+    }, 80);
+
     setResendTimer(RESEND_COOLDOWN_SECONDS);
+    clearCountdown();
     timerRef.current = setInterval(() => {
       setResendTimer((prev) => {
         if (prev <= 1) {
@@ -60,20 +61,12 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
         return prev - 1;
       });
     }, 1000);
-  }, [clearCountdown]);
-
-  useEffect(() => {
-    const focusTimeout = setTimeout(() => {
-      boxRefs.current[0]?.focus();
-    }, 100);
-
-    startCountdown();
 
     return () => {
-      clearTimeout(focusTimeout);
+      clearTimeout(focusId);
       clearCountdown();
     };
-  }, [startCountdown, clearCountdown]);
+  }, [clearCountdown]);
 
   const focusBox = (index: number) => {
     const clamped = Math.max(0, Math.min(OTP_LENGTH - 1, index));
@@ -82,7 +75,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
 
   const resetDigits = useCallback(() => {
     setDigits(Array(OTP_LENGTH).fill(""));
-    setTimeout(() => focusBox(0), 10);
+    setTimeout(() => focusBox(0), 0);
   }, []);
 
   const otpValue = digits.join("");
@@ -104,7 +97,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
       connectSocket({ phoneNumber: userData.phoneNumber });
 
       toast.success(`Welcome back, ${userData.fullName}`);
-      const redirectPath = location.state?.from?.pathname || "/";
+      const redirectPath = location.state?.from?.pathname || "/dashboard";
       navigate(redirectPath, { replace: true });
     } catch (err: unknown) {
       const msg = parseError(err);
@@ -130,64 +123,55 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
 
     try {
       await requestLoginOtp(formData.phoneNumber);
-      startCountdown();
-      focusBox(0);
-      toast.success("A new OTP has been sent to your phone.");
+      toast.success("New code sent to your phone");
+      setResendTimer(RESEND_COOLDOWN_SECONDS);
+      clearCountdown();
+      timerRef.current = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearCountdown();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     } catch (err: unknown) {
-      const msg = parseError(err);
-      toast.error(msg);
-      setOtpError(msg);
+      toast.error(parseError(err));
     } finally {
       setIsResending(false);
     }
   };
 
-  const handleChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    const digit = raw.replace(/\D/g, "").slice(-1);
+  const handleChange = (index: number, val: string) => {
     setOtpError(null);
+    const char = val.replace(/\D/g, "").slice(-1);
+    const updated = [...digits];
+    updated[index] = char;
+    setDigits(updated);
 
-    setDigits((prev) => {
-      const next = [...prev];
-      next[index] = digit;
-      return next;
-    });
-
-    if (digit && index < OTP_LENGTH - 1) {
+    if (char && index < OTP_LENGTH - 1) {
       focusBox(index + 1);
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    switch (e.key) {
-      case "Backspace":
-        if (!digits[index]) {
-          focusBox(index - 1);
-        } else {
-          setDigits((prev) => {
-            const next = [...prev];
-            next[index] = "";
-            return next;
-          });
-        }
-        break;
-      case "ArrowLeft":
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Backspace") {
+      if (!digits[index] && index > 0) {
         e.preventDefault();
+        const updated = [...digits];
+        updated[index - 1] = "";
+        setDigits(updated);
         focusBox(index - 1);
-        break;
-      case "ArrowRight":
-        e.preventDefault();
-        focusBox(index + 1);
-        break;
-      case "Delete":
-        setDigits((prev) => {
-          const next = [...prev];
-          next[index] = "";
-          return next;
-        });
-        break;
-      default:
-        break;
+      }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      e.preventDefault();
+      focusBox(index - 1);
+    } else if (e.key === "ArrowRight" && index < OTP_LENGTH - 1) {
+      e.preventDefault();
+      focusBox(index + 1);
     }
   };
 
@@ -196,7 +180,6 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
     if (!pasted) return;
 
-    setOtpError(null);
     setDigits((prev) => {
       const next = [...prev];
       for (let i = 0; i < OTP_LENGTH; i++) {
@@ -208,10 +191,15 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
     focusBox(Math.min(pasted.length, OTP_LENGTH - 1));
   };
 
+  // ── Masked phone display with asterisks ──────────────────────────────────
+  const maskedPhone = formData.phoneNumber
+    ? formData.phoneNumber.substring(0, 5) + "********"
+    : "";
+
   return (
     <div className="login-container">
-      {/* ── Left Hero Panel (Desktop) ── */}
-      <div className="login-hero-panel">
+      {/* ── Left: hero image (desktop only) ── */}
+      <div className="login-hero">
         <div className="login-hero-img-wrap">
           <img
             src={heroImg}
@@ -224,53 +212,71 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
         </div>
       </div>
 
-      {/* ── Right / Mobile Content Panel ── */}
-      <div className="login-form-panel">
-        {/* Mobile Header with SVG background curve */}
-        <OverlappingCircles
-          title="Verification"
-          subtitle="Enter verification code"
-          onBack={onGoBack}
-        />
+      {/* ── Right: OTP form panel ── */}
+      <div className="login-form-panel otp-form-panel">
+        {/* Mobile-only: dark header with overlapping circles */}
+        <div className="mobile-otp-header">
+          <OverlappingCircles
+            title="Verification"
+            subtitle="Check your phone to verify your OTP"
+            onBack={onGoBack}
+          />
+        </div>
 
-        <div className="login-form-container login-form-container--otp">
-          {/* Desktop header with back arrow */}
+        {/* Form card (desktop + mobile) */}
+        <div className="login-card otp-desktop-card animate-scale-up">
+          {/* Desktop back + title */}
           <div className="otp-desktop-header">
             <button
               type="button"
-              className="otp-back-btn"
+              className="otp-back-btn-desktop"
               onClick={onGoBack}
               aria-label="Go back"
             >
-              <ArrowLeft size={22} />
+              <ArrowLeft size={22} strokeWidth={2} />
             </button>
-            <div>
-              <h1 className="otp-desktop-title">Verification</h1>
-              <p className="otp-desktop-subtitle">
-                Enter verification code sent to {formatPhoneDisplay(fromE164(formData.phoneNumber))}
-              </p>
-            </div>
+            <h1 className="otp-desktop-title">Verification</h1>
           </div>
 
-          <form onSubmit={(e) => void handleVerify(e)} noValidate>
-            {/* 6-box OTP input */}
-            <div className={`otp-boxes-row ${otpError ? "shake" : ""}`}>
-              {digits.map((digit, idx) => (
+          <p className="otp-desktop-subtitle">
+            Enter verification code sent to {maskedPhone}
+          </p>
+
+          <p className="otp-code-sent">
+            Code has been sent to <strong>{maskedPhone}</strong>
+          </p>
+
+          <form
+            onSubmit={(e) => void handleVerify(e)}
+            className="otp-fullscreen-form"
+            noValidate
+          >
+            {/* OTP digit inputs */}
+            <div
+              className="otp-input-group"
+              role="group"
+              aria-label="One-time password input"
+            >
+              {digits.map((digit, i) => (
                 <input
-                  key={idx}
+                  key={i}
                   ref={(el) => {
-                    boxRefs.current[idx] = el;
+                    boxRefs.current[i] = el;
                   }}
+                  id={`otp-digit-${i}`}
                   type="text"
                   inputMode="numeric"
-                  autoComplete="one-time-code"
+                  autoFocus={i === 0}
+                  autoComplete={i === 0 ? "one-time-code" : "off"}
                   maxLength={1}
                   value={digit}
-                  onChange={(e) => handleChange(idx, e)}
-                  onKeyDown={(e) => handleKeyDown(idx, e)}
-                  onPaste={idx === 0 ? handlePaste : undefined}
-                  className={`otp-box ${digit ? "filled" : ""}`}
-                  aria-label={`Digit ${idx + 1}`}
+                  onChange={(e) => handleChange(i, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(i, e)}
+                  onPaste={i === 0 ? handlePaste : undefined}
+                  onFocus={(e) => e.target.select()}
+                  className={`otp-digit-input ${digit ? "filled" : ""}`}
+                  placeholder="-"
+                  aria-label={`OTP digit ${i + 1} of ${OTP_LENGTH}`}
                   aria-invalid={!!otpError}
                   disabled={isLoading}
                 />
@@ -294,7 +300,9 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
                     disabled={isResending}
                     className="resend-btn"
                   >
-                    {isResending && <span className="add-docs-spinner add-docs-spinner--sm" />}
+                    {isResending && (
+                      <span className="add-docs-spinner add-docs-spinner--sm" />
+                    )}
                     {isResending ? "Sending..." : "Resend code"}
                   </button>
                 )}
