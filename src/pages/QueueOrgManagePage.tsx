@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { ArrowLeft, Building2, ShieldCheck } from "lucide-react";
 import {
   approveQueueOrganization,
   getApiError,
   listQueueOrgMembers,
   updateQueueOrganization,
 } from "@/lib/api";
-import { disconnectSocket } from "@/lib/socket";
 import { useAuth } from "@/context/AuthContext";
 import { useQueueAdminStore } from "@/store/queueAdminStore";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -29,11 +29,12 @@ import {
   useGetQueueOrganizationQuery,
   useGetQueueStatusQuery,
 } from "@/lib/redux/api";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 const STATUS_STYLES: Record<ApprovalStatus, string> = {
-  approved: "bg-green-100 text-green-800",
+  approved: "bg-emerald-100 text-emerald-800",
   pending: "bg-amber-100 text-amber-800",
-  rejected: "bg-red-100 text-red-800",
+  rejected: "bg-rose-100 text-rose-800",
   suspended: "bg-slate-200 text-slate-700",
 };
 
@@ -68,10 +69,10 @@ function StatusBadge({
     </span>
   );
 }
+
 export function QueueOrgManagePage() {
   const { queueOrganizationUniqueId: routeOrgId } = useParams();
-  const navigate = useNavigate();
-  const { auth, logout } = useAuth();
+  const { auth } = useAuth();
   const selectedOrgId = useQueueAdminStore((s) => s.selectedOrgId);
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
@@ -92,7 +93,6 @@ export function QueueOrgManagePage() {
   } = useGetQueueOrganizationQuery(orgId, {
     skip: !orgId,
   });
-  // useGetQueueStatusQuery({ queueOrganizationUniqueId: orgId })
 
   const org: QueueOrganization | undefined = orgData?.data?.organization;
 
@@ -181,107 +181,92 @@ export function QueueOrgManagePage() {
     }
   };
 
-  const signOut = () => {
-    disconnectSocket();
-    logout();
-    navigate("/login", { replace: true });
-  };
-
   return (
-    <div className="min-h-full bg-slate-100">
-      <header className="bg-white shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link
-              to="/"
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
-            >
-              ← Dashboard
-            </Link>
-            <h1 className="text-lg font-bold text-slate-800">
-              {org?.queueOrganizationName ?? "Organization"}
-            </h1>
-            {org && (
-              <StatusBadge
-                status={org.approvalStatus}
-                enabled={org.queueEnabled === 1}
-              />
-            )}
-          </div>
-          <button
-            onClick={signOut}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+    <DashboardLayout
+      title={org?.queueOrganizationName ?? "Manage Organization"}
+      subtitle={org ? `${org.queueOrganizationType.toUpperCase()} Terminal Management` : "Organization details"}
+      activeTab="organizations"
+      actions={
+        <div className="flex items-center gap-3">
+          <Link
+            to="/organizations"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
           >
-            Sign out
-          </button>
+            <ArrowLeft size={14} /> Back to Organizations
+          </Link>
+          {org && (
+            <StatusBadge
+              status={org.approvalStatus}
+              enabled={org.queueEnabled === 1}
+            />
+          )}
         </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        {!orgId && (
-          <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-            <p className="text-sm text-slate-500">
-              No organization selected.{" "}
-              <Link
-                to="/"
-                className="font-medium text-blue-600 hover:text-blue-700"
-              >
-                Go back to the dashboard
-              </Link>
-              .
-            </p>
-          </div>
-        )}
-
-        {orgId && orgLoading && (
-          <p className="text-sm text-slate-500">Loading…</p>
-        )}
-
-        {orgId && orgError && (
-          <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-            {getApiError(orgError)}
+      }
+    >
+      {!orgId && (
+        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+          <p className="text-sm text-slate-500">
+            No organization selected.{" "}
+            <Link
+              to="/organizations"
+              className="font-medium text-blue-600 hover:text-blue-700"
+            >
+              Go back to organizations
+            </Link>
+            .
           </p>
-        )}
+        </div>
+      )}
 
-        {orgId && !orgLoading && !org && !orgError && (
-          <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-            <p className="text-sm text-slate-500">Organization not found.</p>
-          </div>
-        )}
+      {orgId && orgLoading && (
+        <div className="p-8 text-center text-sm text-slate-500 bg-white rounded-xl border border-slate-200">
+          Loading organization details...
+        </div>
+      )}
 
-        {org && (
+      {orgId && orgError && (
+        <div className="mb-6 rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
+          {getApiError(orgError)}
+        </div>
+      )}
+
+      {org && (
+        <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-xl border border-slate-200 bg-white p-6">
-              <h2 className="text-base font-semibold text-slate-800">
-                Profile
+            {/* Organization Profile */}
+            <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Building2 size={18} className="text-blue-600" />
+                Organization Details
               </h2>
               <form
                 onSubmit={handleSubmit((values) =>
                   updateMutation.mutate(values),
                 )}
-                className="mt-4 space-y-3"
+                className="mt-4 space-y-4"
               >
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Name
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                    Organization Name
                   </label>
                   <input
                     {...register("queueOrganizationName")}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
                   />
                   {errors.queueOrganizationName && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-rose-600">
                       {errors.queueOrganizationName.message}
                     </p>
                   )}
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Type
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                    Organization Type
                   </label>
                   <select
                     {...register("queueOrganizationType")}
-                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
                   >
                     {QUEUE_ORG_TYPES.map((t) => (
                       <option key={t} value={t}>
@@ -290,91 +275,86 @@ export function QueueOrgManagePage() {
                     ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Phone
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                    Phone Number
                   </label>
                   <input
                     {...register("queueOrganizationPhone")}
-                    placeholder="e.g. 08012345678"
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    placeholder="+251 9 00 00 00 00"
+                    className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
                   />
                   {errors.queueOrganizationPhone && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-rose-600">
                       {errors.queueOrganizationPhone.message}
                     </p>
                   )}
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
                     Address
                   </label>
                   <input
                     {...register("queueOrganizationAddress")}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
                   />
                   {errors.queueOrganizationAddress && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-rose-600">
                       {errors.queueOrganizationAddress.message}
                     </p>
                   )}
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
                       Latitude
                     </label>
                     <input
                       {...register("latitude")}
-                      placeholder="e.g. 6.5244"
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      placeholder="e.g. 8.9806"
+                      className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
                     />
-                    {errors.latitude && (
-                      <p className="mt-1 text-xs text-red-600">
-                        {errors.latitude.message}
-                      </p>
-                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
                       Longitude
                     </label>
                     <input
                       {...register("longitude")}
-                      placeholder="e.g. 3.3792"
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      placeholder="e.g. 38.7578"
+                      className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
                     />
-                    {errors.longitude && (
-                      <p className="mt-1 text-xs text-red-600">
-                        {errors.longitude.message}
-                      </p>
-                    )}
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 pt-1">
+
+                <div className="flex items-center justify-end gap-2 pt-2">
                   <button
                     type="submit"
                     disabled={updateMutation.isPending || !isDirty}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm"
                   >
-                    {updateMutation.isPending ? "Saving…" : "Save changes"}
+                    {updateMutation.isPending ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </form>
             </section>
 
+            {/* Members & Admin Controls */}
             <div className="space-y-6">
-              <section className="rounded-xl border border-slate-200 bg-white p-6">
-                <h2 className="text-base font-semibold text-slate-800">
-                  Members
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-base font-bold text-slate-800">
+                  Staff & Members
                 </h2>
                 {membersLoading && (
                   <p className="mt-3 text-sm text-slate-500">
-                    Loading members…
+                    Loading members...
                   </p>
                 )}
                 {membersError && (
-                  <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <p className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
                     {getApiError(membersError)}
                   </p>
                 )}
@@ -382,35 +362,35 @@ export function QueueOrgManagePage() {
                   <div className="mt-3 overflow-x-auto">
                     <table className="w-full text-left text-sm">
                       <thead>
-                        <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                          <th className="pb-2 pr-3 font-medium">Name</th>
-                          <th className="pb-2 pr-3 font-medium">Phone</th>
-                          <th className="pb-2 pr-3 font-medium">Role</th>
-                          <th className="pb-2 font-medium">Status</th>
+                        <tr className="border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                          <th className="pb-2 pr-3">Name</th>
+                          <th className="pb-2 pr-3">Phone</th>
+                          <th className="pb-2 pr-3">Role</th>
+                          <th className="pb-2">Status</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {(members ?? []).map((member: QueueOrgMember) => (
                           <tr
                             key={member.queueOrganizationMembershipUniqueId}
-                            className="border-b border-slate-100"
+                            className="hover:bg-slate-50"
                           >
-                            <td className="py-2 pr-3 font-medium text-slate-800">
+                            <td className="py-2.5 pr-3 font-semibold text-slate-800">
                               {member.fullName}
                             </td>
-                            <td className="py-2 pr-3 text-slate-600">
+                            <td className="py-2.5 pr-3 text-slate-600 text-xs">
                               {member.phoneNumber}
                             </td>
-                            <td className="py-2 pr-3 text-slate-600">
+                            <td className="py-2.5 pr-3 text-slate-600 text-xs">
                               {ROLE_LABELS[member.roleId] ?? member.roleId}
                             </td>
-                            <td className="py-2">
+                            <td className="py-2.5">
                               {member.isActive === 1 ? (
-                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                                   active
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
                                   inactive
                                 </span>
                               )}
@@ -421,9 +401,9 @@ export function QueueOrgManagePage() {
                           <tr>
                             <td
                               colSpan={4}
-                              className="py-4 text-center text-sm text-slate-400"
+                              className="py-6 text-center text-sm text-slate-400"
                             >
-                              No members yet.
+                              No members registered yet.
                             </td>
                           </tr>
                         )}
@@ -434,36 +414,33 @@ export function QueueOrgManagePage() {
               </section>
 
               {isAdmin && (
-                <section className="rounded-xl border border-slate-200 bg-white p-6">
-                  <h2 className="text-base font-semibold text-slate-800">
-                    Admin actions
+                <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <ShieldCheck size={18} className="text-indigo-600" />
+                    Admin Approvals
                   </h2>
                   <p className="mt-1 text-xs text-slate-500">
-                    Approve enables the queue and sets{" "}
-                    <code className="rounded bg-slate-100 px-1">
-                      queueEnabled = 1
-                    </code>
-                    . Rejecting or suspending disables it.
+                    Approve enables the queue and activates driver check-in.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       onClick={() => approve("approved")}
                       disabled={approveMutation.isPending}
-                      className="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => approve("suspended")}
                       disabled={approveMutation.isPending}
-                      className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+                      className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition"
                     >
                       Suspend
                     </button>
                     <button
                       onClick={() => approve("rejected")}
                       disabled={approveMutation.isPending}
-                      className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                      className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50 transition"
                     >
                       Reject
                     </button>
@@ -472,24 +449,26 @@ export function QueueOrgManagePage() {
               )}
             </div>
           </div>
-        )}
 
-        {/* Live Queue */}
-        {org && (
-          <QueueBoard
-            queueOrganizationUniqueId={org.queueOrganizationUniqueId}
-            origin={{
-              latitude: org.latitude ? Number(org.latitude) : null,
-              longitude: org.longitude ? Number(org.longitude) : null,
-              description: org.queueOrganizationAddress ?? "",
-            }}
-            status={queueStatus?.data}
-            isLoading={queueStatusLoading}
-            error={queueStatusError}
-            onRefetch={refetchQueueStatus}
-          />
-        )}
-      </main>
-    </div>
+          {/* Live Queue Board */}
+          <div className="mt-8">
+            <QueueBoard
+              queueOrganizationUniqueId={org.queueOrganizationUniqueId}
+              origin={{
+                latitude: org.latitude ? Number(org.latitude) : null,
+                longitude: org.longitude ? Number(org.longitude) : null,
+                description: org.queueOrganizationAddress ?? "",
+              }}
+              status={queueStatus?.data}
+              isLoading={queueStatusLoading}
+              error={queueStatusError}
+              onRefetch={refetchQueueStatus}
+            />
+          </div>
+        </div>
+      )}
+    </DashboardLayout>
   );
 }
+
+export default QueueOrgManagePage;

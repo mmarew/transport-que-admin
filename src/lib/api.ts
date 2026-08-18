@@ -13,7 +13,17 @@ import type {
   CreateOrderResponse,
 } from "../types/queue";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+function getBaseUrl(): string {
+  const raw =
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    "/api";
+  if (!raw) return "/api";
+  const trimmed = raw.replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+}
+
+export const API_BASE_URL = getBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -56,18 +66,32 @@ export function getApiError(error: unknown): string {
 
 // --- Auth ---
 export const requestLoginOtp = (phoneNumber: string) =>
-  api.post<LoginResponse>("/user/loginUser", { phoneNumber, roleId: 11 });
+  api.post<LoginResponse>("/user/loginUser", {
+    phoneNumber,
+    roleId: 11,
+    statusId: 1,
+  });
 
 export const verifyOtp = (phoneNumber: string, OTP: string) =>
-  api.post<VerifyOtpResponse>("/user/verifyUserByOTP", { phoneNumber, roleId: 11, OTP });
+  api.post<VerifyOtpResponse>("/user/verifyUserByOTP", {
+    phoneNumber,
+    roleId: 11,
+    OTP: Number(OTP),
+  });
 
-export const registerUser = (body: { fullName: string; phoneNumber: string; email?: string | null }) =>
+export const registerUser = (body: {
+  fullName: string;
+  phoneNumber: string;
+  email?: string | null;
+}) =>
   api.post<LoginResponse>("/user/createUser", {
     fullName: body.fullName,
     phoneNumber: body.phoneNumber,
     email: body.email || undefined,
     roleId: 11,
     statusId: 1,
+    userRoleStatusDescription:
+      "this role is used to manage queue organizations, drivers, and dispatches",
   });
 
 // --- Queue organizations ---

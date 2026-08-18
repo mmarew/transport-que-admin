@@ -13,7 +13,12 @@ let socket: Socket | null = null;
 export function connectSocket(user: Pick<AuthUser, "phoneNumber">): Socket {
   if (socket?.connected) return socket;
 
-  socket = io(import.meta.env.VITE_SOCKET_URL || "/", {
+  const socketUrl =
+    import.meta.env.VITE_SOCKET_URL ||
+    import.meta.env.VITE_WEBSOCKET_URL ||
+    "/";
+
+  socket = io(socketUrl, {
     auth: {
       user: "queueOrgAdmin",
       phoneNumber: user.phoneNumber,

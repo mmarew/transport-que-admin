@@ -12,7 +12,17 @@ import type {
   VehicleType,
 } from "@/types/queue";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+function getBaseUrl(): string {
+  const raw =
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    "/api";
+  if (!raw) return "/api";
+  const trimmed = raw.replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+}
+
+const BASE_URL = getBaseUrl();
 
 export const api = createApi({
   reducerPath: "api",
