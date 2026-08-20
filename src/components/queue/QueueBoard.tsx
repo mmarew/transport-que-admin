@@ -82,7 +82,8 @@ export function QueueBoard({
     ? Object.values(status.queues).flat()
     : [];
 
-  const subtitle = `${orgName} — ${city}`;
+  const formattedType = orgType ? orgType.charAt(0).toUpperCase() + orgType.slice(1) : "";
+  const subtitle = formattedType ? `${orgName} (${formattedType}) — ${city}` : `${orgName} — ${city}`;
 
   return (
     <div className="qb-page-container">

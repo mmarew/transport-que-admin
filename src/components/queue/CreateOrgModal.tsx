@@ -236,6 +236,19 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
                   if (suggestions.length > 0) setShowSuggestions(true);
                 }}
               />
+              {isSearching && (
+                <span
+                  className="add-docs-spinner"
+                  style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    width: "14px",
+                    height: "14px",
+                    borderColor: "#e2e8f0",
+                    borderTopColor: "#0B4D6D",
+                  }}
+                />
+              )}
             </div>
             {errors.queueOrganizationAddress && (
               <p className="com-error-text">{errors.queueOrganizationAddress.message}</p>
