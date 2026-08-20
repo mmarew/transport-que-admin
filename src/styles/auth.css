@@ -1,19 +1,19 @@
+/* ─── Global Auth Styles & Layout ────────────────────────────────────── */
+
 .login-container {
   min-height: 100vh;
   display: flex;
   flex-direction: row;
-  /* side-by-side on desktop */
   background-color: #ffffff;
   overflow-y: auto;
 }
 
-/* ── Left hero panel (desktop only) ── */
+/* ── Left Hero Panel (Desktop) ── */
 .login-hero {
   display: none;
-  /* hidden on mobile */
 }
 
-/* ── Right form panel ── */
+/* ── Right Form Panel ── */
 .login-form-panel {
   width: 100%;
   display: flex;
@@ -26,12 +26,12 @@
   position: relative;
 }
 
-/* ── Mobile-only hero block (hidden on desktop) ── */
+/* ── Mobile-only Hero (Hidden on Desktop) ── */
 .login-mobile-hero {
   display: none;
 }
 
-/* ── Card ── */
+/* ── Card Container ── */
 .login-card {
   width: 100%;
   max-width: 440px;
@@ -41,14 +41,14 @@
   padding: 0;
 }
 
-/* ── Desktop welcome header (hidden on mobile where hero has it) ── */
+/* ── Desktop Welcome Header ── */
 .login-header--desktop {
   text-align: left;
   margin-bottom: 2.5rem;
 }
 
 .login-header--desktop h1 {
-  color: var(--primary);
+  color: var(--primary, #0F4C81);
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
@@ -59,32 +59,7 @@
   font-size: 1rem;
 }
 
-/* ── OTP step header ── */
-.login-header {
-  text-align: left;
-  margin-bottom: 1.5rem;
-}
-
-.otp-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.otp-header h2 {
-  color: var(--primary);
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0.5rem 0 0.25rem;
-}
-
-.otp-header p {
-  color: #64748b;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-/* ── Form elements ── */
+/* ── Form Elements ── */
 .login-form .form-group {
   margin-bottom: 1.5rem;
 }
@@ -119,18 +94,8 @@
 }
 
 .login-form .input-wrapper:focus-within {
-  border-color: var(--primary);
+  border-color: var(--primary, #0F4C81);
   box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.1);
-}
-
-.login-form .phone-prefix {
-  color: #1e293b;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.875rem 0.5rem 0.875rem 1rem;
-  border-right: 1px solid #e2e8f0;
-  user-select: none;
-  background: #f8fafc;
 }
 
 .login-form input {
@@ -145,15 +110,15 @@
   outline: none;
 }
 
-.login-form .form-input-pl {
-  padding-left: 1rem;
+.login-form input::placeholder {
+  color: #9ca3af;
 }
 
-/* ── Login button ── */
+/* ── Action Buttons ── */
 .login-btn {
   width: 100%;
   padding: 0.95rem 1rem;
-  background: var(--primary);
+  background: var(--primary, #0F4C81);
   color: white;
   border: none;
   border-radius: 0.625rem;
@@ -189,259 +154,20 @@
 }
 
 .login-footer a {
-  color: var(--primary);
+  color: var(--primary, #0F4C81);
   text-decoration: none;
   font-weight: 600;
 }
 
 .login-footer a:hover {
-  text-decoration: none;
   opacity: 0.8;
 }
 
-/* ── Back button (OTP) ── */
-.back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--primary);
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
+.login-footer-spaced {
+  margin-top: 1.5rem;
 }
 
-/* ── Mobile-only OTP dark header ── */
-.mobile-otp-header {
-  display: none;
-  /* hidden on desktop */
-}
-
-/* ── Desktop OTP card header (back btn + title) ── */
-.otp-desktop-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.75rem;
-}
-
-.otp-back-btn-desktop {
-  position: absolute;
-  left: 0;
-  background: none;
-  border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: #1e293b;
-  flex-shrink: 0;
-  transition: opacity 0.2s;
-}
-
-.otp-back-btn-desktop:hover {
-  opacity: 0.6;
-}
-
-.otp-desktop-title {
-  color: var(--primary);
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.otp-desktop-subtitle {
-  color: #64748b;
-  font-size: 0.875rem;
-  margin: 0.5rem 0 0;
-  line-height: 1.5;
-  max-width: 360px;
-  text-align: center;
-}
-
-.register-desktop-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #075985;
-  margin: 0;
-}
-
-.register-desktop-subtitle {
-  color: #64748b;
-  margin-top: 0.25rem;
-  font-size: 1rem;
-}
-
-/* Desktop: hide mobile elements */
-@media (min-width: 768px) {
-  .mobile-otp-header {
-    display: none !important;
-  }
-
-  .otp-desktop-header {
-    display: flex;
-  }
-
-  .otp-code-sent {
-    display: none;
-    /* phone already shown in subtitle */
-  }
-
-  .btn-text-mobile {
-    display: none;
-  }
-
-  .btn-text-desktop {
-    display: inline;
-  }
-
-  /* OTP right panel — top-aligned unlike centered login panel */
-  .otp-form-panel {
-    justify-content: flex-start !important;
-    align-items: center;
-    padding-top: 4rem !important;
-  }
-
-  /* OTP card on desktop — wider, no card shadow */
-  .otp-desktop-card {
-    max-width: 480px;
-    width: 100%;
-  }
-
-  /* Larger OTP boxes on desktop to match Figma */
-  .otp-desktop-card .otp-digit-input {
-    width: 64px !important;
-    height: 64px !important;
-    font-size: 1.5rem !important;
-    border-radius: 0.75rem;
-  }
-
-  .otp-desktop-card .otp-input-group {
-    gap: 0.75rem;
-    margin: 2.5rem 0;
-  }
-}
-
-/* Mobile: show dark header, hide desktop header */
-@media (max-width: 767px) {
-  .mobile-otp-header {
-    display: flex;
-    flex-direction: column;
-    background: var(--secondary);
-    padding: 0;
-    position: relative;
-    margin-top: 0;
-    min-height: 42vh;
-    overflow: hidden;
-  }
-
-  .otp-desktop-header,
-  .otp-desktop-subtitle {
-    display: none !important;
-  }
-
-  .btn-text-desktop {
-    display: none;
-  }
-
-  .btn-text-mobile {
-    display: inline;
-  }
-
-  .otp-code-sent {
-    margin-top: 0.5rem;
-  }
-}
-
-.otp-fullscreen {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-}
-
-.otp-fullscreen-header {
-  background: #1F2937;
-  padding: 3rem 2rem 4rem;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.otp-back-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  color: #ffffff;
-  margin-bottom: 1.5rem;
-  width: fit-content;
-  opacity: 0.9;
-  transition: opacity 0.2s;
-}
-
-.otp-back-btn:hover {
-  opacity: 1;
-}
-
-.otp-fullscreen-title {
-  color: #ffffff;
-  margin: auto 0 0.25rem;
-}
-
-.otp-fullscreen-subtitle {
-  color: rgba(255, 255, 255, 0.75);
-  margin: 0;
-}
-
-.otp-fullscreen-body {
-  flex: 1;
-  background: #ffffff;
-  border-radius: 1.5rem 1.5rem 0 0;
-  margin-top: -1.5rem;
-  padding: 2.5rem 2rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.otp-fullscreen-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  max-width: 440px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.otp-fullscreen-form .login-btn {
-  margin-top: 2rem;
-}
-
-/* Desktop: center the OTP screen */
-@media (min-width: 768px) {
-  .otp-fullscreen {
-    justify-content: center;
-    align-items: center;
-  }
-
-  .otp-fullscreen-header {
-    width: 480px;
-    border-radius: 1.25rem 1.25rem 0 0;
-    padding: 2.5rem 2.5rem 3.5rem;
-  }
-
-  .otp-fullscreen-body {
-    width: 480px;
-    margin-top: -1.5rem;
-    padding: 2.5rem;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-    border-radius: 0 0 1.25rem 1.25rem;
-  }
-}
-
-/* ── Desktop language switcher (Top Left on Hero) ── */
+/* ── Language Selector Pill ── */
 .desktop-lang-selector {
   position: absolute;
   top: 1.5rem;
@@ -467,7 +193,7 @@
 }
 
 .desktop-lang-selector .lang-arrow {
-  color: var(--primary);
+  color: var(--primary, #0F4C81);
   font-size: 0.9rem;
   line-height: 1;
 }
@@ -475,125 +201,10 @@
 .desktop-lang-selector .lang-pill-btn {
   background: transparent;
   border: none;
-  color: var(--primary);
+  color: var(--primary, #0F4C81);
   font-size: 0.875rem;
   font-weight: 700;
   padding: 0;
-}
-
-/* ── OTP digit inputs ── */
-.otp-input-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.5rem;
-}
-
-.otp-input {
-  width: 200px !important;
-  text-align: center;
-  padding: 1rem !important;
-  font-size: 1.5rem !important;
-  letter-spacing: 0.5em;
-  font-weight: 800;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 0.5rem;
-  background: white !important;
-  color: #1e293b !important;
-}
-
-.otp-input-group {
-  display: flex;
-  justify-content: center;
-  gap: 0.625rem;
-  margin: 1.5rem 1rem;
-  max-width: 100%;
-}
-
-.otp-digit-input {
-  width: 3.75rem !important;
-  height: 3.75rem !important;
-  max-width: 3.75rem;
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b !important;
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 0.5rem !important;
-  padding: 0 !important;
-  opacity: 1 !important;
-  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s, background-color 0.2s, color 0.2s;
-  caret-color: #ffffff !important;
-  box-sizing: border-box;
-}
-
-.otp-digit-input.filled {
-  color: #ffffff !important;
-  background: var(--otp-active) !important;
-  border-color: var(--otp-active) !important;
-  animation: otp-pop 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.otp-digit-input:focus {
-  outline: none;
-  border-color: var(--otp-active) !important;
-  box-shadow: 0 0 0 3px rgba(7, 89, 133, 0.3) !important;
-  background: var(--otp-active) !important;
-  color: #ffffff !important;
-  opacity: 0.9;
-}
-
-.otp-digit-input:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.otp-digit-input[aria-invalid="true"] {
-  border-color: #E80000 !important;
-  box-shadow: 0 0 0 2px rgba(232, 0, 0, 0.18) !important;
-  animation: otp-shake 0.35s ease;
-}
-
-.otp-digit-input::placeholder {
-  color: #94a3b8 !important;
-  font-size: 1.5rem;
-  font-weight: 400;
-}
-
-.otp-digit-input:focus::placeholder {
-  color: rgba(255, 255, 255, 0.5) !important;
-}
-
-@keyframes otp-pop {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.12); }
-  100% { transform: scale(1); }
-}
-
-@keyframes otp-shake {
-  0%, 100% { transform: translateX(0); }
-  20%       { transform: translateX(-5px); }
-  40%       { transform: translateX(5px); }
-  60%       { transform: translateX(-4px); }
-  80%       { transform: translateX(4px); }
-}
-
-.animate-scale-up {
-  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes scaleUp {
-  from {
-    opacity: 0;
-    transform: scale(0.98) translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 
 .language-pill {
@@ -628,6 +239,45 @@
   color: #ffffff;
   font-size: 1rem;
   font-weight: 600;
+}
+
+/* ── Spinner Utilities ── */
+.btn-inner-flex {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-docs-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.add-docs-spinner--sm {
+  width: 12px;
+  height: 12px;
+}
+
+/* ── Animation Utilities ── */
+.animate-scale-up {
+  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* ══════════════════════════════════════════════════
@@ -696,84 +346,9 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    background: var(--secondary);
+    background: var(--secondary, #0B4D6D);
     min-height: 58vh;
     overflow: hidden;
-  }
-
-  .otp-header-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .otp-header-content {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 3rem 1.5rem 2.5rem;
-    box-sizing: border-box;
-  }
-
-  .otp-header-text-group {
-    margin-top: auto;
-  }
-
-  .overlapping-circles-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  .overlapping-circles-container .circle-left {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 221px;
-    height: 283px;
-    max-width: none;
-    pointer-events: none;
-  }
-
-  .overlapping-circles-container .circle-right {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 308px;
-    height: 306px;
-    max-width: none;
-    pointer-events: none;
-  }
-
-  .login-mobile-status-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1.5rem 0;
-  }
-
-  .status-time {
-    color: #ffffff;
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-  }
-
-  .status-icons {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
   }
 
   .login-mobile-title-row {
@@ -783,45 +358,10 @@
     padding: 0.75rem 1.5rem 0.5rem;
   }
 
-  .login-app-title {
-    color: #ffffff;
-    font-size: 0.95rem;
-    font-weight: 400;
-    letter-spacing: 0.02em;
-  }
-
   .login-mobile-lang-row {
     display: flex;
     justify-content: center;
     padding: 0 1.5rem 0.25rem;
-  }
-
-  .language-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    background: #ffffff;
-    border: none;
-    border-radius: 4px;
-    padding: 0.3rem 0.6rem;
-    cursor: pointer;
-  }
-
-  .lang-pill-btn {
-    background: transparent;
-    border: none;
-    color: var(--primary);
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .lang-arrow {
-    color: #374151;
-    font-size: 0.8rem;
-    line-height: 1;
-    margin-right: 0.2rem;
   }
 
   .login-mobile-hero-img-wrap {
@@ -861,7 +401,6 @@
     font-size: 32px;
     font-weight: 700;
     line-height: 100%;
-    letter-spacing: 0;
     margin: 0 0 0.25rem;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
@@ -871,7 +410,6 @@
     font-size: 15px;
     font-weight: 500;
     line-height: 100%;
-    letter-spacing: 0;
     padding-top: 0.5rem;
     margin: 0;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -898,22 +436,13 @@
     background: transparent;
   }
 
-  .login-form .form-group {
-    margin-bottom: 1.5rem;
-  }
-
   .login-form label {
     font-size: 15px;
     font-weight: 500;
     line-height: 100%;
-    letter-spacing: 0%;
     color: #374151;
     margin-bottom: 0.5rem;
     display: block;
-  }
-
-  .login-form input::placeholder {
-    color: #9ca3af;
   }
 
   .login-btn {
@@ -923,11 +452,7 @@
     border-radius: 0.5rem;
     font-size: 1rem;
     font-weight: 600;
-    background: var(--primary);
-  }
-
-  .login-btn:hover {
-    background: #0d3d69;
+    background: var(--primary, #0F4C81);
   }
 
   .login-footer {
@@ -936,184 +461,4 @@
     color: #6b7280;
     margin-top: 1.5rem;
   }
-
-  .login-footer a {
-    color: var(--primary);
-    font-weight: 600;
-    text-decoration: none;
-  }
 }
-
-.resend-text {
-  color: #000000;
-  font-size: 0.875rem;
-  text-align: center;
-}
-
-.resend-text a {
-  color: var(--primary);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.resend-text a:hover {
-  text-decoration: underline;
-}
-
-.add-docs-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  flex-shrink: 0;
-}
-
-.add-docs-spinner--sm {
-  width: 12px;
-  height: 12px;
-}
-
-/* ─── Phone Number Input Pure CSS ────────────────────────────────────── */
-.phone-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  width: 100%;
-}
-
-.phone-input-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.phone-input-required {
-  color: #E80000;
-  margin-left: 2px;
-}
-
-.phone-input-row {
-  display: flex;
-  align-items: stretch;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 0.625rem;
-  overflow: hidden;
-  background: #ffffff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.phone-input-row.focused {
-  border-color: #0B4D6D;
-  box-shadow: 0 0 0 3px rgba(11, 77, 109, 0.12);
-}
-
-.phone-input-row.error {
-  border-color: #E80000;
-  box-shadow: 0 0 0 3px rgba(232, 0, 0, 0.1);
-}
-
-.phone-input-row.disabled {
-  background: #f8fafc;
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.phone-input-prefix {
-  display: flex;
-  align-items: center;
-  padding: 0 0.875rem;
-  background: #f1f5f9;
-  color: #334155;
-  font-size: 0.95rem;
-  font-weight: 700;
-  border-right: 1.5px solid #e2e8f0;
-  white-space: nowrap;
-  user-select: none;
-  flex-shrink: 0;
-}
-
-.phone-input-field {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
-  color: #64748b;
-  letter-spacing: 0.05em;
-  width: 100%;
-  min-width: 0;
-  font-family: inherit;
-}
-
-.phone-input-field.complete {
-  color: #1e293b;
-}
-
-.phone-input-field:disabled {
-  cursor: not-allowed;
-}
-
-/* Auth utility classes */
-.btn-inner-flex {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.resend-section {
-  margin: 1.5rem 0;
-}
-
-.resend-timer-text {
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.resend-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #0B4D6D;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: underline;
-  transition: opacity 0.15s ease;
-}
-
-.resend-btn:hover {
-  opacity: 0.85;
-}
-
-.resend-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.login-footer-spaced {
-  margin-top: 1.5rem;
-}
-
-.otp-header-inner {
-  position: relative;
-  z-index: 1;
-}
-
-.otp-title-lg {
-  font-size: 32px;
-  font-weight: 700;
-}
-
-.otp-subtitle-md {
-  font-size: 15px;
-  font-weight: 500;
-}
-

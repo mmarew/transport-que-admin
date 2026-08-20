@@ -6,8 +6,8 @@ import {
   requestLoginOtp,
   verifyOtp,
   registerUser,
-  getApiError,
-} from "../../lib/api";
+} from "../../services/auth.service";
+import { getApiError } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 import { connectSocket, disconnectSocket } from "../../lib/socket";
 import {
@@ -123,8 +123,6 @@ export function useAuthFlow(config: AuthConfig, initialMode: AuthMode) {
     onSuccess: (res) => {
       const { token, userData } = res.data;
       setAuth({ token, userData });
-      disconnectSocket();
-      connectSocket({ phoneNumber: userData.phoneNumber });
       toast.success(`Welcome, ${userData.fullName}`);
       navigate(location.state?.from?.pathname || "/", { replace: true });
     },

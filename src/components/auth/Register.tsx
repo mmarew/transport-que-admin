@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import heroImg from "../../assets/Frame.png";
 import groupImg from "../../assets/Group.png";
 import LanguageSelector from "../ui/LanguageSelector";
 import PhoneNumberInput from "../ui/PhoneNumberInput";
-import { registerUser } from "../../lib/api";
+import { registerUser } from "../../services/auth.service";
 import parseError from "../../utils/parseError";
 import type { LoginFormData } from "./Login";
+import { registerSchema, type RegisterFormValues } from "../../schemas/queue";
 import "../../styles/auth.css";
 
 interface RegisterProps {
@@ -18,42 +20,35 @@ export const Register: React.FC<RegisterProps> = ({
   onOtpRequested,
   onSwitchToLogin,
 }) => {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { fullName: "", phoneNumber: "", email: "" },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fullName.trim()) {
-      toast.error("Please enter your full name");
-      return;
-    }
-    if (!phoneNumber || phoneNumber.length < 12) {
-      setPhoneError("Please enter a valid 9-digit phone number");
-      return;
-    }
+  const phoneValue = watch("phoneNumber");
 
-    setIsLoading(true);
-    setPhoneError(null);
+  const onSubmit = async (data: RegisterFormValues) => {
     try {
       await registerUser({
-        fullName: fullName.trim(),
-        phoneNumber,
-        email: email.trim() || null,
+        fullName: data.fullName,
+        phoneNumber: data.phoneNumber,
+        email: data.email || null,
       });
       toast.success("Account created! OTP sent to your phone");
       onOtpRequested({
-        phoneNumber,
-        fullName: fullName.trim(),
-        email: email.trim() || undefined,
+        phoneNumber: data.phoneNumber,
+        fullName: data.fullName,
+        email: data.email || undefined,
       });
     } catch (err: unknown) {
       const msg = parseError(err);
       toast.error(msg);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -80,65 +75,70 @@ export const Register: React.FC<RegisterProps> = ({
             <img src={groupImg} alt="Transport App Preview" />
           </div>
           <div className="login-mobile-hero-text">
-            <h1>Welcome Back!</h1>
-            <p>Access your queue dashboard and manage your fleet</p>
+            <h1>Create Account</h1>
+            <p>Register to access your queue dashboard</p>
           </div>
         </div>
 
         <div className="login-card animate-scale-up">
           <div className="login-header login-header--desktop">
-            <h1>Welcome Back!</h1>
-            <p>Access your queue dashboard and manage your fleet</p>
+            <h1>Create Account</h1>
+            <p>Register to access your queue dashboard</p>
           </div>
 
-          <form className="login-form" onSubmit={handleSubmit}>
+          <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+            {/* Full Name */}
             <div className="form-group form-group-mb">
-              <label>Full Name</label>
-              <div className="phone-input-wrapper">
+              <label htmlFor="reg-fullname">Full Name</label>
+              <div className={`input-wrapper${errors.fullName ? " input-wrapper--error" : ""}`}>
                 <input
+                  id="reg-fullname"
                   type="text"
                   placeholder="Enter full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  className="form-input-pl"
+                  autoComplete="name"
+                  {...register("fullName")}
                 />
               </div>
+              {errors.fullName && (
+                <p className="setup-org-field-error">{errors.fullName.message}</p>
+              )}
             </div>
 
+            {/* Email */}
             <div className="form-group form-group-mb">
-              <label>
+              <label htmlFor="reg-email">
                 Email{" "}
                 <span className="form-label-optional">(Optional)</span>
               </label>
-              <div className="phone-input-wrapper">
+              <div className={`input-wrapper${errors.email ? " input-wrapper--error" : ""}`}>
                 <input
+                  id="reg-email"
                   type="email"
                   placeholder="Enter email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="form-input-pl"
+                  autoComplete="email"
+                  {...register("email")}
                 />
               </div>
+              {errors.email && (
+                <p className="setup-org-field-error">{errors.email.message}</p>
+              )}
             </div>
 
+            {/* Phone */}
             <div className="form-group">
               <PhoneNumberInput
                 id="register-phone"
                 label="Phone Number"
-                value={phoneNumber}
-                onChange={(e164) => {
-                  setPhoneNumber(e164);
-                  setPhoneError(null);
-                }}
-                error={phoneError}
+                value={phoneValue}
+                onChange={(e164) => setValue("phoneNumber", e164, { shouldValidate: true })}
+                error={errors.phoneNumber?.message ?? null}
                 required
                 autoComplete="tel"
               />
             </div>
 
-            <button type="submit" className="login-btn" disabled={isLoading}>
-              {isLoading ? (
+            <button type="submit" className="login-btn" disabled={isSubmitting}>
+              {isSubmitting ? (
                 <span className="btn-inner-flex">
                   <span className="add-docs-spinner" />
                   Signing up...

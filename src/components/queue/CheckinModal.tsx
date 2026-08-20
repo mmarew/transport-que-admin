@@ -2,7 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { manualCheckin, getApiError } from "../../lib/api";
+import { manualCheckin } from "../../services/queue.service";
+import { getApiError } from "../../lib/api";
 import { checkinSchema, type CheckinFormValues } from "../../schemas/queue";
 
 interface CheckinModalProps {

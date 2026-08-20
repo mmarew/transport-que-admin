@@ -4,12 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Building2, ShieldCheck } from "lucide-react";
+import { getApiError } from "@/lib/api";
 import {
   approveQueueOrganization,
-  getApiError,
   listQueueOrgMembers,
   updateQueueOrganization,
-} from "@/lib/api";
+} from "@/services/organization.service";
 import { useAuth } from "@/context/AuthContext";
 import { useQueueAdminStore } from "@/store/queueAdminStore";
 import { useAppDispatch } from "@/lib/redux/hooks";

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getApiError } from "../../lib/api";
+import { Plus, UserPlus, Play, ArrowLeft } from "lucide-react";
 import { onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
@@ -9,10 +9,13 @@ import { CreateOrderModal } from "./CreateOrderModal";
 import { DispatchModal } from "./DispatchModal";
 import { OverrideModal } from "./OverrideModal";
 import { ConfirmCancel } from "./ConfirmCancel";
-import { STATUS_STYLES } from "./QueueTable";
+import "./QueueBoard.css";
 
 interface QueueBoardProps {
   queueOrganizationUniqueId: string;
+  orgName?: string;
+  orgType?: string;
+  city?: string;
   origin?: {
     latitude?: number | null;
     longitude?: number | null;
@@ -22,15 +25,19 @@ interface QueueBoardProps {
   isLoading: boolean;
   error?: unknown;
   onRefetch: () => void;
+  onBack?: () => void;
 }
 
 export function QueueBoard({
   queueOrganizationUniqueId,
+  orgName = "Live Queue Terminal",
+  orgType = "Factory",
+  city = "Addis Ababa",
   origin,
   status,
   isLoading,
-  error,
   onRefetch,
+  onBack,
 }: QueueBoardProps) {
   const socketConnected = useQueueAdminStore((s) => s.socketConnected);
   const setSocketConnected = useQueueAdminStore((s) => s.setSocketConnected);
@@ -43,7 +50,6 @@ export function QueueBoard({
   const [viewMode, setViewMode] = useState<"byType" | "all">("byType");
 
   const invalidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const onRefetchRef = useRef(onRefetch);
 
   useEffect(() => {
@@ -76,160 +82,153 @@ export function QueueBoard({
     ? Object.values(status.queues).flat()
     : [];
 
+  const subtitle = `${orgName} — ${city}`;
+
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-slate-800">Live queue</h2>
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              socketConnected ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-            }`}
-          >
-            {socketConnected ? "live" : "connecting…"}
-          </span>
-          {status && (
-            <span className="text-sm text-slate-500">
-              {status.queueDate} · {status.totalWaiting} waiting
+    <div className="qb-page-container">
+      {/* ── Top Back Button ── */}
+      {onBack && (
+        <button type="button" className="qb-back-link" onClick={onBack}>
+          <ArrowLeft size={16} />
+          Back to Organizations
+        </button>
+      )}
+
+      {/* ── Header Section ── */}
+      <div className="qb-header-section">
+        <div className="qb-title-group">
+          <div className="qb-title-row">
+            <h1 className="qb-title-text">Live Queue</h1>
+            <span className={`qb-live-badge ${socketConnected ? "live" : "connecting"}`}>
+              <span className="qb-live-badge-dot" />
+              {socketConnected ? "Live" : "Connecting..."}
             </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-md bg-slate-100 p-1" role="tablist">
-            <button
-              role="tab"
-              aria-selected={viewMode === "byType"}
-              onClick={() => setViewMode("byType")}
-              className={`rounded px-3 py-1 text-sm font-medium ${
-                viewMode === "byType"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              By Vehicle Type
-            </button>
-            <button
-              role="tab"
-              aria-selected={viewMode === "all"}
-              onClick={() => setViewMode("all")}
-              className={`rounded px-3 py-1 text-sm font-medium ${
-                viewMode === "all"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              All Drivers ({allEntries.length})
-            </button>
           </div>
+          <p className="qb-subtitle-text">{subtitle}</p>
+        </div>
+
+        <div className="qb-header-actions">
           <button
+            type="button"
+            className="qb-btn-new-order"
             onClick={() => setShowCreateOrder(true)}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
           >
-            New order
+            <Plus size={16} />
+            New Order
           </button>
           <button
+            type="button"
+            className="qb-btn-manual-checkin"
             onClick={() => setShowCheckin(true)}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           >
-            Manual check-in
+            <UserPlus size={16} />
+            Manual Check-In
           </button>
         </div>
       </div>
 
-      {error ? (
-        <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {getApiError(error)}
-        </p>
-      ) : null}
-      {isLoading && <p className="text-sm text-slate-500">Loading queue…</p>}
-      {!isLoading && allEntries.length === 0 && (
-        <p className="text-sm text-slate-500">The queue is empty.</p>
-      )}
+      {/* ── Filter Tabs: By Vehicle Type / All Drivers ── */}
+      <div className="qb-filter-tabs">
+        <button
+          type="button"
+          className={`qb-tab-pill ${viewMode === "byType" ? "active" : "inactive"}`}
+          onClick={() => setViewMode("byType")}
+        >
+          By Vehicle Type
+        </button>
+        <button
+          type="button"
+          className={`qb-tab-pill ${viewMode === "all" ? "active" : "inactive"}`}
+          onClick={() => setViewMode("all")}
+        >
+          All Drivers
+        </button>
+      </div>
 
-      {/* By Vehicle Type (grouped) */}
-      {viewMode === "byType" && status ? (
-        Object.entries(status.queues).map(([typeName, entries]) => {
-          const typeId = entries[0]?.vehicleTypeUniqueId || typeName;
-          return (
-            <div key={typeName} className="mb-5">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-600">{typeName}</span>
-                <button
-                  onClick={() => setDispatchForType(typeId)}
-                  className="rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
-                >
-                  Dispatch →
-                </button>
-              </div>
-              <QueueTable
-                typeId={typeId}
-                entries={entries}
-                onOverride={setOverrideEntry}
-                onRemove={setCancelEntry}
-              />
-            </div>
-          );
-        })
-      ) : null}
-
-      {/* All Drivers (flat table with vehicle type column) */}
-      {viewMode === "all" && !isLoading && allEntries.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-slate-200">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-2">#</th>
-                <th className="px-4 py-2">Driver</th>
-                <th className="px-4 py-2">Phone</th>
-                <th className="px-4 py-2">Vehicle Type</th>
-                <th className="px-4 py-2">Joined</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {allEntries.map((entry) => {
-                const typeDisplay = entry.vehicleTypeName || entry.vehicleTypeUniqueId || "Unknown";
-                return (
-                  <tr key={entry.queueUniqueId} className="hover:bg-slate-50">
-                    <td className="px-4 py-2 font-mono text-slate-700">{entry.queueNumber}</td>
-                    <td className="px-4 py-2 font-medium text-slate-800">{entry.driverName}</td>
-                    <td className="px-4 py-2 text-slate-600">{entry.driverPhoneNumber}</td>
-                    <td className="px-4 py-2 text-slate-600 font-mono">{typeDisplay}</td>
-                    <td className="px-4 py-2 text-slate-600">
-                      {new Date(entry.joinedAt).toLocaleTimeString()}
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[entry.status]}`}>
-                        {entry.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-right">
-                      {entry.status === "waiting" && (
-                        <>
-                          <button
-                            onClick={() => setOverrideEntry(entry)}
-                            className="mr-2 text-xs font-medium text-blue-600 hover:text-blue-800"
-                          >
-                            Override
-                          </button>
-                          <button
-                            onClick={() => setCancelEntry(entry)}
-                            className="text-xs font-medium text-red-600 hover:text-red-800"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* ── Loading Spinner ── */}
+      {isLoading && (
+        <div style={{ display: "flex", justifyContent: "center", padding: "4rem" }}>
+          <span className="add-docs-spinner" style={{ borderColor: "#e2e8f0", borderTopColor: "#0B4D6D" }} />
         </div>
       )}
 
+      {/* ── View Mode: By Vehicle Type ── */}
+      {!isLoading && viewMode === "byType" && status && (
+        <>
+          {Object.entries(status.queues).length === 0 ? (
+            <div className="qb-card" style={{ textAlign: "center", padding: "3.5rem 1rem" }}>
+              <p style={{ color: "#64748b", margin: 0 }}>No active queues found for this terminal.</p>
+            </div>
+          ) : (
+            Object.entries(status.queues).map(([typeName, entries]) => {
+              const typeId = entries[0]?.vehicleTypeUniqueId || typeName;
+              return (
+                <div key={typeName} className="qb-card" style={{ marginBottom: "1.5rem" }}>
+                  <div className="qb-card-header">
+                    <div className="qb-card-title-row">
+                      <h2 className="qb-card-title">{typeName}</h2>
+                      <span className="qb-waiting-badge">{entries.length} waiting</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="qb-btn-dispatch-outline"
+                      disabled={entries.length === 0}
+                      onClick={() => setDispatchForType(typeId)}
+                    >
+                      <Play size={13} fill="currentColor" />
+                      Dispatch
+                    </button>
+                  </div>
+
+                  <QueueTable
+                    typeId={typeId}
+                    entries={entries}
+                    onOverride={setOverrideEntry}
+                    onRemove={setCancelEntry}
+                  />
+                </div>
+              );
+            })
+          )}
+        </>
+      )}
+
+      {/* ── View Mode: All Drivers ── */}
+      {!isLoading && viewMode === "all" && (
+        <div className="qb-card">
+          <div className="qb-card-header">
+            <div className="qb-card-title-row">
+              <h2 className="qb-card-title">All Vehicles & Drivers</h2>
+              <span className="qb-waiting-badge">{allEntries.length} waiting</span>
+            </div>
+
+            <button
+              type="button"
+              className="qb-btn-dispatch-outline"
+              disabled={allEntries.length === 0}
+              onClick={() => {
+                const first = allEntries[0];
+                if (first?.vehicleTypeUniqueId) {
+                  setDispatchForType(first.vehicleTypeUniqueId);
+                }
+              }}
+            >
+              <Play size={13} fill="currentColor" />
+              Dispatch
+            </button>
+          </div>
+
+          <QueueTable
+            typeId="all"
+            entries={allEntries}
+            onOverride={setOverrideEntry}
+            onRemove={setCancelEntry}
+          />
+        </div>
+      )}
+
+      {/* Modals */}
       {showCheckin && (
         <CheckinModal
           queueOrganizationUniqueId={queueOrganizationUniqueId}
@@ -258,3 +257,5 @@ export function QueueBoard({
     </div>
   );
 }
+
+export default QueueBoard;

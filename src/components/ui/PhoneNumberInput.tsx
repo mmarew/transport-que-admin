@@ -9,6 +9,7 @@ import {
   stripNonDigits,
 } from "../../utils/phoneFormatter";
 import "../../styles/auth.css";
+import "./PhoneNumberInput.css";
 
 export interface PhoneNumberInputProps {
   id: string;

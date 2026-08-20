@@ -1,0 +1,130 @@
+/* ── Setup Organization Page Styles ──────────────────────────── */
+
+/* Select wrapper */
+.setup-org-select-wrapper {
+  position: relative;
+  padding: 0;
+}
+
+.setup-org-select {
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0.875rem 2.5rem 0.875rem 1rem;
+  color: #1e293b;
+  font-size: 1rem;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.setup-org-select option[value=""] {
+  color: #94a3b8;
+}
+
+.setup-org-select-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* Address group wrapper for relative positioning */
+.setup-org-address-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+/* Autocomplete search spinner */
+.setup-org-address-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top-color: var(--primary, #0F4C81);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: 0.875rem;
+  flex-shrink: 0;
+}
+
+/* Suggestions Dropdown Container */
+.setup-org-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin-top: 0.35rem;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.625rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Individual Suggestion Item */
+.setup-org-suggestion-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.15s ease;
+}
+
+.setup-org-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.setup-org-suggestion-item:hover,
+.setup-org-suggestion-item:focus {
+  background-color: #f8fafc;
+  outline: none;
+}
+
+.setup-org-suggestion-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.setup-org-suggestion-details {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Input error state */
+.input-wrapper--error {
+  border-color: #E80000 !important;
+  box-shadow: 0 0 0 3px rgba(232, 0, 0, 0.1) !important;
+}
+
+/* Field error text */
+.setup-org-field-error {
+  color: #E80000;
+  font-size: 0.78rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0;
+}

@@ -2,7 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { dispatch, getApiError } from "../../lib/api";
+import { dispatch } from "../../services/queue.service";
+import { getApiError } from "../../lib/api";
 import { dispatchSchema, type DispatchFormValues } from "../../schemas/queue";
 
 interface DispatchModalProps {

@@ -1,10 +1,12 @@
+import { ChevronDown } from "lucide-react";
 import type { DriverQueueEntry, QueueStatus } from "../../types/queue";
+import "./QueueBoard.css";
 
 export const STATUS_STYLES: Record<QueueStatus, string> = {
-  waiting: "bg-yellow-100 text-yellow-800",
-  offered: "bg-blue-100 text-blue-800",
-  loaded: "bg-green-100 text-green-800",
-  removed: "bg-slate-200 text-slate-500 line-through",
+  waiting: "waiting",
+  offered: "offered",
+  loaded: "loaded",
+  removed: "removed",
 };
 
 interface QueueTableProps {
@@ -14,65 +16,91 @@ interface QueueTableProps {
   onRemove: (entry: DriverQueueEntry) => void;
 }
 
-export function QueueTable({ typeId, entries, onOverride, onRemove }: QueueTableProps) {
+function formatJoinedTime(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return dateStr;
+  }
+}
+
+export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+    <div className="qb-table-responsive">
+      <table className="qb-table-grid">
+        <thead>
           <tr>
-            <th className="px-4 py-2">#</th>
-            <th className="px-4 py-2">Driver</th>
-            <th className="px-4 py-2">Phone</th>
-            <th className="px-4 py-2">Joined</th>
-            <th className="px-4 py-2">Status</th>
-            <th className="px-4 py-2 text-right">Actions</th>
+            <th style={{ width: "60px" }}>#</th>
+            <th>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                Driver <ChevronDown size={13} />
+              </span>
+            </th>
+            <th>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                Phone <ChevronDown size={13} />
+              </span>
+            </th>
+            <th>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                Joined <ChevronDown size={13} />
+              </span>
+            </th>
+            <th>Status</th>
+            <th style={{ textAlign: "center", width: "190px" }}>Action</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody>
           {entries.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
-                No drivers waiting
+              <td colSpan={6} className="qb-empty-row-text">
+                No drivers currently waiting in queue
               </td>
             </tr>
           ) : (
-            entries.map((entry) => (
-              <tr key={entry.queueUniqueId} className="hover:bg-slate-50">
-                <td className="px-4 py-2 font-mono text-slate-700">{entry.queueNumber}</td>
-                <td className="px-4 py-2 font-medium text-slate-800">{entry.driverName}</td>
-                <td className="px-4 py-2 text-slate-600">{entry.driverPhoneNumber}</td>
-                <td className="px-4 py-2 text-slate-600">
-                  {new Date(entry.joinedAt).toLocaleTimeString()}
-                </td>
-                <td className="px-4 py-2">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[entry.status]}`}>
-                    {entry.status}
-                  </span>
-                </td>
-                <td className="px-4 py-2 text-right">
-                  {entry.status === "waiting" && (
-                    <>
+            entries.map((entry, index) => {
+              const statusKey = (entry.status || "waiting") as QueueStatus;
+              return (
+                <tr key={entry.queueUniqueId || `${entry.queueNumber}-${index}`}>
+                  <td>
+                    <span className="qb-num-circle">{entry.queueNumber || index + 1}</span>
+                  </td>
+                  <td className="qb-driver-name">{entry.driverName}</td>
+                  <td>{entry.driverPhoneNumber}</td>
+                  <td>{formatJoinedTime(entry.joinedAt)}</td>
+                  <td>
+                    <span className="qb-status-cell">
+                      <span className={`qb-status-dot-circle ${statusKey}`} />
+                      {statusKey.charAt(0).toUpperCase() + statusKey.slice(1)}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <div className="qb-actions-cell">
                       <button
+                        type="button"
+                        className="qb-btn-override-outline"
                         onClick={() => onOverride(entry)}
-                        className="mr-2 text-xs font-medium text-blue-600 hover:text-blue-800"
                       >
                         Override
                       </button>
                       <button
+                        type="button"
+                        className="qb-btn-cancel-outline"
                         onClick={() => onRemove(entry)}
-                        className="text-xs font-medium text-red-600 hover:text-red-800"
                       >
                         Cancel
                       </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
-      <p className="bg-slate-50 px-4 py-1.5 text-xs text-slate-400">vehicle type: {typeId}</p>
     </div>
   );
 }
+
+export default QueueTable;

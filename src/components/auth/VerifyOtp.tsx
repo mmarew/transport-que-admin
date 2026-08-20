@@ -7,11 +7,12 @@ import LanguageSelector from "../ui/LanguageSelector";
 import OverlappingCircles from "../ui/OverlappingCircles";
 import FieldError from "../ui/FieldError";
 import { useAuth } from "../../context/AuthContext";
-import { verifyOtp, requestLoginOtp } from "../../lib/api";
+import { verifyOtp, requestLoginOtp } from "../../services/auth.service";
 import { connectSocket, disconnectSocket } from "../../lib/socket";
 import parseError from "../../utils/parseError";
 import type { LoginFormData } from "./Login";
 import "../../styles/auth.css";
+import "./VerifyOtp.css";
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -19,11 +20,17 @@ const RESEND_COOLDOWN_SECONDS = 60;
 interface VerifyOtpProps {
   formData: LoginFormData;
   onGoBack: () => void;
+  /** Called when OTP is verified, before navigation. If provided, caller handles navigation. */
+  onOtpVerified?: (from: "login" | "register") => void;
+  /** Which step triggered OTP — determines post-verify action */
+  from?: "login" | "register";
 }
 
 export const VerifyOtp: React.FC<VerifyOtpProps> = ({
   formData,
   onGoBack,
+  onOtpVerified,
+  from = "login",
 }) => {
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: { pathname: string } } };
@@ -93,12 +100,16 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
       const { token, userData } = response.data;
 
       setAuth({ token, userData });
-      disconnectSocket();
-      connectSocket({ phoneNumber: userData.phoneNumber });
 
-      toast.success(`Welcome back, ${userData.fullName}`);
-      const redirectPath = location.state?.from?.pathname || "/dashboard";
-      navigate(redirectPath, { replace: true });
+      toast.success(`Welcome, ${userData.fullName}`);
+
+      if (onOtpVerified) {
+        // Let the parent (Auth.tsx) decide navigation (e.g. org setup for register)
+        onOtpVerified(from);
+      } else {
+        const redirectPath = location.state?.from?.pathname || "/dashboard";
+        navigate(redirectPath, { replace: true });
+      }
     } catch (err: unknown) {
       const msg = parseError(err);
       toast.error(msg);

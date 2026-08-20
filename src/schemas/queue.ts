@@ -3,25 +3,67 @@ import { QUEUE_ORG_TYPES } from "../types/queue";
 
 export const uuidSchema = z.string().uuid({ message: "Invalid UUID" });
 
+/** Strip HTML tags from a string */
+const stripTags = (v: string) => v.replace(/<[^>]*>/g, "");
+/** Remove non-printable control characters */
+const stripCtrl = (v: string) => v.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+/** Sanitize general text: strip tags, control chars, collapse whitespace */
+const sanitizeText = (v: string) =>
+  stripCtrl(stripTags(v)).replace(/[ \t]+/g, " ").trim();
+/** Sanitize email: strip tags/control chars, remove spaces, lowercase */
+const sanitizeEmail = (v: string) =>
+  stripCtrl(stripTags(v)).replace(/\s/g, "").toLowerCase();
+
+
 export const loginSchema = z.object({
   phoneNumber: z
     .string()
     .min(10, "Phone number is required")
-    .max(20, "Phone number too long"),
+    .max(20, "Phone number too long")
+    .transform((v) => v.replace(/[^\d+\-()\ ]/g, "").trim()),
 });
 
 export const registerSchema = z.object({
-  fullName: z.string().trim().min(2, "Full name is required"),
+  fullName: z
+    .string()
+    .min(2, "Full name must be at least 2 characters")
+    .max(100, "Full name too long")
+    .transform(sanitizeText),
   phoneNumber: z
     .string()
     .min(12, "Phone number is required")
-    .max(20, "Phone number too long"),
-  email: z.email({ message: "Invalid email address" }).optional().or(z.literal("")),
+    .max(20, "Phone number too long")
+    .transform((v) => v.replace(/[^\d+\-()\ ]/g, "").trim()),
+  email: z
+    .string()
+    .transform(sanitizeEmail)
+    .pipe(z.union([z.email({ message: "Invalid email address" }), z.literal("")]))
+    .optional()
+    .or(z.literal("")),
 });
 
-export const otpSchema = z.object({
-  phoneNumber: z.string().min(10).max(20),
-  otp: z.string().length(6, "OTP must be 6 digits"),
+export const setupOrgSchema = z.object({
+  queueOrganizationName: z
+    .string()
+    .min(1, "Organization name is required")
+    .max(255, "Name too long")
+    .transform(sanitizeText),
+  queueOrganizationType: z.enum(QUEUE_ORG_TYPES, {
+    message: "Please select an organization type",
+  }),
+  queueOrganizationPhone: z
+    .string()
+    .max(20, "Phone too long")
+    .transform((v) => v.replace(/[^\d+\-()\ ]/g, "").trim())
+    .optional()
+    .or(z.literal("")),
+  queueOrganizationAddress: z
+    .string()
+    .min(1, "Organization address is required")
+    .max(500, "Address too long")
+    .transform(sanitizeText),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
 });
 
 export const checkinSchema = z.object({
@@ -155,3 +197,4 @@ export type OverrideFormValues = z.infer<typeof overrideSchema>;
 export type QueueOrgProfileFormValues = z.infer<typeof queueOrgProfileSchema>;
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
+export type SetupOrgFormValues = z.infer<typeof setupOrgSchema>;

@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import heroImg from "../../assets/Frame.png";
 import groupImg from "../../assets/Group.png";
 import LanguageSelector from "../ui/LanguageSelector";
 import PhoneNumberInput from "../ui/PhoneNumberInput";
-import { requestLoginOtp } from "../../lib/api";
+import { requestLoginOtp } from "../../services/auth.service";
 import parseError from "../../utils/parseError";
+import { loginSchema, type LoginFormValues } from "../../schemas/queue";
 import "../../styles/auth.css";
 
 export interface LoginFormData {
@@ -25,29 +27,26 @@ export const Login: React.FC<LoginProps> = ({
   onSwitchToRegister,
   initialPhoneNumber = "",
 }) => {
-  const [phoneNumber, setPhoneNumber] = useState(initialPhoneNumber);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { phoneNumber: initialPhoneNumber },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneNumber || phoneNumber.length < 12) {
-      setError("Please enter a valid 9-digit phone number");
-      return;
-    }
+  const phoneValue = watch("phoneNumber");
 
-    setIsLoading(true);
-    setError(null);
+  const onSubmit = async (data: LoginFormValues) => {
     try {
-      await requestLoginOtp(phoneNumber);
+      await requestLoginOtp(data.phoneNumber);
       toast.success("OTP sent to your phone number");
-      onOtpRequested({ phoneNumber });
+      onOtpRequested({ phoneNumber: data.phoneNumber });
     } catch (err: unknown) {
       const msg = parseError(err);
-      setError(msg);
       toast.error(msg);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -86,24 +85,21 @@ export const Login: React.FC<LoginProps> = ({
             <p>Access your queue dashboard and manage your fleet</p>
           </div>
 
-          <form className="login-form" onSubmit={handleSubmit}>
+          <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="form-group">
               <PhoneNumberInput
                 id="login-phone"
                 label="Phone Number"
-                value={phoneNumber}
-                onChange={(e164) => {
-                  setPhoneNumber(e164);
-                  setError(null);
-                }}
-                error={error}
+                value={phoneValue}
+                onChange={(e164) => setValue("phoneNumber", e164, { shouldValidate: true })}
+                error={errors.phoneNumber?.message ?? null}
                 required
                 autoComplete="tel"
               />
             </div>
 
-            <button type="submit" className="login-btn" disabled={isLoading}>
-              {isLoading ? (
+            <button type="submit" className="login-btn" disabled={isSubmitting}>
+              {isSubmitting ? (
                 <span className="btn-inner-flex">
                   <span className="add-docs-spinner" />
                   Signing in...

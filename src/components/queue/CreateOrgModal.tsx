@@ -2,15 +2,19 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { X, ChevronDown } from "lucide-react";
 import { getApiError } from "@/lib/api";
-import { createQueueOrgSchema, type CreateQueueOrgFormValues } from "@/schemas/queue";
+import { setupOrgSchema, type SetupOrgFormValues } from "@/schemas/queue";
+import { QUEUE_ORG_TYPES, type QueueOrgType } from "@/types/queue";
+import { PhoneNumberInput } from "../ui/PhoneNumberInput";
+import "./CreateOrderModal.css";
 
 interface CreateOrgModalProps {
   onClose: () => void;
   onCreated?: () => void;
   onCreate: (data: {
     queueOrganizationName: string;
-    queueOrganizationType: "customs" | "factory" | "cement" | "depot" | "other";
+    queueOrganizationType: QueueOrgType;
     queueOrganizationAddress: string;
     latitude: number;
     longitude: number;
@@ -20,16 +24,21 @@ interface CreateOrgModalProps {
 
 const PHOTON_URL = "https://photon.komoot.io/api/";
 
+const ORG_TYPE_LABELS: Record<QueueOrgType, string> = {
+  customs: "Customs",
+  factory: "Factory",
+  cement: "Cement",
+  depot: "Depot",
+  other: "Other",
+};
+
 interface PhotonFeature {
   properties: {
     name?: string;
     street?: string;
     city?: string;
-    postcode?: string;
+    state?: string;
     country?: string;
-    countrycode?: string;
-    osm_value?: string;
-    osm_key?: string;
     housenumber?: string;
   };
   geometry: { coordinates: [number, number] };
@@ -40,86 +49,92 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
     reset,
-  } = useForm<CreateQueueOrgFormValues>({
-    resolver: zodResolver(createQueueOrgSchema),
+  } = useForm<SetupOrgFormValues>({
+    resolver: zodResolver(setupOrgSchema),
     defaultValues: {
       queueOrganizationName: "",
-      queueOrganizationType: "other",
+      queueOrganizationType: undefined,
       queueOrganizationPhone: "",
       queueOrganizationAddress: "",
-      latitude: "",
-      longitude: "",
+      latitude: null,
+      longitude: null,
     },
   });
 
+  const addressValue = watch("queueOrganizationAddress");
   const [isPending, setIsPending] = useState(false);
-  const [addressQuery, setAddressQuery] = useState("");
   const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestionsRef = useRef<HTMLUListElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<number | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const searchPhoton = useCallback(async (q: string): Promise<void> => {
-    if (!q.trim() || q.length < 3) {
+  const debounceTimerRef = useRef<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (!query || query.trim().length < 2) {
       setSuggestions([]);
+      setIsSearching(false);
       return;
     }
+    setIsSearching(true);
     try {
-      const res = await fetch(`${PHOTON_URL}?q=${encodeURIComponent(q)}&limit=5`);
-      const data = await res.json();
-      setSuggestions(data.features ?? []);
+      const res = await fetch(`${PHOTON_URL}?q=${encodeURIComponent(query.trim())}&lang=en&limit=5`);
+      if (res.ok) {
+        const data = await res.json();
+        setSuggestions(data.features ?? []);
+      } else {
+        setSuggestions([]);
+      }
     } catch {
       setSuggestions([]);
+    } finally {
+      setIsSearching(false);
     }
   }, []);
 
-useEffect(() => {
-    if (debounceRef.current != null) clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => searchPhoton(addressQuery), 250);
-    return () => {
-      if (debounceRef.current != null) clearTimeout(debounceRef.current);
-    };
-  }, [addressQuery, searchPhoton]);
+  const handleAddressInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setValue("queueOrganizationAddress", val, { shouldValidate: true });
+    setShowSuggestions(true);
+
+    if (debounceTimerRef.current !== null) {
+      window.clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      void fetchSuggestions(val);
+    }, 250);
+  };
+
+  const handleSelectFeature = (feat: PhotonFeature) => {
+    const p = feat.properties;
+    const parts = [p.name, p.street, p.housenumber, p.city, p.state, p.country].filter(Boolean);
+    const full = parts.join(", ");
+    setValue("queueOrganizationAddress", full, { shouldValidate: true });
+
+    if (feat.geometry?.coordinates?.length >= 2) {
+      const [featLng, featLat] = feat.geometry.coordinates;
+      setValue("latitude", featLat, { shouldValidate: true });
+      setValue("longitude", featLng, { shouldValidate: true });
+    }
+
+    setShowSuggestions(false);
+    setSuggestions([]);
+  };
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        inputRef.current &&
-        !inputRef.current.contains(e.target as Node) &&
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(e.target as Node)
-      ) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
       }
-    }
+    };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const selectSuggestion = (feat: PhotonFeature) => {
-    const { properties, geometry } = feat;
-    const parts = [
-      properties.name,
-      properties.street,
-      properties.housenumber,
-      properties.city,
-      properties.postcode,
-      properties.country,
-    ].filter(Boolean);
-    const formatted = parts.join(", ");
-    setValue("queueOrganizationAddress", formatted, { shouldValidate: true });
-    setValue("latitude", String(geometry.coordinates[1]), { shouldValidate: true });
-    setValue("longitude", String(geometry.coordinates[0]), { shouldValidate: true });
-    setAddressQuery(formatted);
-    setShowSuggestions(false);
-    setSuggestions([]);
-    inputRef.current?.blur();
-  };
-
-  const onSubmit = async (values: CreateQueueOrgFormValues) => {
+  const onSubmit = async (values: SetupOrgFormValues) => {
     setIsPending(true);
     try {
       await onCreate({
@@ -130,7 +145,7 @@ useEffect(() => {
         longitude: Number(values.longitude),
         queueOrganizationPhone: values.queueOrganizationPhone || null,
       });
-      toast.success("Queue organization created — pending admin approval");
+      toast.success("Organization created! Pending admin approval.");
       onCreated?.();
       reset();
       onClose();
@@ -142,131 +157,134 @@ useEffect(() => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-slate-800">Create queue organization</h2>
-        <p className="mt-1 text-xs text-slate-500">
-          Name, type, and address are required. Admin will approve before dispatch works.
-        </p>
-
-        <div className="mt-4 space-y-3">
+    <div className="com-overlay">
+      <div className="com-modal" style={{ maxWidth: "520px" }}>
+        {/* Header */}
+        <div className="com-header">
           <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Name <span className="font-normal text-slate-400">(required)</span>
+            <h2 className="com-title">Setup Your Organization</h2>
+            <p className="com-subtitle">Register your queue organization to manage drivers and dispatches</p>
+          </div>
+          <button type="button" className="com-close-btn" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
+          {/* Organization Name */}
+          <div className="com-field-group">
+            <label className="com-label">
+              Organization Name <span style={{ color: "#E80000" }}>*</span>
             </label>
             <input
               {...register("queueOrganizationName")}
-              placeholder="National Cement"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              placeholder="e.g. Addis Freight Terminal"
+              className="com-input"
             />
             {errors.queueOrganizationName && (
-              <p className="mt-1 text-xs text-red-600">{errors.queueOrganizationName.message}</p>
+              <p className="com-error-text">{errors.queueOrganizationName.message}</p>
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Type <span className="font-normal text-slate-400">(required)</span>
+          {/* Organization Type */}
+          <div className="com-field-group">
+            <label className="com-label">
+              Organization Type <span style={{ color: "#E80000" }}>*</span>
             </label>
-            <select
-              {...register("queueOrganizationType")}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              <option value="customs">Customs</option>
-              <option value="factory">Factory</option>
-              <option value="cement">Cement</option>
-              <option value="depot">Depot</option>
-              <option value="other">Other</option>
-            </select>
+            <div className="com-input-wrap">
+              <select {...register("queueOrganizationType")} className="com-input com-select has-icon-right">
+                <option value="">Select type...</option>
+                {QUEUE_ORG_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {ORG_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="com-input-icon-right" />
+            </div>
             {errors.queueOrganizationType && (
-              <p className="mt-1 text-xs text-red-600">{errors.queueOrganizationType.message}</p>
+              <p className="com-error-text">{errors.queueOrganizationType.message}</p>
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Phone <span className="font-normal text-slate-400">(optional)</span>
-            </label>
-            <input
-              {...register("queueOrganizationPhone")}
-              type="tel"
-              placeholder="+251912345678"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          {/* Contact Phone (Optional with +251 prefix) */}
+          <div className="com-field-group">
+            <PhoneNumberInput
+              id="modal-org-phone"
+              label="Contact Phone"
+              value={watch("queueOrganizationPhone") || ""}
+              onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
+              placeholder="9XX XXX XXX"
+              required={false}
+              error={errors.queueOrganizationPhone?.message}
             />
-            {errors.queueOrganizationPhone && (
-              <p className="mt-1 text-xs text-red-600">{errors.queueOrganizationPhone.message}</p>
-            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Address <span className="font-normal text-slate-400">(required)</span>
+          {/* Address with Photon Autocomplete */}
+          <div className="com-field-group" ref={dropdownRef}>
+            <label className="com-label">
+              Address <span style={{ color: "#E80000" }}>*</span>
             </label>
-            <div className="relative">
+            <div className="com-input-wrap">
               <input
-                ref={inputRef}
-                type="text"
-                value={addressQuery}
-                onChange={(e) => {
-                  setAddressQuery(e.target.value);
-                  setValue("queueOrganizationAddress", e.target.value, { shouldValidate: true });
-                  setShowSuggestions(true);
+                value={addressValue ?? ""}
+                onChange={handleAddressInput}
+                placeholder="Search address (e.g. Dessie, Bole, Addis Ababa)..."
+                className="com-input"
+                autoComplete="off"
+                onFocus={() => {
+                  if (suggestions.length > 0) setShowSuggestions(true);
                 }}
-                onFocus={() => setShowSuggestions(true)}
-                placeholder="Search address (e.g. Bole, Addis Ababa)…"
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               />
-              {showSuggestions && suggestions.length > 0 && (
-                <ul
-                  ref={suggestionsRef}
-                  className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-md border border-slate-300 bg-white shadow-lg divide-y divide-slate-200"
-                >
-                  {suggestions.map((feat, i) => (
-                    <li
-                      key={i}
-                      onClick={() => selectSuggestion(feat)}
-                      className="px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
-                    >
-                      <p className="font-medium text-slate-900">{feat.properties.name ?? "Unnamed"}</p>
-                      <p className="text-xs text-slate-500 truncate">
-                        {[
-                          feat.properties.street,
-                          feat.properties.housenumber,
-                          feat.properties.city,
-                          feat.properties.postcode,
-                          feat.properties.country,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
             {errors.queueOrganizationAddress && (
-              <p className="mt-1 text-xs text-red-600">{errors.queueOrganizationAddress.message}</p>
+              <p className="com-error-text">{errors.queueOrganizationAddress.message}</p>
+            )}
+
+            {/* Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="com-suggestions-list">
+                {suggestions.map((feat, index) => {
+                  const name = feat.properties.name ?? "Location";
+                  const details = [
+                    feat.properties.street,
+                    feat.properties.housenumber,
+                    feat.properties.city,
+                    feat.properties.state,
+                    feat.properties.country,
+                  ]
+                    .filter(Boolean)
+                    .join(", ");
+
+                  return (
+                    <button
+                      type="button"
+                      key={`${feat.properties.name}-${index}`}
+                      className="com-suggestion-item"
+                      onClick={() => handleSelectFeature(feat)}
+                    >
+                      <div style={{ fontWeight: 600, color: "#1e293b" }}>{name}</div>
+                      {details && <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{details}</div>}
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
-        </div>
 
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isPending ? "Creating…" : "Create organization"}
-          </button>
-        </div>
-      </form>
+          {/* Footer Actions */}
+          <div className="com-footer">
+            <button type="button" className="com-btn-cancel" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="com-btn-submit" disabled={isPending}>
+              {isPending ? "Creating..." : "Create Organization"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
+
+export default CreateOrgModal;

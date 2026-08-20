@@ -1,0 +1,254 @@
+/* ── Organizations Page Styles ────────────────────────────────────────── */
+
+.org-page-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  border: 1px solid #f1f5f9;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 2rem;
+}
+
+/* ── Top Bar Controls ── */
+.org-top-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1.75rem;
+}
+
+.org-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  width: 100%;
+  max-width: 320px;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.org-search-box:focus-within {
+  background: #ffffff;
+  border-color: #0B4D6D;
+  box-shadow: 0 0 0 3px rgba(11, 77, 109, 0.08);
+}
+
+.org-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  color: #1e293b;
+  width: 100%;
+  font-family: inherit;
+}
+
+.org-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.org-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.org-sort-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* ── Table Structure ── */
+.org-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.org-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.org-table th {
+  padding: 0.875rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.org-th-sortable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: color 0.15s;
+}
+
+.org-th-sortable:hover {
+  color: #0B4D6D;
+}
+
+.org-table td {
+  padding: 1.15rem 0.75rem;
+  font-size: 0.875rem;
+  color: #334155;
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: middle;
+}
+
+.org-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.org-table tbody tr:hover {
+  background-color: #fafbfd;
+}
+
+/* Column styles */
+.org-cell-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.org-cell-type {
+  color: #475569;
+  text-transform: capitalize;
+}
+
+.org-cell-city {
+  color: #475569;
+}
+
+/* ── Status Indicator Dot ── */
+.org-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.org-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.org-status-dot.approved {
+  background-color: #16a34a;
+}
+
+.org-status-dot.pending {
+  background-color: #ea580c;
+}
+
+.org-status-dot.rejected {
+  background-color: #dc2626;
+}
+
+.org-status-dot.suspended {
+  background-color: #64748b;
+}
+
+/* ── Manage Button ── */
+.org-manage-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 1.15rem;
+  background: transparent;
+  border: 1.5px solid #0B4D6D;
+  border-radius: 0.375rem;
+  color: #0B4D6D;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.org-manage-action-btn:hover:not(:disabled):not(.disabled) {
+  background: #0B4D6D;
+  color: #ffffff;
+}
+
+.org-manage-action-btn:disabled,
+.org-manage-action-btn.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: #94a3b8;
+  color: #64748b;
+}
+
+.org-manage-action-btn:disabled:hover,
+.org-manage-action-btn.disabled:hover {
+  background: transparent;
+  color: #64748b;
+}
+
+/* ── Table Footer & Pagination ── */
+.org-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 0.5rem 0.5rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.org-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.org-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  background: transparent;
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.org-page-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.org-page-btn.active {
+  background: #0B4D6D;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.org-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

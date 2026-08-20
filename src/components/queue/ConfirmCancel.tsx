@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { removeEntry, getApiError } from "../../lib/api";
+import { removeEntry } from "../../services/queue.service";
+import { getApiError } from "../../lib/api";
 import type { DriverQueueEntry } from "../../types/queue";
 
 interface ConfirmCancelProps {

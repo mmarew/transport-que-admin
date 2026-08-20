@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Navigation Items: Dashboard, Organizations, Reports, Settings */}
+        {/* Navigation Items: Dashboard, Organizations, Reports */}
         <nav className="sidebar-nav">
           <SidebarItem
             icon={<LayoutDashboard size={19} />}
@@ -98,16 +98,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             active={derivedTab === "reports"}
             onClick={() => navigate("/reports")}
           />
+        </nav>
+
+        {/* Bottom Actions: Settings & Sign out */}
+        <div className="sidebar-bottom">
           <SidebarItem
             icon={<Settings size={19} />}
             label="Settings"
             active={derivedTab === "settings"}
             onClick={() => navigate("/settings")}
           />
-        </nav>
-
-        {/* Bottom Actions: Sign out */}
-        <div className="sidebar-bottom">
           <SidebarItem
             icon={<LogOut size={19} />}
             label="Sign out"

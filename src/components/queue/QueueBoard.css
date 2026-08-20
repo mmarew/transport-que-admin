@@ -1,0 +1,380 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   QueueBoard.css — Pixel-perfect Queue Operations matching Figma design 1:1
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.qb-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-bottom: 2.5rem;
+}
+
+/* ── Top Back Button ── */
+.qb-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #0B4D6D;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 0.5rem;
+  font-family: inherit;
+  transition: opacity 0.15s ease;
+}
+
+.qb-back-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* ── Header Row (Live Queue + Actions) ── */
+.qb-header-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.qb-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.qb-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qb-title-text {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0B4D6D;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.qb-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+}
+
+.qb-live-badge.connecting {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.qb-live-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.qb-subtitle-text {
+  font-size: 0.95rem;
+  color: #475569;
+  margin: 0;
+  font-weight: 500;
+}
+
+.qb-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qb-btn-new-order {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #0B4D6D;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.15s ease;
+}
+
+.qb-btn-new-order:hover {
+  background: #002B44;
+}
+
+.qb-btn-manual-checkin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #ffffff;
+  color: #0B4D6D;
+  border: 1.5px solid #0B4D6D;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.qb-btn-manual-checkin:hover {
+  background: rgba(11, 77, 109, 0.06);
+}
+
+/* ── Filter Tabs ── */
+.qb-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.qb-tab-pill {
+  padding: 0.5rem 1.1rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.qb-tab-pill.active {
+  background: #ffffff;
+  border: 1.5px solid #0B4D6D;
+  color: #0B4D6D;
+}
+
+.qb-tab-pill.inactive {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.qb-tab-pill.inactive:hover {
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+/* ── Vehicle Type White Card ── */
+.qb-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  padding: 1.5rem 1.75rem;
+}
+
+.qb-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.qb-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qb-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.qb-waiting-badge {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+}
+
+.qb-btn-dispatch-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  color: #0B4D6D;
+  border: 1.5px solid #0B4D6D;
+  border-radius: 0.5rem;
+  padding: 0.45rem 1.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.qb-btn-dispatch-outline:hover:not(:disabled) {
+  background: #0B4D6D;
+  color: #ffffff;
+}
+
+.qb-btn-dispatch-outline:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Table Layout ── */
+.qb-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.qb-table-grid {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.qb-table-grid th {
+  padding: 0.875rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.qb-table-grid td {
+  padding: 1rem 0.75rem;
+  font-size: 0.875rem;
+  color: #334155;
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: middle;
+}
+
+.qb-table-grid tbody tr:hover {
+  background-color: #fafbfd;
+}
+
+/* Row elements */
+.qb-num-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qb-driver-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.qb-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.qb-status-dot-circle {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.qb-status-dot-circle.waiting {
+  background-color: #16a34a;
+}
+
+.qb-status-dot-circle.offered {
+  background-color: #ea580c;
+}
+
+.qb-status-dot-circle.loaded {
+  background-color: #2563eb;
+}
+
+.qb-status-dot-circle.removed {
+  background-color: #94a3b8;
+}
+
+/* Action Buttons */
+.qb-actions-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qb-btn-override-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.95rem;
+  background: transparent;
+  border: 1.5px solid #0B4D6D;
+  border-radius: 0.375rem;
+  color: #0B4D6D;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.qb-btn-override-outline:hover {
+  background: #0B4D6D;
+  color: #ffffff;
+}
+
+.qb-btn-cancel-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.95rem;
+  background: transparent;
+  border: 1.5px solid #ef4444;
+  border-radius: 0.375rem;
+  color: #ef4444;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.qb-btn-cancel-outline:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.qb-empty-row-text {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}

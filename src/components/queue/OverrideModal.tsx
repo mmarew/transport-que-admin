@@ -2,7 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { overrideEntry, getApiError } from "../../lib/api";
+import { overrideEntry } from "../../services/queue.service";
+import { getApiError } from "../../lib/api";
 import { overrideSchema, type OverrideFormValues } from "../../schemas/queue";
 import type { DriverQueueEntry } from "../../types/queue";
 
