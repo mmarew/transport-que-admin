@@ -6,12 +6,9 @@ import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import heroImg from "../../assets/Frame.png";
 import LanguageSelector from "../ui/LanguageSelector";
-import { PhoneNumberInput } from "../ui/PhoneNumberInput";
-import {
-  createQueueOrganization,
-  listQueueOrganizations,
-  hasOrganizationData,
-} from "../../services/organization.service";
+import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
+import { hasOrganizationData } from "../../services/organization.service";
+import { useCreateQueueOrganizationMutation, useListQueueOrganizationsQuery } from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import { setupOrgSchema, type SetupOrgFormValues } from "../../schemas/queue";
 import { QUEUE_ORG_TYPES, type QueueOrgType } from "../../types/queue";
@@ -45,23 +42,16 @@ interface PhotonFeature {
 
 export const SetupOrganization: React.FC = () => {
   const navigate = useNavigate();
+  const { data: orgsData, isSuccess } = useListQueueOrganizationsQuery();
 
   // If user already has an organization, forward directly to dashboard
   useEffect(() => {
-    let active = true;
-    listQueueOrganizations()
-      .then((res) => {
-        if (active && hasOrganizationData(res.data)) {
-          navigate("/dashboard", { replace: true });
-        }
-      })
-      .catch(() => {
-        // ignore
-      });
-    return () => {
-      active = false;
-    };
-  }, [navigate]);
+    if (isSuccess && hasOrganizationData(orgsData)) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isSuccess, orgsData, navigate]);
+
+  const [createOrgMutation, { isLoading: isCreating }] = useCreateQueueOrganizationMutation();
 
   const {
     register,
@@ -175,14 +165,14 @@ export const SetupOrganization: React.FC = () => {
 
   const onSubmit = async (data: SetupOrgFormValues) => {
     try {
-      await createQueueOrganization({
+      await createOrgMutation({
         queueOrganizationName: data.queueOrganizationName,
         queueOrganizationType: data.queueOrganizationType,
         queueOrganizationPhone: data.queueOrganizationPhone || null,
         queueOrganizationAddress: data.queueOrganizationAddress,
-        latitude: data.latitude ?? null,
-        longitude: data.longitude ?? null,
-      });
+        latitude: data.latitude != null ? Number(data.latitude) : null,
+        longitude: data.longitude != null ? Number(data.longitude) : null,
+      }).unwrap();
       toast.success("Organization created! Pending admin approval.");
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
@@ -270,15 +260,16 @@ export const SetupOrganization: React.FC = () => {
               )}
             </div>
 
-            {/* Phone (optional with +251 prefix) */}
+            {/* Contact Phone (Optional with constant +251) */}
             <div className="form-group form-group-mb">
-              <PhoneNumberInput
+              <ConstantPhoneInput
                 id="org-phone"
                 label="Contact Phone"
                 value={watch("queueOrganizationPhone") || ""}
                 onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
-                placeholder="9XX XXX XXX"
+                placeholder="9-XX-XX-XX-XX"
                 required={false}
+                optional={true}
                 error={errors.queueOrganizationPhone?.message}
               />
             </div>
@@ -342,8 +333,8 @@ export const SetupOrganization: React.FC = () => {
               )}
             </div>
 
-            <button type="submit" className="login-btn" disabled={isSubmitting}>
-              {isSubmitting ? (
+            <button type="submit" className="login-btn" disabled={isSubmitting || isCreating}>
+              {isSubmitting || isCreating ? (
                 <span className="btn-inner-flex">
                   <span className="add-docs-spinner" />
                   Creating...

@@ -95,34 +95,36 @@ export const createOrderSchema = z
       .int("Must be a whole number")
       .min(1, "At least 1 vehicle"),
     requestMode: z.enum(["individual_target", "company_target"]),
-    vehicleTypeUniqueId: uuidSchema,
-    originDescription: z.string().trim().min(1, "Origin place is required"),
+    vehicleTypeUniqueId: z
+      .string()
+      .min(1, "Please select a vehicle type"),
+    originDescription: z.string().trim().min(1, "Origin location is required"),
     originLatitude: z
       .string()
       .trim()
-      .min(1, "Origin latitude is required")
+      .min(1, "Please select origin from the search suggestions")
       .refine((v) => Number.isFinite(Number(v)) && Number(v) >= -90 && Number(v) <= 90, {
         message: "Latitude must be between -90 and 90",
       }),
     originLongitude: z
       .string()
       .trim()
-      .min(1, "Origin longitude is required")
+      .min(1, "Please select origin from the search suggestions")
       .refine((v) => Number.isFinite(Number(v)) && Number(v) >= -180 && Number(v) <= 180, {
         message: "Longitude must be between -180 and 180",
       }),
-    destinationDescription: z.string().trim().min(1, "Destination place is required"),
+    destinationDescription: z.string().trim().min(1, "Destination location is required"),
     destinationLatitude: z
       .string()
       .trim()
-      .min(1, "Destination latitude is required")
+      .min(1, "Please select destination from the search suggestions")
       .refine((v) => Number.isFinite(Number(v)) && Number(v) >= -90 && Number(v) <= 90, {
         message: "Latitude must be between -90 and 90",
       }),
     destinationLongitude: z
       .string()
       .trim()
-      .min(1, "Destination longitude is required")
+      .min(1, "Please select destination from the search suggestions")
       .refine((v) => Number.isFinite(Number(v)) && Number(v) >= -180 && Number(v) <= 180, {
         message: "Longitude must be between -180 and 180",
       }),

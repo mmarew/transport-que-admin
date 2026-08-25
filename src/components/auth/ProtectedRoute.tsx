@@ -1,10 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import {
-  listQueueOrganizations,
-  hasOrganizationData,
-} from "../../services/organization.service";
+import { hasOrganizationData } from "../../services/organization.service";
+import { useListQueueOrganizationsQuery } from "../../lib/redux/api";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -20,26 +17,14 @@ export function ProtectedRoute({ children, requireOrg = true }: ProtectedRoutePr
   const { auth } = useAuth();
   const location = useLocation();
 
-  const [orgChecked, setOrgChecked] = useState(false);
-  const [hasOrg, setHasOrg] = useState(false);
-
-  useEffect(() => {
-    if (!auth?.token || !requireOrg) {
-      setOrgChecked(true);
-      return;
-    }
-
-    listQueueOrganizations()
-      .then((res) => {
-        const found = hasOrganizationData(res.data);
-        setHasOrg(found);
-      })
-      .catch(() => {
-        // On error, allow through — don't block the user indefinitely
-        setHasOrg(true);
-      })
-      .finally(() => setOrgChecked(true));
-  }, [auth?.token, requireOrg]);
+  const {
+    data: orgsData,
+    isLoading: orgsLoading,
+    isSuccess: orgsSuccess,
+    isError: orgsError,
+  } = useListQueueOrganizationsQuery(undefined, {
+    skip: !auth?.token || !requireOrg,
+  });
 
   // Not logged in → go to login
   if (!auth?.token) {
@@ -52,9 +37,15 @@ export function ProtectedRoute({ children, requireOrg = true }: ProtectedRoutePr
   }
 
   // Still checking org status → show nothing (brief flash prevention)
-  if (!orgChecked) {
+  if (orgsLoading) {
     return null;
   }
+
+  const hasOrg = orgsSuccess
+    ? hasOrganizationData(orgsData)
+    : orgsError
+    ? true // On error, allow through — don't block user indefinitely
+    : false;
 
   // No org found → must set one up first
   if (!hasOrg) {
@@ -63,3 +54,5 @@ export function ProtectedRoute({ children, requireOrg = true }: ProtectedRoutePr
 
   return <>{children}</>;
 }
+
+export default ProtectedRoute;

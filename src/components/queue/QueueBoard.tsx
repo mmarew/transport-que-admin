@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, UserPlus, Play, ArrowLeft } from "lucide-react";
-import { onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
+import { connectSocket, onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
 import { QueueTable } from "./QueueTable";
@@ -64,6 +64,10 @@ export function QueueBoard({
   }, []);
 
   useEffect(() => {
+    const s = connectSocket();
+    if (s?.connected) {
+      setSocketConnected(true);
+    }
     subscribeToQueue(queueOrganizationUniqueId);
     const offEvent = onQueueEvent(() => {
       setSocketConnected(true);
@@ -128,7 +132,7 @@ export function QueueBoard({
         </div>
       </div>
 
-      {/* ── Filter Tabs: By Vehicle Type / All Drivers ── */}
+      {/* ── Filter Tabs ── */}
       <div className="qb-filter-tabs">
         <button
           type="button"
@@ -233,6 +237,7 @@ export function QueueBoard({
       {showCheckin && (
         <CheckinModal
           queueOrganizationUniqueId={queueOrganizationUniqueId}
+          onCheckedIn={onRefetch}
           onClose={() => setShowCheckin(false)}
         />
       )}

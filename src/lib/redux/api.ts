@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getToken, type StoredAuth } from "@/lib/auth";
+import appAPIs from "@/utils/constant"
 import type {
   QueueOrganization,
   QueueOrgListItem,
@@ -26,6 +27,9 @@ const BASE_URL = getBaseUrl();
 
 export const api = createApi({
   reducerPath: "api",
+  refetchOnFocus: false,
+  refetchOnReconnect: false,
+  keepUnusedDataFor: 300,
   baseQuery: fetchBaseQuery({
     baseUrl: BASE_URL,
     prepareHeaders: (headers) => {
@@ -41,6 +45,7 @@ export const api = createApi({
     "DriverQueue",
     "Auth",
     "VehicleTypes",
+    "ShipperRequests",
   ],
   endpoints: (builder) => ({
     // --- Auth ---
@@ -48,31 +53,31 @@ export const api = createApi({
       { message: string; data: { userId: number; userUniqueId: string; fullName: string; phoneNumber: string; email: string; roleId: number } },
       { phoneNumber: string; roleId: number }
     >({
-      query: (body) => ({ url: "/user/loginUser", method: "POST", body }),
+      query: (body) => ({ url: appAPIs.loginAPI, method: "POST", body }),
     }),
 
     verifyOtp: builder.mutation<
       { message: string; token: string; userData: StoredAuth["userData"] },
       { phoneNumber: string; roleId: number; OTP: string }
     >({
-query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
-  async onQueryStarted(_args, { queryFulfilled }) {
-    /* eslint-disable no-empty */
-    try {
-      const { data } = await queryFulfilled;
-      const { storeAuth } = await import("@/lib/auth");
-      storeAuth({ token: data.token, userData: data.userData });
-    } catch {
-    }
-    /* eslint-enable no-empty */
-  },
+      query: (body) => ({ url: appAPIs.verifyOtpAPI, method: "POST", body }),
+      async onQueryStarted(_args, { queryFulfilled }) {
+        /* eslint-disable no-empty */
+        try {
+          const { data } = await queryFulfilled;
+          const { storeAuth } = await import("@/lib/auth");
+          storeAuth({ token: data.token, userData: data.userData });
+        } catch {
+        }
+        /* eslint-enable no-empty */
+      },
     }),
 
     registerUser: builder.mutation<
       { message: string; data: { userId: number; userUniqueId: string; fullName: string; phoneNumber: string; email: string; roleId: number } },
       { fullName: string; phoneNumber: string; email?: string | null; roleId: number; statusId: number }
     >({
-      query: (body) => ({ url: "/user/createUser", method: "POST", body }),
+      query: (body) => ({ url: appAPIs.registerUserAPI, method: "POST", body }),
     }),
 
     // --- Queue Organizations ---
@@ -81,8 +86,8 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       Record<string, string | number | boolean> | void
     >({
       query: (params) => {
-        if (!params) return { url: "/queueOrganization" };
-        return { url: "/queueOrganization", params };
+        if (!params) return { url: appAPIs.listQueueOrganizationsAPI };
+        return { url: appAPIs.listQueueOrganizationsAPI, params };
       },
       providesTags: ["QueueOrganizations"],
     }),
@@ -91,7 +96,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: QueueOrgListItem },
       string
     >({
-      query: (id) => `/queueOrganization/${id}`,
+      query: (id) => appAPIs.getQueueOrganizationAPI.replace(":id", id),
       providesTags: (_, __, id) => [{ type: "QueueOrganizations", id }],
     }),
 
@@ -99,7 +104,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: { queueOrganizationUniqueId: string } },
       { id: string; body: Partial<QueueOrganization> }
     >({
-      query: ({ id, body }) => ({ url: `/queueOrganization/${id}`, method: "PATCH", body }),
+      query: ({ id, body }) => ({ url: appAPIs.updateQueueOrganizationAPI.replace(":id", id), method: "PATCH", body }),
       invalidatesTags: ["QueueOrganizations"],
     }),
 
@@ -107,15 +112,22 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: { queueOrganizationUniqueId: string; approvalStatus: string } },
       { id: string; body: { approvalStatus: "approved" | "rejected" | "suspended"; approvalReason?: string; queueEnabled?: boolean } }
     >({
-      query: ({ id, body }) => ({ url: `/queueOrganization/${id}/approve`, method: "PATCH", body }),
+      query: ({ id, body }) => ({ url: appAPIs.approveQueueOrganizationAPI.replace(":id", id), method: "PATCH", body }),
       invalidatesTags: ["QueueOrganizations"],
     }),
 
     createQueueOrganization: builder.mutation<
       { message: string; data: { queueOrganizationUniqueId: string; approvalStatus: string } },
-      { queueOrganizationName: string; queueOrganizationType: QueueOrgType; queueOrganizationPhone?: string | null; queueOrganizationAddress: string; latitude: number; longitude: number }
+      {
+        queueOrganizationName: string;
+        queueOrganizationType: QueueOrgType;
+        queueOrganizationPhone?: string | null;
+        queueOrganizationAddress: string;
+        latitude?: number | null;
+        longitude?: number | null;
+      }
     >({
-      query: (body) => ({ url: "/queueOrganization", method: "POST", body }),
+      query: (body) => ({ url: appAPIs.createQueueOrganizationAPI, method: "POST", body }),
       invalidatesTags: ["QueueOrganizations"],
     }),
 
@@ -123,7 +135,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: QueueOrgMember[] },
       string
     >({
-      query: (id) => `/queueOrganization/${id}/members`,
+      query: (id) => appAPIs.listQueueOrgMembersAPI.replace(":id", id),
       providesTags: (_, __, id) => [{ type: "QueueOrgMembers", id }],
     }),
 
@@ -131,7 +143,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: QueueOrgMember },
       { id: string; userUniqueId: string; roleId: number; isActive?: boolean }
     >({
-      query: ({ id, userUniqueId, ...body }) => ({ url: `/queueOrganization/${id}/members/${userUniqueId}`, method: "POST", body }),
+      query: ({ id, userUniqueId, ...body }) => ({ url: appAPIs.addQueueOrgMemberAPI.replace(":id", id).replace(":userUniqueId", userUniqueId), method: "POST", body }),
       invalidatesTags: (_, __, { id }) => [{ type: "QueueOrgMembers", id }],
     }),
 
@@ -141,7 +153,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { queueOrganizationUniqueId: string; queueDate?: string }
     >({
       query: ({ queueOrganizationUniqueId, queueDate }) => ({
-        url: "/queue/status",
+        url: appAPIs.getQueueStatusAPI,
         params: { queueOrganizationUniqueId, queueDate },
       }),
       providesTags: (_, __, { queueOrganizationUniqueId, queueDate }) => [
@@ -153,7 +165,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: Pick<DriverQueueEntry, "queueUniqueId" | "queueNumber" | "status"> },
       { queueOrganizationUniqueId: string; vehicleDriverUniqueId: string; queueNumber?: number }
     >({
-      query: (body) => ({ url: "/queue/manualCheckin", method: "POST", body }),
+      query: (body) => ({ url: appAPIs.manualCheckinAPI, method: "POST", body }),
       invalidatesTags: (_, __, { queueOrganizationUniqueId }) => [
         { type: "QueueStatus", id: `${queueOrganizationUniqueId}|today` },
         { type: "DriverQueue", id: queueOrganizationUniqueId },
@@ -164,7 +176,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: { queueUniqueId: string; queueNumber: number; driverUserUniqueId: string; status: string } },
       { queueOrganizationUniqueId: string; vehicleTypeUniqueId: string; shipperRequestUniqueId?: string }
     >({
-      query: (body) => ({ url: "/queue/dispatch", method: "POST", body }),
+      query: (body) => ({ url: appAPIs.dispatchQueueAPI, method: "POST", body }),
       invalidatesTags: (_, __, { queueOrganizationUniqueId }) => [
         { type: "QueueStatus", id: `${queueOrganizationUniqueId}|today` },
         { type: "DriverQueue", id: queueOrganizationUniqueId },
@@ -175,7 +187,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: DriverQueueEntry },
       { queueUniqueId: string; body: { queueNumber: number; reason?: string } }
     >({
-      query: ({ queueUniqueId, body }) => ({ url: `/queue/entry/${queueUniqueId}/override`, method: "PATCH", body }),
+      query: ({ queueUniqueId, body }) => ({ url: appAPIs.overrideEntryAPI.replace(":queueUniqueId", queueUniqueId), method: "PATCH", body }),
       invalidatesTags: ["QueueStatus", "DriverQueue"],
     }),
 
@@ -183,7 +195,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: { queueUniqueId: string } },
       string
     >({
-      query: (queueUniqueId) => ({ url: `/queue/entry/${queueUniqueId}`, method: "DELETE" }),
+      query: (queueUniqueId) => ({ url: appAPIs.removeEntryAPI.replace(":queueUniqueId", queueUniqueId), method: "DELETE" }),
       invalidatesTags: ["QueueStatus", "DriverQueue"],
     }),
 
@@ -192,8 +204,8 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: { totalRecords: Record<string, number> } },
       CreateOrderPayload
     >({
-      query: (body) => ({ url: "/shipperRequest/createRequest", method: "POST", body }),
-      invalidatesTags: ["QueueStatus"],
+      query: (body) => ({ url: appAPIs.createOrderAPI, method: "POST", body }),
+      invalidatesTags: ["QueueStatus", "DriverQueue"],
     }),
 
     // --- Vehicle/Driver for checkin ---
@@ -201,7 +213,7 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: VehicleType[] },
       void
     >({
-      query: () => ({ url: "/admin/vehicleTypes", params: { limit: 100 } }),
+      query: () => ({ url: appAPIs.listVehicleTypesAPI, params: { limit: 100 } }),
       providesTags: ["VehicleTypes"],
     }),
 
@@ -209,7 +221,57 @@ query: (body) => ({ url: "/user/verifyUserByOTP", method: "POST", body }),
       { message: string; data: Array<{ vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string }> },
       { queueOrganizationUniqueId?: string }
     >({
-      query: (params) => ({ url: "/vehicleDriver/list", params }),
+      query: ({ queueOrganizationUniqueId } = {}) => {
+        if (queueOrganizationUniqueId) {
+          return { url: appAPIs.listDriverVehiclesAPI.replace(":queueOrganizationUniqueId", queueOrganizationUniqueId) };
+        }
+        return { url: appAPIs.listDriversPaginatedAPI, params: { page: 1, limit: 100 } };
+      },
+    }),
+
+    // --- Shipper Requests list (orders) ---
+    getShipperRequests: builder.query<
+      {
+        message: string;
+        data: Array<{
+          shipperRequest: {
+            shipperRequestUniqueId: string;
+            shipperRequestBatchUniqueId: string;
+            vehicleTypeUniqueId: string;
+            requestMode: string;
+            originPlace: string;
+            originLatitude: string;
+            originLongitude: string;
+            destinationPlace: string;
+            destinationLatitude: string;
+            destinationLongitude: string;
+            shippableItemName: string;
+            shippableItemQtyInQuintal: string;
+            shippingDate: string;
+            deliveryDate: string;
+            shippingCost: string;
+            shipperRequestCreatedAt: string;
+            journeyStatusId: number;
+            fullName: string;
+            phoneNumber: string;
+            vehicleTypeName: string;
+            queueOrganizationUniqueId: string;
+          };
+          driverRequests: unknown[];
+          decisions: unknown[];
+          journey: Record<string, unknown>;
+        }>;
+        pagination: {
+          currentPage: number;
+          totalPages: number;
+          totalItems: number;
+          limit: number;
+        };
+      },
+      { queueOrganizationUniqueId: string; target?: "all" | "single"; page?: number; limit?: number }
+    >({
+      query: (params) => ({ url: appAPIs.getShipperRequestsAPI, params }),
+      providesTags: ["ShipperRequests"],
     }),
   }),
 });
@@ -233,4 +295,5 @@ export const {
   useCreateQueueOrderMutation,
   useListVehicleTypesQuery,
   useListVehicleDriversQuery,
+  useGetShipperRequestsQuery,
 } = api;

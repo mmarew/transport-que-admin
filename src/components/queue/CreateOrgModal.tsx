@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -6,7 +7,7 @@ import { X, ChevronDown } from "lucide-react";
 import { getApiError } from "@/lib/api";
 import { setupOrgSchema, type SetupOrgFormValues } from "@/schemas/queue";
 import { QUEUE_ORG_TYPES, type QueueOrgType } from "@/types/queue";
-import { PhoneNumberInput } from "../ui/PhoneNumberInput";
+import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import "./CreateOrderModal.css";
 
 interface CreateOrgModalProps {
@@ -156,7 +157,7 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
     }
   };
 
-  return (
+  return createPortal(
     <div className="com-overlay">
       <div className="com-modal" style={{ maxWidth: "520px" }}>
         {/* Header */}
@@ -207,18 +208,17 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
             )}
           </div>
 
-          {/* Contact Phone (Optional with +251 prefix) */}
-          <div className="com-field-group">
-            <PhoneNumberInput
-              id="modal-org-phone"
-              label="Contact Phone"
-              value={watch("queueOrganizationPhone") || ""}
-              onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
-              placeholder="9XX XXX XXX"
-              required={false}
-              error={errors.queueOrganizationPhone?.message}
-            />
-          </div>
+          {/* Contact Phone (Optional with constant +251) */}
+          <ConstantPhoneInput
+            id="modal-org-phone"
+            label="Contact Phone"
+            value={watch("queueOrganizationPhone") || ""}
+            onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
+            placeholder="9-XX-XX-XX-XX"
+            required={false}
+            optional={true}
+            error={errors.queueOrganizationPhone?.message}
+          />
 
           {/* Address with Photon Autocomplete */}
           <div className="com-field-group" ref={dropdownRef}>
@@ -296,7 +296,8 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

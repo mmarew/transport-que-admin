@@ -13,10 +13,40 @@ let socket: Socket | null = null;
 const queueEventHandlers = new Set<QueueEventHandler>();
 let currentSubscription: { queueOrganizationUniqueId: string; queueDate?: string } | null = null;
 
-export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket {
+export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | null {
+  const storedAuth = getStoredAuth();
+  const token = storedAuth?.token;
+  const phoneNumber = user?.phoneNumber || storedAuth?.userData?.phoneNumber;
+  const formattedToken = token ? (token.startsWith("Bearer ") ? token : `Bearer ${token}`) : undefined;
+
+  // Don't connect without credentials — server will reject with 400
+  if (!formattedToken || !phoneNumber) {
+    console.warn("[Socket] Skipping connect — missing token or phoneNumber", {
+      hasToken: !!token,
+      hasPhone: !!phoneNumber,
+    });
+    return socket;
+  }
+
+  console.info("[Socket] Connecting →", {
+    phoneNumber,
+    hasToken: !!formattedToken,
+    alreadyExists: !!socket,
+  });
+
   if (socket) {
-    if (socket.connected) return socket;
-    if (socket.active) return socket;
+    // Refresh auth credentials in case token changed
+    socket.auth = {
+      user: "queueOrgAdmin",
+      phoneNumber,
+      token: formattedToken,
+    };
+    if (socket.connected) {
+      useQueueAdminStore.getState().setSocketConnected(true);
+      return socket;
+    }
+    socket.connect();
+    return socket;
   }
 
   const socketUrl =
@@ -25,23 +55,24 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket {
     import.meta.env.VITE_API_BASE_URL ||
     "https://dynamicsroute.tech";
 
-  const storedAuth = getStoredAuth();
-  const token = storedAuth?.token;
-  const phoneNumber = user?.phoneNumber || storedAuth?.userData?.phoneNumber;
-
   socket = io(socketUrl, {
-    transports: ["websocket", "polling"],
+    // Use websocket-only — Nginx on the backend only proxies WebSocket upgrades,
+    // not HTTP long-polling, which causes 400 errors on polling requests.
+    transports: ["websocket"],
+    autoConnect: false,
     auth: {
       user: "queueOrgAdmin",
-      phoneNumber: phoneNumber,
-      token: token ? (token.startsWith("Bearer ") ? token : `Bearer ${token}`) : undefined,
+      phoneNumber,
+      token: formattedToken,
     },
     reconnection: true,
-    reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 2000,
+    reconnectionDelayMax: 10000,
     timeout: 20000,
   });
+
+  socket.connect();
 
   socket.on("connect", () => {
     useQueueAdminStore.getState().setSocketConnected(true);
@@ -96,8 +127,16 @@ export function disconnectSocket(): void {
 
 export function subscribeToQueue(queueOrganizationUniqueId: string, queueDate?: string): void {
   currentSubscription = { queueOrganizationUniqueId, queueDate };
-  if (socket?.connected) {
+  if (!socket) {
+    // Only connect if we have credentials; if not, the AuthContext will connect when auth is set
+    connectSocket();
+    return;
+  }
+  if (socket.connected) {
     socket.emit("queue:subscribe", currentSubscription);
+  } else {
+    // Socket exists but not connected — wait for the "connect" event which will re-emit subscribe
+    socket.connect();
   }
 }
 

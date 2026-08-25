@@ -1,18 +1,17 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { manualCheckin } from "../../services/queue.service";
-import { getApiError } from "../../lib/api";
+import { useManualCheckinMutation, useListVehicleDriversQuery } from "../../lib/redux/api";
+import parseError from "../../utils/parseError";
 import { checkinSchema, type CheckinFormValues } from "../../schemas/queue";
 
 interface CheckinModalProps {
   queueOrganizationUniqueId: string;
+  onCheckedIn?: () => void;
   onClose: () => void;
 }
 
-export function CheckinModal({ queueOrganizationUniqueId, onClose }: CheckinModalProps) {
-  const queryClient = useQueryClient();
+export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }: CheckinModalProps) {
   const {
     register,
     handleSubmit,
@@ -21,71 +20,105 @@ export function CheckinModal({ queueOrganizationUniqueId, onClose }: CheckinModa
     resolver: zodResolver(checkinSchema),
   });
 
-  const mutation = useMutation({
-    mutationFn: (values: CheckinFormValues) =>
-      manualCheckin({
+  const [checkinMutation, { isLoading: isCheckingIn }] = useManualCheckinMutation();
+  const { data: driversData, isLoading: isLoadingDrivers } = useListVehicleDriversQuery({
+    queueOrganizationUniqueId,
+  });
+
+  const driverList = Array.isArray(driversData?.data) ? driversData.data : [];
+
+  const handleFormSubmit = async (values: CheckinFormValues) => {
+    try {
+      const res = await checkinMutation({
         queueOrganizationUniqueId,
         vehicleDriverUniqueId: values.vehicleDriverUniqueId,
         queueNumber: values.queueNumber,
-      }),
-    onSuccess: (res) => {
-      toast.success(`Driver checked in at #${res.data.data.queueNumber}`);
-      queryClient.invalidateQueries({ queryKey: ["queue-status", queueOrganizationUniqueId] });
+      }).unwrap();
+
+      toast.success(res?.message || `Driver checked in at #${res?.data?.queueNumber ?? 1}`);
+      onCheckedIn?.();
       onClose();
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
-      >
-        <h2 className="text-lg font-semibold text-slate-800">Manual check-in</h2>
-        <div className="mt-4 space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Vehicle-Driver ID</label>
-            <input
-              {...register("vehicleDriverUniqueId")}
-              placeholder="vehicleDriverUniqueId"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
-            {errors.vehicleDriverUniqueId && (
-              <p className="mt-1 text-xs text-red-600">{errors.vehicleDriverUniqueId.message}</p>
-            )}
+    <div className="com-overlay">
+      <div className="com-modal" style={{ maxWidth: "440px" }}>
+        <form onSubmit={handleSubmit(handleFormSubmit)}>
+          <h2 className="com-title">Manual Check-In</h2>
+          <p className="com-subtitle" style={{ marginBottom: "1.25rem" }}>
+            Check a driver into the live waiting queue for this terminal.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div className="com-field-group">
+              <label className="com-label">Select Driver / Vehicle</label>
+              {driverList.length > 0 ? (
+                <div className="com-select-wrap">
+                  <select
+                    {...register("vehicleDriverUniqueId")}
+                    className={`com-select ${errors.vehicleDriverUniqueId ? "com-select-error" : ""}`}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      {isLoadingDrivers ? "Loading drivers..." : "-- Select registered driver --"}
+                    </option>
+                    {driverList.map((d) => (
+                      <option key={d.vehicleDriverUniqueId} value={d.vehicleDriverUniqueId}>
+                        {d.driverName} ({d.driverPhoneNumber}) - {d.vehicleTypeName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <input
+                  {...register("vehicleDriverUniqueId")}
+                  placeholder="Enter vehicleDriverUniqueId"
+                  className={`com-input ${errors.vehicleDriverUniqueId ? "com-input-error" : ""}`}
+                />
+              )}
+              {errors.vehicleDriverUniqueId && (
+                <p className="com-error-text">{errors.vehicleDriverUniqueId.message}</p>
+              )}
+            </div>
+
+            <div className="com-field-group">
+              <label className="com-label">
+                Queue number <span style={{ color: "#94a3b8", fontWeight: "normal" }}>(optional, auto-assigned)</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                {...register("queueNumber", { valueAsNumber: true })}
+                placeholder="Auto-assigned next in line"
+                className={`com-input ${errors.queueNumber ? "com-input-error" : ""}`}
+              />
+              {errors.queueNumber && <p className="com-error-text">{errors.queueNumber.message}</p>}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Queue number <span className="font-normal text-slate-400">(optional)</span>
-            </label>
-            <input
-              type="number"
-              min={1}
-              {...register("queueNumber", { valueAsNumber: true })}
-              placeholder="auto-assigned"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
-            {errors.queueNumber && <p className="mt-1 text-xs text-red-600">{errors.queueNumber.message}</p>}
+
+          <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="com-btn-cancel"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isCheckingIn}
+              className="com-btn-submit"
+            >
+              {isCheckingIn ? "Checking in…" : "Check In"}
+            </button>
           </div>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {mutation.isPending ? "Checking in…" : "Check in"}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
+
+export default CheckinModal;

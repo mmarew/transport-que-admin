@@ -8,7 +8,6 @@ import OverlappingCircles from "../ui/OverlappingCircles";
 import FieldError from "../ui/FieldError";
 import { useAuth } from "../../context/AuthContext";
 import { verifyOtp, requestLoginOtp } from "../../services/auth.service";
-import { connectSocket, disconnectSocket } from "../../lib/socket";
 import parseError from "../../utils/parseError";
 import type { LoginFormData } from "./Login";
 import "../../styles/auth.css";

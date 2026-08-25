@@ -153,24 +153,13 @@ export interface PhotonFeature {
 }
 
 export interface CreateOrderPayload {
-  shipperRequestBatchUniqueId: string;
-  numberOfVehicles: number;
-  shippingDate: string;
-  deliveryDate: string;
-  shippingCost: number;
-  shippableItemQtyInQuintal: number;
-  shippableItemName: string;
-  /** Required for admin / queue-org-admin creating on behalf of a shipper */
-  shipperPhoneNumber: string;
-  requestMode: RequestMode;
-  /** Tolerated by the backend schema; the create flow always sends "shipper" */
-  requestType: "shipper";
   queueOrganizationUniqueId: string;
-  originLocation: {
-    latitude: number;
-    longitude: number;
-    description: string;
-  };
+  shipperPhoneNumber: string;
+  shipperRequestBatchUniqueId: string;
+  requestMode: RequestMode;
+  numberOfVehicles: number;
+  deliveryDate: string;
+  requestType: "shipper";
   destination: {
     latitude: number;
     longitude: number;
@@ -178,6 +167,15 @@ export interface CreateOrderPayload {
   };
   vehicle: {
     vehicleTypeUniqueId: string;
+  };
+  shippableItemName: string;
+  shippableItemQtyInQuintal: number;
+  shippingCost: number;
+  shippingDate: string;
+  originLocation: {
+    latitude: number;
+    longitude: number;
+    description: string;
   };
 }
 

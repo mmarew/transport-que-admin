@@ -1,0 +1,98 @@
+/* ─── Constant Phone Input Component Styles ─── */
+
+.cpi-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  position: relative;
+}
+
+.cpi-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #27272A;
+}
+
+.cpi-optional {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.cpi-box {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.625rem;
+  background: #ffffff;
+  padding: 0 1rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-height: 48px;
+}
+
+.com-modal .cpi-box {
+  height: 38px;
+  min-height: 38px;
+  border-radius: 6px;
+  border-color: #e2e8f0;
+  padding: 0 10px;
+}
+
+.cpi-box:focus-within {
+  border-color: var(--primary, #0B4D6D);
+  box-shadow: 0 0 0 3px rgba(11, 77, 109, 0.12);
+}
+
+.cpi-box.error {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.cpi-prefix {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-right: 0.65rem;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.com-modal .cpi-prefix {
+  font-size: 13px;
+  margin-right: 6px;
+}
+
+.cpi-input {
+  flex: 1;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0.875rem 0;
+  font-size: 1rem;
+  color: #1e293b;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+  box-sizing: border-box;
+}
+
+.com-modal .cpi-input {
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.cpi-input::placeholder {
+  color: #94a3b8;
+}
+
+.cpi-error {
+  font-size: 0.8rem;
+  color: #dc2626;
+  margin-top: 0.25rem;
+}

@@ -9,7 +9,6 @@ import {
 } from "../../services/auth.service";
 import { getApiError } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
-import { connectSocket, disconnectSocket } from "../../lib/socket";
 import {
   normalizeFieldValue,
   normalizePhone,
