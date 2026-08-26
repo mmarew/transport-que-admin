@@ -76,22 +76,32 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
                     </span>
                   </td>
                   <td style={{ textAlign: "center" }}>
-                    <div className="qb-actions-cell">
-                      <button
-                        type="button"
-                        className="qb-btn-override-outline"
-                        onClick={() => onOverride(entry)}
-                      >
-                        Override
-                      </button>
-                      <button
-                        type="button"
-                        className="qb-btn-cancel-outline"
-                        onClick={() => onRemove(entry)}
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    {statusKey === "removed" ? (
+                      <span style={{ color: "#94a3b8", fontSize: "0.82rem" }}>
+                        —
+                      </span>
+                    ) : statusKey === "loaded" ? (
+                      <span style={{ color: "#0B4D6D", fontSize: "0.82rem", fontWeight: 500 }}>
+                        Dispatched
+                      </span>
+                    ) : (
+                      <div className="qb-actions-cell">
+                        <button
+                          type="button"
+                          className="qb-btn-override-outline"
+                          onClick={() => onOverride(entry)}
+                        >
+                          Override
+                        </button>
+                        <button
+                          type="button"
+                          className="qb-btn-cancel-outline"
+                          onClick={() => onRemove(entry)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               );

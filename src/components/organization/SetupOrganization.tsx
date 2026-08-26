@@ -25,19 +25,24 @@ const ORG_TYPE_LABELS: Record<QueueOrgType, string> = {
   other: "Other",
 };
 
-interface PhotonFeature {
-  properties: {
-    name?: string;
-    street?: string;
-    housenumber?: string;
-    city?: string;
-    state?: string;
-    postcode?: string;
-    country?: string;
-  };
-  geometry: {
-    coordinates: [number, number]; // [longitude, latitude]
-  };
+interface PhotonPlace {
+  label: string;
+  lat: number;
+  lng: number;
+  city?: string;
+}
+
+function formatPhotonLabel(feature: any): string {
+  const p = feature.properties || {};
+  const parts = [
+    p.name,
+    p.street,
+    p.district || p.county,
+    p.city || p.town || p.village,
+    p.state,
+    p.country,
+  ].filter(Boolean);
+  return parts.length > 0 ? Array.from(new Set(parts)).join(", ") : p.name || p.street || "Location";
 }
 
 export const SetupOrganization: React.FC = () => {
@@ -72,7 +77,7 @@ export const SetupOrganization: React.FC = () => {
   });
 
   const addressValue = watch("queueOrganizationAddress");
-  const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<PhotonPlace[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -89,11 +94,18 @@ export const SetupOrganization: React.FC = () => {
 
     setIsSearching(true);
     try {
-      const url = `${PHOTON_API_URL}?q=${encodeURIComponent(query.trim())}&lang=en&limit=5`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        setSuggestions(data.features ?? []);
+      const res = await fetch(
+        `${PHOTON_API_URL}?q=${encodeURIComponent(query.trim())}&lat=9.0320&lon=38.7469&lang=en&limit=10`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const results = (data.features || []).map((feat: any) => ({
+          label: formatPhotonLabel(feat),
+          lat: feat.geometry?.coordinates[1] || 0,
+          lng: feat.geometry?.coordinates[0] || 0,
+          city: feat.properties?.state || feat.properties?.city,
+        }));
+        setSuggestions(results);
       } else {
         setSuggestions([]);
       }
@@ -115,27 +127,13 @@ export const SetupOrganization: React.FC = () => {
 
     debounceTimerRef.current = window.setTimeout(() => {
       void fetchAddressSuggestions(val);
-    }, 250);
+    }, 120);
   };
 
-  const handleSelectSuggestion = (feature: PhotonFeature) => {
-    const { properties, geometry } = feature;
-    const parts = [
-      properties.name,
-      properties.street,
-      properties.housenumber,
-      properties.city,
-      properties.state,
-      properties.country,
-    ].filter(Boolean);
-
-    const formattedAddress = parts.join(", ");
-    setValue("queueOrganizationAddress", formattedAddress, { shouldValidate: true });
-
-    if (geometry?.coordinates && geometry.coordinates.length >= 2) {
-      setValue("longitude", geometry.coordinates[0]);
-      setValue("latitude", geometry.coordinates[1]);
-    }
+  const handleSelectSuggestion = (place: PhotonPlace) => {
+    setValue("queueOrganizationAddress", place.label, { shouldValidate: true });
+    setValue("longitude", place.lng);
+    setValue("latitude", place.lat);
 
     setShowSuggestions(false);
     setSuggestions([]);
@@ -305,30 +303,17 @@ export const SetupOrganization: React.FC = () => {
               {/* Suggestions Dropdown */}
               {showSuggestions && suggestions.length > 0 && (
                 <div ref={suggestionsBoxRef} className="setup-org-suggestions-dropdown">
-                  {suggestions.map((feat, index) => {
-                    const name = feat.properties.name ?? "Location";
-                    const details = [
-                      feat.properties.street,
-                      feat.properties.housenumber,
-                      feat.properties.city,
-                      feat.properties.state,
-                      feat.properties.country,
-                    ]
-                      .filter(Boolean)
-                      .join(", ");
-
-                    return (
-                      <button
-                        type="button"
-                        key={`${feat.properties.name}-${index}`}
-                        className="setup-org-suggestion-item"
-                        onClick={() => handleSelectSuggestion(feat)}
-                      >
-                        <span className="setup-org-suggestion-name">{name}</span>
-                        {details && <span className="setup-org-suggestion-details">{details}</span>}
-                      </button>
-                    );
-                  })}
+                  {suggestions.map((place, index) => (
+                    <button
+                      type="button"
+                      key={`${place.label}-${index}`}
+                      className="setup-org-suggestion-item"
+                      onClick={() => handleSelectSuggestion(place)}
+                    >
+                      <span className="setup-org-suggestion-name">{place.label}</span>
+                      {place.city && <span className="setup-org-suggestion-details">{place.city}</span>}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

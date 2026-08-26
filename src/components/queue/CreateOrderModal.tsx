@@ -1,27 +1,37 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { X, Globe, Building2, Search, ChevronDown } from "lucide-react";
-import type { PhotonFeature, CreateOrderPayload } from "../../types/queue";
-import { useCreateQueueOrderMutation, useListVehicleTypesQuery } from "../../lib/redux/api";
+import type { CreateOrderPayload } from "../../types/queue";
+import {
+  useCreateQueueOrderMutation,
+  useGetQueueStatusQuery,
+} from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import { createOrderSchema, type CreateOrderFormValues } from "../../schemas/queue";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import { DatePickerField } from "../ui/DatePickerField";
-import "./CreateOrderModal.css";
+const PHOTON_URL = "https://photon.komoot.io/api/";
 
-const PHOTON_ENDPOINT = "https://photon.komoot.io/api/";
+interface PhotonPlace {
+  label: string;
+  lat: number;
+  lng: number;
+}
 
-function photonLabel(feature: PhotonFeature): string {
-  const p = feature.properties;
-  return (
-    [p.name, p.city, p.state, p.country].filter(Boolean).join(", ") ||
-    [p.housenumber, p.street].filter(Boolean).join(" ") ||
-    p.street ||
-    "Unknown place"
-  );
+function formatPhotonLabel(feature: any): string {
+  const p = feature.properties || {};
+  const parts = [
+    p.name,
+    p.street,
+    p.district || p.county,
+    p.city || p.town || p.village,
+    p.state,
+    p.country,
+  ].filter(Boolean);
+  return parts.length > 0 ? Array.from(new Set(parts)).join(", ") : p.name || p.street || "Location";
 }
 
 interface CreateOrderModalProps {
@@ -88,12 +98,12 @@ export function CreateOrderModal({
   const deliveryDate = watch("deliveryDate");
 
   const [destQuery, setDestQuery] = useState("");
-  const [destResults, setDestResults] = useState<PhotonFeature[]>([]);
+  const [destResults, setDestResults] = useState<PhotonPlace[]>([]);
   const [destOpen, setDestOpen] = useState(false);
   const destWrapRef = useRef<HTMLDivElement>(null);
 
   const [originQuery, setOriginQuery] = useState(origin?.description ?? "");
-  const [originResults, setOriginResults] = useState<PhotonFeature[]>([]);
+  const [originResults, setOriginResults] = useState<PhotonPlace[]>([]);
   const [originOpen, setOriginOpen] = useState(false);
   const originWrapRef = useRef<HTMLDivElement>(null);
 
@@ -110,62 +120,121 @@ export function CreateOrderModal({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
 
+  const fetchPhotonPlaces = async (query: string): Promise<PhotonPlace[]> => {
+    const q = query.trim();
+    if (q.length < 2) return [];
+    try {
+      const res = await fetch(
+        `${PHOTON_URL}?q=${encodeURIComponent(q)}&lat=9.0320&lon=38.7469&lang=en&limit=12`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        return (data.features || []).map((feat: any) => ({
+          label: formatPhotonLabel(feat),
+          lat: feat.geometry?.coordinates[1] || 0,
+          lng: feat.geometry?.coordinates[0] || 0,
+        }));
+      }
+    } catch {
+      // API error fallback
+    }
+    return [];
+  };
+
   useEffect(() => {
     const q = destQuery.trim();
-    if (q.length < 3) return setDestResults([]);
-    const t = setTimeout(() => {
-      fetch(`${PHOTON_ENDPOINT}?q=${encodeURIComponent(q)}&limit=5`)
-        .then((res) => (res.ok ? res.json() : { features: [] }))
-        .then((d) => setDestResults(d.features ?? []))
-        .catch(() => setDestResults([]));
-    }, 300);
+    if (!q) {
+      setDestResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const res = await fetchPhotonPlaces(q);
+      setDestResults(res);
+    }, 120);
     return () => clearTimeout(t);
   }, [destQuery]);
 
   useEffect(() => {
     const q = originQuery.trim();
-    if (q.length < 3) return setOriginResults([]);
-    const t = setTimeout(() => {
-      fetch(`${PHOTON_ENDPOINT}?q=${encodeURIComponent(q)}&limit=5`)
-        .then((res) => (res.ok ? res.json() : { features: [] }))
-        .then((d) => setOriginResults(d.features ?? []))
-        .catch(() => setOriginResults([]));
-    }, 300);
+    if (!q) {
+      setOriginResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const res = await fetchPhotonPlaces(q);
+      setOriginResults(res);
+    }, 120);
     return () => clearTimeout(t);
   }, [originQuery]);
 
-  const selectPlace = (feat: PhotonFeature, isOrigin: boolean) => {
-    const [lng, lat] = feat.geometry.coordinates;
-    const label = photonLabel(feat);
+  const selectPlace = (place: PhotonPlace, isOrigin: boolean) => {
     if (isOrigin) {
-      setValue("originDescription", label, { shouldValidate: true });
-      setValue("originLatitude", String(lat), { shouldValidate: true });
-      setValue("originLongitude", String(lng), { shouldValidate: true });
-      setOriginQuery(label);
+      setValue("originDescription", place.label, { shouldValidate: true });
+      setValue("originLatitude", String(place.lat), { shouldValidate: true });
+      setValue("originLongitude", String(place.lng), { shouldValidate: true });
+      setOriginQuery(place.label);
       setOriginResults([]);
       setOriginOpen(false);
     } else {
-      setValue("destinationDescription", label, { shouldValidate: true });
-      setValue("destinationLatitude", String(lat), { shouldValidate: true });
-      setValue("destinationLongitude", String(lng), { shouldValidate: true });
-      setDestQuery(label);
+      setValue("destinationDescription", place.label, { shouldValidate: true });
+      setValue("destinationLatitude", String(place.lat), { shouldValidate: true });
+      setValue("destinationLongitude", String(place.lng), { shouldValidate: true });
+      setDestQuery(place.label);
       setDestResults([]);
       setDestOpen(false);
     }
   };
 
-  const { data: vehicleTypesData, isLoading: isLoadingVehicleTypes } = useListVehicleTypesQuery();
+  const { data: queueStatusData } = useGetQueueStatusQuery(
+    { queueOrganizationUniqueId },
+    { skip: !queueOrganizationUniqueId }
+  );
   const [createOrderMutation, { isLoading: isCreating }] = useCreateQueueOrderMutation();
 
-  const vehicleTypesList = Array.isArray(vehicleTypesData?.data)
-    ? vehicleTypesData.data
-    : Array.isArray(vehicleTypesData)
-    ? vehicleTypesData
-    : [];
+  const vehicleTypesList = useMemo(() => {
+    const list: Array<{ vehicleTypeUniqueId: string; vehicleTypeName: string }> = [];
+    const seenIds = new Set<string>();
+    const seenNames = new Set<string>();
+
+    const add = (id?: string, name?: string) => {
+      if (!id) return;
+      const cleanName = (name || id).trim();
+      const normKey = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (!seenIds.has(id) && !seenNames.has(normKey)) {
+        seenIds.add(id);
+        seenNames.add(normKey);
+        list.push({ vehicleTypeUniqueId: id, vehicleTypeName: cleanName });
+      }
+    };
+
+    const DEFAULT_TYPES = [
+      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000002", vehicleTypeName: "ISUZU / Light Cargo (50–100 Quintal)" },
+      { vehicleTypeUniqueId: "e93aa27f-364f-4eff-bc26-582b773071d3", vehicleTypeName: "Dry Cargo Truck (100–250 Quintal)" },
+      { vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742", vehicleTypeName: "20ft Container Truck (251–300 Quintal)" },
+      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000005", vehicleTypeName: "2×20ft or 40ft Low-Bed Truck (301–350 Quintal)" },
+      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000001", vehicleTypeName: "Heavy Duty Trailer (351–400+ Quintal)" },
+      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000003", vehicleTypeName: "Tanker / Bulk Liquid" },
+      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000004", vehicleTypeName: "Refrigerated Cargo Truck" },
+    ];
+
+    // 1. From active terminal queues (live backend data)
+    if (queueStatusData?.data?.queues) {
+      Object.entries(queueStatusData.data.queues).forEach(([typeName, entries]) => {
+        const typeId = (entries as any)[0]?.vehicleTypeUniqueId;
+        const name = (entries as any)[0]?.vehicleTypeName || typeName;
+        if (typeId) add(typeId, name);
+      });
+    }
+
+    // 2. Add complete baseline types including 2×20ft or 40ft Low-Bed Truck
+    DEFAULT_TYPES.forEach((vt) => add(vt.vehicleTypeUniqueId, vt.vehicleTypeName));
+
+    return list;
+  }, [queueStatusData]);
 
   const handleFormSubmit = async (values: CreateOrderFormValues) => {
     try {
-      const payload: CreateOrderPayload = {
+      const payload: CreateOrderPayload & Record<string, unknown> = {
         queueOrganizationUniqueId,
         shipperPhoneNumber: values.shipperPhoneNumber,
         shipperRequestBatchUniqueId: newBatchId(),
@@ -173,6 +242,17 @@ export function CreateOrderModal({
         numberOfVehicles: Number(values.numberOfVehicles),
         deliveryDate: toISOStringSafe(values.deliveryDate),
         requestType: "shipper",
+        vehicleTypeUniqueId: values.vehicleTypeUniqueId,
+        originPlace: values.originDescription,
+        originLatitude: Number(values.originLatitude),
+        originLongitude: Number(values.originLongitude),
+        destinationPlace: values.destinationDescription,
+        destinationLatitude: Number(values.destinationLatitude),
+        destinationLongitude: Number(values.destinationLongitude),
+        shippableItemName: values.shippableItemName,
+        shippableItemQtyInQuintal: Number(values.shippableItemQtyInQuintal),
+        shippingCost: Number(values.shippingCost),
+        shippingDate: toISOStringSafe(values.shippingDate),
         destination: {
           latitude: Number(values.destinationLatitude),
           longitude: Number(values.destinationLongitude),
@@ -181,10 +261,6 @@ export function CreateOrderModal({
         vehicle: {
           vehicleTypeUniqueId: values.vehicleTypeUniqueId,
         },
-        shippableItemName: values.shippableItemName,
-        shippableItemQtyInQuintal: Number(values.shippableItemQtyInQuintal),
-        shippingCost: Number(values.shippingCost),
-        shippingDate: toISOStringSafe(values.shippingDate),
         originLocation: {
           latitude: Number(values.originLatitude),
           longitude: Number(values.originLongitude),
@@ -264,16 +340,12 @@ export function CreateOrderModal({
                     {...register("vehicleTypeUniqueId")}
                     className={`com-select ${errors.vehicleTypeUniqueId ? "com-select-error" : ""}`}
                   >
-                    <option value="">Select vehicle type</option>
-                    {isLoadingVehicleTypes ? (
-                      <option disabled value="">Loading vehicle types...</option>
-                    ) : (
-                      vehicleTypesList.map((vt) => (
-                        <option key={vt.vehicleTypeUniqueId} value={vt.vehicleTypeUniqueId}>
-                          {vt.vehicleTypeName}
-                        </option>
-                      ))
-                    )}
+                    <option value="">-- Select Vehicle Type --</option>
+                    {vehicleTypesList.map((vt) => (
+                      <option key={vt.vehicleTypeUniqueId} value={vt.vehicleTypeUniqueId}>
+                        {vt.vehicleTypeName}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown size={16} className="com-select-chevron" />
                 </div>
@@ -359,134 +431,143 @@ export function CreateOrderModal({
             </div>
           </div>
 
+          {/* ── Origin & Destination Sections (Aligned Rows) ── */}
+          <div className="com-grid-2" style={{ marginBottom: "-4px" }}>
+            <h3 className="com-section-title">Origin</h3>
+            <h3 className="com-section-title">Destination</h3>
+          </div>
+
           <div className="com-grid-2">
-            <div>
-              <h3 className="com-section-title">Origin</h3>
-              <div className="com-field-group">
-                <label className="com-label">Origin Location</label>
-                <div className="com-search-wrap" ref={originWrapRef}>
-                  <Search size={16} className="com-search-icon" />
-                  <input
-                    value={originQuery}
-                    placeholder="Search pickup location"
-                    onChange={(e) => {
-                      setOriginQuery(e.target.value);
-                      setValue("originDescription", e.target.value, { shouldValidate: true });
-                      setOriginOpen(true);
-                    }}
-                    onFocus={() => setOriginOpen(true)}
-                    className={`com-input com-search-input ${errors.originDescription ? "com-input-error" : ""}`}
-                  />
-                  {originOpen && originResults.length > 0 && (
-                    <div className="com-dropdown">
-                      {originResults.map((feat, idx) => (
-                        <button
-                          type="button"
-                          key={idx}
-                          className="com-dropdown-item"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            selectPlace(feat, true);
-                          }}
-                        >
-                          {photonLabel(feat)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {errors.originDescription && (
-                  <p className="com-error-text">{errors.originDescription.message}</p>
-                )}
-                {!errors.originDescription && (errors.originLatitude || errors.originLongitude) && (
-                  <p className="com-error-text">Please pick a location from the search dropdown to set coordinates</p>
+            {/* Origin Location Search */}
+            <div className="com-field-group">
+              <label className="com-label">Origin Location</label>
+              <div className="com-search-wrap" ref={originWrapRef}>
+                <Search size={16} className="com-search-icon" />
+                <input
+                  value={originQuery}
+                  placeholder="Search pickup location"
+                  onChange={(e) => {
+                    setOriginQuery(e.target.value);
+                    setValue("originDescription", e.target.value, { shouldValidate: true });
+                    setOriginOpen(true);
+                  }}
+                  onFocus={() => setOriginOpen(true)}
+                  className={`com-input com-search-input ${errors.originDescription ? "com-input-error" : ""}`}
+                />
+                {originOpen && originResults.length > 0 && (
+                  <div className="com-dropdown">
+                    {originResults.map((place, idx) => (
+                      <button
+                        type="button"
+                        key={idx}
+                        className="com-dropdown-item"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectPlace(place, true);
+                        }}
+                      >
+                        {place.label}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
-
-              <div className="com-grid-2">
-                <div className="com-field-group">
-                  <label className="com-label">Latitude</label>
-                  <input
-                    value={originLat ?? ""}
-                    readOnly
-                    placeholder="Auto-filled"
-                    className="com-input com-input-readonly"
-                  />
-                </div>
-                <div className="com-field-group">
-                  <label className="com-label">Longitude</label>
-                  <input
-                    value={originLng ?? ""}
-                    readOnly
-                    placeholder="Auto-filled"
-                    className="com-input com-input-readonly"
-                  />
-                </div>
+              <div style={{ minHeight: "16px" }}>
+                {errors.originDescription && (
+                  <p className="com-error-text" style={{ margin: 0 }}>{errors.originDescription.message}</p>
+                )}
+                {!errors.originDescription && (errors.originLatitude || errors.originLongitude) && (
+                  <p className="com-error-text" style={{ margin: 0 }}>Please pick a location from search</p>
+                )}
               </div>
             </div>
 
-            <div>
-              <h3 className="com-section-title">Destination</h3>
-              <div className="com-field-group">
-                <label className="com-label">Destination Location</label>
-                <div className="com-search-wrap" ref={destWrapRef}>
-                  <Search size={16} className="com-search-icon" />
-                  <input
-                    value={destQuery}
-                    placeholder="Search delivery location"
-                    onChange={(e) => {
-                      setDestQuery(e.target.value);
-                      setValue("destinationDescription", e.target.value, { shouldValidate: true });
-                      setDestOpen(true);
-                    }}
-                    onFocus={() => setDestOpen(true)}
-                    className={`com-input com-search-input ${errors.destinationDescription ? "com-input-error" : ""}`}
-                  />
-                  {destOpen && destResults.length > 0 && (
-                    <div className="com-dropdown">
-                      {destResults.map((feat, idx) => (
-                        <button
-                          type="button"
-                          key={idx}
-                          className="com-dropdown-item"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            selectPlace(feat, false);
-                          }}
-                        >
-                          {photonLabel(feat)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {errors.destinationDescription && (
-                  <p className="com-error-text">{errors.destinationDescription.message}</p>
-                )}
-                {!errors.destinationDescription && (errors.destinationLatitude || errors.destinationLongitude) && (
-                  <p className="com-error-text">Please pick a location from the search dropdown to set coordinates</p>
+            {/* Destination Location Search */}
+            <div className="com-field-group">
+              <label className="com-label">Destination Location</label>
+              <div className="com-search-wrap" ref={destWrapRef}>
+                <Search size={16} className="com-search-icon" />
+                <input
+                  value={destQuery}
+                  placeholder="Search delivery location"
+                  onChange={(e) => {
+                    setDestQuery(e.target.value);
+                    setValue("destinationDescription", e.target.value, { shouldValidate: true });
+                    setDestOpen(true);
+                  }}
+                  onFocus={() => setDestOpen(true)}
+                  className={`com-input com-search-input ${errors.destinationDescription ? "com-input-error" : ""}`}
+                />
+                {destOpen && destResults.length > 0 && (
+                  <div className="com-dropdown">
+                    {destResults.map((place, idx) => (
+                      <button
+                        type="button"
+                        key={idx}
+                        className="com-dropdown-item"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectPlace(place, false);
+                        }}
+                      >
+                        {place.label}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
+              <div style={{ minHeight: "16px" }}>
+                {errors.destinationDescription && (
+                  <p className="com-error-text" style={{ margin: 0 }}>{errors.destinationDescription.message}</p>
+                )}
+                {!errors.destinationDescription && (errors.destinationLatitude || errors.destinationLongitude) && (
+                  <p className="com-error-text" style={{ margin: 0 }}>Please pick a location from search</p>
+                )}
+              </div>
+            </div>
+          </div>
 
-              <div className="com-grid-2">
-                <div className="com-field-group">
-                  <label className="com-label">Latitude</label>
-                  <input
-                    value={destLat ?? ""}
-                    readOnly
-                    placeholder="Auto-filled"
-                    className="com-input com-input-readonly"
-                  />
-                </div>
-                <div className="com-field-group">
-                  <label className="com-label">Longitude</label>
-                  <input
-                    value={destLng ?? ""}
-                    readOnly
-                    placeholder="Auto-filled"
-                    className="com-input com-input-readonly"
-                  />
-                </div>
+          {/* Coordinates Row (Always Aligned) */}
+          <div className="com-grid-2">
+            <div className="com-grid-2">
+              <div className="com-field-group">
+                <label className="com-label">Latitude</label>
+                <input
+                  value={originLat ?? ""}
+                  readOnly
+                  placeholder="Auto-filled"
+                  className="com-input com-input-readonly"
+                />
+              </div>
+              <div className="com-field-group">
+                <label className="com-label">Longitude</label>
+                <input
+                  value={originLng ?? ""}
+                  readOnly
+                  placeholder="Auto-filled"
+                  className="com-input com-input-readonly"
+                />
+              </div>
+            </div>
+
+            <div className="com-grid-2">
+              <div className="com-field-group">
+                <label className="com-label">Latitude</label>
+                <input
+                  value={destLat ?? ""}
+                  readOnly
+                  placeholder="Auto-filled"
+                  className="com-input com-input-readonly"
+                />
+              </div>
+              <div className="com-field-group">
+                <label className="com-label">Longitude</label>
+                <input
+                  value={destLng ?? ""}
+                  readOnly
+                  placeholder="Auto-filled"
+                  className="com-input com-input-readonly"
+                />
               </div>
             </div>
           </div>

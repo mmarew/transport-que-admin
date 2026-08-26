@@ -15,17 +15,19 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<CheckinFormValues>({
     resolver: zodResolver(checkinSchema),
   });
 
   const [checkinMutation, { isLoading: isCheckingIn }] = useManualCheckinMutation();
-  const { data: driversData, isLoading: isLoadingDrivers } = useListVehicleDriversQuery({
-    queueOrganizationUniqueId,
-  });
+  const { data: driversData } = useListVehicleDriversQuery(
+    { queueOrganizationUniqueId },
+    { skip: !queueOrganizationUniqueId }
+  );
 
-  const driverList = Array.isArray(driversData?.data) ? driversData.data : [];
+  const driversList = Array.isArray(driversData?.data) ? driversData.data : [];
 
   const handleFormSubmit = async (values: CheckinFormValues) => {
     try {
@@ -54,20 +56,20 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
 
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div className="com-field-group">
-              <label className="com-label">Select Driver / Vehicle</label>
-              {driverList.length > 0 ? (
+              <label className="com-label">
+                Select Driver <span style={{ color: "#0B4D6D", fontWeight: "600" }}>*</span>
+              </label>
+              {driversList.length > 0 ? (
                 <div className="com-select-wrap">
                   <select
-                    {...register("vehicleDriverUniqueId")}
                     className={`com-select ${errors.vehicleDriverUniqueId ? "com-select-error" : ""}`}
+                    onChange={(e) => setValue("vehicleDriverUniqueId", e.target.value, { shouldValidate: true })}
                     defaultValue=""
                   >
-                    <option value="" disabled>
-                      {isLoadingDrivers ? "Loading drivers..." : "-- Select registered driver --"}
-                    </option>
-                    {driverList.map((d) => (
+                    <option value="">-- Select a Registered Driver --</option>
+                    {driversList.map((d) => (
                       <option key={d.vehicleDriverUniqueId} value={d.vehicleDriverUniqueId}>
-                        {d.driverName} ({d.driverPhoneNumber}) - {d.vehicleTypeName}
+                        {d.driverName} ({d.driverPhoneNumber}) — {d.vehicleTypeName || "Vehicle"}
                       </option>
                     ))}
                   </select>
@@ -75,7 +77,7 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
               ) : (
                 <input
                   {...register("vehicleDriverUniqueId")}
-                  placeholder="Enter vehicleDriverUniqueId"
+                  placeholder="Enter vehicleDriverUniqueId (UUID)"
                   className={`com-input ${errors.vehicleDriverUniqueId ? "com-input-error" : ""}`}
                 />
               )}

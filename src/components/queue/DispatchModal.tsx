@@ -1,19 +1,28 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { dispatch } from "../../services/queue.service";
-import { getApiError } from "../../lib/api";
+import {
+  useDispatchQueueMutation,
+  useGetShipperRequestsQuery,
+} from "../../lib/redux/api";
+import parseError from "../../utils/parseError";
 import { dispatchSchema, type DispatchFormValues } from "../../schemas/queue";
 
 interface DispatchModalProps {
   queueOrganizationUniqueId: string;
   vehicleTypeId: string;
+  vehicleTypeName?: string;
+  onDispatched?: () => void;
   onClose: () => void;
 }
 
-export function DispatchModal({ queueOrganizationUniqueId, vehicleTypeId, onClose }: DispatchModalProps) {
-  const queryClient = useQueryClient();
+export function DispatchModal({
+  queueOrganizationUniqueId,
+  vehicleTypeId,
+  vehicleTypeName,
+  onDispatched,
+  onClose,
+}: DispatchModalProps) {
   const {
     register,
     handleSubmit,
@@ -22,59 +31,130 @@ export function DispatchModal({ queueOrganizationUniqueId, vehicleTypeId, onClos
     resolver: zodResolver(dispatchSchema),
   });
 
-  const mutation = useMutation({
-    mutationFn: (values: DispatchFormValues) =>
-      dispatch({
+  const [dispatchMutation, { isLoading: isDispatching }] = useDispatchQueueMutation();
+  const { data: ordersData } = useGetShipperRequestsQuery(
+    { queueOrganizationUniqueId, target: "all", page: 1, limit: 50 },
+    { skip: !queueOrganizationUniqueId }
+  );
+
+  const typeDisplay = vehicleTypeName || vehicleTypeId;
+
+  // Filter pending orders matching this vehicle type
+  const availableOrders = Array.isArray(ordersData?.data)
+    ? ordersData.data.filter(
+        (o) =>
+          o.shipperRequest?.vehicleTypeUniqueId === vehicleTypeId &&
+          o.shipperRequest?.journeyStatusId === 1
+      )
+    : [];
+
+  const handleFormSubmit = async (values: DispatchFormValues) => {
+    try {
+      const payload: {
+        queueOrganizationUniqueId: string;
+        vehicleTypeUniqueId: string;
+        shipperRequestUniqueId?: string;
+      } = {
         queueOrganizationUniqueId,
         vehicleTypeUniqueId: vehicleTypeId,
-        shipperRequestUniqueId: values.shipperRequestUniqueId,
-      }),
-    onSuccess: (res) => {
-      toast.success(`Offered to driver #${res.data.data.queueNumber}`);
-      queryClient.invalidateQueries({ queryKey: ["queue-status", queueOrganizationUniqueId] });
+      };
+
+      const cleanShipperReqId = values.shipperRequestUniqueId?.trim();
+      if (cleanShipperReqId) {
+        payload.shipperRequestUniqueId = cleanShipperReqId;
+      }
+
+      const res = await dispatchMutation(payload).unwrap();
+
+      const queueNum = res?.data?.queueNumber;
+      toast.success(res?.message || (queueNum ? `Offered to front driver #${queueNum}` : "Dispatch offer sent successfully"));
+      onDispatched?.();
       onClose();
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err: unknown) {
+      const errObj = typeof err === "object" && err !== null ? (err as Record<string, unknown>) : null;
+      const is404 = errObj?.status === 404 || errObj?.originalStatus === 404;
+      if (is404) {
+        toast.error("Dispatch failed: No drivers are currently waiting in the queue for this vehicle type.");
+      } else {
+        toast.error(parseError(err));
+      }
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
-      >
-        <h2 className="text-lg font-semibold text-slate-800">Dispatch to front driver</h2>
-        <p className="mt-1 text-sm text-slate-500">Vehicle type: {vehicleTypeId}</p>
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-slate-700">
-            Shipper request ID <span className="font-normal text-slate-400">(optional)</span>
-          </label>
-          <input
-            {...register("shipperRequestUniqueId")}
-            placeholder="shipperRequestUniqueId"
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          />
-          {errors.shipperRequestUniqueId && (
-            <p className="mt-1 text-xs text-red-600">{errors.shipperRequestUniqueId.message}</p>
-          )}
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {mutation.isPending ? "Dispatching…" : "Dispatch"}
-          </button>
-        </div>
-      </form>
+    <div className="com-overlay">
+      <div className="com-modal" style={{ maxWidth: "440px" }}>
+        <form onSubmit={handleSubmit(handleFormSubmit)}>
+          <h2 className="com-title">Dispatch to Front Driver</h2>
+          <p className="com-subtitle" style={{ marginBottom: "1.25rem" }}>
+            Vehicle Type: <strong style={{ color: "#0B4D6D" }}>{typeDisplay}</strong>
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div className="com-field-group">
+              <label className="com-label">
+                Select Shipper Order <span style={{ color: "#0B4D6D", fontWeight: "600" }}>*</span>
+              </label>
+              {availableOrders.length > 0 ? (
+                <div className="com-select-wrap">
+                  <select
+                    {...register("shipperRequestUniqueId", {
+                      required: "Please select an order to dispatch to the driver",
+                    })}
+                    className={`com-select ${errors.shipperRequestUniqueId ? "com-select-error" : ""}`}
+                    defaultValue={availableOrders[0]?.shipperRequest?.shipperRequestUniqueId || ""}
+                  >
+                    <option value="">-- Select an Order --</option>
+                    {availableOrders.map(({ shipperRequest }) => (
+                      <option
+                        key={shipperRequest.shipperRequestUniqueId}
+                        value={shipperRequest.shipperRequestUniqueId}
+                      >
+                        {shipperRequest.shippableItemName} ({Number(shipperRequest.shippableItemQtyInQuintal)} Qtl) → {shipperRequest.destinationPlace}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <input
+                    {...register("shipperRequestUniqueId", {
+                      required: "Shipper Request ID is required for dispatch",
+                    })}
+                    placeholder="Enter accepted shipperRequestUniqueId"
+                    className={`com-input ${errors.shipperRequestUniqueId ? "com-input-error" : ""}`}
+                  />
+                  <p style={{ fontSize: "0.78rem", color: "#64748b", margin: "4px 0 0 0" }}>
+                    No pending orders found for this vehicle type. Create an order using the <strong>+ Create Order</strong> button on the dashboard first, or paste an active order ID above.
+                  </p>
+                </>
+              )}
+              {errors.shipperRequestUniqueId && (
+                <p className="com-error-text">{errors.shipperRequestUniqueId.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="com-btn-cancel"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isDispatching}
+              className="com-btn-submit"
+            >
+              {isDispatching ? "Dispatching…" : "Dispatch"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
+
+export default DispatchModal;

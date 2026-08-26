@@ -72,7 +72,14 @@ export const checkinSchema = z.object({
 });
 
 export const dispatchSchema = z.object({
-  shipperRequestUniqueId: uuidSchema.optional(),
+  shipperRequestUniqueId: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v), {
+      message: "Invalid UUID",
+    }),
 });
 
 export const createOrderSchema = z

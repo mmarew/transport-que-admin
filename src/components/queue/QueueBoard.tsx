@@ -11,6 +11,16 @@ import { OverrideModal } from "./OverrideModal";
 import { ConfirmCancel } from "./ConfirmCancel";
 import "./QueueBoard.css";
 
+const DEFAULT_TYPE_ID_MAP: Record<string, string> = {
+  isuzu: "55060ed0-0000-0000-0000-000000000002",
+  dry: "e93aa27f-364f-4eff-bc26-582b773071d3",
+  "20ft": "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742",
+  "low-bed": "55060ed0-0000-0000-0000-000000000005",
+  "heavy duty": "55060ed0-0000-0000-0000-000000000001",
+  tanker: "55060ed0-0000-0000-0000-000000000003",
+  refrigerated: "55060ed0-0000-0000-0000-000000000004",
+};
+
 interface QueueBoardProps {
   queueOrganizationUniqueId: string;
   orgName?: string;
@@ -44,7 +54,7 @@ export function QueueBoard({
 
   const [showCheckin, setShowCheckin] = useState(false);
   const [showCreateOrder, setShowCreateOrder] = useState(false);
-  const [dispatchForType, setDispatchForType] = useState<string | null>(null);
+  const [dispatchForType, setDispatchForType] = useState<{ id: string; name: string } | null>(null);
   const [overrideEntry, setOverrideEntry] = useState<DriverQueueEntry | null>(null);
   const [cancelEntry, setCancelEntry] = useState<DriverQueueEntry | null>(null);
   const [viewMode, setViewMode] = useState<"byType" | "all">("byType");
@@ -81,10 +91,23 @@ export function QueueBoard({
     };
   }, [queueOrganizationUniqueId, invalidate, setSocketConnected]);
 
+  const resolveTypeId = (name: string, fallbackId?: string): string => {
+    if (fallbackId && fallbackId.includes("-") && fallbackId.length > 20) return fallbackId;
+    const lowerName = name.toLowerCase();
+    for (const [key, id] of Object.entries(DEFAULT_TYPE_ID_MAP)) {
+      if (lowerName.includes(key)) return id;
+    }
+    return fallbackId || name;
+  };
+
   // Flatten all entries across types for "All Drivers" view
   const allEntries: DriverQueueEntry[] = status
     ? Object.values(status.queues).flat()
     : [];
+
+  const allWaitingCount = allEntries.filter(
+    (e) => !e.status || e.status === "waiting" || e.status === "offered"
+  ).length;
 
   const formattedType = orgType ? orgType.charAt(0).toUpperCase() + orgType.slice(1) : "";
   const subtitle = formattedType ? `${orgName} (${formattedType}) — ${city}` : `${orgName} — ${city}`;
@@ -166,20 +189,26 @@ export function QueueBoard({
             </div>
           ) : (
             Object.entries(status.queues).map(([typeName, entries]) => {
-              const typeId = entries[0]?.vehicleTypeUniqueId || typeName;
+              const matchingEntry = entries.find((e) => e.vehicleTypeUniqueId);
+              const rawTypeId = matchingEntry?.vehicleTypeUniqueId || entries[0]?.vehicleTypeUniqueId;
+              const typeId = resolveTypeId(typeName, rawTypeId);
+              const waitingCount = entries.filter(
+                (e) => !e.status || e.status === "waiting" || e.status === "offered"
+              ).length;
+
               return (
                 <div key={typeName} className="qb-card" style={{ marginBottom: "1.5rem" }}>
                   <div className="qb-card-header">
                     <div className="qb-card-title-row">
                       <h2 className="qb-card-title">{typeName}</h2>
-                      <span className="qb-waiting-badge">{entries.length} waiting</span>
+                      <span className="qb-waiting-badge">{waitingCount} waiting</span>
                     </div>
 
                     <button
                       type="button"
                       className="qb-btn-dispatch-outline"
-                      disabled={entries.length === 0}
-                      onClick={() => setDispatchForType(typeId)}
+                      disabled={waitingCount === 0}
+                      onClick={() => setDispatchForType({ id: typeId, name: typeName })}
                     >
                       <Play size={13} fill="currentColor" />
                       Dispatch
@@ -205,17 +234,27 @@ export function QueueBoard({
           <div className="qb-card-header">
             <div className="qb-card-title-row">
               <h2 className="qb-card-title">All Vehicles & Drivers</h2>
-              <span className="qb-waiting-badge">{allEntries.length} waiting</span>
+              <span className="qb-waiting-badge">{allWaitingCount} waiting</span>
             </div>
 
             <button
               type="button"
               className="qb-btn-dispatch-outline"
-              disabled={allEntries.length === 0}
+              disabled={allWaitingCount === 0}
               onClick={() => {
-                const first = allEntries[0];
-                if (first?.vehicleTypeUniqueId) {
-                  setDispatchForType(first.vehicleTypeUniqueId);
+                const firstWaiting =
+                  allEntries.find(
+                    (e) =>
+                      e.vehicleTypeUniqueId &&
+                      (!e.status || e.status === "waiting" || e.status === "offered")
+                  ) || allEntries.find((e) => !e.status || e.status === "waiting" || e.status === "offered") || allEntries[0];
+
+                if (firstWaiting) {
+                  const resolved = resolveTypeId(firstWaiting.vehicleTypeName || "", firstWaiting.vehicleTypeUniqueId);
+                  setDispatchForType({
+                    id: resolved,
+                    name: firstWaiting.vehicleTypeName || "Front Driver",
+                  });
                 }
               }}
             >
@@ -252,14 +291,26 @@ export function QueueBoard({
       {dispatchForType && (
         <DispatchModal
           queueOrganizationUniqueId={queueOrganizationUniqueId}
-          vehicleTypeId={dispatchForType}
+          vehicleTypeId={dispatchForType.id}
+          vehicleTypeName={dispatchForType.name}
+          onDispatched={onRefetch}
           onClose={() => setDispatchForType(null)}
         />
       )}
       {overrideEntry && (
-        <OverrideModal entry={overrideEntry} onClose={() => setOverrideEntry(null)} />
+        <OverrideModal
+          entry={overrideEntry}
+          onOverridden={onRefetch}
+          onClose={() => setOverrideEntry(null)}
+        />
       )}
-      {cancelEntry && <ConfirmCancel entry={cancelEntry} onClose={() => setCancelEntry(null)} />}
+      {cancelEntry && (
+        <ConfirmCancel
+          entry={cancelEntry}
+          onRemoved={onRefetch}
+          onClose={() => setCancelEntry(null)}
+        />
+      )}
     </div>
   );
 }

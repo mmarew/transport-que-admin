@@ -33,16 +33,24 @@ const ORG_TYPE_LABELS: Record<QueueOrgType, string> = {
   other: "Other",
 };
 
-interface PhotonFeature {
-  properties: {
-    name?: string;
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    housenumber?: string;
-  };
-  geometry: { coordinates: [number, number] };
+interface PhotonPlace {
+  label: string;
+  lat: number;
+  lng: number;
+  city?: string;
+}
+
+function formatPhotonLabel(feature: any): string {
+  const p = feature.properties || {};
+  const parts = [
+    p.name,
+    p.street,
+    p.district || p.county,
+    p.city || p.town || p.village,
+    p.state,
+    p.country,
+  ].filter(Boolean);
+  return parts.length > 0 ? Array.from(new Set(parts)).join(", ") : p.name || p.street || "Location";
 }
 
 export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalProps) {
@@ -67,7 +75,7 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
 
   const addressValue = watch("queueOrganizationAddress");
   const [isPending, setIsPending] = useState(false);
-  const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<PhotonPlace[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -82,10 +90,18 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
     }
     setIsSearching(true);
     try {
-      const res = await fetch(`${PHOTON_URL}?q=${encodeURIComponent(query.trim())}&lang=en&limit=5`);
+      const res = await fetch(
+        `${PHOTON_URL}?q=${encodeURIComponent(query.trim())}&lat=9.0320&lon=38.7469&lang=en&limit=10`
+      );
       if (res.ok) {
         const data = await res.json();
-        setSuggestions(data.features ?? []);
+        const results = (data.features || []).map((feat: any) => ({
+          label: formatPhotonLabel(feat),
+          lat: feat.geometry?.coordinates[1] || 0,
+          lng: feat.geometry?.coordinates[0] || 0,
+          city: feat.properties?.state || feat.properties?.city,
+        }));
+        setSuggestions(results);
       } else {
         setSuggestions([]);
       }
@@ -106,21 +122,13 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
     }
     debounceTimerRef.current = window.setTimeout(() => {
       void fetchSuggestions(val);
-    }, 250);
+    }, 120);
   };
 
-  const handleSelectFeature = (feat: PhotonFeature) => {
-    const p = feat.properties;
-    const parts = [p.name, p.street, p.housenumber, p.city, p.state, p.country].filter(Boolean);
-    const full = parts.join(", ");
-    setValue("queueOrganizationAddress", full, { shouldValidate: true });
-
-    if (feat.geometry?.coordinates?.length >= 2) {
-      const [featLng, featLat] = feat.geometry.coordinates;
-      setValue("latitude", featLat, { shouldValidate: true });
-      setValue("longitude", featLng, { shouldValidate: true });
-    }
-
+  const handleSelectFeature = (place: PhotonPlace) => {
+    setValue("queueOrganizationAddress", place.label, { shouldValidate: true });
+    setValue("latitude", place.lat, { shouldValidate: true });
+    setValue("longitude", place.lng, { shouldValidate: true });
     setShowSuggestions(false);
     setSuggestions([]);
   };
@@ -257,30 +265,17 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
             {/* Suggestions Dropdown */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="com-suggestions-list">
-                {suggestions.map((feat, index) => {
-                  const name = feat.properties.name ?? "Location";
-                  const details = [
-                    feat.properties.street,
-                    feat.properties.housenumber,
-                    feat.properties.city,
-                    feat.properties.state,
-                    feat.properties.country,
-                  ]
-                    .filter(Boolean)
-                    .join(", ");
-
-                  return (
-                    <button
-                      type="button"
-                      key={`${feat.properties.name}-${index}`}
-                      className="com-suggestion-item"
-                      onClick={() => handleSelectFeature(feat)}
-                    >
-                      <div style={{ fontWeight: 600, color: "#1e293b" }}>{name}</div>
-                      {details && <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{details}</div>}
-                    </button>
-                  );
-                })}
+                {suggestions.map((place, index) => (
+                  <button
+                    type="button"
+                    key={`${place.label}-${index}`}
+                    className="com-suggestion-item"
+                    onClick={() => handleSelectFeature(place)}
+                  >
+                    <div style={{ fontWeight: 600, color: "#1e293b" }}>{place.label}</div>
+                    {place.city && <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{place.city}</div>}
+                  </button>
+                ))}
               </div>
             )}
           </div>

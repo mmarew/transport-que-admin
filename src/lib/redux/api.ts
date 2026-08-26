@@ -180,6 +180,7 @@ export const api = createApi({
       invalidatesTags: (_, __, { queueOrganizationUniqueId }) => [
         { type: "QueueStatus", id: `${queueOrganizationUniqueId}|today` },
         { type: "DriverQueue", id: queueOrganizationUniqueId },
+        "ShipperRequests",
       ],
     }),
 
@@ -205,7 +206,7 @@ export const api = createApi({
       CreateOrderPayload
     >({
       query: (body) => ({ url: appAPIs.createOrderAPI, method: "POST", body }),
-      invalidatesTags: ["QueueStatus", "DriverQueue"],
+      invalidatesTags: ["QueueStatus", "DriverQueue", "ShipperRequests"],
     }),
 
     // --- Vehicle/Driver for checkin ---
@@ -223,7 +224,10 @@ export const api = createApi({
     >({
       query: ({ queueOrganizationUniqueId } = {}) => {
         if (queueOrganizationUniqueId) {
-          return { url: appAPIs.listDriverVehiclesAPI.replace(":queueOrganizationUniqueId", queueOrganizationUniqueId) };
+          return {
+            url: appAPIs.listVehicleDriversAPI,
+            params: { queueOrganizationUniqueId, organizationUniqueId: queueOrganizationUniqueId },
+          };
         }
         return { url: appAPIs.listDriversPaginatedAPI, params: { page: 1, limit: 100 } };
       },

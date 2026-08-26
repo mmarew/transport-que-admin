@@ -1,93 +1,109 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { overrideEntry } from "../../services/queue.service";
-import { getApiError } from "../../lib/api";
+import { useOverrideEntryMutation } from "../../lib/redux/api";
+import parseError from "../../utils/parseError";
 import { overrideSchema, type OverrideFormValues } from "../../schemas/queue";
 import type { DriverQueueEntry } from "../../types/queue";
 
 interface OverrideModalProps {
   entry: DriverQueueEntry;
+  onOverridden?: () => void;
   onClose: () => void;
 }
 
-export function OverrideModal({ entry, onClose }: OverrideModalProps) {
-  const queryClient = useQueryClient();
+export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<OverrideFormValues>({
     resolver: zodResolver(overrideSchema),
-    defaultValues: { queueNumber: entry.queueNumber },
+    defaultValues: { queueNumber: entry.queueNumber, reason: "" },
   });
 
-  const mutation = useMutation({
-    mutationFn: (values: OverrideFormValues) =>
-      overrideEntry(entry.queueUniqueId, {
-        queueNumber: values.queueNumber,
-        reason: values.reason || undefined,
-      }),
-    onSuccess: () => {
-      toast.success("Position overridden");
-      queryClient.invalidateQueries({ queryKey: ["queue-status"] });
+  const [overrideMutation, { isLoading }] = useOverrideEntryMutation();
+
+  const handleFormSubmit = async (values: OverrideFormValues) => {
+    try {
+      const res = await overrideMutation({
+        queueUniqueId: entry.queueUniqueId,
+        body: {
+          queueNumber: values.queueNumber,
+          reason: values.reason?.trim() || undefined,
+        },
+      }).unwrap();
+
+      toast.success(res?.message || `Driver position updated to #${values.queueNumber}`);
+      onOverridden?.();
       onClose();
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
-      >
-        <h2 className="text-lg font-semibold text-slate-800">Override position</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          {entry.driverName} — currently #{entry.queueNumber}
-        </p>
-        <div className="mt-4 space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">New queue number</label>
-            <input
-              type="number"
-              min={1}
-              {...register("queueNumber", { valueAsNumber: true })}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
-            {errors.queueNumber && <p className="mt-1 text-xs text-red-600">{errors.queueNumber.message}</p>}
+    <div className="com-overlay">
+      <div className="com-modal" style={{ maxWidth: "420px" }}>
+        <form onSubmit={handleSubmit(handleFormSubmit)}>
+          <h2 className="com-title">Override Position</h2>
+          <p className="com-subtitle" style={{ marginBottom: "1.25rem" }}>
+            {entry.driverName} ({entry.driverPhoneNumber}) — currently <strong style={{ color: "#0B4D6D" }}>#{entry.queueNumber}</strong>
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div className="com-field-group">
+              <label className="com-label">
+                New Queue Number <span style={{ color: "#0B4D6D" }}>*</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                {...register("queueNumber", { valueAsNumber: true })}
+                className={`com-input ${errors.queueNumber ? "com-input-error" : ""}`}
+              />
+              {errors.queueNumber && (
+                <p className="com-error-text">{errors.queueNumber.message}</p>
+              )}
+            </div>
+
+            <div className="com-field-group">
+              <label className="com-label">
+                Reason <span style={{ color: "#94a3b8", fontWeight: "normal" }}>(audit logged)</span>
+              </label>
+              <textarea
+                {...register("reason")}
+                placeholder="e.g. physically first, app login failed"
+                rows={3}
+                className="com-input"
+                style={{ resize: "vertical", minHeight: "75px" }}
+              />
+              {errors.reason && (
+                <p className="com-error-text">{errors.reason.message}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Reason <span className="font-normal text-slate-400">(audit logged)</span>
-            </label>
-            <textarea
-              {...register("reason")}
-              placeholder="e.g. physically first, app login failed"
-              rows={3}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
-            {errors.reason && <p className="mt-1 text-xs text-red-600">{errors.reason.message}</p>}
+
+          <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="com-btn-cancel"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="com-btn-submit"
+            >
+              {isLoading ? "Saving…" : "Override"}
+            </button>
           </div>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {mutation.isPending ? "Saving…" : "Override"}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
+
+export default OverrideModal;

@@ -1,51 +1,86 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { removeEntry } from "../../services/queue.service";
-import { getApiError } from "../../lib/api";
+import { useRemoveEntryMutation } from "../../lib/redux/api";
+import { getSocket } from "../../lib/socket";
+import parseError from "../../utils/parseError";
 import type { DriverQueueEntry } from "../../types/queue";
 
 interface ConfirmCancelProps {
   entry: DriverQueueEntry;
+  onRemoved?: () => void;
   onClose: () => void;
 }
 
-export function ConfirmCancel({ entry, onClose }: ConfirmCancelProps) {
-  const queryClient = useQueryClient();
+export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps) {
+  const [removeMutation, { isLoading }] = useRemoveEntryMutation();
 
-  const mutation = useMutation({
-    mutationFn: () => removeEntry(entry.queueUniqueId),
-    onSuccess: () => {
-      toast.success(`${entry.driverName} removed from queue`);
-      queryClient.invalidateQueries({ queryKey: ["queue-status"] });
+  const handleRemove = async () => {
+    try {
+      const res = await removeMutation(entry.queueUniqueId).unwrap();
+
+      // Broadcast socket events so driver mobile clients can dismiss active offer immediately
+      const s = getSocket();
+      if (s?.connected) {
+        const payload = {
+          message: "success",
+          messageTypes: "queue_removed",
+          data: {
+            queueUniqueId: entry.queueUniqueId,
+            driverUserUniqueId: entry.driverUserUniqueId,
+            vehicleDriverUniqueId: entry.vehicleDriverUniqueId,
+            shipperRequestUniqueId: entry.shipperRequestUniqueId,
+          },
+        };
+        s.emit("queue", payload);
+        s.emit("queue:cancel", payload);
+        s.emit("queue_removed", payload);
+      }
+
+      toast.success(res?.message || `${entry.driverName} removed from queue`);
+      onRemoved?.();
       onClose();
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-slate-800">Cancel driver from queue</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Remove <span className="font-medium">{entry.driverName}</span> (#{entry.queueNumber}) from
-          the line? This is audit-logged.
+    <div className="com-overlay">
+      <div className="com-modal" style={{ maxWidth: "400px" }}>
+        <h2 className="com-title">Cancel Driver from Queue</h2>
+        <p className="com-subtitle" style={{ marginBottom: "1.25rem" }}>
+          Are you sure you want to remove <strong style={{ color: "#0B4D6D" }}>{entry.driverName}</strong> (#{entry.queueNumber}) from the line? This action is audit-logged.
         </p>
-        <div className="mt-5 flex justify-end gap-2">
+
+        <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+            className="com-btn-cancel"
           >
-            Keep
+            Keep in Queue
           </button>
           <button
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending}
-            className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+            type="button"
+            onClick={handleRemove}
+            disabled={isLoading}
+            style={{
+              backgroundColor: "#ef4444",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "8px 16px",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: isLoading ? "not-allowed" : "pointer",
+              opacity: isLoading ? 0.6 : 1,
+            }}
           >
-            {mutation.isPending ? "Removing…" : "Cancel driver"}
+            {isLoading ? "Removing…" : "Cancel Driver"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+export default ConfirmCancel;

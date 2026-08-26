@@ -23,13 +23,50 @@ interface ErrorHandlerOptions {
   silent?: boolean;
 }
 
-const resolveServerMsg = (data?: BackendErrorBody): string | null => {
-  const e = data?.error;
-  const m = data?.message;
-  if (typeof e === "string" && e.trim() && e.toLowerCase() !== "error") return e;
-  if (typeof m === "string" && m.trim() && m.toLowerCase() !== "error" && m.toLowerCase() !== "success") return m;
-  if (typeof e === "string" && e.trim()) return e;
-  if (typeof m === "string" && m.trim()) return m;
+const resolveServerMsg = (data?: unknown): string | null => {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+
+  if (typeof d.message === "string" && d.message.trim() && d.message.toLowerCase() !== "error" && d.message.toLowerCase() !== "success") {
+    return d.message;
+  }
+  if (typeof d.error === "string" && d.error.trim() && d.error.toLowerCase() !== "error") {
+    return d.error;
+  }
+  if (typeof d.msg === "string" && d.msg.trim()) {
+    return d.msg;
+  }
+  if (typeof d.detail === "string" && d.detail.trim()) {
+    return d.detail;
+  }
+  if (d.errors && typeof d.errors === "object") {
+    if (Array.isArray(d.errors) && d.errors.length > 0) {
+      const first = d.errors[0];
+      if (typeof first === "string") return first;
+      if (typeof first === "object" && first !== null && typeof (first as Record<string, unknown>).message === "string") {
+        return (first as Record<string, unknown>).message as string;
+      }
+    } else {
+      const errMap = d.errors as Record<string, unknown>;
+      const firstVal = Object.values(errMap)[0];
+      if (Array.isArray(firstVal) && firstVal.length > 0 && typeof firstVal[0] === "string") {
+        return firstVal[0];
+      }
+      if (typeof firstVal === "string") return firstVal;
+    }
+  }
+  if (typeof d.error === "object" && d.error !== null) {
+    const errObj = d.error as Record<string, unknown>;
+    if (typeof errObj.message === "string") return errObj.message;
+    if (typeof errObj.detail === "string") return errObj.detail;
+  }
+  if (typeof d.data === "string" && d.data.trim()) return d.data;
+  if (typeof d.data === "object" && d.data !== null) {
+    const innerMsg = resolveServerMsg(d.data);
+    if (innerMsg) return innerMsg;
+  }
+  if (typeof d.message === "string" && d.message.trim()) return d.message;
+  if (typeof d.error === "string" && d.error.trim()) return d.error;
   return null;
 };
 
@@ -57,11 +94,25 @@ export const parseError = (error: unknown, options: ErrorHandlerOptions = {}): s
     console.error("[parseError]", error);
   }
 
+  // Axios error: { response: { status, data } }
   if (axios.isAxiosError(error) || (typeof error === "object" && error !== null && "response" in error)) {
     const err = error as ApiError;
     const { status: httpStatus, data } = err.response ?? {};
     const serverMsg = resolveServerMsg(data as BackendErrorBody | undefined);
     return getHttpMessage(httpStatus, serverMsg, (data as BackendErrorBody)?.code);
+  }
+
+  // RTK Query error: { status, data }
+  if (typeof error === "object" && error !== null && "status" in error) {
+    const rtkErr = error as { status?: number | string; data?: BackendErrorBody | Record<string, unknown> };
+    const httpStatus = typeof rtkErr.status === "number" ? rtkErr.status : undefined;
+    const serverMsg = resolveServerMsg(rtkErr.data as BackendErrorBody | undefined);
+    return getHttpMessage(httpStatus, serverMsg, (rtkErr.data as BackendErrorBody)?.code);
+  }
+
+  // RTK Query serialized error: { message }
+  if (typeof error === "object" && error !== null && "message" in error && typeof (error as { message?: unknown }).message === "string") {
+    return (error as { message: string }).message;
   }
 
   if (error instanceof Error) {
