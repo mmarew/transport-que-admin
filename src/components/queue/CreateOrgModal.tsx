@@ -2,12 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { X, ChevronDown } from "lucide-react";
 import { getApiError } from "@/lib/api";
 import { setupOrgSchema, type SetupOrgFormValues } from "@/schemas/queue";
 import { QUEUE_ORG_TYPES, type QueueOrgType } from "@/types/queue";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
+import MobileHeader from "../common/MobileHeader";
 import "./CreateOrderModal.css";
 
 interface CreateOrgModalProps {
@@ -54,6 +56,7 @@ function formatPhotonLabel(feature: any): string {
 }
 
 export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalProps) {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -154,7 +157,7 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
         longitude: Number(values.longitude),
         queueOrganizationPhone: values.queueOrganizationPhone || null,
       });
-      toast.success("Organization created! Pending admin approval.");
+      toast.success(t("org.pendingReview"));
       onCreated?.();
       reset();
       onClose();
@@ -168,11 +171,16 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
   return createPortal(
     <div className="com-overlay">
       <div className="com-modal" style={{ maxWidth: "520px" }}>
-        {/* Header */}
-        <div className="com-header">
+        {/* Mobile Header */}
+        <div className="com-mobile-header">
+          <MobileHeader title="Create Company" onBack={onClose} />
+        </div>
+
+        {/* Desktop Header */}
+        <div className="com-header com-header--desktop">
           <div>
-            <h2 className="com-title">Setup Your Organization</h2>
-            <p className="com-subtitle">Register your queue organization to manage drivers and dispatches</p>
+            <h2 className="com-title">{t("org.setupTitle")}</h2>
+            <p className="com-subtitle">{t("org.setupSubtitle")}</p>
           </div>
           <button type="button" className="com-close-btn" onClick={onClose}>
             <X size={20} />
@@ -183,7 +191,7 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
           {/* Organization Name */}
           <div className="com-field-group">
             <label className="com-label">
-              Organization Name <span style={{ color: "#E80000" }}>*</span>
+              {t("org.nameLabel")} <span style={{ color: "#E80000" }}>*</span>
             </label>
             <input
               {...register("queueOrganizationName")}
@@ -198,14 +206,14 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
           {/* Organization Type */}
           <div className="com-field-group">
             <label className="com-label">
-              Organization Type <span style={{ color: "#E80000" }}>*</span>
+              {t("org.typeLabel")} <span style={{ color: "#E80000" }}>*</span>
             </label>
             <div className="com-input-wrap">
               <select {...register("queueOrganizationType")} className="com-input com-select has-icon-right">
-                <option value="">Select type...</option>
-                {QUEUE_ORG_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {ORG_TYPE_LABELS[t]}
+                <option value="">{t("org.selectType")}...</option>
+                {QUEUE_ORG_TYPES.map((typeKey) => (
+                  <option key={typeKey} value={typeKey}>
+                    {t(`org.types.${typeKey}`, { defaultValue: ORG_TYPE_LABELS[typeKey] })}
                   </option>
                 ))}
               </select>
@@ -216,10 +224,10 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
             )}
           </div>
 
-          {/* Contact Phone (Optional with constant +251) */}
+          {/* Contact Phone */}
           <ConstantPhoneInput
             id="modal-org-phone"
-            label="Contact Phone"
+            label={t("org.phoneLabel")}
             value={watch("queueOrganizationPhone") || ""}
             onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
             placeholder="9-XX-XX-XX-XX"
@@ -228,16 +236,16 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
             error={errors.queueOrganizationPhone?.message}
           />
 
-          {/* Address with Photon Autocomplete */}
+          {/* Address */}
           <div className="com-field-group" ref={dropdownRef}>
             <label className="com-label">
-              Address <span style={{ color: "#E80000" }}>*</span>
+              {t("org.addressLabel")} <span style={{ color: "#E80000" }}>*</span>
             </label>
             <div className="com-input-wrap">
               <input
                 value={addressValue ?? ""}
                 onChange={handleAddressInput}
-                placeholder="Search address (e.g. Dessie, Bole, Addis Ababa)..."
+                placeholder={t("org.searchAddressPlaceholder")}
                 className="com-input"
                 autoComplete="off"
                 onFocus={() => {
@@ -262,31 +270,63 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
               <p className="com-error-text">{errors.queueOrganizationAddress.message}</p>
             )}
 
-            {/* Suggestions Dropdown */}
+            {/* Address Suggestions Dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="com-suggestions-list">
+              <div
+                className="com-dropdown"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  zIndex: 50,
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  marginTop: "4px",
+                }}
+              >
                 {suggestions.map((place, index) => (
                   <button
                     type="button"
                     key={`${place.label}-${index}`}
-                    className="com-suggestion-item"
+                    className="com-dropdown-item"
                     onClick={() => handleSelectFeature(place)}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 12px",
+                      fontSize: "0.85rem",
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                    }}
                   >
-                    <div style={{ fontWeight: 600, color: "#1e293b" }}>{place.label}</div>
-                    {place.city && <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{place.city}</div>}
+                    <div style={{ fontWeight: 500, color: "#1e293b" }}>{place.label}</div>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Footer Actions */}
-          <div className="com-footer">
-            <button type="button" className="com-btn-cancel" onClick={onClose}>
-              Cancel
+          <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="com-btn-cancel"
+            >
+              {t("common.cancel")}
             </button>
-            <button type="submit" className="com-btn-submit" disabled={isPending}>
-              {isPending ? "Creating..." : "Create Organization"}
+            <button
+              type="submit"
+              disabled={isPending}
+              className="com-btn-submit"
+            >
+              {isPending ? t("org.creating") : t("org.createOrg")}
             </button>
           </div>
         </form>

@@ -1,14 +1,15 @@
 import React from "react";
 import {
-  LayoutDashboard,
   Building2,
   BarChart2,
+  Database,
   Settings,
   LogOut,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SidebarItem from "./SidebarItem";
 import { useAuth } from "../../context/AuthContext";
 import { disconnectSocket } from "../../lib/socket";
@@ -30,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = false,
   onToggleCollapse,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
@@ -43,13 +45,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const currentPath = location.pathname;
   const derivedTab: QueueSidebarTab =
     activeTab ??
-    (currentPath.startsWith("/organizations") || currentPath.startsWith("/orgs/")
-      ? "organizations"
-      : currentPath.startsWith("/reports")
+    (currentPath.startsWith("/reports")
       ? "reports"
       : currentPath.startsWith("/settings")
       ? "settings"
-      : "dashboard");
+      : "organizations");
+
+  const isOrgActive =
+    derivedTab === "organizations" ||
+    derivedTab === "dashboard" ||
+    currentPath.startsWith("/dashboard") ||
+    currentPath.startsWith("/organizations") ||
+    currentPath.startsWith("/orgs/") ||
+    currentPath === "/";
 
   return (
     <>
@@ -78,39 +86,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Navigation Items: Dashboard, Organizations, Reports */}
+        {/* Desktop Navigation Items: Organizations, Reports */}
         <nav className="sidebar-nav">
           <SidebarItem
-            icon={<LayoutDashboard size={19} />}
-            label="Dashboard"
-            active={derivedTab === "dashboard"}
+            icon={<Building2 size={19} />}
+            label={t("nav.organizations")}
+            active={isOrgActive}
             onClick={() => navigate("/dashboard")}
           />
           <SidebarItem
-            icon={<Building2 size={19} />}
-            label="Organizations"
-            active={derivedTab === "organizations"}
-            onClick={() => navigate("/organizations")}
-          />
-          <SidebarItem
             icon={<BarChart2 size={19} />}
-            label="Reports"
+            label={t("nav.reports")}
             active={derivedTab === "reports"}
             onClick={() => navigate("/reports")}
           />
         </nav>
 
-        {/* Bottom Actions: Settings & Sign out */}
+        {/* Desktop Bottom Actions: Settings & Sign out */}
         <div className="sidebar-bottom">
           <SidebarItem
             icon={<Settings size={19} />}
-            label="Settings"
+            label={t("nav.settings")}
             active={derivedTab === "settings"}
             onClick={() => navigate("/settings")}
           />
           <SidebarItem
             icon={<LogOut size={19} />}
-            label="Sign out"
+            label={t("nav.signOut")}
             active={false}
             onClick={handleLogout}
             className="sidebar-link--logout"
@@ -118,35 +120,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation (Organizations, Reports, Settings) */}
       <nav className="mobile-bottom-nav">
         <button
-          className={`mobile-nav-item ${derivedTab === "dashboard" ? "active" : ""}`}
-          onClick={() => navigate("/dashboard")}
-        >
-          <LayoutDashboard size={20} />
-          <span>Dashboard</span>
-        </button>
-        <button
-          className={`mobile-nav-item ${derivedTab === "organizations" ? "active" : ""}`}
+          className={`mobile-nav-item ${isOrgActive ? "active" : ""}`}
           onClick={() => navigate("/organizations")}
         >
           <Building2 size={20} />
-          <span>Organizations</span>
+          <span>{t("nav.organizations")}</span>
         </button>
         <button
           className={`mobile-nav-item ${derivedTab === "reports" ? "active" : ""}`}
           onClick={() => navigate("/reports")}
         >
-          <BarChart2 size={20} />
-          <span>Reports</span>
+          <Database size={20} />
+          <span>{t("nav.reports")}</span>
         </button>
         <button
           className={`mobile-nav-item ${derivedTab === "settings" ? "active" : ""}`}
           onClick={() => navigate("/settings")}
         >
           <Settings size={20} />
-          <span>Settings</span>
+          <span>{t("nav.settings")}</span>
         </button>
       </nav>
     </>

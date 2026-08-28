@@ -1,10 +1,16 @@
 import { useForm } from "react-hook-form";
+import { createPortal } from "react-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useOverrideEntryMutation } from "../../lib/redux/api";
+import { X, User } from "lucide-react";
+import { useOverrideEntryMutation, useListVehicleTypesQuery } from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import { overrideSchema, type OverrideFormValues } from "../../schemas/queue";
 import type { DriverQueueEntry } from "../../types/queue";
+import { resolveVehicleName } from "../../utils/vehicleType";
+import MobileHeader from "../common/MobileHeader";
+import "./QueueModals.css";
 
 interface OverrideModalProps {
   entry: DriverQueueEntry;
@@ -13,6 +19,7 @@ interface OverrideModalProps {
 }
 
 export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalProps) {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -23,6 +30,7 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
   });
 
   const [overrideMutation, { isLoading }] = useOverrideEntryMutation();
+  const { data: vtData } = useListVehicleTypesQuery();
 
   const handleFormSubmit = async (values: OverrideFormValues) => {
     try {
@@ -42,67 +50,103 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
     }
   };
 
-  return (
-    <div className="com-overlay">
-      <div className="com-modal" style={{ maxWidth: "420px" }}>
-        <form onSubmit={handleSubmit(handleFormSubmit)}>
-          <h2 className="com-title">Override Position</h2>
-          <p className="com-subtitle" style={{ marginBottom: "1.25rem" }}>
-            {entry.driverName} ({entry.driverPhoneNumber}) — currently <strong style={{ color: "#0B4D6D" }}>#{entry.queueNumber}</strong>
-          </p>
+  const vtList = vtData?.data || [];
+  const driverName = entry.driverName || "Driver";
+  const driverPhone = entry.driverPhoneNumber || "";
+  const vehicleName = resolveVehicleName(entry.vehicleTypeUniqueId, entry.vehicleTypeName, vtList);
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div className="com-field-group">
-              <label className="com-label">
-                New Queue Number <span style={{ color: "#0B4D6D" }}>*</span>
-              </label>
-              <input
-                type="number"
-                min={1}
-                {...register("queueNumber", { valueAsNumber: true })}
-                className={`com-input ${errors.queueNumber ? "com-input-error" : ""}`}
-              />
-              {errors.queueNumber && (
-                <p className="com-error-text">{errors.queueNumber.message}</p>
-              )}
+  return createPortal(
+    <div className="qm-overlay">
+      <div className="qm-modal">
+        {/* Mobile Header */}
+        <div className="qm-mobile-header">
+          <MobileHeader title="Override Queue Position" onBack={onClose} />
+        </div>
+
+        {/* Desktop Header */}
+        <div className="qm-header qm-header--desktop">
+          <div>
+            <h2 className="qm-title">Override Queue Position</h2>
+            <p className="qm-subtitle">Change the position of a driver in the queue.</p>
+          </div>
+          <button type="button" className="qm-close-btn" onClick={onClose} aria-label="Close">
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit(handleFormSubmit)}>
+          {/* Top 2 Cards */}
+          <div className="qm-top-grid">
+            <div className="qm-card">
+              <div className="qm-icon-circle">
+                <User size={20} />
+              </div>
+              <div className="qm-card-info">
+                <span className="qm-card-title">{driverName}</span>
+                {driverPhone && <span className="qm-card-sub">{driverPhone}</span>}
+              </div>
             </div>
 
-            <div className="com-field-group">
-              <label className="com-label">
-                Reason <span style={{ color: "#94a3b8", fontWeight: "normal" }}>(audit logged)</span>
-              </label>
-              <textarea
-                {...register("reason")}
-                placeholder="e.g. physically first, app login failed"
-                rows={3}
-                className="com-input"
-                style={{ resize: "vertical", minHeight: "75px" }}
-              />
-              {errors.reason && (
-                <p className="com-error-text">{errors.reason.message}</p>
-              )}
+            <div className="qm-card-col">
+              <div className="qm-card-line">
+                Vehicle: <strong>{vehicleName}</strong>
+              </div>
+              <div className="qm-card-line">
+                Current Position: <strong>#{entry.queueNumber}</strong>
+              </div>
             </div>
           </div>
 
-          <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              className="com-btn-cancel"
-            >
-              Cancel
+          {/* New Queue Position */}
+          <div className="qm-field-group" style={{ marginTop: "10px" }}>
+            <label className="qm-section-title" style={{ margin: "0 0 4px 0" }}>
+              New Queue Position
+            </label>
+            <input
+              type="number"
+              min={1}
+              {...register("queueNumber", { valueAsNumber: true })}
+              className="qm-input"
+            />
+            <p className="qm-hint-text">Enter the new position for this driver.</p>
+            {errors.queueNumber && <p className="qm-error-text">{errors.queueNumber.message}</p>}
+          </div>
+
+          {/* Reason for Override */}
+          <div className="qm-field-group" style={{ marginTop: "10px" }}>
+            <label className="qm-section-title" style={{ margin: "0 0 4px 0" }}>
+              Reason for Override
+            </label>
+            <textarea
+              {...register("reason")}
+              placeholder="Priority loading approved by terminal supervisor."
+              rows={3}
+              className="qm-textarea"
+            />
+            <p className="qm-hint-text">Provide a clear reason for this position change.</p>
+            {errors.reason && <p className="qm-error-text">{errors.reason.message}</p>}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="qm-footer">
+            <button type="button" onClick={onClose} className="qm-btn-cancel">
+              {t("common.cancel")}
             </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="com-btn-submit"
-            >
-              {isLoading ? "Saving…" : "Override"}
+            <button type="submit" disabled={isLoading} className="qm-btn-primary">
+              {isLoading ? (
+                <>
+                  <span className="add-docs-spinner" style={{ width: 14, height: 14 }} />
+                  {t("overrideModal.saving")}
+                </>
+              ) : (
+                "Override Position"
+              )}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

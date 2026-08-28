@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import heroImg from "../../assets/Frame.png";
 import groupImg from "../../assets/Group.png";
@@ -20,6 +21,7 @@ export const Register: React.FC<RegisterProps> = ({
   onOtpRequested,
   onSwitchToLogin,
 }) => {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -40,7 +42,7 @@ export const Register: React.FC<RegisterProps> = ({
         phoneNumber: data.phoneNumber,
         email: data.email || null,
       });
-      toast.success("Account created! OTP sent to your phone");
+      toast.success(t("auth.sendingOtp"));
       onOtpRequested({
         phoneNumber: data.phoneNumber,
         fullName: data.fullName,
@@ -66,7 +68,7 @@ export const Register: React.FC<RegisterProps> = ({
       <div className="login-form-panel">
         <div className="login-mobile-hero">
           <div className="login-mobile-title-row">
-            <span className="login-app-title">Welcome To Queue Admin</span>
+            <span className="login-app-title">{t("auth.loginTitle")}</span>
           </div>
           <div className="login-mobile-lang-row">
             <LanguageSelector />
@@ -75,26 +77,26 @@ export const Register: React.FC<RegisterProps> = ({
             <img src={groupImg} alt="Transport App Preview" />
           </div>
           <div className="login-mobile-hero-text">
-            <h1>Create Account</h1>
-            <p>Register to access your queue dashboard</p>
+            <h1>{t("auth.createAccountTitle")}</h1>
+            <p>{t("auth.createAccountSubtitle")}</p>
           </div>
         </div>
 
         <div className="login-card animate-scale-up">
           <div className="login-header login-header--desktop">
-            <h1>Create Account</h1>
-            <p>Register to access your queue dashboard</p>
+            <h1>{t("auth.createAccountTitle")}</h1>
+            <p>{t("auth.createAccountSubtitle")}</p>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
             {/* Full Name */}
             <div className="form-group form-group-mb">
-              <label htmlFor="reg-fullname">Full Name</label>
+              <label htmlFor="reg-fullname">{t("auth.fullNameLabel")}</label>
               <div className={`input-wrapper${errors.fullName ? " input-wrapper--error" : ""}`}>
                 <input
                   id="reg-fullname"
                   type="text"
-                  placeholder="Enter full name"
+                  placeholder={t("auth.fullNamePlaceholder")}
                   autoComplete="name"
                   {...register("fullName")}
                 />
@@ -107,14 +109,14 @@ export const Register: React.FC<RegisterProps> = ({
             {/* Email */}
             <div className="form-group form-group-mb">
               <label htmlFor="reg-email">
-                Email{" "}
-                <span className="form-label-optional">(Optional)</span>
+                {t("auth.emailLabel")}{" "}
+                <span className="form-label-optional">{t("auth.optional")}</span>
               </label>
               <div className={`input-wrapper${errors.email ? " input-wrapper--error" : ""}`}>
                 <input
                   id="reg-email"
                   type="email"
-                  placeholder="Enter email"
+                  placeholder="name@example.com"
                   autoComplete="email"
                   {...register("email")}
                 />
@@ -128,7 +130,7 @@ export const Register: React.FC<RegisterProps> = ({
             <div className="form-group">
               <PhoneNumberInput
                 id="register-phone"
-                label="Phone Number"
+                label={t("auth.phoneLabel")}
                 value={phoneValue}
                 onChange={(e164) => setValue("phoneNumber", e164, { shouldValidate: true })}
                 error={errors.phoneNumber?.message ?? null}
@@ -141,15 +143,15 @@ export const Register: React.FC<RegisterProps> = ({
               {isSubmitting ? (
                 <span className="btn-inner-flex">
                   <span className="add-docs-spinner" />
-                  Signing up...
+                  {t("auth.signingUp")}
                 </span>
               ) : (
-                "Sign Up"
+                t("auth.signUp")
               )}
             </button>
 
             <div className="login-footer form-group-mb login-footer-spaced">
-              Already have an account?{" "}
+              {t("auth.alreadyHaveAccount")}{" "}
               <a
                 href="#"
                 onClick={(e) => {
@@ -157,7 +159,7 @@ export const Register: React.FC<RegisterProps> = ({
                   onSwitchToLogin();
                 }}
               >
-                Sign In
+                {t("auth.signIn")}
               </a>
             </div>
           </form>

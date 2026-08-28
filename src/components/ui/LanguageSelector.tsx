@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { setAppLanguage } from "../../lib/i18n";
 import "../../styles/auth.css";
 
 interface LanguageSelectorProps {
@@ -8,17 +10,24 @@ interface LanguageSelectorProps {
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   className = "",
 }) => {
-  const [lang, setLang] = useState<"en" | "am">("en");
+  const { i18n } = useTranslation();
+  const currentLang = (i18n.language as "en" | "am") || "en";
+
+  const toggleLanguage = () => {
+    const nextLang = currentLang === "en" ? "am" : "en";
+    setAppLanguage(nextLang);
+  };
 
   return (
     <button
       type="button"
       className={`language-pill ${className}`}
-      onClick={() => setLang(lang === "en" ? "am" : "en")}
+      onClick={toggleLanguage}
+      title="Switch Language / ቋንቋ ቀይር"
     >
       <span className="lang-arrow">▾</span>
       <span className="lang-pill-btn">
-        {lang === "en" ? "English" : "አማርኛ"}
+        {currentLang === "en" ? "English" : "አማርኛ"}
       </span>
     </button>
   );

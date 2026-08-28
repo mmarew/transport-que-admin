@@ -1,25 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, UserPlus, Play, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { connectSocket, onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
+import { useListVehicleTypesQuery } from "../../lib/redux/api";
 import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
+import { resolveVehicleName } from "../../utils/vehicleType";
 import { QueueTable } from "./QueueTable";
 import { CheckinModal } from "./CheckinModal";
 import { CreateOrderModal } from "./CreateOrderModal";
 import { DispatchModal } from "./DispatchModal";
 import { OverrideModal } from "./OverrideModal";
 import { ConfirmCancel } from "./ConfirmCancel";
+import MobileHeader from "../common/MobileHeader";
 import "./QueueBoard.css";
-
-const DEFAULT_TYPE_ID_MAP: Record<string, string> = {
-  isuzu: "55060ed0-0000-0000-0000-000000000002",
-  dry: "e93aa27f-364f-4eff-bc26-582b773071d3",
-  "20ft": "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742",
-  "low-bed": "55060ed0-0000-0000-0000-000000000005",
-  "heavy duty": "55060ed0-0000-0000-0000-000000000001",
-  tanker: "55060ed0-0000-0000-0000-000000000003",
-  refrigerated: "55060ed0-0000-0000-0000-000000000004",
-};
 
 interface QueueBoardProps {
   queueOrganizationUniqueId: string;
@@ -49,12 +43,21 @@ export function QueueBoard({
   onRefetch,
   onBack,
 }: QueueBoardProps) {
+  const { t } = useTranslation();
   const socketConnected = useQueueAdminStore((s) => s.socketConnected);
   const setSocketConnected = useQueueAdminStore((s) => s.setSocketConnected);
 
+  const { data: vehicleTypesData } = useListVehicleTypesQuery();
+  const vehicleTypesList = vehicleTypesData?.data || [];
+
   const [showCheckin, setShowCheckin] = useState(false);
   const [showCreateOrder, setShowCreateOrder] = useState(false);
-  const [dispatchForType, setDispatchForType] = useState<{ id: string; name: string } | null>(null);
+  const [dispatchForType, setDispatchForType] = useState<{
+    id: string;
+    name: string;
+    driverName?: string;
+    driverPhone?: string;
+  } | null>(null);
   const [overrideEntry, setOverrideEntry] = useState<DriverQueueEntry | null>(null);
   const [cancelEntry, setCancelEntry] = useState<DriverQueueEntry | null>(null);
   const [viewMode, setViewMode] = useState<"byType" | "all">("byType");
@@ -91,16 +94,33 @@ export function QueueBoard({
     };
   }, [queueOrganizationUniqueId, invalidate, setSocketConnected]);
 
-  const resolveTypeId = (name: string, fallbackId?: string): string => {
-    if (fallbackId && fallbackId.includes("-") && fallbackId.length > 20) return fallbackId;
-    const lowerName = name.toLowerCase();
-    for (const [key, id] of Object.entries(DEFAULT_TYPE_ID_MAP)) {
-      if (lowerName.includes(key)) return id;
+  useEffect(() => {
+    if (status) {
+      console.log("[QueueBoard] status payload:", status);
+      console.log("[QueueBoard] available queues:", Object.keys(status.queues || {}));
+      Object.entries(status.queues || {}).forEach(([k, entries]) => {
+        console.log(`[QueueBoard] queue "${k}":`, entries);
+      });
     }
-    return fallbackId || name;
+  }, [status]);
+
+  const resolveVehicleType = (typeKey: string, entries: DriverQueueEntry[]) => {
+    const entryWithTypeId = entries.find((e) => e.vehicleTypeUniqueId);
+    const resolvedId = entryWithTypeId?.vehicleTypeUniqueId || typeKey;
+    const resolvedName = resolveVehicleName(typeKey, entryWithTypeId?.vehicleTypeName, vehicleTypesList);
+    return { id: resolvedId, name: resolvedName };
   };
 
-  // Flatten all entries across types for "All Drivers" view
+  const extractDriverName = (e?: any): string => {
+    if (!e) return "";
+    return e.driverName || e.fullName || e.driverFullName || e.name || e.driverUser?.fullName || "";
+  };
+
+  const extractDriverPhone = (e?: any): string => {
+    if (!e) return "";
+    return e.driverPhoneNumber || e.phoneNumber || e.driverPhone || e.phone || e.driverUser?.phoneNumber || "";
+  };
+
   const allEntries: DriverQueueEntry[] = status
     ? Object.values(status.queues).flat()
     : [];
@@ -114,11 +134,16 @@ export function QueueBoard({
 
   return (
     <div className="qb-page-container">
-      {/* ── Top Back Button ── */}
+      {/* ── Common Mobile Navigation Header ── */}
+      <div className="qb-mobile-top-header">
+        <MobileHeader title="Live Queue" onBack={onBack} />
+      </div>
+
+      {/* ── Top Back Button (Desktop) ── */}
       {onBack && (
-        <button type="button" className="qb-back-link" onClick={onBack}>
+        <button type="button" className="qb-back-link qb-back-link--desktop" onClick={onBack}>
           <ArrowLeft size={16} />
-          Back to Organizations
+          {t("queue.backToOrgs")}
         </button>
       )}
 
@@ -126,10 +151,11 @@ export function QueueBoard({
       <div className="qb-header-section">
         <div className="qb-title-group">
           <div className="qb-title-row">
-            <h1 className="qb-title-text">Live Queue</h1>
+            <span className="qb-live-dot-indicator" title={socketConnected ? "Live" : "Connecting"} />
+            <h1 className="qb-title-text">{t("queue.liveQueue")}</h1>
             <span className={`qb-live-badge ${socketConnected ? "live" : "connecting"}`}>
               <span className="qb-live-badge-dot" />
-              {socketConnected ? "Live" : "Connecting..."}
+              {socketConnected ? t("queue.live") : t("queue.connecting")}
             </span>
           </div>
           <p className="qb-subtitle-text">{subtitle}</p>
@@ -142,15 +168,17 @@ export function QueueBoard({
             onClick={() => setShowCreateOrder(true)}
           >
             <Plus size={16} />
-            New Order
+            <span>{t("queue.newOrder")}</span>
           </button>
           <button
             type="button"
             className="qb-btn-manual-checkin"
             onClick={() => setShowCheckin(true)}
+            title={t("queue.manualCheckin")}
+            aria-label={t("queue.manualCheckin")}
           >
-            <UserPlus size={16} />
-            Manual Check-In
+            <UserPlus size={18} />
+            <span className="qb-btn-text--desktop">{t("queue.manualCheckin")}</span>
           </button>
         </div>
       </div>
@@ -162,14 +190,14 @@ export function QueueBoard({
           className={`qb-tab-pill ${viewMode === "byType" ? "active" : "inactive"}`}
           onClick={() => setViewMode("byType")}
         >
-          By Vehicle Type
+          {t("queue.byVehicleType")}
         </button>
         <button
           type="button"
           className={`qb-tab-pill ${viewMode === "all" ? "active" : "inactive"}`}
           onClick={() => setViewMode("all")}
         >
-          All Drivers
+          {t("queue.allDrivers")}
         </button>
       </div>
 
@@ -185,33 +213,44 @@ export function QueueBoard({
         <>
           {Object.entries(status.queues).length === 0 ? (
             <div className="qb-card" style={{ textAlign: "center", padding: "3.5rem 1rem" }}>
-              <p style={{ color: "#64748b", margin: 0 }}>No active queues found for this terminal.</p>
+              <p style={{ color: "#64748b", margin: 0 }}>{t("queue.noQueues")}</p>
             </div>
           ) : (
-            Object.entries(status.queues).map(([typeName, entries]) => {
-              const matchingEntry = entries.find((e) => e.vehicleTypeUniqueId);
-              const rawTypeId = matchingEntry?.vehicleTypeUniqueId || entries[0]?.vehicleTypeUniqueId;
-              const typeId = resolveTypeId(typeName, rawTypeId);
+            Object.entries(status.queues).map(([typeKey, entries]) => {
+              const { id: typeId, name: typeName } = resolveVehicleType(typeKey, entries);
               const waitingCount = entries.filter(
                 (e) => !e.status || e.status === "waiting" || e.status === "offered"
               ).length;
+              const firstWaiting =
+                entries.find(
+                  (e) => !e.status || e.status === "waiting" || e.status === "offered"
+                ) || entries[0];
 
               return (
-                <div key={typeName} className="qb-card" style={{ marginBottom: "1.5rem" }}>
+                <div key={typeKey} className="qb-card" style={{ marginBottom: "1.5rem" }}>
                   <div className="qb-card-header">
                     <div className="qb-card-title-row">
-                      <h2 className="qb-card-title">{typeName}</h2>
-                      <span className="qb-waiting-badge">{waitingCount} waiting</span>
+                      <div className="qb-card-title-name">
+                        <h2 className="qb-card-title">{typeName}</h2>
+                      </div>
+                      <span className="qb-waiting-badge">{waitingCount} {t("queue.waiting")}</span>
                     </div>
 
                     <button
                       type="button"
                       className="qb-btn-dispatch-outline"
                       disabled={waitingCount === 0}
-                      onClick={() => setDispatchForType({ id: typeId, name: typeName })}
+                      onClick={() =>
+                        setDispatchForType({
+                          id: typeId,
+                          name: typeName,
+                          driverName: extractDriverName(firstWaiting),
+                          driverPhone: extractDriverPhone(firstWaiting),
+                        })
+                      }
                     >
                       <Play size={13} fill="currentColor" />
-                      Dispatch
+                      {t("queue.dispatch")}
                     </button>
                   </div>
 
@@ -233,8 +272,10 @@ export function QueueBoard({
         <div className="qb-card">
           <div className="qb-card-header">
             <div className="qb-card-title-row">
-              <h2 className="qb-card-title">All Vehicles & Drivers</h2>
-              <span className="qb-waiting-badge">{allWaitingCount} waiting</span>
+              <div className="qb-card-title-name">
+                <h2 className="qb-card-title">{t("queue.allDrivers")}</h2>
+              </div>
+              <span className="qb-waiting-badge">{allWaitingCount} {t("queue.waiting")}</span>
             </div>
 
             <button
@@ -250,16 +291,21 @@ export function QueueBoard({
                   ) || allEntries.find((e) => !e.status || e.status === "waiting" || e.status === "offered") || allEntries[0];
 
                 if (firstWaiting) {
-                  const resolved = resolveTypeId(firstWaiting.vehicleTypeName || "", firstWaiting.vehicleTypeUniqueId);
+                  const { id, name } = resolveVehicleType(
+                    firstWaiting.vehicleTypeName || firstWaiting.vehicleTypeUniqueId || "",
+                    [firstWaiting]
+                  );
                   setDispatchForType({
-                    id: resolved,
-                    name: firstWaiting.vehicleTypeName || "Front Driver",
+                    id,
+                    name,
+                    driverName: extractDriverName(firstWaiting),
+                    driverPhone: extractDriverPhone(firstWaiting),
                   });
                 }
               }}
             >
               <Play size={13} fill="currentColor" />
-              Dispatch
+              {t("queue.dispatch")}
             </button>
           </div>
 
@@ -293,6 +339,8 @@ export function QueueBoard({
           queueOrganizationUniqueId={queueOrganizationUniqueId}
           vehicleTypeId={dispatchForType.id}
           vehicleTypeName={dispatchForType.name}
+          driverName={dispatchForType.driverName}
+          driverPhone={dispatchForType.driverPhone}
           onDispatched={onRefetch}
           onClose={() => setDispatchForType(null)}
         />

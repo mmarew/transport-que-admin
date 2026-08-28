@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { X, Globe, Building2, Search, ChevronDown } from "lucide-react";
 import type { CreateOrderPayload } from "../../types/queue";
@@ -13,6 +14,7 @@ import parseError from "../../utils/parseError";
 import { createOrderSchema, type CreateOrderFormValues } from "../../schemas/queue";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import { DatePickerField } from "../ui/DatePickerField";
+import MobileHeader from "../common/MobileHeader";
 const PHOTON_URL = "https://photon.komoot.io/api/";
 
 interface PhotonPlace {
@@ -69,6 +71,7 @@ export function CreateOrderModal({
   onCreated,
   onClose,
 }: CreateOrderModalProps) {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -287,11 +290,17 @@ export function CreateOrderModal({
   return createPortal(
     <div className="com-overlay">
       <div className="com-modal">
-        <div className="com-header">
+        {/* Mobile Header */}
+        <div className="com-mobile-header">
+          <MobileHeader title="New Order" onBack={onClose} />
+        </div>
+
+        {/* Desktop Header */}
+        <div className="com-header com-header--desktop">
           <div>
-            <h2 className="com-title">New Order</h2>
+            <h2 className="com-title">{t("orders.createOrderTitle")}</h2>
             <p className="com-subtitle">
-              Create a new shipment request and offer it to the appropriate queue.
+              {t("orders.createOrderSubtitle")}
             </p>
           </div>
           <button type="button" className="com-close-btn" onClick={onClose} aria-label="Close modal">
@@ -299,7 +308,8 @@ export function CreateOrderModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(handleFormSubmit, onInvalidSubmit)} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <form onSubmit={handleSubmit(handleFormSubmit, onInvalidSubmit)} className="com-form-body">
+          {/* Request Type */}
           <div>
             <h3 className="com-section-title">Request Type</h3>
             <div className="com-type-grid">
@@ -308,29 +318,30 @@ export function CreateOrderModal({
                 className={`com-type-card ${requestMode === "individual_target" ? "selected" : ""}`}
                 onClick={() => setValue("requestMode", "individual_target")}
               >
-                <Globe size={18} color="#0B4D6D" />
-                Individual Target
+                <Globe size={18} className="com-type-card-icon" />
+                <span>Individual Target</span>
               </button>
               <button
                 type="button"
                 className={`com-type-card ${requestMode === "company_target" ? "selected" : ""}`}
                 onClick={() => setValue("requestMode", "company_target")}
               >
-                <Building2 size={18} color="#0B4D6D" />
-                Company Target
+                <Building2 size={18} className="com-type-card-icon" />
+                <span>Company Target</span>
               </button>
             </div>
           </div>
 
+          {/* Shipper */}
           <div>
             <h3 className="com-section-title">Shipper</h3>
             <div className="com-grid-2">
               <ConstantPhoneInput
-                label="Shipper Phone Number"
+                label="Phone Number"
                 value={watch("shipperPhoneNumber")}
                 onChange={(val) => setValue("shipperPhoneNumber", val, { shouldValidate: true })}
                 error={errors.shipperPhoneNumber?.message}
-                placeholder="9-XX-XX-XX-XX"
+                placeholder="9XX XXX XXX"
               />
 
               <div className="com-field-group">
@@ -340,7 +351,7 @@ export function CreateOrderModal({
                     {...register("vehicleTypeUniqueId")}
                     className={`com-select ${errors.vehicleTypeUniqueId ? "com-select-error" : ""}`}
                   >
-                    <option value="">-- Select Vehicle Type --</option>
+                    <option value="">Select vehicle type</option>
                     {vehicleTypesList.map((vt) => (
                       <option key={vt.vehicleTypeUniqueId} value={vt.vehicleTypeUniqueId}>
                         {vt.vehicleTypeName}
@@ -356,6 +367,7 @@ export function CreateOrderModal({
             </div>
           </div>
 
+          {/* Order Details */}
           <div>
             <h3 className="com-section-title">Order Details</h3>
             <div className="com-grid-2">
@@ -363,7 +375,7 @@ export function CreateOrderModal({
                 <label className="com-label">Item Name</label>
                 <input
                   {...register("shippableItemName")}
-                  placeholder="e.g. Cement"
+                  placeholder="Cement"
                   className={`com-input ${errors.shippableItemName ? "com-input-error" : ""}`}
                 />
                 {errors.shippableItemName && (
@@ -419,12 +431,14 @@ export function CreateOrderModal({
               <DatePickerField
                 label="Shipping Date"
                 value={shippingDate}
+                placeholder="Select date"
                 onChange={(val) => setValue("shippingDate", val, { shouldValidate: true })}
                 error={errors.shippingDate?.message}
               />
               <DatePickerField
                 label="Delivery Date"
                 value={deliveryDate}
+                placeholder="Select date"
                 onChange={(val) => setValue("deliveryDate", val, { shouldValidate: true })}
                 error={errors.deliveryDate?.message}
               />
@@ -440,12 +454,11 @@ export function CreateOrderModal({
           <div className="com-grid-2">
             {/* Origin Location Search */}
             <div className="com-field-group">
-              <label className="com-label">Origin Location</label>
               <div className="com-search-wrap" ref={originWrapRef}>
                 <Search size={16} className="com-search-icon" />
                 <input
                   value={originQuery}
-                  placeholder="Search pickup location"
+                  placeholder="Search pickup"
                   onChange={(e) => {
                     setOriginQuery(e.target.value);
                     setValue("originDescription", e.target.value, { shouldValidate: true });
@@ -472,7 +485,7 @@ export function CreateOrderModal({
                   </div>
                 )}
               </div>
-              <div style={{ minHeight: "16px" }}>
+              <div style={{ minHeight: "14px" }}>
                 {errors.originDescription && (
                   <p className="com-error-text" style={{ margin: 0 }}>{errors.originDescription.message}</p>
                 )}
@@ -484,12 +497,11 @@ export function CreateOrderModal({
 
             {/* Destination Location Search */}
             <div className="com-field-group">
-              <label className="com-label">Destination Location</label>
               <div className="com-search-wrap" ref={destWrapRef}>
                 <Search size={16} className="com-search-icon" />
                 <input
                   value={destQuery}
-                  placeholder="Search delivery location"
+                  placeholder="Search delivery"
                   onChange={(e) => {
                     setDestQuery(e.target.value);
                     setValue("destinationDescription", e.target.value, { shouldValidate: true });
@@ -516,7 +528,7 @@ export function CreateOrderModal({
                   </div>
                 )}
               </div>
-              <div style={{ minHeight: "16px" }}>
+              <div style={{ minHeight: "14px" }}>
                 {errors.destinationDescription && (
                   <p className="com-error-text" style={{ margin: 0 }}>{errors.destinationDescription.message}</p>
                 )}
@@ -527,24 +539,24 @@ export function CreateOrderModal({
             </div>
           </div>
 
-          {/* Coordinates Row (Always Aligned) */}
-          <div className="com-grid-2">
+          {/* Coordinates Row (Desktop Only) */}
+          <div className="com-coords-row com-grid-2">
             <div className="com-grid-2">
               <div className="com-field-group">
-                <label className="com-label">Latitude</label>
+                <label className="com-label">{t("orders.latitude")}</label>
                 <input
                   value={originLat ?? ""}
                   readOnly
-                  placeholder="Auto-filled"
+                  placeholder={t("common.autoFilled")}
                   className="com-input com-input-readonly"
                 />
               </div>
               <div className="com-field-group">
-                <label className="com-label">Longitude</label>
+                <label className="com-label">{t("orders.longitude")}</label>
                 <input
                   value={originLng ?? ""}
                   readOnly
-                  placeholder="Auto-filled"
+                  placeholder={t("common.autoFilled")}
                   className="com-input com-input-readonly"
                 />
               </div>
@@ -552,20 +564,20 @@ export function CreateOrderModal({
 
             <div className="com-grid-2">
               <div className="com-field-group">
-                <label className="com-label">Latitude</label>
+                <label className="com-label">{t("orders.latitude")}</label>
                 <input
                   value={destLat ?? ""}
                   readOnly
-                  placeholder="Auto-filled"
+                  placeholder={t("common.autoFilled")}
                   className="com-input com-input-readonly"
                 />
               </div>
               <div className="com-field-group">
-                <label className="com-label">Longitude</label>
+                <label className="com-label">{t("orders.longitude")}</label>
                 <input
                   value={destLng ?? ""}
                   readOnly
-                  placeholder="Auto-filled"
+                  placeholder={t("common.autoFilled")}
                   className="com-input com-input-readonly"
                 />
               </div>
@@ -574,10 +586,10 @@ export function CreateOrderModal({
 
           <div className="com-footer">
             <button type="button" className="com-btn-cancel" onClick={onClose}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button type="submit" className="com-btn-submit" disabled={isSubmitting || isCreating}>
-              {isSubmitting || isCreating ? "Creating..." : "Create Order"}
+              {isSubmitting || isCreating ? t("orders.creating") : t("orders.createOrderBtn")}
             </button>
           </div>
         </form>

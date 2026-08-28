@@ -1,0 +1,493 @@
+/* QueueModals.css — Pixel-perfect styles for Override, Cancel, and Check-in Modals */
+
+.qm-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 1rem;
+}
+
+.qm-modal,
+.qm-modal * {
+  box-sizing: border-box;
+}
+
+.qm-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: 22px 24px;
+  position: relative;
+  overflow: visible;
+  animation: qmScaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes qmScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Header */
+.qm-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.qm-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #034b6e;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.qm-subtitle {
+  font-size: 0.8rem;
+  color: #475569;
+  margin: 3px 0 0 0;
+  line-height: 1.35;
+}
+
+.qm-close-btn {
+  background: transparent;
+  border: none;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.qm-close-btn:hover {
+  background: #f1f5f9;
+  color: #034b6e;
+}
+
+/* Top 2 Cards Grid */
+.qm-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+  width: 100%;
+}
+
+.qm-card {
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.qm-card-col {
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 60px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.qm-card-line {
+  font-size: 0.8rem;
+  color: #475569;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.qm-card-line strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.qm-status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #16a34a;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.qm-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.qm-card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.qm-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.25;
+}
+
+.qm-card-sub {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 2px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Sections and Inputs */
+.qm-section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #034b6e;
+  margin: 12px 0 4px 0;
+}
+
+.qm-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.qm-field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.qm-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.qm-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.qm-input {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.qm-input.has-icon {
+  padding-left: 36px;
+}
+
+.qm-input:focus {
+  border-color: #034b6e;
+  box-shadow: 0 0 0 3px rgba(3, 75, 110, 0.12);
+}
+
+.qm-textarea {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.84rem;
+  color: #0f172a;
+  outline: none;
+  resize: vertical;
+  min-height: 68px;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.qm-textarea:focus {
+  border-color: #034b6e;
+  box-shadow: 0 0 0 3px rgba(3, 75, 110, 0.12);
+}
+
+.qm-hint-text {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+.qm-error-text {
+  font-size: 0.72rem;
+  color: #e11d48;
+  margin: 2px 0 0 0;
+}
+
+/* Footer Buttons */
+.qm-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 2px;
+}
+
+.qm-btn-cancel {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #034b6e;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qm-btn-cancel:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.qm-btn-primary {
+  border: none;
+  background: #034b6e;
+  color: #ffffff;
+  padding: 8px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.qm-btn-primary:hover:not(:disabled) {
+  background: #023650;
+  box-shadow: 0 2px 8px rgba(3, 75, 110, 0.25);
+}
+
+.qm-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.qm-btn-danger {
+  border: none;
+  background: #dc2626;
+  color: #ffffff;
+  padding: 8px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.qm-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+}
+
+.qm-btn-danger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.qm-mobile-header {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE (Mobile ≤ 768px matching screenshot 100%)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .qm-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    background: #ffffff !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    z-index: 999999 !important;
+    backdrop-filter: none !important;
+  }
+
+  .qm-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: 100vh;
+    border-radius: 0 !important;
+    padding: 12px 16px 40px 16px !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+    gap: 8px;
+    display: flex;
+    flex-direction: column;
+    animation: none;
+  }
+
+  .qm-mobile-header {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .qm-header--desktop {
+    display: none !important;
+  }
+
+  .qm-top-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .qm-card,
+  .qm-card-col {
+    padding: 8px 10px;
+    border-radius: 10px;
+    min-height: 54px;
+    background: #f0f9ff;
+    border: 1px solid #e0f2fe;
+  }
+
+  .qm-card-title {
+    font-size: 0.84rem;
+  }
+
+  .qm-card-sub {
+    font-size: 0.72rem;
+  }
+
+  .qm-card-line {
+    font-size: 0.75rem;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+
+  .qm-section-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0B4D6D;
+    margin: 10px 0 4px 0;
+  }
+
+  .qm-field-label {
+    font-size: 0.75rem;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+
+  .qm-input {
+    height: 42px;
+    border-radius: 8px;
+    font-size: 13px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .qm-textarea {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 13px;
+    min-height: 80px;
+  }
+
+  .qm-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 6px;
+    padding-bottom: 12px;
+  }
+
+  .qm-btn-cancel {
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #0B4D6D;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+  }
+
+  .qm-btn-primary {
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #0B4D6D;
+  }
+
+  .qm-btn-danger {
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #dc2626;
+  }
+}

@@ -1,30 +1,31 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   Search,
   ChevronDown,
   ChevronRight,
+  Plus,
   Building2,
   AlertCircle,
   Check,
 } from "lucide-react";
 import DashboardLayout from "../components/layout/DashboardLayout";
-import { useListQueueOrganizationsQuery } from "../lib/redux/api";
+import {
+  useListQueueOrganizationsQuery,
+  useCreateQueueOrganizationMutation,
+} from "../lib/redux/api";
+import CreateOrgModal from "../components/queue/CreateOrgModal";
 import { useQueueAdminStore } from "../store/queueAdminStore";
 import type { QueueOrgListItem } from "../types/queue";
 import { extractCity } from "../utils/formatters";
 import "./OrganizationsPage.css";
 
 const PAGE_SIZE = 8;
-const SORT_LABELS: Record<string, string> = {
-  name: "Organization Name",
-  type: "Type",
-  city: "City",
-  status: "Status",
-  enabled: "Enabled",
-};
 
 export function OrganizationsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const setSelectedOrgId = useQueueAdminStore((s) => s.setSelectedOrgId);
 
@@ -33,7 +34,18 @@ export function OrganizationsPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showCreateOrg, setShowCreateOrg] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  const [createQueueOrg] = useCreateQueueOrganizationMutation();
+
+  const SORT_LABELS: Record<string, string> = {
+    name: t("dashboard.orgName"),
+    type: t("dashboard.type"),
+    city: t("dashboard.city"),
+    status: t("dashboard.status"),
+    enabled: t("dashboard.enabled"),
+  };
 
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
@@ -97,13 +109,15 @@ export function OrganizationsPage() {
         valB = orgB.queueEnabled ? "Yes" : "No";
       }
 
-      return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      const cmp = valA.localeCompare(valB, undefined, { sensitivity: "base" });
+      return sortOrder === "asc" ? cmp : -cmp;
     });
 
     return result;
   }, [orgList, searchQuery, sortField, sortOrder]);
 
   const totalPages = Math.ceil(processedOrgs.length / PAGE_SIZE) || 1;
+
   const paginatedOrgs = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     return processedOrgs.slice(start, start + PAGE_SIZE);
@@ -118,18 +132,60 @@ export function OrganizationsPage() {
     }
   };
 
-  const handleManage = (orgId: string) => {
-    setSelectedOrgId(orgId);
-    navigate(`/dashboard?orgId=${orgId}`);
+  const handleManage = (queueOrganizationUniqueId: string) => {
+    setSelectedOrgId(queueOrganizationUniqueId);
+    navigate(`/dashboard?orgId=${queueOrganizationUniqueId}`);
+  };
+
+  const handleCreateOrg = async (formData: {
+    queueOrganizationName: string;
+    queueOrganizationType: any;
+    queueOrganizationAddress: string;
+    latitude: number;
+    longitude: number;
+    queueOrganizationPhone?: string | null;
+  }) => {
+    try {
+      await createQueueOrg(formData).unwrap();
+      toast.success("Organization created successfully");
+      setShowCreateOrg(false);
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to create organization");
+    }
   };
 
   return (
     <DashboardLayout
-      title="Organizations"
-      subtitle="Select a queue organization to monitor"
+      title={t("dashboard.title")}
+      subtitle={t("dashboard.subtitle")}
       activeTab="organizations"
+      actions={
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => setShowCreateOrg(true)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            backgroundColor: "#0B4D6D",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "0.625rem",
+            padding: "0.65rem 1.25rem",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            cursor: "pointer",
+          }}
+        >
+          <Plus size={16} />
+          <span>New Queue Company</span>
+        </button>
+      }
     >
       <div className="org-page-card">
+        {/* Top Controls Toolbar */}
         <div className="org-top-controls">
           <div className="org-search-box">
             <Search size={16} className="search-icon" />
@@ -174,12 +230,22 @@ export function OrganizationsPage() {
               </div>
             )}
           </div>
+
+          {/* Mobile + Add Button */}
+          <button
+            type="button"
+            className="org-btn-add"
+            onClick={() => setShowCreateOrg(true)}
+          >
+            <Plus size={15} />
+            <span>Add</span>
+          </button>
         </div>
 
         {isLoading && (
           <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
             <div className="add-docs-spinner" style={{ width: 28, height: 28, margin: "0 auto 1rem" }} />
-            <p style={{ color: "#64748b", fontSize: "0.875rem" }}>Loading organizations...</p>
+            <p style={{ color: "#64748b", fontSize: "0.875rem" }}>{t("common.loading")}</p>
           </div>
         )}
 
@@ -190,7 +256,16 @@ export function OrganizationsPage() {
             <button
               type="button"
               onClick={() => refetch()}
-              style={{ marginTop: "0.75rem", padding: "0.4rem 1rem", border: "1px solid #dc2626", borderRadius: "0.375rem", background: "transparent", color: "#dc2626", cursor: "pointer", fontSize: "0.8125rem" }}
+              style={{
+                marginTop: "0.75rem",
+                padding: "0.4rem 1rem",
+                border: "1px solid #dc2626",
+                borderRadius: "0.375rem",
+                background: "transparent",
+                color: "#dc2626",
+                cursor: "pointer",
+                fontSize: "0.8125rem",
+              }}
             >
               Retry
             </button>
@@ -201,15 +276,15 @@ export function OrganizationsPage() {
           <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
             <Building2 size={36} color="#94a3b8" style={{ margin: "0 auto 0.75rem" }} />
             <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#1e293b", margin: 0 }}>
-              {searchQuery ? "No matching organizations found" : "No Organizations Available"}
+              {searchQuery ? t("dashboard.noMatching") : t("dashboard.noOrgs")}
             </h3>
             <p style={{ color: "#64748b", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-              {searchQuery ? "Try a different search term" : "Registered queue stations will appear here"}
+              {searchQuery ? t("dashboard.tryDifferent") : t("dashboard.registeredAppear")}
             </p>
           </div>
         )}
 
-        {/* Desktop Table & Mobile Cards */}
+        {/* Clean Table Layout */}
         {!isLoading && !error && paginatedOrgs.length > 0 && (
           <>
             <div className="org-table-wrapper">
@@ -229,13 +304,14 @@ export function OrganizationsPage() {
                     <th onClick={() => handleSort("enabled")} style={{ cursor: "pointer" }}>
                       <span className="org-th-sortable">Enabled <ChevronDown size={13} /></span>
                     </th>
-                    <th style={{ textAlign: "center" }}>Action</th>
+                    <th style={{ textAlign: "left" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedOrgs.map(({ organization: org }) => {
                     const city = extractCity(org.queueOrganizationAddress);
                     const status = String(org.approvalStatus || "pending").toLowerCase();
+                    const isApproved = status === "approved";
                     const isEnabled = org.queueEnabled === 1 ? "Yes" : "No";
 
                     return (
@@ -244,17 +320,18 @@ export function OrganizationsPage() {
                         <td className="org-cell-type">{org.queueOrganizationType}</td>
                         <td className="org-cell-city">{city}</td>
                         <td>
-                          <span className="org-status-pill">
-                            <span className={`org-status-dot ${status}`} />
+                          <span className={`org-status-text ${status}`}>
                             {status.charAt(0).toUpperCase() + status.slice(1)}
                           </span>
                         </td>
                         <td>{isEnabled}</td>
-                        <td style={{ textAlign: "center" }}>
+                        <td>
                           <button
                             type="button"
-                            className="org-manage-action-btn"
+                            className={`org-manage-link ${!isApproved ? "disabled" : ""}`}
+                            disabled={!isApproved}
                             onClick={() => handleManage(org.queueOrganizationUniqueId)}
+                            title={!isApproved ? "Unapproved organizations cannot be managed" : "Manage Queue"}
                           >
                             Manage
                           </button>
@@ -266,74 +343,44 @@ export function OrganizationsPage() {
               </table>
             </div>
 
-            {/* Mobile Cards (Compact) */}
-            <div className="org-cards-mobile">
-              {paginatedOrgs.map(({ organization: org }) => {
-                const city = extractCity(org.queueOrganizationAddress);
-                const status = String(org.approvalStatus || "pending").toLowerCase();
-
-                return (
-                  <div key={org.queueOrganizationUniqueId} className="org-mobile-card">
-                    <div className="org-mc-info">
-                      <h4 className="org-mc-title">{org.queueOrganizationName}</h4>
-                      <div className="org-mc-meta">
-                        <span>{org.queueOrganizationType}</span>
-                        <span className="org-mc-bullet">•</span>
-                        <span>{city}</span>
-                        <span className="org-mc-bullet">•</span>
-                        <span>{org.queueEnabled === 1 ? "Enabled" : "Disabled"}</span>
-                      </div>
-                    </div>
-                    <div className="org-mc-side">
-                      <span className="org-status-pill">
-                        <span className={`org-status-dot ${status}`} />
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </span>
-                      <button
-                        type="button"
-                        className="org-manage-action-btn"
-                        onClick={() => handleManage(org.queueOrganizationUniqueId)}
-                      >
-                        Manage
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Footer & Pagination */}
+            <div className="org-table-footer">
+              <span>Show {paginatedOrgs.length} of {processedOrgs.length}</span>
+              <div className="org-pagination">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`org-page-btn ${currentPage === page ? "active" : ""}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                {totalPages > 1 && (
+                  <button
+                    type="button"
+                    className="org-page-btn"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    title="Next page"
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                )}
+              </div>
             </div>
           </>
         )}
-
-        {/* Footer & Pagination */}
-        {!isLoading && !error && processedOrgs.length > 0 && (
-          <div className="org-table-footer">
-            <span>Show {paginatedOrgs.length} of {processedOrgs.length}</span>
-            <div className="org-pagination">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  className={`org-page-btn ${currentPage === page ? "active" : ""}`}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </button>
-              ))}
-              {totalPages > 1 && (
-                <button
-                  type="button"
-                  className="org-page-btn"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  title="Next page"
-                >
-                  <ChevronRight size={15} />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Create Organization Modal */}
+      {showCreateOrg && (
+        <CreateOrgModal
+          onClose={() => setShowCreateOrg(false)}
+          onCreate={handleCreateOrg}
+        />
+      )}
     </DashboardLayout>
   );
 }

@@ -1,12 +1,18 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   QueueBoard.css — Pixel-perfect Queue Operations matching Figma design 1:1
+   QueueBoard.css — Pixel-perfect Queue Operations matching Figma & Mobile design
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .qb-page-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   padding-bottom: 2.5rem;
+  width: 100%;
+}
+
+/* ── Mobile Navigation Header ── */
+.qb-mobile-top-header {
+  display: none;
 }
 
 /* ── Top Back Button ── */
@@ -21,14 +27,14 @@
   font-weight: 600;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   font-family: inherit;
   transition: opacity 0.15s ease;
 }
 
 .qb-back-link:hover {
   opacity: 0.8;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* ── Header Row (Live Queue + Actions) ── */
@@ -37,28 +43,37 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1.25rem;
-  margin-bottom: 0.5rem;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
 }
 
 .qb-title-group {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .qb-title-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
+}
+
+.qb-live-dot-indicator {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #16a34a;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 .qb-title-text {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #0B4D6D;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
   margin: 0;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .qb-live-badge {
@@ -67,9 +82,9 @@
   gap: 0.35rem;
   background: #dcfce7;
   color: #15803d;
-  font-size: 0.8125rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 0.2rem 0.65rem;
+  padding: 0.15rem 0.6rem;
   border-radius: 999px;
 }
 
@@ -79,15 +94,15 @@
 }
 
 .qb-live-badge-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: currentColor;
 }
 
 .qb-subtitle-text {
-  font-size: 0.95rem;
-  color: #475569;
+  font-size: 0.85rem;
+  color: #64748b;
   margin: 0;
   font-weight: 500;
 }
@@ -95,24 +110,24 @@
 .qb-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .qb-btn-new-order {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   background: #0B4D6D;
   color: #ffffff;
   border: none;
   border-radius: 0.5rem;
-  padding: 0.65rem 1.25rem;
+  padding: 0.6rem 1.15rem;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: background-color 0.15s ease;
+  white-space: nowrap;
 }
 
 .qb-btn-new-order:hover {
@@ -127,12 +142,13 @@
   color: #0B4D6D;
   border: 1.5px solid #0B4D6D;
   border-radius: 0.5rem;
-  padding: 0.6rem 1.2rem;
+  padding: 0.55rem 1.1rem;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .qb-btn-manual-checkin:hover {
@@ -144,13 +160,13 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .qb-tab-pill {
-  padding: 0.5rem 1.1rem;
+  padding: 0.45rem 1.1rem;
   border-radius: 0.5rem;
-  font-size: 0.8125rem;
+  font-size: 0.825rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -177,40 +193,56 @@
 /* ── Vehicle Type White Card ── */
 .qb-card {
   background: #ffffff;
-  border-radius: 1rem;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  padding: 1.5rem 1.75rem;
+  border-radius: 0.875rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 1.25rem 1.5rem;
 }
 
 .qb-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
+/* Left side: desktop = title + badge in same row */
 .qb-card-title-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.qb-card-title-name {
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 
 .qb-card-title {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #0f172a;
   margin: 0;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.25;
 }
 
 .qb-waiting-badge {
   display: inline-block;
   background: #e0f2fe;
-  color: #0369a1;
+  color: #0284c7;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.25rem 0.65rem;
+  padding: 0.2rem 0.65rem;
   border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .qb-btn-dispatch-outline {
@@ -220,8 +252,8 @@
   background: transparent;
   color: #0B4D6D;
   border: 1.5px solid #0B4D6D;
-  border-radius: 0.5rem;
-  padding: 0.45rem 1.15rem;
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.95rem;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
@@ -245,6 +277,14 @@
   overflow-x: auto;
 }
 
+/* Desktop table visible by default, mobile hidden */
+.qb-table--desktop {
+  display: block;
+}
+.qb-table--mobile {
+  display: none;
+}
+
 .qb-table-grid {
   width: 100%;
   border-collapse: collapse;
@@ -252,75 +292,85 @@
 }
 
 .qb-table-grid th {
-  padding: 0.875rem 0.75rem;
-  font-size: 0.875rem;
+  padding: 0.75rem 0.65rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #1e293b;
-  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  border-bottom: 2px solid #f1f5f9;
   white-space: nowrap;
   user-select: none;
+  background: transparent;
 }
 
 .qb-table-grid td {
-  padding: 1rem 0.75rem;
-  font-size: 0.875rem;
-  color: #334155;
-  border-bottom: 1px solid #f8fafc;
+  padding: 0.9rem 0.65rem;
+  font-size: 0.84rem;
+  color: #0f172a;
+  border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
+}
+
+.qb-table-grid tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .qb-table-grid tbody tr:hover {
   background-color: #fafbfd;
 }
 
+.qb-th-num {
+  width: 44px;
+  text-align: center;
+}
+
+.qb-th-action {
+  text-align: center;
+  width: 80px;
+}
+
 /* Row elements */
 .qb-num-circle {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background-color: #e0f2fe;
-  color: #0369a1;
+  color: #0284c7;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .qb-driver-name {
-  font-weight: 500;
-  color: #1e293b;
+  font-weight: 600;
+  color: #0f172a;
 }
 
-.qb-status-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-transform: capitalize;
+.qb-time-text {
+  color: #475569;
+  font-size: 0.82rem;
 }
 
-.qb-status-dot-circle {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+.qb-status-text {
+  font-weight: 600;
+  font-size: 0.82rem;
 }
 
-.qb-status-dot-circle.waiting {
-  background-color: #16a34a;
+.qb-status-text.waiting {
+  color: #16a34a;
 }
 
-.qb-status-dot-circle.offered {
-  background-color: #ea580c;
+.qb-status-text.offered {
+  color: #ea580c;
 }
 
-.qb-status-dot-circle.loaded {
-  background-color: #2563eb;
+.qb-status-text.loaded {
+  color: #0284c7;
 }
 
-.qb-status-dot-circle.removed {
-  background-color: #94a3b8;
+.qb-status-text.removed {
+  color: #94a3b8;
 }
 
 /* Action Buttons */
@@ -328,48 +378,92 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  justify-content: center;
 }
 
-.qb-btn-override-outline {
+.qb-action-dash {
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+/* ── Desktop: bordered text buttons ── */
+.qb-btn-text-override {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.35rem 0.95rem;
+  padding: 0.3rem 0.8rem;
   background: transparent;
   border: 1.5px solid #0B4D6D;
   border-radius: 0.375rem;
   color: #0B4D6D;
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.qb-btn-override-outline:hover {
+.qb-btn-text-override:hover {
   background: #0B4D6D;
   color: #ffffff;
 }
 
-.qb-btn-cancel-outline {
+.qb-btn-text-cancel {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.35rem 0.95rem;
+  padding: 0.3rem 0.8rem;
   background: transparent;
   border: 1.5px solid #ef4444;
   border-radius: 0.375rem;
   color: #ef4444;
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.qb-btn-cancel-outline:hover {
+.qb-btn-text-cancel:hover {
   background: #ef4444;
   color: #ffffff;
+}
+
+/* ── Mobile: icon-only buttons ── */
+.qb-btn-icon-override {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: #0B4D6D;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.qb-btn-icon-override:hover {
+  color: #002B44;
+  background: rgba(11, 77, 109, 0.1);
+}
+
+.qb-btn-icon-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.qb-btn-icon-cancel:hover {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .qb-empty-row-text {
@@ -377,4 +471,188 @@
   padding: 2.5rem 1rem;
   color: #94a3b8;
   font-size: 0.875rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE MEDIA QUERIES (Mobile ≤ 768px matching screenshot 100%)
+═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .qb-page-container {
+    gap: 0.85rem;
+    padding-bottom: 5.5rem;
+  }
+
+  .qb-mobile-top-header {
+    display: block;
+    margin-bottom: 0;
+  }
+
+  .qb-back-link--desktop {
+    display: none;
+  }
+
+  .qb-header-section {
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+
+  .qb-live-badge {
+    display: none;
+  }
+
+  .qb-live-dot-indicator {
+    display: inline-block;
+  }
+
+  .qb-title-text {
+    font-size: 1.2rem;
+  }
+
+  .qb-subtitle-text {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  .qb-btn-new-order {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.82rem;
+    border-radius: 0.45rem;
+  }
+
+  .qb-btn-manual-checkin {
+    padding: 0.45rem;
+    width: 34px;
+    height: 34px;
+    border-radius: 0.45rem;
+    justify-content: center;
+    border: none;
+    background: transparent;
+  }
+
+  .qb-btn-manual-checkin:hover {
+    background: rgba(11, 77, 109, 0.08);
+  }
+
+  .qb-btn-text--desktop {
+    display: none;
+  }
+
+  .qb-tab-pill {
+    padding: 0.4rem 0.95rem;
+    font-size: 0.78rem;
+    border-radius: 0.45rem;
+  }
+
+  .qb-card {
+    padding: 0.9rem 0.75rem;
+    border-radius: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  /* Mobile card header: keep horizontal layout, title truncates */
+  .qb-card-header {
+    align-items: center;
+    margin-bottom: 0.75rem;
+    gap: 0.6rem;
+  }
+
+  .qb-card-title-row {
+    flex-direction: row;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    gap: 0.4rem;
+  }
+
+  .qb-card-title {
+    font-size: 0.88rem;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.25;
+    min-width: 0;
+  }
+
+  .qb-waiting-badge {
+    font-size: 0.69rem;
+    padding: 0.12rem 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .qb-btn-dispatch-outline {
+    padding: 0.22rem 0.65rem;
+    font-size: 0.73rem;
+    border-radius: 0.35rem;
+    flex-shrink: 0;
+    gap: 0.25rem;
+  }
+
+  /* ── Switch tables on mobile ── */
+  .qb-table--desktop {
+    display: none;
+  }
+  .qb-table--mobile {
+    display: block;
+  }
+
+  /* ── Mobile table styling ── */
+  .qb-table-grid--mobile th {
+    background: #f8fafc;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.74rem;
+    color: #64748b;
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .qb-table-grid--mobile td {
+    padding: 0.7rem 0.5rem;
+    font-size: 0.8rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .qb-table-grid--mobile tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .qb-table-grid--mobile .qb-th-num {
+    width: 36px;
+    text-align: center;
+  }
+
+  .qb-table-grid--mobile .qb-th-action {
+    width: 70px;
+    text-align: right;
+  }
+
+  .qb-table-grid--mobile .qb-num-circle {
+    width: 24px;
+    height: 24px;
+    font-size: 0.72rem;
+  }
+
+  .qb-table-grid--mobile .qb-driver-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .qb-table-grid--mobile .qb-time-text {
+    font-size: 0.74rem;
+    color: #475569;
+  }
+
+  .qb-table-grid--mobile .qb-status-text {
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+
+  /* Actions: right-aligned on mobile table */
+  .qb-table-grid--mobile .qb-actions-cell {
+    justify-content: flex-end;
+  }
 }

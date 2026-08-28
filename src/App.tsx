@@ -8,7 +8,6 @@ import { RoleGuard } from "./components/auth/RoleGuard";
 const Auth               = lazy(() => import("./components/auth/Auth").then(m => ({ default: m.Auth })));
 const SetupOrganization  = lazy(() => import("./components/organization/SetupOrganization").then(m => ({ default: m.SetupOrganization })));
 const QueueDashboardPage = lazy(() => import("./pages/QueueDashboardPage").then(m => ({ default: m.QueueDashboardPage })));
-const OrganizationsPage  = lazy(() => import("./pages/OrganizationsPage").then(m => ({ default: m.OrganizationsPage })));
 const QueueOrgManagePage = lazy(() => import("./pages/QueueOrgManagePage").then(m => ({ default: m.QueueOrgManagePage })));
 const ReportsPage        = lazy(() => import("./pages/ReportsPage").then(m => ({ default: m.ReportsPage })));
 const SettingsPage       = lazy(() => import("./pages/SettingsPage").then(m => ({ default: m.SettingsPage })));
@@ -59,17 +58,8 @@ function App() {
             }
           />
 
-          {/* Primary Route is /organizations */}
-          <Route
-            path="/organizations"
-            element={
-              <ProtectedRoute>
-                <RoleGuard>
-                  <OrganizationsPage />
-                </RoleGuard>
-              </ProtectedRoute>
-            }
-          />
+          {/* Primary Route: redirect /organizations to /dashboard */}
+          <Route path="/organizations" element={<Navigate to="/dashboard" replace />} />
 
           {/* Manage specific organization */}
           <Route

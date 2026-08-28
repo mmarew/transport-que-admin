@@ -1,0 +1,53 @@
+/* MobileHeader.css — Common Reusable Mobile Navigation Header */
+
+.mobile-sub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 4px 16px 4px;
+  background: transparent;
+}
+
+.mobile-sub-header__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-sub-header__back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.15s ease, transform 0.12s ease;
+}
+
+.mobile-sub-header__back-btn:hover {
+  background-color: rgba(11, 77, 109, 0.08);
+}
+
+.mobile-sub-header__back-btn:active {
+  transform: scale(0.92);
+}
+
+.mobile-sub-header__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0B4D6D;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.mobile-sub-header__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

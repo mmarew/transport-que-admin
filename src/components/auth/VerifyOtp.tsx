@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import heroImg from "../../assets/Frame.png";
 import LanguageSelector from "../ui/LanguageSelector";
@@ -31,6 +32,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
   onOtpVerified,
   from = "login",
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: { pathname: string } } };
   const { setAuth } = useAuth();
@@ -100,14 +102,13 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
 
       setAuth({ token, userData });
 
-      toast.success(`Welcome, ${userData.fullName}`);
+      toast.success(t("common.success"));
 
       if (onOtpVerified) {
-        // Let the parent (Auth.tsx) decide navigation (e.g. org setup for register)
         onOtpVerified(from);
       } else {
-        const redirectPath = location.state?.from?.pathname || "/dashboard";
-        navigate(redirectPath, { replace: true });
+        const fromPath = location.state?.from?.pathname || "/dashboard";
+        navigate(fromPath, { replace: true });
       }
     } catch (err: unknown) {
       const msg = parseError(err);
@@ -117,7 +118,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [isComplete, isLoading, formData.phoneNumber, otpValue, setAuth, location.state, navigate, resetDigits]);
+  }, [isComplete, isLoading, formData.phoneNumber, otpValue, setAuth, location.state, navigate, resetDigits, from, onOtpVerified, t]);
 
   useEffect(() => {
     if (isComplete) {
@@ -133,7 +134,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
 
     try {
       await requestLoginOtp(formData.phoneNumber);
-      toast.success("New code sent to your phone");
+      toast.success(t("auth.resendOtp"));
       setResendTimer(RESEND_COOLDOWN_SECONDS);
       clearCountdown();
       timerRef.current = setInterval(() => {
@@ -153,13 +154,17 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
   };
 
   const handleChange = (index: number, val: string) => {
-    setOtpError(null);
-    const char = val.replace(/\D/g, "").slice(-1);
-    const updated = [...digits];
-    updated[index] = char;
-    setDigits(updated);
-
-    if (char && index < OTP_LENGTH - 1) {
+    const clean = val.replace(/\D/g, "");
+    if (!clean) {
+      const copy = [...digits];
+      copy[index] = "";
+      setDigits(copy);
+      return;
+    }
+    const copy = [...digits];
+    copy[index] = clean[clean.length - 1];
+    setDigits(copy);
+    if (index < OTP_LENGTH - 1) {
       focusBox(index + 1);
     }
   };
@@ -168,20 +173,8 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
-    if (e.key === "Backspace") {
-      if (!digits[index] && index > 0) {
-        e.preventDefault();
-        const updated = [...digits];
-        updated[index - 1] = "";
-        setDigits(updated);
-        focusBox(index - 1);
-      }
-    } else if (e.key === "ArrowLeft" && index > 0) {
-      e.preventDefault();
+    if (e.key === "Backspace" && !digits[index] && index > 0) {
       focusBox(index - 1);
-    } else if (e.key === "ArrowRight" && index < OTP_LENGTH - 1) {
-      e.preventDefault();
-      focusBox(index + 1);
     }
   };
 
@@ -190,14 +183,11 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
     if (!pasted) return;
 
-    setDigits((prev) => {
-      const next = [...prev];
-      for (let i = 0; i < OTP_LENGTH; i++) {
-        next[i] = pasted[i] ?? "";
-      }
-      return next;
-    });
-
+    const copy = [...digits];
+    for (let i = 0; i < pasted.length; i++) {
+      copy[i] = pasted[i];
+    }
+    setDigits(copy);
     focusBox(Math.min(pasted.length, OTP_LENGTH - 1));
   };
 
@@ -227,8 +217,8 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
         {/* Mobile-only: dark header with overlapping circles */}
         <div className="mobile-otp-header">
           <OverlappingCircles
-            title="Verification"
-            subtitle="Check your phone to verify your OTP"
+            title={t("auth.otpTitle")}
+            subtitle={t("auth.otpSubtitle", { phone: maskedPhone })}
             onBack={onGoBack}
           />
         </div>
@@ -245,15 +235,11 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
             >
               <ArrowLeft size={22} strokeWidth={2} />
             </button>
-            <h1 className="otp-desktop-title">Verification</h1>
+            <h1 className="otp-desktop-title">{t("auth.otpTitle")}</h1>
           </div>
 
           <p className="otp-desktop-subtitle">
-            Enter verification code sent to {maskedPhone}
-          </p>
-
-          <p className="otp-code-sent">
-            Code has been sent to <strong>{maskedPhone}</strong>
+            {t("auth.otpSubtitle", { phone: maskedPhone })}
           </p>
 
           <form
@@ -298,10 +284,10 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
             {/* Resend section */}
             <div className="login-footer form-group-mb resend-section">
               <p className="resend-text">
-                Didn&apos;t receive code?{" "}
+                {t("auth.didntReceiveCode")}{" "}
                 {resendTimer > 0 ? (
                   <span className="resend-timer-text">
-                    Resend in {resendTimer}s
+                    {t("auth.resendIn", { seconds: resendTimer })}
                   </span>
                 ) : (
                   <button
@@ -313,7 +299,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
                     {isResending && (
                       <span className="add-docs-spinner add-docs-spinner--sm" />
                     )}
-                    {isResending ? "Sending..." : "Resend code"}
+                    {isResending ? t("common.loading") : t("auth.resendOtp")}
                   </button>
                 )}
               </p>
@@ -327,13 +313,10 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
               {isLoading ? (
                 <span className="btn-inner-flex">
                   <span className="add-docs-spinner" />
-                  Verifying...
+                  {t("auth.verifying")}
                 </span>
               ) : (
-                <>
-                  <span className="btn-text-desktop">Verify</span>
-                  <span className="btn-text-mobile">Login</span>
-                </>
+                t("auth.verifyBtn")
               )}
             </button>
           </form>

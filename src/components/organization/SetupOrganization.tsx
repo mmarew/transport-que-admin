@@ -2,11 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { ChevronDown, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import heroImg from "../../assets/Frame.png";
 import LanguageSelector from "../ui/LanguageSelector";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
+import { useAuth } from "../../context/AuthContext";
+import { disconnectSocket } from "../../lib/socket";
 import { hasOrganizationData } from "../../services/organization.service";
 import { useCreateQueueOrganizationMutation, useListQueueOrganizationsQuery } from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
@@ -46,8 +49,16 @@ function formatPhotonLabel(feature: any): string {
 }
 
 export const SetupOrganization: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const { data: orgsData, isSuccess } = useListQueueOrganizationsQuery();
+
+  const handleLogout = () => {
+    disconnectSocket();
+    logout();
+    navigate("/login", { replace: true });
+  };
 
   // If user already has an organization, forward directly to dashboard
   useEffect(() => {
@@ -186,8 +197,18 @@ export const SetupOrganization: React.FC = () => {
       {/* Left: hero image (desktop only) */}
       <div className="login-hero">
         <img src={heroImg} alt="Transport Hero" />
-        <div className="desktop-lang-selector">
+        <div className="desktop-lang-selector" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <LanguageSelector />
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="lang-selector-btn"
+            style={{ display: "inline-flex", alignItems: "center", gap: "5px", cursor: "pointer" }}
+            title={t("common.logout")}
+          >
+            <LogOut size={14} />
+            <span>{t("common.logout")}</span>
+          </button>
         </div>
       </div>
 
@@ -196,28 +217,38 @@ export const SetupOrganization: React.FC = () => {
         {/* Mobile hero */}
         <div className="login-mobile-hero">
           <div className="login-mobile-title-row">
-            <span className="login-app-title">Queue Admin</span>
+            <span className="login-app-title">{t("auth.loginTitle")}</span>
           </div>
-          <div className="login-mobile-lang-row">
+          <div className="login-mobile-lang-row" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
             <LanguageSelector />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="lang-selector-btn"
+              style={{ display: "inline-flex", alignItems: "center", gap: "5px", cursor: "pointer" }}
+              title={t("common.logout")}
+            >
+              <LogOut size={14} />
+              <span>{t("common.logout")}</span>
+            </button>
           </div>
           <div className="login-mobile-hero-text" style={{ paddingBottom: "1.5rem" }}>
-            <h1>Setup Organization</h1>
-            <p>Register your queue organization to get started</p>
+            <h1>{t("org.setupTitle")}</h1>
+            <p>{t("org.setupSubtitle")}</p>
           </div>
         </div>
 
         <div className="login-card animate-scale-up">
-          <div className="login-header login-header--desktop">
-            <h1>Setup Your Organization</h1>
-            <p>Register your queue organization to manage drivers and dispatches</p>
+          <div className="login-header login-header--desktop" style={{ position: "relative" }}>
+            <h1>{t("org.setupTitle")}</h1>
+            <p>{t("org.setupSubtitle")}</p>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
             {/* Organization Name */}
             <div className="form-group form-group-mb">
               <label htmlFor="org-name">
-                Organization Name <span style={{ color: "#E80000" }}>*</span>
+                {t("org.nameLabel")} <span style={{ color: "#E80000" }}>*</span>
               </label>
               <div className={`input-wrapper${errors.queueOrganizationName ? " input-wrapper--error" : ""}`}>
                 <input
@@ -236,7 +267,7 @@ export const SetupOrganization: React.FC = () => {
             {/* Organization Type Dropdown */}
             <div className="form-group form-group-mb">
               <label htmlFor="org-type">
-                Organization Type <span style={{ color: "#E80000" }}>*</span>
+                {t("org.typeLabel")} <span style={{ color: "#E80000" }}>*</span>
               </label>
               <div className={`input-wrapper setup-org-select-wrapper${errors.queueOrganizationType ? " input-wrapper--error" : ""}`}>
                 <select
@@ -244,10 +275,10 @@ export const SetupOrganization: React.FC = () => {
                   className="setup-org-select"
                   {...register("queueOrganizationType")}
                 >
-                  <option value="">Select type...</option>
-                  {QUEUE_ORG_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {ORG_TYPE_LABELS[t]}
+                  <option value="">{t("org.selectType")}...</option>
+                  {QUEUE_ORG_TYPES.map((typeKey) => (
+                    <option key={typeKey} value={typeKey}>
+                      {t(`org.types.${typeKey}`, { defaultValue: ORG_TYPE_LABELS[typeKey] })}
                     </option>
                   ))}
                 </select>
@@ -258,11 +289,11 @@ export const SetupOrganization: React.FC = () => {
               )}
             </div>
 
-            {/* Contact Phone (Optional with constant +251) */}
+            {/* Contact Phone */}
             <div className="form-group form-group-mb">
               <ConstantPhoneInput
                 id="org-phone"
-                label="Contact Phone"
+                label={t("org.phoneLabel")}
                 value={watch("queueOrganizationPhone") || ""}
                 onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
                 placeholder="9-XX-XX-XX-XX"
@@ -272,16 +303,16 @@ export const SetupOrganization: React.FC = () => {
               />
             </div>
 
-            {/* Address (Required with Photon Autocomplete) */}
+            {/* Address */}
             <div className="form-group setup-org-address-group">
               <label htmlFor="org-address">
-                Address <span style={{ color: "#E80000" }}>*</span>
+                {t("org.addressLabel")} <span style={{ color: "#E80000" }}>*</span>
               </label>
               <div className={`input-wrapper${errors.queueOrganizationAddress ? " input-wrapper--error" : ""}`}>
                 <input
                   id="org-address"
                   type="text"
-                  placeholder="Search address (e.g. Dessie, Bole, Addis Ababa)…"
+                  placeholder={t("org.searchAddressPlaceholder")}
                   autoComplete="off"
                   value={addressValue ?? ""}
                   {...addressRest}
@@ -322,17 +353,29 @@ export const SetupOrganization: React.FC = () => {
               {isSubmitting || isCreating ? (
                 <span className="btn-inner-flex">
                   <span className="add-docs-spinner" />
-                  Creating...
+                  {t("org.creating")}
                 </span>
               ) : (
-                "Create Organization"
+                t("org.createOrg")
               )}
             </button>
 
             <div className="login-footer form-group-mb login-footer-spaced">
-              <p style={{ color: "#64748b", fontSize: "0.8rem", textAlign: "center", margin: 0 }}>
-                Your organization will be reviewed and approved by an admin.
+              <p style={{ color: "#64748b", fontSize: "0.8rem", textAlign: "center", margin: "0 0 0.5rem 0" }}>
+                {t("org.pendingReview")}
               </p>
+              <div style={{ fontSize: "0.85rem", textAlign: "center", color: "#64748b" }}>
+                {t("org.switchAccount")}{" "}
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleLogout();
+                  }}
+                >
+                  {t("common.logout")}
+                </a>
+              </div>
             </div>
           </form>
         </div>

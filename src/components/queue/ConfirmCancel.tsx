@@ -1,8 +1,15 @@
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useRemoveEntryMutation } from "../../lib/redux/api";
+import { X, User } from "lucide-react";
+import { useRemoveEntryMutation, useListVehicleTypesQuery } from "../../lib/redux/api";
 import { getSocket } from "../../lib/socket";
 import parseError from "../../utils/parseError";
 import type { DriverQueueEntry } from "../../types/queue";
+import { resolveVehicleName } from "../../utils/vehicleType";
+import MobileHeader from "../common/MobileHeader";
+import "./QueueModals.css";
 
 interface ConfirmCancelProps {
   entry: DriverQueueEntry;
@@ -11,7 +18,10 @@ interface ConfirmCancelProps {
 }
 
 export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps) {
+  const { t } = useTranslation();
+  const [reason, setReason] = useState("");
   const [removeMutation, { isLoading }] = useRemoveEntryMutation();
+  const { data: vtData } = useListVehicleTypesQuery();
 
   const handleRemove = async () => {
     try {
@@ -28,6 +38,7 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
             driverUserUniqueId: entry.driverUserUniqueId,
             vehicleDriverUniqueId: entry.vehicleDriverUniqueId,
             shipperRequestUniqueId: entry.shipperRequestUniqueId,
+            reason: reason.trim() || undefined,
           },
         };
         s.emit("queue", payload);
@@ -35,7 +46,7 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
         s.emit("queue_removed", payload);
       }
 
-      toast.success(res?.message || `${entry.driverName} removed from queue`);
+      toast.success(res?.message || `${entry.driverName || "Driver"} removed from queue`);
       onRemoved?.();
       onClose();
     } catch (err: unknown) {
@@ -43,43 +54,94 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
     }
   };
 
-  return (
-    <div className="com-overlay">
-      <div className="com-modal" style={{ maxWidth: "400px" }}>
-        <h2 className="com-title">Cancel Driver from Queue</h2>
-        <p className="com-subtitle" style={{ marginBottom: "1.25rem" }}>
-          Are you sure you want to remove <strong style={{ color: "#0B4D6D" }}>{entry.driverName}</strong> (#{entry.queueNumber}) from the line? This action is audit-logged.
-        </p>
+  const vtList = vtData?.data || [];
+  const driverName = entry.driverName || "Driver";
+  const driverPhone = entry.driverPhoneNumber || "";
+  const vehicleName = resolveVehicleName(entry.vehicleTypeUniqueId, entry.vehicleTypeName, vtList);
+  const statusDisplay = entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Waiting";
 
-        <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            className="com-btn-cancel"
-          >
-            Keep in Queue
-          </button>
-          <button
-            type="button"
-            onClick={handleRemove}
-            disabled={isLoading}
-            style={{
-              backgroundColor: "#ef4444",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px 16px",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              cursor: isLoading ? "not-allowed" : "pointer",
-              opacity: isLoading ? 0.6 : 1,
-            }}
-          >
-            {isLoading ? "Removing…" : "Cancel Driver"}
+  return createPortal(
+    <div className="qm-overlay">
+      <div className="qm-modal">
+        {/* Mobile Header */}
+        <div className="qm-mobile-header">
+          <MobileHeader title="Cancel Driver from Queue" onBack={onClose} />
+        </div>
+
+        {/* Desktop Header */}
+        <div className="qm-header qm-header--desktop">
+          <div>
+            <h2 className="qm-title">Cancel Driver from Queue</h2>
+            <p className="qm-subtitle">Are you sure you want to remove this driver from the queue?</p>
+          </div>
+          <button type="button" className="qm-close-btn" onClick={onClose} aria-label="Close">
+            <X size={20} />
           </button>
         </div>
+
+        <div>
+          {/* Top 2 Cards */}
+          <div className="qm-top-grid">
+            <div className="qm-card">
+              <div className="qm-icon-circle">
+                <User size={20} />
+              </div>
+              <div className="qm-card-info">
+                <span className="qm-card-title">{driverName}</span>
+                {driverPhone && <span className="qm-card-sub">{driverPhone}</span>}
+              </div>
+            </div>
+
+            <div className="qm-card-col">
+              <div className="qm-card-line">
+                Vehicle: <strong>{vehicleName}</strong>
+              </div>
+              <div className="qm-card-line">
+                Current Status: <span className="qm-status-dot" /> <strong>{statusDisplay}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Reason for Cancellation */}
+          <div className="qm-field-group" style={{ marginTop: "10px" }}>
+            <label className="qm-section-title" style={{ margin: "0 0 4px 0" }}>
+              Reason for Cancellation
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Driver left the loading area."
+              rows={3}
+              className="qm-textarea"
+            />
+            <p className="qm-hint-text">Provide a clear reason for removing this driver.</p>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="qm-footer">
+            <button type="button" onClick={onClose} className="qm-btn-cancel">
+              Keep Driver
+            </button>
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={isLoading}
+              className="qm-btn-danger"
+            >
+              {isLoading ? (
+                <>
+                  <span className="add-docs-spinner" style={{ width: 14, height: 14 }} />
+                  {t("cancelModal.cancelling")}
+                </>
+              ) : (
+                "Cancel Driver"
+              )}
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

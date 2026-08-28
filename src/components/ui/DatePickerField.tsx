@@ -4,6 +4,7 @@ import { Calendar } from "lucide-react";
 interface DatePickerFieldProps {
   label: string;
   value?: string;
+  placeholder?: string;
   onChange: (val: string) => void;
   error?: string;
 }
@@ -11,6 +12,7 @@ interface DatePickerFieldProps {
 export function DatePickerField({
   label,
   value,
+  placeholder = "Select date",
   onChange,
   error,
 }: DatePickerFieldProps) {
@@ -42,14 +44,14 @@ export function DatePickerField({
           ref={inputRef}
           type={type}
           value={value || ""}
-          placeholder="mm/dd/yyyy"
+          placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
           onBlur={() => {
             if (!value) setType("text");
           }}
-          className={`com-input ${error ? "com-input-error" : ""}`}
+          className={`com-input has-icon-right ${error ? "com-input-error" : ""}`}
         />
-        <Calendar size={16} className="com-input-icon" />
+        <Calendar size={16} className="com-input-icon-right" />
       </div>
       {error && <p className="com-error-text">{error}</p>}
     </div>

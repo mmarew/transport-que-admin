@@ -52,7 +52,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       />
 
       <div className="main-content-wrapper">
-        {/* ── White Top Utility Bar (Matching Transport Company) ── */}
+        {/* ── Topbar ── */}
         <header className="mc-topbar">
           <div className="mc-topbar-icons">
             {/* Notification Bell */}

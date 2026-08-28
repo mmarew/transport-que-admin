@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   Search,
@@ -26,15 +27,9 @@ import { extractCity } from "../utils/formatters";
 import "./OrganizationsPage.css";
 
 const PAGE_SIZE = 8;
-const SORT_LABELS: Record<string, string> = {
-  name: "Organization Name",
-  type: "Type",
-  city: "City",
-  status: "Status",
-  enabled: "Enabled",
-};
 
 export function QueueDashboardPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const setSelectedOrgId = useQueueAdminStore((s) => s.setSelectedOrgId);
 
@@ -48,6 +43,14 @@ export function QueueDashboardPage() {
   const [showCreateOrgModal, setShowCreateOrgModal] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  const SORT_LABELS: Record<string, string> = {
+    name: t("dashboard.orgName"),
+    type: t("dashboard.type"),
+    city: t("dashboard.city"),
+    status: t("dashboard.status"),
+    enabled: t("dashboard.enabled"),
+  };
 
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
@@ -184,8 +187,8 @@ export function QueueDashboardPage() {
 
   return (
     <DashboardLayout
-      title={activeOrg ? undefined : "Organizations"}
-      subtitle={activeOrg ? undefined : "Select an organization to manage its queue"}
+      title={activeOrg ? undefined : t("dashboard.title")}
+      subtitle={activeOrg ? undefined : t("dashboard.subtitle")}
       activeTab="dashboard"
       actions={
         !activeOrgId ? (
@@ -195,7 +198,7 @@ export function QueueDashboardPage() {
             onClick={() => setShowCreateOrgModal(true)}
           >
             <Plus size={16} />
-            New Organization
+            <span>{t("dashboard.newOrg")}</span>
           </button>
         ) : undefined
       }
@@ -210,7 +213,7 @@ export function QueueDashboardPage() {
                 <p>This organization is awaiting administrator approval. The live queue board will be available once approved.</p>
               </div>
               <button type="button" className="org-approval-back-btn" onClick={() => setActiveOrgId(null)}>
-                <ArrowLeft size={16} /> Back to Organizations
+                <ArrowLeft size={16} /> {t("queue.backToOrgs")}
               </button>
             </div>
           )}
@@ -223,7 +226,7 @@ export function QueueDashboardPage() {
                 <p>This organization was rejected and cannot operate a live queue.</p>
               </div>
               <button type="button" className="org-approval-back-btn" onClick={() => setActiveOrgId(null)}>
-                <ArrowLeft size={16} /> Back to Organizations
+                <ArrowLeft size={16} /> {t("queue.backToOrgs")}
               </button>
             </div>
           )}
@@ -236,7 +239,7 @@ export function QueueDashboardPage() {
                 <p>Queue operations are temporarily suspended for this organization.</p>
               </div>
               <button type="button" className="org-approval-back-btn" onClick={() => setActiveOrgId(null)}>
-                <ArrowLeft size={16} /> Back to Organizations
+                <ArrowLeft size={16} /> {t("queue.backToOrgs")}
               </button>
             </div>
           )}
@@ -266,7 +269,7 @@ export function QueueDashboardPage() {
               <Search size={16} className="search-icon" />
               <input
                 type="text"
-                placeholder="Search Organizations"
+                placeholder={t("dashboard.searchOrgs")}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -282,7 +285,7 @@ export function QueueDashboardPage() {
                 className="org-sort-btn"
                 onClick={() => setShowSortMenu((v) => !v)}
               >
-                <span>Sort</span>
+                <span>{t("dashboard.sort")}</span>
                 <ChevronDown size={14} className={`org-sort-chevron ${showSortMenu ? "open" : ""}`} />
               </button>
 
@@ -305,12 +308,21 @@ export function QueueDashboardPage() {
                 </div>
               )}
             </div>
+
+            <button
+              type="button"
+              className="org-btn-add"
+              onClick={() => setShowCreateOrgModal(true)}
+            >
+              <Plus size={16} />
+              <span>{t("dashboard.addOrgMobile", "Add")}</span>
+            </button>
           </div>
 
           {orgsLoading && (
             <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
               <div className="add-docs-spinner" style={{ width: 28, height: 28, margin: "0 auto 1rem" }} />
-              <p style={{ color: "#64748b", fontSize: "0.875rem" }}>Loading organizations...</p>
+              <p style={{ color: "#64748b", fontSize: "0.875rem" }}>{t("common.loading")}</p>
             </div>
           )}
 
@@ -332,10 +344,10 @@ export function QueueDashboardPage() {
             <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
               <Building2 size={36} color="#94a3b8" style={{ margin: "0 auto 0.75rem" }} />
               <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#1e293b", margin: 0 }}>
-                {searchQuery ? "No matching organizations found" : "No Organizations Available"}
+                {searchQuery ? t("dashboard.noMatching") : t("dashboard.noOrgs")}
               </h3>
               <p style={{ color: "#64748b", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-                {searchQuery ? "Try a different search term" : "Registered queue stations will appear here"}
+                {searchQuery ? t("dashboard.tryDifferent") : t("dashboard.registeredAppear")}
               </p>
             </div>
           )}
@@ -348,19 +360,19 @@ export function QueueDashboardPage() {
                   <thead>
                     <tr>
                       <th onClick={() => handleSort("name")} style={{ cursor: "pointer" }}>
-                        <span className="org-th-sortable">Organization <ChevronDown size={13} /></span>
+                        <span className="org-th-sortable">{t("dashboard.orgName")} <ChevronDown size={13} /></span>
                       </th>
                       <th onClick={() => handleSort("type")} style={{ cursor: "pointer" }}>
-                        <span className="org-th-sortable">Type <ChevronDown size={13} /></span>
+                        <span className="org-th-sortable">{t("dashboard.type")} <ChevronDown size={13} /></span>
                       </th>
                       <th onClick={() => handleSort("city")} style={{ cursor: "pointer" }}>
-                        <span className="org-th-sortable">City <ChevronDown size={13} /></span>
+                        <span className="org-th-sortable">{t("dashboard.city")} <ChevronDown size={13} /></span>
                       </th>
-                      <th>Status</th>
+                      <th>{t("dashboard.status")}</th>
                       <th onClick={() => handleSort("enabled")} style={{ cursor: "pointer" }}>
-                        <span className="org-th-sortable">Enabled <ChevronDown size={13} /></span>
+                        <span className="org-th-sortable">{t("dashboard.enabled")} <ChevronDown size={13} /></span>
                       </th>
-                      <th style={{ textAlign: "center" }}>Action</th>
+                      <th style={{ textAlign: "center" }}>{t("queue.action")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -376,17 +388,17 @@ export function QueueDashboardPage() {
                           <td className="org-cell-type">{org.queueOrganizationType}</td>
                           <td className="org-cell-city">{city}</td>
                           <td>
-                            <span className="org-status-pill">
-                              <span className={`org-status-dot ${status}`} />
+                            <span className={`org-status-text ${status}`}>
                               {status.charAt(0).toUpperCase() + status.slice(1)}
                             </span>
                           </td>
                           <td>{isEnabled}</td>
-                          <td style={{ textAlign: "center" }}>
+                          <td>
                             <button
                               type="button"
-                              className={`org-manage-action-btn ${!isOrgApproved ? "disabled" : ""}`}
+                              className={`org-manage-link ${!isOrgApproved ? "disabled" : ""}`}
                               onClick={() => handleManage(org)}
+                              disabled={!isOrgApproved}
                               title={!isOrgApproved ? `Cannot open queue: Organization is ${org.approvalStatus}` : "Manage Queue"}
                             >
                               Manage
@@ -398,51 +410,13 @@ export function QueueDashboardPage() {
                   </tbody>
                 </table>
               </div>
-
-              {/* Mobile Cards View (Compact) */}
-              <div className="org-cards-mobile">
-                {paginatedOrgs.map(({ organization: org }) => {
-                  const city = extractCity(org.queueOrganizationAddress);
-                  const status = String(org.approvalStatus || "pending").toLowerCase();
-                  const isOrgApproved = status === "approved";
-
-                  return (
-                    <div key={org.queueOrganizationUniqueId} className="org-mobile-card">
-                      <div className="org-mc-info">
-                        <h4 className="org-mc-title">{org.queueOrganizationName}</h4>
-                        <div className="org-mc-meta">
-                          <span>{org.queueOrganizationType}</span>
-                          <span className="org-mc-bullet">•</span>
-                          <span>{city}</span>
-                          <span className="org-mc-bullet">•</span>
-                          <span>{org.queueEnabled === 1 ? "Enabled" : "Disabled"}</span>
-                        </div>
-                      </div>
-                      <div className="org-mc-side">
-                        <span className="org-status-pill">
-                          <span className={`org-status-dot ${status}`} />
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </span>
-                        <button
-                          type="button"
-                          className={`org-manage-action-btn ${!isOrgApproved ? "disabled" : ""}`}
-                          onClick={() => handleManage(org)}
-                          disabled={!isOrgApproved}
-                        >
-                          Manage
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </>
           )}
 
           {/* Footer & Pagination */}
           {!orgsLoading && !orgsError && processedOrgs.length > 0 && (
             <div className="org-table-footer">
-              <span>Show {paginatedOrgs.length} of {processedOrgs.length}</span>
+              <span>{t("dashboard.showOf", { current: paginatedOrgs.length, total: processedOrgs.length })}</span>
               <div className="org-pagination">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
