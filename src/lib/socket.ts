@@ -13,6 +13,18 @@ let socket: Socket | null = null;
 const queueEventHandlers = new Set<QueueEventHandler>();
 let currentSubscription: { queueOrganizationUniqueId: string; queueDate?: string } | null = null;
 
+let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
+const debouncedInvalidate = () => {
+  if (invalidateTimer) clearTimeout(invalidateTimer);
+  invalidateTimer = setTimeout(() => {
+    import("./redux/store").then(({ store }) => {
+      import("./redux/api").then(({ api }) => {
+        store.dispatch(api.util.invalidateTags(["QueueStatus", "DriverQueue", "ShipperRequests"]));
+      });
+    });
+  }, 250);
+};
+
 export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | null {
   const storedAuth = getStoredAuth();
   const token = storedAuth?.token;
@@ -104,6 +116,9 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
           console.error("Error in queue event listener:", err);
         }
       });
+
+      // Synchronize live WebSocket updates directly into RTK Query cache with debounce
+      debouncedInvalidate();
     } catch {
       // ignore parse errors
     }

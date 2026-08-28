@@ -23,21 +23,38 @@ function getBaseUrl(): string {
   return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
 }
 
+import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { logout } from "./slices/authSlice";
+
 const BASE_URL = getBaseUrl();
+
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: BASE_URL,
+  prepareHeaders: (headers) => {
+    const token = getToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    return headers;
+  },
+});
+
+const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+  args,
+  apiCtx,
+  extraOptions
+) => {
+  const result = await rawBaseQuery(args, apiCtx, extraOptions);
+  if (result.error && result.error.status === 401) {
+    apiCtx.dispatch(logout());
+  }
+  return result;
+};
 
 export const api = createApi({
   reducerPath: "api",
   refetchOnFocus: false,
   refetchOnReconnect: false,
   keepUnusedDataFor: 300,
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    prepareHeaders: (headers) => {
-      const token = getToken();
-      if (token) headers.set("Authorization", `Bearer ${token}`);
-      return headers;
-    },
-  }),
+  baseQuery: baseQueryWithReauth,
   tagTypes: [
     "QueueOrganizations",
     "QueueOrgMembers",
@@ -220,16 +237,18 @@ export const api = createApi({
 
     listVehicleDrivers: builder.query<
       { message: string; data: Array<{ vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string }> },
-      { queueOrganizationUniqueId?: string }
+      void
     >({
-      query: ({ queueOrganizationUniqueId } = {}) => {
-        if (queueOrganizationUniqueId) {
-          return {
-            url: appAPIs.listVehicleDriversAPI,
-            params: { queueOrganizationUniqueId, organizationUniqueId: queueOrganizationUniqueId },
-          };
+      queryFn: async (_arg, _queryApi, _extraOptions, baseQuery) => {
+        try {
+          const result = await baseQuery({ url: appAPIs.listDriversPaginatedAPI, params: { page: 1, limit: 100 } });
+          if (result.error && (result.error.status === 404 || result.error.status === 400)) {
+            return { data: { message: "success", data: [] } };
+          }
+          return (result as { data: { message: string; data: Array<{ vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string }> } }) || { data: { message: "success", data: [] } };
+        } catch {
+          return { data: { message: "success", data: [] } };
         }
-        return { url: appAPIs.listDriversPaginatedAPI, params: { page: 1, limit: 100 } };
       },
     }),
 

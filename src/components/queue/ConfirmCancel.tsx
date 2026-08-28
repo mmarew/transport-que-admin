@@ -8,6 +8,7 @@ import { getSocket } from "../../lib/socket";
 import parseError from "../../utils/parseError";
 import type { DriverQueueEntry } from "../../types/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 import "./QueueModals.css";
 
@@ -19,6 +20,7 @@ interface ConfirmCancelProps {
 
 export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps) {
   const { t } = useTranslation();
+  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
   const [reason, setReason] = useState("");
   const [removeMutation, { isLoading }] = useRemoveEntryMutation();
   const { data: vtData } = useListVehicleTypesQuery();
@@ -62,7 +64,13 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
 
   return createPortal(
     <div className="qm-overlay">
-      <div className="qm-modal">
+      <div
+        className="qm-modal"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cancel-modal-title"
+      >
         {/* Mobile Header */}
         <div className="qm-mobile-header">
           <MobileHeader title="Cancel Driver from Queue" onBack={onClose} />
@@ -71,7 +79,7 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
         {/* Desktop Header */}
         <div className="qm-header qm-header--desktop">
           <div>
-            <h2 className="qm-title">Cancel Driver from Queue</h2>
+            <h2 id="cancel-modal-title" className="qm-title">Cancel Driver from Queue</h2>
             <p className="qm-subtitle">Are you sure you want to remove this driver from the queue?</p>
           </div>
           <button type="button" className="qm-close-btn" onClick={onClose} aria-label="Close">

@@ -74,7 +74,7 @@ export function OrganizationsPage() {
   }, [rawData]);
 
   const processedOrgs = useMemo(() => {
-    let result = orgList.filter((item) => {
+    const result = orgList.filter((item) => {
       const org = item.organization;
       if (!org) return false;
       if (!searchQuery.trim()) return true;

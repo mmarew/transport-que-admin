@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  requestLoginOtp,
-  verifyOtp,
-  registerUser,
-} from "../../services/auth.service";
-import { getApiError } from "../../lib/api";
+  useRequestLoginOtpMutation,
+  useVerifyOtpMutation,
+  useRegisterUserMutation,
+} from "../../lib/redux/api";
+import parseError from "../../utils/parseError";
 import { useAuth } from "../../context/AuthContext";
+import { QUEUE_ORG_ADMIN_ROLE } from "../../types/queue";
 import {
   normalizeFieldValue,
   normalizePhone,
@@ -56,6 +56,10 @@ export function useAuthFlow(config: AuthConfig, initialMode: AuthMode) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pendingPhone, setPendingPhone] = useState("");
 
+  const [requestOtpMutation, { isLoading: isSendingOtp }] = useRequestLoginOtpMutation();
+  const [verifyOtpMutation, { isLoading: isVerifyingOtp }] = useVerifyOtpMutation();
+  const [registerUserMutation, { isLoading: isRegistering }] = useRegisterUserMutation();
+
   const fieldByKind = (screen: "login" | "register" | "otp", kind: AuthFieldKind) =>
     config[screen]?.fields.find((f) => f.kind === kind);
 
@@ -74,66 +78,72 @@ export function useAuthFlow(config: AuthConfig, initialMode: AuthMode) {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const sendOtp = useMutation({
-    mutationFn: async () => {
+  const handleSendOtp = async () => {
+    try {
       const field = fieldByKind("login", "phone");
       const phone = field ? normalizePhone(values[field.name] ?? "") : "";
-      return requestLoginOtp(phone);
-    },
-    onSuccess: () => {
+      await requestOtpMutation({ phoneNumber: phone, roleId: QUEUE_ORG_ADMIN_ROLE }).unwrap();
       toast.success("OTP sent via SMS");
-      const field = fieldByKind("login", "phone");
-      setPendingPhone(field ? normalizePhone(values[field.name] ?? "") : "");
+      setPendingPhone(phone);
       setOrigin("login");
       setMode("otp");
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
 
-  const register = useMutation({
-    mutationFn: async () => {
+  const handleRegister = async () => {
+    try {
       const nameField = fieldByKind("register", "fullName");
       const phoneField = fieldByKind("register", "phone");
       const emailField = fieldByKind("register", "email");
-      return registerUser({
+      const phone = phoneField ? normalizePhone(values[phoneField.name] ?? "") : "";
+
+      await registerUserMutation({
         fullName: nameField ? (values[nameField.name] ?? "").trim() : "",
-        phoneNumber: phoneField ? normalizePhone(values[phoneField.name] ?? "") : "",
+        phoneNumber: phone,
         email: emailField && values[emailField.name] ? values[emailField.name] : null,
-      });
-    },
-    onSuccess: () => {
+        roleId: QUEUE_ORG_ADMIN_ROLE,
+        statusId: 1,
+      }).unwrap();
+
       toast.success("Account created — OTP sent via SMS");
-      const phoneField = fieldByKind("register", "phone");
-      setPendingPhone(phoneField ? normalizePhone(values[phoneField.name] ?? "") : "");
+      setPendingPhone(phone);
       setOrigin("register");
       setMode("otp");
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
 
-  const submitOtp = useMutation({
-    mutationFn: async () => {
+  const handleSubmitOtp = async () => {
+    try {
       const phoneField = fieldByKind(origin, "phone");
       const otpField = fieldByKind("otp", "otp");
       const phone = phoneField ? normalizePhone(values[phoneField.name] ?? "") : "";
       const code = otpField ? (values[otpField.name] ?? "").replace(/\D/g, "") : "";
-      return verifyOtp(phone, code);
-    },
-    onSuccess: (res) => {
-      const { token, userData } = res.data;
+
+      const res = await verifyOtpMutation({
+        phoneNumber: phone,
+        roleId: QUEUE_ORG_ADMIN_ROLE,
+        OTP: code,
+      }).unwrap();
+
+      const { token, userData } = res;
       setAuth({ token, userData });
       toast.success(`Welcome, ${userData.fullName}`);
       navigate(location.state?.from?.pathname || "/", { replace: true });
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
 
   const submit = () => {
     const screen = mode === "otp" ? "otp" : mode;
     if (!validateScreen(screen)) return;
-    if (mode === "login") sendOtp.mutate();
-    else if (mode === "register") register.mutate();
-    else submitOtp.mutate();
+    if (mode === "login") handleSendOtp();
+    else if (mode === "register") handleRegister();
+    else handleSubmitOtp();
   };
 
   const goTo = (next: "login" | "register") => {
@@ -155,6 +165,7 @@ export function useAuthFlow(config: AuthConfig, initialMode: AuthMode) {
     submit,
     goTo,
     pendingPhone,
-    isPending: sendOtp.isPending || register.isPending || submitOtp.isPending,
+    isPending: isSendingOtp || isRegistering || isVerifyingOtp,
   };
 }
+

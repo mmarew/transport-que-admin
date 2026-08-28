@@ -5,10 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { X, ChevronDown } from "lucide-react";
-import { getApiError } from "@/lib/api";
+import parseError from "@/utils/parseError";
 import { setupOrgSchema, type SetupOrgFormValues } from "@/schemas/queue";
 import { QUEUE_ORG_TYPES, type QueueOrgType } from "@/types/queue";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 import "./CreateOrderModal.css";
 
@@ -57,57 +58,55 @@ function formatPhotonLabel(feature: any): string {
 
 export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalProps) {
   const { t } = useTranslation();
+  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
   const {
     register,
     handleSubmit,
     setValue,
     watch,
     formState: { errors },
-    reset,
   } = useForm<SetupOrgFormValues>({
     resolver: zodResolver(setupOrgSchema),
     defaultValues: {
       queueOrganizationName: "",
-      queueOrganizationType: undefined,
+      queueOrganizationType: "customs",
       queueOrganizationPhone: "",
       queueOrganizationAddress: "",
-      latitude: null,
-      longitude: null,
+      latitude: undefined,
+      longitude: undefined,
     },
   });
 
-  const addressValue = watch("queueOrganizationAddress");
   const [isPending, setIsPending] = useState(false);
   const [suggestions, setSuggestions] = useState<PhotonPlace[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-
-  const debounceTimerRef = useRef<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchSuggestions = useCallback(async (query: string) => {
+  const addressValue = watch("queueOrganizationAddress");
+
+  const searchAddress = useCallback(async (query: string) => {
     if (!query || query.trim().length < 2) {
       setSuggestions([]);
-      setIsSearching(false);
+      setShowSuggestions(false);
       return;
     }
     setIsSearching(true);
     try {
-      const res = await fetch(
-        `${PHOTON_URL}?q=${encodeURIComponent(query.trim())}&lat=9.0320&lon=38.7469&lang=en&limit=10`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const results = (data.features || []).map((feat: any) => ({
-          label: formatPhotonLabel(feat),
-          lat: feat.geometry?.coordinates[1] || 0,
-          lng: feat.geometry?.coordinates[0] || 0,
-          city: feat.properties?.state || feat.properties?.city,
-        }));
-        setSuggestions(results);
-      } else {
-        setSuggestions([]);
-      }
+      const url = `${PHOTON_URL}?q=${encodeURIComponent(query.trim())}&limit=5&bbox=33.0,3.4,48.0,15.0`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Search failed");
+      const json = await res.json();
+      const features = json.features || [];
+      const places: PhotonPlace[] = features.map((f: any) => ({
+        label: formatPhotonLabel(f),
+        lat: f.geometry?.coordinates?.[1] || 0,
+        lng: f.geometry?.coordinates?.[0] || 0,
+        city: f.properties?.city || f.properties?.name,
+      }));
+      setSuggestions(places);
+      setShowSuggestions(places.length > 0);
     } catch {
       setSuggestions([]);
     } finally {
@@ -118,14 +117,8 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
   const handleAddressInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setValue("queueOrganizationAddress", val, { shouldValidate: true });
-    setShowSuggestions(true);
-
-    if (debounceTimerRef.current !== null) {
-      window.clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = window.setTimeout(() => {
-      void fetchSuggestions(val);
-    }, 120);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => searchAddress(val), 350);
   };
 
   const handleSelectFeature = (place: PhotonPlace) => {
@@ -151,18 +144,17 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
     try {
       await onCreate({
         queueOrganizationName: values.queueOrganizationName,
-        queueOrganizationType: values.queueOrganizationType,
+        queueOrganizationType: values.queueOrganizationType as QueueOrgType,
         queueOrganizationAddress: values.queueOrganizationAddress,
-        latitude: Number(values.latitude),
-        longitude: Number(values.longitude),
+        latitude: values.latitude || 9.0227,
+        longitude: values.longitude || 38.7469,
         queueOrganizationPhone: values.queueOrganizationPhone || null,
       });
-      toast.success(t("org.pendingReview"));
+      toast.success(t("org.createdSuccess"));
       onCreated?.();
-      reset();
       onClose();
-    } catch (err) {
-      toast.error(getApiError(err));
+    } catch (err: unknown) {
+      toast.error(parseError(err));
     } finally {
       setIsPending(false);
     }
@@ -170,7 +162,14 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
 
   return createPortal(
     <div className="com-overlay">
-      <div className="com-modal" style={{ maxWidth: "520px" }}>
+      <div
+        className="com-modal"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-org-modal-title"
+        style={{ maxWidth: "520px" }}
+      >
         {/* Mobile Header */}
         <div className="com-mobile-header">
           <MobileHeader title="Create Company" onBack={onClose} />
@@ -179,10 +178,10 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
         {/* Desktop Header */}
         <div className="com-header com-header--desktop">
           <div>
-            <h2 className="com-title">{t("org.setupTitle")}</h2>
+            <h2 id="create-org-modal-title" className="com-title">{t("org.setupTitle")}</h2>
             <p className="com-subtitle">{t("org.setupSubtitle")}</p>
           </div>
-          <button type="button" className="com-close-btn" onClick={onClose}>
+          <button type="button" className="com-close-btn" onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
         </div>

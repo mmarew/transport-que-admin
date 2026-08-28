@@ -1,6 +1,5 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { RoleGuard } from "./components/auth/RoleGuard";
 
@@ -15,35 +14,16 @@ const SettingsPage       = lazy(() => import("./pages/SettingsPage").then(m => (
 // ── Minimal full-page loading fallback ───────────────────────────────────────
 function PageLoader() {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#ffffff",
-      }}
-    >
-      <span
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          border: "3px solid #e2e8f0",
-          borderTopColor: "var(--primary, #0F4C81)",
-          display: "inline-block",
-          animation: "spin 0.75s linear infinite",
-        }}
-      />
+    <div className="app-page-loader">
+      <span className="app-page-loader-spinner" />
     </div>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
           {/* Auth routes */}
           <Route path="/login"    element={<Auth initialStep="login" />} />
           <Route path="/register" element={<Auth initialStep="register" />} />
@@ -116,7 +96,6 @@ function App() {
           <Route path="*" element={<Navigate to="/organizations" replace />} />
         </Routes>
       </Suspense>
-    </AuthProvider>
   );
 }
 

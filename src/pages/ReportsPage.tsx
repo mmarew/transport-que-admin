@@ -13,7 +13,6 @@ import DashboardLayout from "../components/layout/DashboardLayout";
 import MobileHeader from "../components/common/MobileHeader";
 import {
   useListQueueOrganizationsQuery,
-  useListVehicleDriversQuery,
   useGetShipperRequestsQuery,
   useGetQueueStatusQuery,
 } from "../lib/redux/api";
@@ -37,11 +36,6 @@ function OrgReportRow({
     { skip: !org.queueOrganizationUniqueId }
   );
 
-  const { data: driversData } = useListVehicleDriversQuery(
-    { queueOrganizationUniqueId: org.queueOrganizationUniqueId },
-    { skip: !org.queueOrganizationUniqueId }
-  );
-
   const allEntries = useMemo(() => {
     if (!queueData?.data?.queues) return [];
     return Object.values(queueData.data.queues).flat();
@@ -51,9 +45,7 @@ function OrgReportRow({
     (e) => !e.status || e.status === "waiting" || e.status === "offered"
   ).length;
 
-  const totalDrivers = Array.isArray(driversData?.data)
-    ? driversData.data.length
-    : allEntries.length;
+  const totalDrivers = allEntries.length;
 
   return (
     <div className="rep-org-row">
@@ -136,14 +128,7 @@ export function ReportsPage() {
       ? selectedOrgId
       : orgList[0]?.organization?.queueOrganizationUniqueId || "";
 
-  // 2. Fetch Real Drivers for Active Terminal
-  const { data: driversData } = useListVehicleDriversQuery(
-    { queueOrganizationUniqueId: activeOrgId },
-    { skip: !activeOrgId }
-  );
-  const activeDriversList = Array.isArray(driversData?.data) ? driversData.data : [];
-
-  // 3. Fetch Real Queue Status for Active Terminal
+  // 2. Fetch Real Queue Status for Active Terminal
   const { data: queueStatusData } = useGetQueueStatusQuery(
     { queueOrganizationUniqueId: activeOrgId },
     { skip: !activeOrgId }
@@ -154,7 +139,10 @@ export function ReportsPage() {
     { queueOrganizationUniqueId: activeOrgId, target: "all", limit: 100 },
     { skip: !activeOrgId }
   );
-  const allOrders = Array.isArray(ordersData?.data) ? ordersData.data : [];
+  const allOrders = useMemo(
+    () => (Array.isArray(ordersData?.data) ? ordersData.data : []),
+    [ordersData]
+  );
 
   // Flatten all real queue entries
   const allQueueEntries = useMemo(() => {
@@ -168,11 +156,11 @@ export function ReportsPage() {
     (o) => String(o.organization.approvalStatus || "").toLowerCase() === "approved"
   ).length;
 
-  const totalDriversCount = activeDriversList.length > 0 ? activeDriversList.length : (allQueueEntries.length || 78);
-  const totalOrdersCount = allOrders.length > 0 ? allOrders.length : 42;
+  const totalDriversCount = allQueueEntries.length;
+  const totalOrdersCount = allOrders.length;
 
   // Real Driver Status Counts
-  const waitingCount = allQueueEntries.filter((e) => !e.status || e.status === "waiting").length || 45;
+  const waitingCount = allQueueEntries.filter((e) => !e.status || e.status === "waiting").length;
   const offeredCount = allQueueEntries.filter((e) => e.status === "offered").length;
   const loadedCount = allQueueEntries.filter(
     (e) => (e.status as string) === "loaded" || (e.status as string) === "assigned" || (e.status as string) === "completed"
@@ -180,9 +168,9 @@ export function ReportsPage() {
   const totalQueueDrivers = allQueueEntries.length;
 
   // Real Percentages for Donut Chart
-  const waitingPercent = totalQueueDrivers > 0 ? Math.round((waitingCount / totalQueueDrivers) * 100) : 65;
-  const offeredPercent = totalQueueDrivers > 0 ? Math.round((offeredCount / totalQueueDrivers) * 100) : 18;
-  const loadedPercent = totalQueueDrivers > 0 ? Math.max(0, 100 - waitingPercent - offeredPercent) : 17;
+  const waitingPercent = totalQueueDrivers > 0 ? Math.round((waitingCount / totalQueueDrivers) * 100) : 0;
+  const offeredPercent = totalQueueDrivers > 0 ? Math.round((offeredCount / totalQueueDrivers) * 100) : 0;
+  const loadedPercent = totalQueueDrivers > 0 ? Math.max(0, 100 - waitingPercent - offeredPercent) : 0;
 
   // SVG Donut Chart Calculation
   const radius = 55;
@@ -198,7 +186,7 @@ export function ReportsPage() {
   // Real Monthly Orders / Requests Data (12 months Jan-Dec)
   const currentMonthIdx = new Date().getMonth();
   const monthlyRequests = useMemo(() => {
-    const counts = [14, 25, 20, 35, 32, 37, 32, 12, 25, 30, 32, 19];
+    const counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     if (allOrders.length > 0) {
       allOrders.forEach((o) => {
         const dateStr = o.shipperRequest?.shipperRequestCreatedAt || o.shipperRequest?.shippingDate;
@@ -213,7 +201,8 @@ export function ReportsPage() {
     return counts;
   }, [allOrders]);
 
-  const currentMonthRequests = monthlyRequests[currentMonthIdx] || 35;
+  const currentMonthRequests = monthlyRequests[currentMonthIdx] || 0;
+  const maxMonthlyCount = Math.max(10, Math.max(...monthlyRequests));
 
   // Filter & Sort Organizations
   const filteredOrgs = useMemo(() => {
@@ -284,8 +273,8 @@ export function ReportsPage() {
 
           <div className="rep-kpi-card">
             <span className="rep-kpi-label">Total Organizations</span>
-            <span className="rep-kpi-val">{totalOrgs || 8}</span>
-            <span className="rep-kpi-sub green">Active ({activeOrgs || 8})</span>
+            <span className="rep-kpi-val">{totalOrgs}</span>
+            <span className="rep-kpi-sub green">Active ({activeOrgs})</span>
           </div>
         </div>
 
@@ -369,20 +358,19 @@ export function ReportsPage() {
             </div>
 
             <div className="rep-bar-chart-layout">
-              {/* Y-Axis markers matching screenshot */}
+              {/* Dynamic Y-Axis markers */}
               <div className="rep-y-axis">
-                <span>50</span>
-                <span>40</span>
-                <span>30</span>
-                <span>20</span>
-                <span>10</span>
+                <span>{maxMonthlyCount}</span>
+                <span>{Math.round(maxMonthlyCount * 0.75)}</span>
+                <span>{Math.round(maxMonthlyCount * 0.5)}</span>
+                <span>{Math.round(maxMonthlyCount * 0.25)}</span>
                 <span>0</span>
               </div>
 
               <div className="rep-bar-chart-container">
                 {MONTH_NAMES.map((month, idx) => {
-                  const val = monthlyRequests[idx] || 20;
-                  const heightPercent = Math.min(100, Math.max(12, (val / 50) * 100));
+                  const val = monthlyRequests[idx] || 0;
+                  const heightPercent = val > 0 ? Math.min(100, Math.max(12, (val / maxMonthlyCount) * 100)) : 4;
                   const isCurrentMonth = idx === currentMonthIdx;
 
                   return (
@@ -478,7 +466,7 @@ export function ReportsPage() {
               ))
             ) : (
               <div style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#64748b" }}>
-                No organizations found matching "{searchQuery}"
+                No organizations found matching &quot;{searchQuery}&quot;
               </div>
             )}
           </div>

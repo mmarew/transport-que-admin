@@ -14,6 +14,7 @@ import {
 import parseError from "../../utils/parseError";
 import { checkinSchema, type CheckinFormValues } from "../../schemas/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 import "./QueueModals.css";
 
@@ -25,6 +26,7 @@ interface CheckinModalProps {
 
 export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }: CheckinModalProps) {
   const { t } = useTranslation();
+  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
   const {
     register,
     handleSubmit,
@@ -43,17 +45,17 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
   const searchWrapRef = useRef<HTMLDivElement>(null);
 
   const [checkinMutation, { isLoading: isCheckingIn }] = useManualCheckinMutation();
-  const { data: driversData } = useListVehicleDriversQuery(
-    { queueOrganizationUniqueId },
-    { skip: !queueOrganizationUniqueId }
-  );
+  const { data: driversData } = useListVehicleDriversQuery();
 
   const { data: queueStatusData } = useGetQueueStatusQuery(
     { queueOrganizationUniqueId },
     { skip: !queueOrganizationUniqueId }
   );
 
-  const driversList = Array.isArray(driversData?.data) ? driversData.data : [];
+  const driversList = useMemo(
+    () => (Array.isArray(driversData?.data) ? driversData.data : []),
+    [driversData]
+  );
 
   // Filter registered drivers based on search input
   const filteredDrivers = useMemo(() => {
@@ -133,7 +135,13 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
 
   return createPortal(
     <div className="qm-overlay">
-      <div className="qm-modal">
+      <div
+        className="qm-modal"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="checkin-modal-title"
+      >
         {/* Mobile Header */}
         <div className="qm-mobile-header">
           <MobileHeader title="Manual Check-in" onBack={onClose} />
@@ -142,7 +150,7 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
         {/* Desktop Header */}
         <div className="qm-header qm-header--desktop">
           <div>
-            <h2 className="qm-title">Manual Check-in</h2>
+            <h2 id="checkin-modal-title" className="qm-title">Manual Check-in</h2>
             <p className="qm-subtitle">
               Register a driver into the queue manually when they arrive at the terminal.
             </p>
@@ -165,8 +173,12 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
                   value={searchQuery}
                   onFocus={() => setDropdownOpen(true)}
                   onChange={(e) => {
-                    setSearchQuery(e.target.value);
+                    const val = e.target.value;
+                    setSearchQuery(val);
                     setDropdownOpen(true);
+                    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim())) {
+                      setValue("vehicleDriverUniqueId", val.trim(), { shouldValidate: true });
+                    }
                   }}
                   placeholder={
                     selectedDriver

@@ -11,6 +11,26 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
+  build: {
+    sourcemap: process.env.NODE_ENV !== "production",
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes("node_modules")) {
+            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) {
+              return "vendor";
+            }
+            if (id.includes("@reduxjs") || id.includes("react-redux") || id.includes("zustand")) {
+              return "redux";
+            }
+            if (id.includes("lucide-react")) {
+              return "icons";
+            }
+          }
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

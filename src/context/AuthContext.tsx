@@ -1,17 +1,24 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { useDispatch } from "react-redux";
 import { clearAuth, getStoredAuth, storeAuth, type StoredAuth } from "../lib/auth";
 import { connectSocket, disconnectSocket } from "../lib/socket";
+import { setAuth as setReduxAuth, logout as logoutRedux, hydrateAuth } from "../lib/redux/slices/authSlice";
 
-interface AuthContextValue {
+export interface AuthContextValue {
   auth: StoredAuth | null;
   setAuth: (auth: StoredAuth) => void;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const dispatch = useDispatch();
   const [auth, setAuthState] = useState<StoredAuth | null>(() => getStoredAuth());
+
+  useEffect(() => {
+    dispatch(hydrateAuth());
+  }, [dispatch]);
 
   useEffect(() => {
     if (auth?.token && auth?.userData?.phoneNumber) {
@@ -24,12 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setAuth = (value: StoredAuth) => {
     storeAuth(value);
     setAuthState(value);
+    dispatch(setReduxAuth(value));
   };
 
   const logout = () => {
     disconnectSocket();
     clearAuth();
     setAuthState(null);
+    dispatch(logoutRedux());
   };
 
   return <AuthContext.Provider value={{ auth, setAuth, logout }}>{children}</AuthContext.Provider>;

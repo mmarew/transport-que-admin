@@ -14,6 +14,7 @@ import parseError from "../../utils/parseError";
 import { createOrderSchema, type CreateOrderFormValues } from "../../schemas/queue";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import { DatePickerField } from "../ui/DatePickerField";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 const PHOTON_URL = "https://photon.komoot.io/api/";
 
@@ -48,12 +49,12 @@ interface CreateOrderModalProps {
 }
 
 function toISOStringSafe(d: string): string {
-  if (!d) return new Date().toISOString();
+  if (!d) return d;
   try {
-    const parsed = new Date(d.includes("T") ? d : `${d}T00:00:00.000Z`);
-    return isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? d : dt.toISOString();
   } catch {
-    return new Date().toISOString();
+    return d;
   }
 }
 
@@ -72,6 +73,7 @@ export function CreateOrderModal({
   onClose,
 }: CreateOrderModalProps) {
   const { t } = useTranslation();
+  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
   const {
     register,
     handleSubmit,
@@ -289,7 +291,13 @@ export function CreateOrderModal({
 
   return createPortal(
     <div className="com-overlay">
-      <div className="com-modal">
+      <div
+        className="com-modal"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-order-modal-title"
+      >
         {/* Mobile Header */}
         <div className="com-mobile-header">
           <MobileHeader title="New Order" onBack={onClose} />
@@ -298,7 +306,7 @@ export function CreateOrderModal({
         {/* Desktop Header */}
         <div className="com-header com-header--desktop">
           <div>
-            <h2 className="com-title">{t("orders.createOrderTitle")}</h2>
+            <h2 id="create-order-modal-title" className="com-title">{t("orders.createOrderTitle")}</h2>
             <p className="com-subtitle">
               {t("orders.createOrderSubtitle")}
             </p>

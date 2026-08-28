@@ -14,6 +14,7 @@ import {
 import parseError from "../../utils/parseError";
 import { dispatchSchema, type DispatchFormValues } from "../../schemas/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 import "./DispatchModal.css";
 
@@ -55,6 +56,7 @@ export function DispatchModal({
   onClose,
 }: DispatchModalProps) {
   const { t } = useTranslation();
+  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
   const {
     handleSubmit,
     setValue,
@@ -242,7 +244,13 @@ export function DispatchModal({
 
   return createPortal(
     <div className="dm-overlay">
-      <div className="dm-modal">
+      <div
+        className="dm-modal"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dispatch-modal-title"
+      >
         {/* Mobile Header */}
         <div className="dm-mobile-header">
           <MobileHeader title="Dispatch to Front Driver" onBack={onClose} />
@@ -251,7 +259,7 @@ export function DispatchModal({
         {/* Desktop Header */}
         <div className="dm-header dm-header--desktop">
           <div>
-            <h2 className="dm-title">Dispatch to Front Driver</h2>
+            <h2 id="dispatch-modal-title" className="dm-title">Dispatch to Front Driver</h2>
             <p className="dm-subtitle">
               Offer an existing order to the front waiting driver of the selected vehicle type.
             </p>

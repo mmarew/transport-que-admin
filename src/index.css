@@ -78,3 +78,28 @@ button {
 .animate-scale-up {
   animation: scaleUp 0.3s ease-out forwards;
 }
+
+/* Page Loader Fallback */
+.app-page-loader {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-light, #f9f9f9);
+}
+
+.app-page-loader-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--primary, #0B4D6D);
+  display: inline-block;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

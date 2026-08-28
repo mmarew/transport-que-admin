@@ -83,14 +83,25 @@ export function SettingsPage() {
     address: displayAddress,
   });
 
+  const prevDefaultsRef = useRef({ displayName, displayPhone, displayEmail, displayAddress });
   useEffect(() => {
-    setFormData({
-      name: displayName,
-      phone: displayPhone,
-      email: displayEmail,
-      address: displayAddress,
-    });
-  }, [displayName, displayPhone, displayEmail, displayAddress]);
+    if (!isEditing) {
+      if (
+        prevDefaultsRef.current.displayName !== displayName ||
+        prevDefaultsRef.current.displayPhone !== displayPhone ||
+        prevDefaultsRef.current.displayEmail !== displayEmail ||
+        prevDefaultsRef.current.displayAddress !== displayAddress
+      ) {
+        prevDefaultsRef.current = { displayName, displayPhone, displayEmail, displayAddress };
+        setFormData({
+          name: displayName,
+          phone: displayPhone,
+          email: displayEmail,
+          address: displayAddress,
+        });
+      }
+    }
+  }, [displayName, displayPhone, displayEmail, displayAddress, isEditing]);
 
   // Toggles (persisted)
   const [pushNotif, setPushNotif] = useState(() => readBool("app_push_notification", true));

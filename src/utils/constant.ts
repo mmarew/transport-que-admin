@@ -28,7 +28,7 @@ const appAPIs = {
     removeEntryAPI: "/queue/entry/:queueUniqueId",
     overrideEntryAPI: "/queue/entry/:queueUniqueId/override",
     vechicleDriverList: "/vehicleDriver/list",
-    listVehicleDriversAPI: "/driver/listDriversByOrg",
+    listVehicleDriversAPI: "/vehicleDriver/list",
     listDriverVehiclesAPI: "/vehicleDriver/org/:queueOrganizationUniqueId",
     listDriversPaginatedAPI: "/driver/listPaginated",
     getDriverVehiclesAPI: "/driver/:driverUniqueId/vehicles",

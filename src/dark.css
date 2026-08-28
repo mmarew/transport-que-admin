@@ -954,3 +954,44 @@ html.dark,
 .dark .mobile-sub-header__title {
   color: #38bdf8 !important;
 }
+
+/* ── App Page Loader ── */
+.dark .app-page-loader {
+  background-color: #0f172a !important;
+}
+
+.dark .app-page-loader-spinner {
+  border-color: #334155 !important;
+  border-top-color: #38bdf8 !important;
+}
+
+/* ── Reports Page Top Controls ── */
+.dark .rep-terminal-select-wrap {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+
+.dark .rep-terminal-select {
+  color: #f8fafc !important;
+}
+
+.dark .rep-terminal-select option {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+}
+
+.dark .rep-select-icon,
+.dark .rep-select-arrow {
+  color: #94a3b8 !important;
+}
+
+.dark .rep-export-btn {
+  background-color: #034b6e !important;
+  color: #38bdf8 !important;
+  border: 1px solid #0284c7 !important;
+}
+
+.dark .rep-export-btn:hover {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}

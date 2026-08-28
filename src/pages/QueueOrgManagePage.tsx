@@ -1,19 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Building2, ShieldCheck } from "lucide-react";
-import { getApiError } from "@/lib/api";
-import {
-  approveQueueOrganization,
-  listQueueOrgMembers,
-  updateQueueOrganization,
-} from "@/services/organization.service";
+import parseError from "@/utils/parseError";
 import { useAuth } from "@/context/AuthContext";
-import { useQueueAdminStore } from "@/store/queueAdminStore";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { api } from "@/lib/redux/api";
 import {
   queueOrgProfileSchema,
   type QueueOrgProfileFormValues,
@@ -28,6 +19,9 @@ import { QueueBoard } from "@/components/queue/QueueBoard";
 import {
   useGetQueueOrganizationQuery,
   useGetQueueStatusQuery,
+  useListQueueOrgMembersQuery,
+  useUpdateQueueOrganizationMutation,
+  useApproveQueueOrganizationMutation,
 } from "@/lib/redux/api";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
@@ -58,12 +52,12 @@ function StatusBadge({
         {status}
       </span>
       {enabled ? (
-        <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-          enabled
+        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+          Queue Active
         </span>
       ) : (
-        <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
-          disabled
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+          Queue Disabled
         </span>
       )}
     </span>
@@ -71,20 +65,13 @@ function StatusBadge({
 }
 
 export function QueueOrgManagePage() {
-  const { queueOrganizationUniqueId: routeOrgId } = useParams();
+  const { queueOrganizationUniqueId } = useParams<{
+    queueOrganizationUniqueId: string;
+  }>();
+  const orgId = queueOrganizationUniqueId || "";
+
   const { auth } = useAuth();
-  const selectedOrgId = useQueueAdminStore((s) => s.selectedOrgId);
-  const queryClient = useQueryClient();
-  const dispatch = useAppDispatch();
-
-  const orgId = routeOrgId ?? selectedOrgId;
-  const isAdmin = auth?.userData.roleId === 3 || auth?.userData.roleId === 6;
-
-  const invalidateQueueStatus = () => {
-    if (orgId) {
-      dispatch(api.util.invalidateTags([{ type: "QueueStatus", id: `${orgId}|today` }]));
-    }
-  };
+  const isAdmin = auth?.userData?.roleId === 11;
 
   const {
     data: orgData,
@@ -107,17 +94,17 @@ export function QueueOrgManagePage() {
   );
 
   const {
-    data: members,
+    data: membersData,
     isLoading: membersLoading,
     error: membersError,
-  } = useQuery({
-    queryKey: ["queue-org-members", orgId],
-    queryFn: () =>
-      orgId
-        ? listQueueOrgMembers(orgId).then((res) => res.data.data)
-        : Promise.resolve([]),
-    enabled: Boolean(orgId),
+  } = useListQueueOrgMembersQuery(orgId, {
+    skip: !orgId,
   });
+
+  const members: QueueOrgMember[] = Array.isArray(membersData?.data) ? membersData.data : [];
+
+  const [updateOrgMutation, { isLoading: isUpdating }] = useUpdateQueueOrganizationMutation();
+  const [approveOrgMutation, { isLoading: isApproving }] = useApproveQueueOrganizationMutation();
 
   const {
     register,
@@ -137,47 +124,42 @@ export function QueueOrgManagePage() {
       : undefined,
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (values: QueueOrgProfileFormValues) =>
-      updateQueueOrganization(orgId, {
-        queueOrganizationName: values.queueOrganizationName,
-        queueOrganizationType: values.queueOrganizationType,
-        queueOrganizationPhone: values.queueOrganizationPhone || null,
-        queueOrganizationAddress: values.queueOrganizationAddress || null,
-        latitude: values.latitude ? Number(values.latitude) : null,
-        longitude: values.longitude ? Number(values.longitude) : null,
-      }),
-    onSuccess: () => {
+  const onUpdateProfile = async (values: QueueOrgProfileFormValues) => {
+    try {
+      await updateOrgMutation({
+        id: orgId,
+        body: {
+          queueOrganizationName: values.queueOrganizationName,
+          queueOrganizationType: values.queueOrganizationType,
+          queueOrganizationPhone: values.queueOrganizationPhone || null,
+          queueOrganizationAddress: values.queueOrganizationAddress || null,
+          latitude: values.latitude || null,
+          longitude: values.longitude || null,
+        },
+      }).unwrap();
       toast.success("Organization updated");
-      queryClient.invalidateQueries({ queryKey: ["queue-orgs"] });
-      invalidateQueueStatus();
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
 
-  const approveMutation = useMutation({
-    mutationFn: (body: {
-      approvalStatus: Exclude<ApprovalStatus, "pending">;
-      approvalReason?: string;
-    }) =>
-      approveQueueOrganization(orgId, {
-        ...body,
-        queueEnabled: body.approvalStatus === "approved",
-      }),
-    onSuccess: () => {
-      toast.success("Organization status updated");
-      queryClient.invalidateQueries({ queryKey: ["queue-orgs"] });
-      invalidateQueueStatus();
-    },
-    onError: (err) => toast.error(getApiError(err)),
-  });
-
-  const approve = (approvalStatus: Exclude<ApprovalStatus, "pending">) => {
+  const approve = async (approvalStatus: Exclude<ApprovalStatus, "pending">) => {
     if (
       approvalStatus === "approved" ||
       window.confirm(`Mark this organization as "${approvalStatus}"?`)
     ) {
-      approveMutation.mutate({ approvalStatus });
+      try {
+        await approveOrgMutation({
+          id: orgId,
+          body: {
+            approvalStatus,
+            queueEnabled: approvalStatus === "approved",
+          },
+        }).unwrap();
+        toast.success("Organization status updated");
+      } catch (err: unknown) {
+        toast.error(parseError(err));
+      }
     }
   };
 
@@ -226,7 +208,7 @@ export function QueueOrgManagePage() {
 
       {orgId && orgError && (
         <div className="mb-6 rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
-          {getApiError(orgError)}
+          {parseError(orgError)}
         </div>
       )}
 
@@ -240,9 +222,7 @@ export function QueueOrgManagePage() {
                 Organization Details
               </h2>
               <form
-                onSubmit={handleSubmit((values) =>
-                  updateMutation.mutate(values),
-                )}
+                onSubmit={handleSubmit(onUpdateProfile)}
                 className="mt-4 space-y-4"
               >
                 <div>
@@ -333,10 +313,10 @@ export function QueueOrgManagePage() {
                 <div className="flex items-center justify-end gap-2 pt-2">
                   <button
                     type="submit"
-                    disabled={updateMutation.isPending || !isDirty}
+                    disabled={isUpdating || !isDirty}
                     className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm"
                   >
-                    {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                    {isUpdating ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </form>
@@ -355,7 +335,7 @@ export function QueueOrgManagePage() {
                 )}
                 {membersError && (
                   <p className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                    {getApiError(membersError)}
+                    {parseError(membersError)}
                   </p>
                 )}
                 {!membersLoading && !membersError && (
@@ -425,21 +405,21 @@ export function QueueOrgManagePage() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       onClick={() => approve("approved")}
-                      disabled={approveMutation.isPending}
+                      disabled={isApproving}
                       className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => approve("suspended")}
-                      disabled={approveMutation.isPending}
+                      disabled={isApproving}
                       className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition"
                     >
                       Suspend
                     </button>
                     <button
                       onClick={() => approve("rejected")}
-                      disabled={approveMutation.isPending}
+                      disabled={isApproving}
                       className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50 transition"
                     >
                       Reject

@@ -9,6 +9,7 @@ import parseError from "../../utils/parseError";
 import { overrideSchema, type OverrideFormValues } from "../../schemas/queue";
 import type { DriverQueueEntry } from "../../types/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 import "./QueueModals.css";
 
@@ -20,6 +21,7 @@ interface OverrideModalProps {
 
 export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalProps) {
   const { t } = useTranslation();
+  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
   const {
     register,
     handleSubmit,
@@ -57,7 +59,13 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
 
   return createPortal(
     <div className="qm-overlay">
-      <div className="qm-modal">
+      <div
+        className="qm-modal"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="override-modal-title"
+      >
         {/* Mobile Header */}
         <div className="qm-mobile-header">
           <MobileHeader title="Override Queue Position" onBack={onClose} />
@@ -66,7 +74,7 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
         {/* Desktop Header */}
         <div className="qm-header qm-header--desktop">
           <div>
-            <h2 className="qm-title">Override Queue Position</h2>
+            <h2 id="override-modal-title" className="qm-title">Override Queue Position</h2>
             <p className="qm-subtitle">Change the position of a driver in the queue.</p>
           </div>
           <button type="button" className="qm-close-btn" onClick={onClose} aria-label="Close">

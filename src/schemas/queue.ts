@@ -6,7 +6,8 @@ export const uuidSchema = z.string().uuid({ message: "Invalid UUID" });
 /** Strip HTML tags from a string */
 const stripTags = (v: string) => v.replace(/<[^>]*>/g, "");
 /** Remove non-printable control characters */
-const stripCtrl = (v: string) => v.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+// eslint-disable-next-line no-control-regex
+const stripCtrl = (v: string) => v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
 /** Sanitize general text: strip tags, control chars, collapse whitespace */
 const sanitizeText = (v: string) =>
   stripCtrl(stripTags(v)).replace(/[ \t]+/g, " ").trim();
@@ -20,7 +21,7 @@ export const loginSchema = z.object({
     .string()
     .min(10, "Phone number is required")
     .max(20, "Phone number too long")
-    .transform((v) => v.replace(/[^\d+\-()\ ]/g, "").trim()),
+    .transform((v) => v.replace(/[^\d+\-() ]/g, "").trim()),
 });
 
 export const registerSchema = z.object({
@@ -33,7 +34,7 @@ export const registerSchema = z.object({
     .string()
     .min(12, "Phone number is required")
     .max(20, "Phone number too long")
-    .transform((v) => v.replace(/[^\d+\-()\ ]/g, "").trim()),
+    .transform((v) => v.replace(/[^\d+\-() ]/g, "").trim()),
   email: z
     .string()
     .transform(sanitizeEmail)
@@ -45,6 +46,7 @@ export const registerSchema = z.object({
 export const setupOrgSchema = z.object({
   queueOrganizationName: z
     .string()
+    .trim()
     .min(1, "Organization name is required")
     .max(255, "Name too long")
     .transform(sanitizeText),
@@ -54,7 +56,7 @@ export const setupOrgSchema = z.object({
   queueOrganizationPhone: z
     .string()
     .max(20, "Phone too long")
-    .transform((v) => v.replace(/[^\d+\-()\ ]/g, "").trim())
+    .transform((v) => v.replace(/[^\d+\-() ]/g, "").trim())
     .optional()
     .or(z.literal("")),
   queueOrganizationAddress: z
@@ -143,7 +145,7 @@ export const createOrderSchema = z
 
 export const overrideSchema = z.object({
   queueNumber: z.number().int().min(1, "Queue number must be ≥ 1"),
-  reason: z.string().max(500).optional(),
+  reason: z.string().max(500).transform(sanitizeText).optional().or(z.literal("")),
 });
 
 export const queueOrgProfileSchema = z.object({
