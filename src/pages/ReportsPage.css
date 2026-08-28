@@ -672,8 +672,8 @@
 }
 
 .rep-page-btn.active {
-  background: #034b6e;
-  border-color: #034b6e;
+  background: var(--primary, #0B4D6D);
+  border-color: var(--primary, #0B4D6D);
   color: #ffffff;
 }
 

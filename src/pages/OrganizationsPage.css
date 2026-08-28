@@ -304,8 +304,8 @@
 }
 
 .org-page-btn.active {
-  background: #0284c7;
-  border-color: #0284c7;
+  background: var(--primary, #0B4D6D);
+  border-color: var(--primary, #0B4D6D);
   color: #ffffff;
   font-weight: 600;
 }

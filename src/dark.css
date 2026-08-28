@@ -311,7 +311,8 @@ html.dark,
 }
 
 .dark .org-page-btn.active {
-  background-color: #0284c7 !important;
+  background-color: #0B4D6D !important;
+  border-color: #0B4D6D !important;
   color: #ffffff !important;
 }
 
@@ -366,9 +367,9 @@ html.dark,
 }
 
 .dark .rep-page-btn.active {
-  background-color: #0284c7 !important;
+  background-color: #0B4D6D !important;
   color: #ffffff !important;
-  border-color: #0284c7 !important;
+  border-color: #0B4D6D !important;
 }
 
 /* Reports Search & Sort Toolbar matching screenshot 1:1 */
