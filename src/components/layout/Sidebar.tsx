@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               role="button"
               tabIndex={0}
             >
-              <span className="sidebar-brand-name">Dynamic</span>
+              <span className="sidebar-brand-name">{t("nav.brand", "Dynamic")}</span>
             </div>
           )}
           {onToggleCollapse && (

@@ -31,6 +31,7 @@ function OrgReportRow({
   org: QueueOrganization;
   onNavigate: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const { data: queueData } = useGetQueueStatusQuery(
     { queueOrganizationUniqueId: org.queueOrganizationUniqueId },
     { skip: !org.queueOrganizationUniqueId }
@@ -47,6 +48,16 @@ function OrgReportRow({
 
   const totalDrivers = allEntries.length;
 
+  const approvalStatusLower = (org.approvalStatus || "").toLowerCase();
+  const displayStatus =
+    approvalStatusLower === "approved"
+      ? t("reports.approved", "Approved")
+      : approvalStatusLower === "pending"
+      ? t("reports.pending", "Pending")
+      : org.approvalStatus
+      ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
+      : t("dashboard.enabled", "Active");
+
   return (
     <div className="rep-org-row">
       <div className="rep-org-main">
@@ -56,23 +67,19 @@ function OrgReportRow({
         <div className="rep-org-info">
           <span className="rep-org-name">{org.queueOrganizationName}</span>
           <span className="rep-org-city">
-            {org.queueOrganizationAddress || "Terminal Location"}
+            {org.queueOrganizationAddress || t("reports.terminalLocation", "Terminal Location")}
           </span>
-          <span className="rep-org-status">
-            {org.approvalStatus
-              ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
-              : "Active"}
-          </span>
+          <span className="rep-org-status">{displayStatus}</span>
         </div>
       </div>
 
       <div className="rep-org-stat">
-        <span className="rep-org-stat-label">Drivers</span>
+        <span className="rep-org-stat-label">{t("reports.drivers", "Drivers")}</span>
         <span className="rep-org-stat-val">{totalDrivers}</span>
       </div>
 
       <div className="rep-org-stat">
-        <span className="rep-org-stat-label">Waiting</span>
+        <span className="rep-org-stat-label">{t("reports.waiting", "Waiting")}</span>
         <span className="rep-org-stat-val">{waitingCount}</span>
       </div>
 
@@ -82,7 +89,7 @@ function OrgReportRow({
           onClick={() => onNavigate(org.queueOrganizationUniqueId)}
           className="rep-org-action-btn"
         >
-          View Queue <ChevronRight size={15} />
+          {t("reports.viewQueue", "View Queue")} <ChevronRight size={15} />
         </button>
       </div>
     </div>
@@ -254,27 +261,29 @@ export function ReportsPage() {
         {/* Top KPI Metric Cards (3 on mobile, 4 on desktop) */}
         <div className="rep-kpi-grid">
           <div className="rep-kpi-card">
-            <span className="rep-kpi-label">Total Driver</span>
+            <span className="rep-kpi-label">{t("reports.totalDriver", "Total Driver")}</span>
             <span className="rep-kpi-val orange">{totalDriversCount}</span>
-            <span className="rep-kpi-sub green">Checked In</span>
+            <span className="rep-kpi-sub green">{t("reports.checkedIn", "Checked In")}</span>
           </div>
 
           <div className="rep-kpi-card">
-            <span className="rep-kpi-label">Waiting Now</span>
+            <span className="rep-kpi-label">{t("reports.waitingNow", "Waiting Now")}</span>
             <span className="rep-kpi-val blue">{waitingCount}</span>
-            <span className="rep-kpi-sub blue">Across all queues</span>
+            <span className="rep-kpi-sub blue">{t("reports.acrossQueues", "Across all queues")}</span>
           </div>
 
           <div className="rep-kpi-card">
-            <span className="rep-kpi-label">Orders Now</span>
+            <span className="rep-kpi-label">{t("reports.ordersNow", "Orders Now")}</span>
             <span className="rep-kpi-val green">{totalOrdersCount}</span>
-            <span className="rep-kpi-sub blue">Created</span>
+            <span className="rep-kpi-sub blue">{t("reports.created", "Created")}</span>
           </div>
 
           <div className="rep-kpi-card">
-            <span className="rep-kpi-label">Total Organizations</span>
+            <span className="rep-kpi-label">{t("reports.totalOrganizations", "Total Organizations")}</span>
             <span className="rep-kpi-val">{totalOrgs}</span>
-            <span className="rep-kpi-sub green">Active ({activeOrgs})</span>
+            <span className="rep-kpi-sub green">
+              {t("reports.activeCount", { count: activeOrgs, defaultValue: `Active (${activeOrgs})` })}
+            </span>
           </div>
         </div>
 
@@ -282,7 +291,7 @@ export function ReportsPage() {
         <div className="rep-charts-grid">
           {/* Status Donut Chart (Desktop only) */}
           <div className="rep-chart-card">
-            <h3 className="rep-card-title">Status</h3>
+            <h3 className="rep-card-title">{t("reports.status", "Status")}</h3>
             <div className="rep-donut-wrap">
               <div className="rep-donut-svg-box">
                 <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: "rotate(-90deg)" }}>
@@ -336,15 +345,15 @@ export function ReportsPage() {
               <div className="rep-legend-list">
                 <div className="rep-legend-item">
                   <span className="rep-legend-dot waiting" />
-                  <span>Waiting ({waitingCount} • {waitingPercent}%)</span>
+                  <span>{t("reports.waiting", "Waiting")} ({waitingCount} • {waitingPercent}%)</span>
                 </div>
                 <div className="rep-legend-item">
                   <span className="rep-legend-dot offered" />
-                  <span>Offered ({offeredCount} • {offeredPercent}%)</span>
+                  <span>{t("reports.offered", "Offered")} ({offeredCount} • {offeredPercent}%)</span>
                 </div>
                 <div className="rep-legend-item">
                   <span className="rep-legend-dot loaded" />
-                  <span>Loaded ({loadedCount} • {loadedPercent}%)</span>
+                  <span>{t("reports.loaded", "Loaded")} ({loadedCount} • {loadedPercent}%)</span>
                 </div>
               </div>
             </div>
@@ -352,7 +361,7 @@ export function ReportsPage() {
 
           {/* Number of Requests Bar Chart with Y-Axis */}
           <div className="rep-chart-card">
-            <h3 className="rep-card-title">Number of Requests</h3>
+            <h3 className="rep-card-title">{t("reports.numberOfRequests", "Number of Requests")}</h3>
             <div className="rep-bar-header">
               <span className="rep-bar-total">{currentMonthRequests}</span>
             </div>
@@ -372,13 +381,14 @@ export function ReportsPage() {
                   const val = monthlyRequests[idx] || 0;
                   const heightPercent = val > 0 ? Math.min(100, Math.max(12, (val / maxMonthlyCount) * 100)) : 4;
                   const isCurrentMonth = idx === currentMonthIdx;
+                  const monthTranslated = t(`reports.months.${month}`, month);
 
                   return (
                     <div key={month} className="rep-bar-col">
                       <div
                         className={`rep-bar-pillar ${isCurrentMonth ? "active-month" : ""}`}
                         style={{ height: `${heightPercent}%` }}
-                        title={`${month}: ${val} requests`}
+                        title={t("reports.requestsCount", { month: monthTranslated, count: val, defaultValue: `${monthTranslated}: ${val} requests` })}
                       />
                       <span
                         className="rep-bar-label"
@@ -387,7 +397,7 @@ export function ReportsPage() {
                           fontWeight: isCurrentMonth ? 700 : 500,
                         }}
                       >
-                        {month}
+                        {monthTranslated}
                       </span>
                     </div>
                   );
@@ -399,7 +409,7 @@ export function ReportsPage() {
 
         {/* Desktop Organization Overview List */}
         <div className="rep-orgs-card">
-          <h3 className="rep-orgs-title">Organizations Overview</h3>
+          <h3 className="rep-orgs-title">{t("reports.orgsOverview", "Organizations Overview")}</h3>
 
           <div className="rep-orgs-toolbar">
             <div className="rep-search-wrap">
@@ -411,7 +421,7 @@ export function ReportsPage() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="Search Organizations"
+                placeholder={t("reports.searchOrgs", "Search Organizations")}
                 className="rep-search-input"
               />
             </div>
@@ -422,7 +432,7 @@ export function ReportsPage() {
                 className="rep-sort-btn"
                 onClick={() => setShowSortDropdown((v) => !v)}
               >
-                <span>Sort</span>
+                <span>{t("reports.sort", "Sort")}</span>
                 <ChevronDown size={14} className={`rep-sort-chevron ${showSortDropdown ? "open" : ""}`} />
               </button>
 
@@ -436,7 +446,7 @@ export function ReportsPage() {
                       setShowSortDropdown(false);
                     }}
                   >
-                    <span>Name</span>
+                    <span>{t("reports.sortName", "Name")}</span>
                     {sortField === "name" && <Check size={14} />}
                   </button>
                   <button
@@ -447,7 +457,7 @@ export function ReportsPage() {
                       setShowSortDropdown(false);
                     }}
                   >
-                    <span>Status</span>
+                    <span>{t("reports.sortStatus", "Status")}</span>
                     {sortField === "status" && <Check size={14} />}
                   </button>
                 </div>
@@ -466,14 +476,21 @@ export function ReportsPage() {
               ))
             ) : (
               <div style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#64748b" }}>
-                No organizations found matching &quot;{searchQuery}&quot;
+                {t("reports.noOrgsFound", {
+                  query: searchQuery,
+                  defaultValue: `No organizations found matching "${searchQuery}"`,
+                })}
               </div>
             )}
           </div>
 
           <div className="rep-pagination">
             <span className="rep-page-info">
-              Show {paginatedOrgs.length} of {filteredOrgs.length}
+              {t("reports.showOf", {
+                current: paginatedOrgs.length,
+                total: filteredOrgs.length,
+                defaultValue: `Show ${paginatedOrgs.length} of ${filteredOrgs.length}`,
+              })}
             </span>
 
             <div className="rep-page-btns">
@@ -504,29 +521,38 @@ export function ReportsPage() {
           <table className="rep-mobile-table">
             <thead>
               <tr>
-                <th>Organization</th>
-                <th>City</th>
-                <th>Status</th>
-                <th style={{ textAlign: "center" }}>Action</th>
+                <th>{t("reports.organization", "Organization")}</th>
+                <th>{t("reports.city", "City")}</th>
+                <th>{t("reports.status", "Status")}</th>
+                <th style={{ textAlign: "center" }}>{t("reports.action", "Action")}</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrgs.slice(0, 5).map((item) => {
                 const org = item.organization;
                 const isApproved = String(org.approvalStatus || "").toLowerCase() === "approved";
+                const isPending = String(org.approvalStatus || "").toLowerCase() === "pending";
+                const statusLabel = isApproved
+                  ? t("reports.approved", "Approved")
+                  : isPending
+                  ? t("reports.pending", "Pending")
+                  : org.approvalStatus
+                  ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
+                  : t("reports.approved", "Approved");
+
                 return (
                   <tr key={org.queueOrganizationUniqueId}>
                     <td style={{ fontWeight: 600 }}>{org.queueOrganizationName}</td>
                     <td>{extractCity(org.queueOrganizationAddress)}</td>
                     <td className={isApproved ? "status-approved" : "status-pending"}>
-                      {org.approvalStatus ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1) : "Approved"}
+                      {statusLabel}
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <button
                         type="button"
                         className="rep-mobile-action-del"
                         onClick={() => handleNavigateToQueue(org.queueOrganizationUniqueId)}
-                        title="View / Manage Queue"
+                        title={t("reports.viewManageQueue", "View / Manage Queue")}
                       >
                         <Trash2 size={16} />
                       </button>
