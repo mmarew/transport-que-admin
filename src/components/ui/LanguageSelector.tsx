@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { setAppLanguage } from "../../lib/i18n";
+import { setAppLanguage } from "../../i18n";
 import "../../styles/auth.css";
 
 interface LanguageSelectorProps {

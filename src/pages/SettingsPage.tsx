@@ -26,7 +26,7 @@ import DashboardLayout from "../components/layout/DashboardLayout";
 import MobileHeader from "../components/common/MobileHeader";
 import { useListQueueOrganizationsQuery } from "../lib/redux/api";
 import { logout } from "../lib/redux/slices/authSlice";
-import { setAppLanguage, getAppLanguage } from "../lib/i18n";
+import { setAppLanguage, getAppLanguage } from "../i18n";
 import { useTheme } from "../contexts/ThemeContext";
 import { useQueueAdminStore } from "../store/queueAdminStore";
 import type { RootState } from "../lib/redux/store";

@@ -6,7 +6,7 @@ import { Toaster } from "sonner";
 import { store } from "./lib/redux/store";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
-import "./lib/i18n";
+import "./i18n";
 import "./index.css";
 import "./dark.css";
 import App from "./App.tsx";
