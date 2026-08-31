@@ -379,8 +379,13 @@ export function QueueDashboardPage() {
                     {paginatedOrgs.map(({ organization: org }) => {
                       const city = extractCity(org.queueOrganizationAddress);
                       const status = String(org.approvalStatus || "pending").toLowerCase();
-                      const isEnabled = org.queueEnabled === 1 ? "Yes" : "No";
                       const isOrgApproved = status === "approved";
+                      const isEnabled = org.queueEnabled === 1 ? t("dashboard.yes", "Yes") : t("dashboard.no", "No");
+                      const statusLabel = isOrgApproved
+                        ? t("dashboard.approved", "Approved")
+                        : status === "pending"
+                        ? t("dashboard.pending", "Pending")
+                        : status.charAt(0).toUpperCase() + status.slice(1);
 
                       return (
                         <tr key={org.queueOrganizationUniqueId}>
@@ -389,7 +394,7 @@ export function QueueDashboardPage() {
                           <td className="org-cell-city">{city}</td>
                           <td>
                             <span className={`org-status-text ${status}`}>
-                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                              {statusLabel}
                             </span>
                           </td>
                           <td>{isEnabled}</td>
@@ -401,7 +406,7 @@ export function QueueDashboardPage() {
                               disabled={!isOrgApproved}
                               title={!isOrgApproved ? `Cannot open queue: Organization is ${org.approvalStatus}` : "Manage Queue"}
                             >
-                              Manage
+                              {t("dashboard.manage", "Manage")}
                             </button>
                           </td>
                         </tr>

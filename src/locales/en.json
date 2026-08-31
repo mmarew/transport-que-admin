@@ -134,7 +134,9 @@
     "orgName": "Organization Name",
     "type": "Type",
     "city": "City",
-    "status": "Status"
+    "status": "Status",
+    "approved": "Approved",
+    "pending": "Pending"
   },
   "auth": {
     "loginTitle": "Queue Admin Portal",

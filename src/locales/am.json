@@ -134,7 +134,9 @@
     "orgName": "የድርጅት ስም",
     "type": "አይነት",
     "city": "ከተማ",
-    "status": "ሁኔታ"
+    "status": "ሁኔታ",
+    "approved": "የተፈቀደ",
+    "pending": "በመጠባበቅ ላይ"
   },
   "auth": {
     "loginTitle": "የተራ አስተዳዳሪ ፖርታል",
