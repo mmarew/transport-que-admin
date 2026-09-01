@@ -276,20 +276,13 @@ export const api = createApi({
 
     listVehicleDrivers: builder.query<
       { message: string; data: Array<{ vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string }> },
-      void
+      { queueOrganizationUniqueId: string } | void
     >({
-      queryFn: async (_arg, _queryApi, _extraOptions, baseQuery) => {
-        try {
-          const result = await baseQuery({ url: appAPIs.listDriversPaginatedAPI, params: { page: 1, limit: 100 } });
-          if (result.error && (result.error.status === 404 || result.error.status === 400)) {
-            return { data: { message: "success", data: [] } };
-          }
-          return (result as { data: { message: string; data: Array<{ vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string }> } }) || { data: { message: "success", data: [] } };
-        } catch {
-          return { data: { message: "success", data: [] } };
-        }
-      },
+      // No working driver-list endpoint exists on the backend.
+      // CheckinModal derives driver data from queueStatus directly.
+      queryFn: async () => ({ data: { message: "success", data: [] } }),
     }),
+
 
     // --- Shipper Requests list (orders) ---
     getShipperRequests: builder.query<

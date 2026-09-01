@@ -7,13 +7,13 @@ import { toast } from "sonner";
 import { X, Search, User } from "lucide-react";
 import {
   useManualCheckinMutation,
-  useListVehicleDriversQuery,
   useGetQueueStatusQuery,
   useListVehicleTypesQuery,
 } from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import { checkinSchema, type CheckinFormValues } from "../../schemas/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
+import { normalizeQueueEntry } from "../../utils/formatters";
 import { useModalA11y } from "../../hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 import "./QueueModals.css";
@@ -45,17 +45,32 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
   const searchWrapRef = useRef<HTMLDivElement>(null);
 
   const [checkinMutation, { isLoading: isCheckingIn }] = useManualCheckinMutation();
-  const { data: driversData } = useListVehicleDriversQuery();
 
   const { data: queueStatusData } = useGetQueueStatusQuery(
     { queueOrganizationUniqueId },
     { skip: !queueOrganizationUniqueId }
   );
 
-  const driversList = useMemo(
-    () => (Array.isArray(driversData?.data) ? driversData.data : []),
-    [driversData]
-  );
+  // Derive unique drivers from queue status entries — no dedicated driver endpoint needed
+  const driversList = useMemo(() => {
+    if (!queueStatusData?.data?.queues) return [];
+    const seen = new Set<string>();
+    const result: { vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string }[] = [];
+    Object.values(queueStatusData.data.queues).flat().forEach((rawEntry) => {
+      const entry = normalizeQueueEntry(rawEntry);
+      if (entry.vehicleDriverUniqueId && !seen.has(entry.vehicleDriverUniqueId)) {
+        seen.add(entry.vehicleDriverUniqueId);
+        result.push({
+          vehicleDriverUniqueId: entry.vehicleDriverUniqueId,
+          vehicleTypeUniqueId: entry.vehicleTypeUniqueId || "",
+          driverName: entry.driverName || "",
+          driverPhoneNumber: entry.driverPhoneNumber || "",
+          vehicleTypeName: entry.vehicleTypeName || "",
+        });
+      }
+    });
+    return result;
+  }, [queueStatusData]);
 
   // Filter registered drivers based on search input
   const filteredDrivers = useMemo(() => {
@@ -122,7 +137,9 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
       const res = await checkinMutation({
         queueOrganizationUniqueId,
         vehicleDriverUniqueId: values.vehicleDriverUniqueId,
-        queueNumber: values.queueNumber,
+        ...(values.queueNumber && Number(values.queueNumber) > 0
+          ? { queueNumber: Number(values.queueNumber) }
+          : {}),
       }).unwrap();
 
       toast.success(res?.message || `Driver checked in at #${res?.data?.queueNumber ?? 1}`);
@@ -240,24 +257,24 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
           <div style={{ marginTop: "14px" }}>
             <h3 className="qm-section-title">2. Queue Position</h3>
             <div className="qm-field-group">
-              <label className="qm-field-label">Leave empty or Auto-assigned</label>
+              <label className="qm-field-label">Queue Position (Optional)</label>
               <input
                 type="number"
                 min={1}
                 {...register("queueNumber", { valueAsNumber: true })}
-                placeholder="Auto-assigned"
+                placeholder="Leave blank for Auto-assigned"
                 className="qm-input"
               />
             </div>
 
-            {/* Auto-assigned Position Preview Card */}
+            {/* Position Preview Card */}
             <div className="qm-card" style={{ marginTop: "6px" }}>
               <div className="qm-icon-circle" style={{ background: "#e0f2fe", color: "#034b6e" }}>
                 #{estimatedPosition}
               </div>
               <div className="qm-card-info">
                 <span className="qm-card-title">
-                  {inputQueueNumber ? `Position #${inputQueueNumber}` : "Auto-assigned"}
+                  {inputQueueNumber && Number(inputQueueNumber) > 0 ? `Position #${inputQueueNumber}` : "Auto-assigned"}
                 </span>
                 <span className="qm-card-sub">
                   Driver will be placed at position #{estimatedPosition} in the {targetVehicleTypeName} queue.

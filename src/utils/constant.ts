@@ -31,6 +31,7 @@ const appAPIs = {
     listVehicleDriversAPI: "/vehicleDriver/list",
     listDriverVehiclesAPI: "/vehicleDriver/org/:queueOrganizationUniqueId",
     listDriversPaginatedAPI: "/driver/listPaginated",
+    listDriversForCheckinAPI: "/queue/driver/checkin",
     getDriverVehiclesAPI: "/driver/:driverUniqueId/vehicles",
     addVehicleToDriverAPI: "/vehicleDriver",
     deleteVehicleDriverAPI: "/vehicleDriver/:id",
