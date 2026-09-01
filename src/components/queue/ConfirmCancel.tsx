@@ -27,7 +27,18 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
 
   const handleRemove = async () => {
     try {
-      const res = await removeMutation(entry.queueUniqueId).unwrap();
+      const queueUniqueId =
+        entry?.queueUniqueId ||
+        (entry as any)?.driverQueueUniqueId ||
+        (entry as any)?.id ||
+        (entry as any)?.queueId;
+
+      if (!queueUniqueId) {
+        toast.error("Invalid queue entry identifier");
+        return;
+      }
+
+      const res = await removeMutation(queueUniqueId).unwrap();
 
       // Broadcast socket events so driver mobile clients can dismiss active offer immediately
       const s = getSocket();
@@ -36,7 +47,7 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
           message: "success",
           messageTypes: "queue_removed",
           data: {
-            queueUniqueId: entry.queueUniqueId,
+            queueUniqueId,
             driverUserUniqueId: entry.driverUserUniqueId,
             vehicleDriverUniqueId: entry.vehicleDriverUniqueId,
             shipperRequestUniqueId: entry.shipperRequestUniqueId,

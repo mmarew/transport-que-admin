@@ -1,6 +1,7 @@
 import { ArrowUp, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { DriverQueueEntry, QueueStatus } from "../../types/queue";
+import { normalizeQueueEntry } from "../../utils/formatters";
 import "./QueueBoard.css";
 
 interface QueueTableProps {
@@ -22,7 +23,8 @@ function formatJoinedTime(dateStr: string): string {
 export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
   const { t } = useTranslation();
 
-  const rows = entries.map((entry, index) => {
+  const rows = (entries || []).map((rawEntry, index) => {
+    const entry = normalizeQueueEntry(rawEntry);
     const statusKey = (entry.status || "waiting") as QueueStatus;
     const statusLabel = statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
     const num = entry.queueNumber || index + 1;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, UserPlus, Play, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { connectSocket, onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
@@ -6,6 +6,7 @@ import { useQueueAdminStore } from "../../store/queueAdminStore";
 import { useListVehicleTypesQuery } from "../../lib/redux/api";
 import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
+import { normalizeQueueEntry } from "../../utils/formatters";
 import { QueueTable } from "./QueueTable";
 import { CheckinModal } from "./CheckinModal";
 import { CreateOrderModal } from "./CreateOrderModal";
@@ -28,7 +29,7 @@ interface QueueBoardProps {
   status?: QueueStatusPayload;
   isLoading: boolean;
   error?: unknown;
-  onRefetch: () => void;
+  onRefetch?: () => void;
   onBack?: () => void;
 }
 
@@ -40,7 +41,6 @@ export function QueueBoard({
   origin,
   status,
   isLoading,
-  onRefetch,
   onBack,
 }: QueueBoardProps) {
   const { t } = useTranslation();
@@ -62,20 +62,6 @@ export function QueueBoard({
   const [cancelEntry, setCancelEntry] = useState<DriverQueueEntry | null>(null);
   const [viewMode, setViewMode] = useState<"byType" | "all">("byType");
 
-  const invalidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const onRefetchRef = useRef(onRefetch);
-
-  useEffect(() => {
-    onRefetchRef.current = onRefetch;
-  }, [onRefetch]);
-
-  const invalidate = useCallback(() => {
-    if (invalidateTimer.current) clearTimeout(invalidateTimer.current);
-    invalidateTimer.current = setTimeout(() => {
-      onRefetchRef.current();
-    }, 250);
-  }, []);
-
   useEffect(() => {
     const s = connectSocket();
     if (s?.connected) {
@@ -84,15 +70,13 @@ export function QueueBoard({
     subscribeToQueue(queueOrganizationUniqueId);
     const offEvent = onQueueEvent(() => {
       setSocketConnected(true);
-      invalidate();
     });
 
     return () => {
       unsubscribeFromQueue(queueOrganizationUniqueId);
       offEvent();
-      if (invalidateTimer.current) clearTimeout(invalidateTimer.current);
     };
-  }, [queueOrganizationUniqueId, invalidate, setSocketConnected]);
+  }, [queueOrganizationUniqueId, setSocketConnected]);
 
   useEffect(() => {
     if (status) {
@@ -104,8 +88,9 @@ export function QueueBoard({
     }
   }, [status]);
 
-  const resolveVehicleType = (typeKey: string, entries: DriverQueueEntry[]) => {
-    const entryWithTypeId = entries.find((e) => e.vehicleTypeUniqueId);
+  const resolveVehicleType = (typeKey: string, entries: DriverQueueEntry[] = []) => {
+    const safeEntries = Array.isArray(entries) ? entries : [];
+    const entryWithTypeId = safeEntries.find((e) => e?.vehicleTypeUniqueId);
     const resolvedId = entryWithTypeId?.vehicleTypeUniqueId || typeKey;
     const resolvedName = resolveVehicleName(typeKey, entryWithTypeId?.vehicleTypeName, vehicleTypesList);
     return { id: resolvedId, name: resolvedName };
@@ -121,13 +106,43 @@ export function QueueBoard({
     return e.driverPhoneNumber || e.phoneNumber || e.driverPhone || e.phone || e.driverUser?.phoneNumber || "";
   };
 
-  const allEntries: DriverQueueEntry[] = status
-    ? Object.values(status.queues).flat()
-    : [];
+  const queuesMap = useMemo<Record<string, DriverQueueEntry[]>>(() => {
+    if (!status) return {};
+    const rawQueues = status.queues || (status as any).data?.queues || (status as any).data;
+    if (!rawQueues) return {};
+    if (Array.isArray(rawQueues)) {
+      const map: Record<string, DriverQueueEntry[]> = {};
+      for (const item of rawQueues) {
+        if (!item) continue;
+        const entry = normalizeQueueEntry(item);
+        const key = entry.vehicleTypeName || entry.vehicleTypeUniqueId || "Standard";
+        if (!map[key]) map[key] = [];
+        map[key].push(entry);
+      }
+      return map;
+    }
+    if (typeof rawQueues === "object" && rawQueues !== null) {
+      const map: Record<string, DriverQueueEntry[]> = {};
+      for (const [k, v] of Object.entries(rawQueues)) {
+        if (Array.isArray(v)) {
+          map[k] = v.map(normalizeQueueEntry);
+        } else if (v && typeof v === "object") {
+          map[k] = [normalizeQueueEntry(v)];
+        }
+      }
+      return map;
+    }
+    return {};
+  }, [status]);
 
-  const allWaitingCount = allEntries.filter(
-    (e) => !e.status || e.status === "waiting" || e.status === "offered"
-  ).length;
+  const allEntries: DriverQueueEntry[] = useMemo(() => {
+    return Object.values(queuesMap).flat().filter(Boolean);
+  }, [queuesMap]);
+
+  const allWaitingCount = allEntries.filter((e) => {
+    const s = String(e?.status || "").toLowerCase();
+    return !s || s === "waiting" || s === "offered";
+  }).length;
 
   const formattedType = orgType ? orgType.charAt(0).toUpperCase() + orgType.slice(1) : "";
   const subtitle = formattedType ? `${orgName} (${formattedType}) — ${city}` : `${orgName} — ${city}`;
@@ -211,20 +226,23 @@ export function QueueBoard({
       {/* ── View Mode: By Vehicle Type ── */}
       {!isLoading && viewMode === "byType" && status && (
         <>
-          {Object.entries(status.queues).length === 0 ? (
+          {Object.entries(queuesMap).length === 0 ? (
             <div className="qb-card" style={{ textAlign: "center", padding: "3.5rem 1rem" }}>
               <p style={{ color: "#64748b", margin: 0 }}>{t("queue.noQueues")}</p>
             </div>
           ) : (
-            Object.entries(status.queues).map(([typeKey, entries]) => {
+            Object.entries(queuesMap).map(([typeKey, rawEntries]) => {
+              const entries = (rawEntries || []) as DriverQueueEntry[];
               const { id: typeId, name: typeName } = resolveVehicleType(typeKey, entries);
-              const waitingCount = entries.filter(
-                (e) => !e.status || e.status === "waiting" || e.status === "offered"
-              ).length;
+              const waitingCount = entries.filter((e: DriverQueueEntry) => {
+                const s = String(e?.status || "").toLowerCase();
+                return !s || s === "waiting" || s === "offered";
+              }).length;
               const firstWaiting =
-                entries.find(
-                  (e) => !e.status || e.status === "waiting" || e.status === "offered"
-                ) || entries[0];
+                entries.find((e: DriverQueueEntry) => {
+                  const s = String(e?.status || "").toLowerCase();
+                  return !s || s === "waiting" || s === "offered";
+                }) || entries[0];
 
               return (
                 <div key={typeKey} className="qb-card" style={{ marginBottom: "1.5rem" }}>
@@ -322,7 +340,6 @@ export function QueueBoard({
       {showCheckin && (
         <CheckinModal
           queueOrganizationUniqueId={queueOrganizationUniqueId}
-          onCheckedIn={onRefetch}
           onClose={() => setShowCheckin(false)}
         />
       )}
@@ -330,7 +347,6 @@ export function QueueBoard({
         <CreateOrderModal
           queueOrganizationUniqueId={queueOrganizationUniqueId}
           origin={origin}
-          onCreated={onRefetch}
           onClose={() => setShowCreateOrder(false)}
         />
       )}
@@ -341,21 +357,18 @@ export function QueueBoard({
           vehicleTypeName={dispatchForType.name}
           driverName={dispatchForType.driverName}
           driverPhone={dispatchForType.driverPhone}
-          onDispatched={onRefetch}
           onClose={() => setDispatchForType(null)}
         />
       )}
       {overrideEntry && (
         <OverrideModal
           entry={overrideEntry}
-          onOverridden={onRefetch}
           onClose={() => setOverrideEntry(null)}
         />
       )}
       {cancelEntry && (
         <ConfirmCancel
           entry={cancelEntry}
-          onRemoved={onRefetch}
           onClose={() => setCancelEntry(null)}
         />
       )}

@@ -23,7 +23,7 @@ import { useQueueAdminStore } from "../store/queueAdminStore";
 import { QueueBoard } from "../components/queue/QueueBoard";
 import { CreateOrgModal } from "../components/queue/CreateOrgModal";
 import type { QueueOrgListItem, QueueOrganization, QueueOrgType } from "../types/queue";
-import { extractCity } from "../utils/formatters";
+import { extractCity, normalizeOrgList } from "../utils/formatters";
 import "./OrganizationsPage.css";
 
 const PAGE_SIZE = 8;
@@ -70,12 +70,7 @@ export function QueueDashboardPage() {
   } = useListQueueOrganizationsQuery();
 
   const orgList: QueueOrgListItem[] = useMemo(() => {
-    if (!rawData) return [];
-    if (Array.isArray(rawData)) return rawData as QueueOrgListItem[];
-    const payload = rawData as unknown as Record<string, unknown>;
-    if (Array.isArray(payload.data)) return payload.data as QueueOrgListItem[];
-    if (Array.isArray(payload.organizations)) return payload.organizations as QueueOrgListItem[];
-    return [];
+    return normalizeOrgList(rawData);
   }, [rawData]);
 
   useEffect(() => {
@@ -90,11 +85,12 @@ export function QueueDashboardPage() {
   const activeOrg = useMemo(() => {
     if (!activeOrgId) return null;
     return orgList.find(
-      (item) => item.organization.queueOrganizationUniqueId === activeOrgId,
-    )?.organization;
+      (item) => item.organization?.queueOrganizationUniqueId === activeOrgId,
+    )?.organization || null;
   }, [orgList, activeOrgId]);
 
-  const isApproved = String(activeOrg?.approvalStatus || "").toLowerCase() === "approved";
+  const statusStr = String(activeOrg?.approvalStatus || "").toLowerCase();
+  const isApproved = statusStr === "approved" || statusStr === "active" || activeOrg?.queueEnabled === 1;
 
   const {
     data: queueStatusData,

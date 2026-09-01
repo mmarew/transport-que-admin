@@ -19,7 +19,7 @@ import {
 import CreateOrgModal from "../components/queue/CreateOrgModal";
 import { useQueueAdminStore } from "../store/queueAdminStore";
 import type { QueueOrgListItem } from "../types/queue";
-import { extractCity } from "../utils/formatters";
+import { extractCity, normalizeOrgList } from "../utils/formatters";
 import "./OrganizationsPage.css";
 
 const PAGE_SIZE = 8;
@@ -65,12 +65,7 @@ export function OrganizationsPage() {
   } = useListQueueOrganizationsQuery();
 
   const orgList: QueueOrgListItem[] = useMemo(() => {
-    if (!rawData) return [];
-    if (Array.isArray(rawData)) return rawData as QueueOrgListItem[];
-    const payload = rawData as unknown as Record<string, unknown>;
-    if (Array.isArray(payload.data)) return payload.data as QueueOrgListItem[];
-    if (Array.isArray(payload.organizations)) return payload.organizations as QueueOrgListItem[];
-    return [];
+    return normalizeOrgList(rawData);
   }, [rawData]);
 
   const processedOrgs = useMemo(() => {

@@ -36,8 +36,19 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
 
   const handleFormSubmit = async (values: OverrideFormValues) => {
     try {
+      const queueUniqueId =
+        entry?.queueUniqueId ||
+        (entry as any)?.driverQueueUniqueId ||
+        (entry as any)?.id ||
+        (entry as any)?.queueId;
+
+      if (!queueUniqueId) {
+        toast.error("Invalid queue entry identifier");
+        return;
+      }
+
       const res = await overrideMutation({
-        queueUniqueId: entry.queueUniqueId,
+        queueUniqueId,
         body: {
           queueNumber: values.queueNumber,
           reason: values.reason?.trim() || undefined,

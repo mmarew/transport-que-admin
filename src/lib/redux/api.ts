@@ -33,7 +33,10 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: (headers) => {
     const token = getToken();
-    if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (token) {
+      const cleanToken = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      headers.set("Authorization", cleanToken);
+    }
     return headers;
   },
 });

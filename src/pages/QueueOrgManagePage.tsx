@@ -25,6 +25,7 @@ import {
   useApproveQueueOrganizationMutation,
 } from "../lib/redux/api";
 import DashboardLayout from "../components/layout/DashboardLayout";
+import { normalizeOrg } from "../utils/formatters";
 import "./QueueOrgManagePage.css";
 
 const ROLE_LABELS: Record<number, string> = {
@@ -74,7 +75,10 @@ export function QueueOrgManagePage() {
     skip: !orgId,
   });
 
-  const org: QueueOrganization | undefined = orgData?.data?.organization;
+  const org: QueueOrganization | undefined =
+    normalizeOrg(orgData?.data) ||
+    normalizeOrg(orgData) ||
+    undefined;
 
   const {
     data: queueStatus,
@@ -94,7 +98,13 @@ export function QueueOrgManagePage() {
     skip: !orgId,
   });
 
-  const members: QueueOrgMember[] = Array.isArray(membersData?.data) ? membersData.data : [];
+  const members: QueueOrgMember[] = Array.isArray(membersData?.data)
+    ? membersData.data
+    : Array.isArray(membersData)
+    ? (membersData as unknown as QueueOrgMember[])
+    : Array.isArray((membersData as any)?.members)
+    ? ((membersData as any).members as QueueOrgMember[])
+    : [];
 
   const [updateOrgMutation, { isLoading: isUpdating }] = useUpdateQueueOrganizationMutation();
   const [approveOrgMutation, { isLoading: isApproving }] = useApproveQueueOrganizationMutation();

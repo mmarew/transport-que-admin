@@ -8,7 +8,7 @@ import { X, Globe, Building2, Search, ChevronDown } from "lucide-react";
 import type { CreateOrderPayload } from "../../types/queue";
 import {
   useCreateQueueOrderMutation,
-  useGetQueueStatusQuery,
+  useListVehicleTypesQuery,
 } from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import { createOrderSchema, type CreateOrderFormValues } from "../../schemas/queue";
@@ -112,68 +112,137 @@ export function CreateOrderModal({
   const [originOpen, setOriginOpen] = useState(false);
   const originWrapRef = useRef<HTMLDivElement>(null);
 
+  const isTypingDestRef = useRef(false);
+  const isTypingOriginRef = useRef(false);
+
   useEffect(() => {
     const handlePointerDown = (e: MouseEvent) => {
       if (originWrapRef.current && !originWrapRef.current.contains(e.target as Node)) {
         setOriginOpen(false);
+        isTypingOriginRef.current = false;
       }
       if (destWrapRef.current && !destWrapRef.current.contains(e.target as Node)) {
         setDestOpen(false);
+        isTypingDestRef.current = false;
       }
     };
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
 
-  const fetchPhotonPlaces = async (query: string): Promise<PhotonPlace[]> => {
-    const q = query.trim();
-    if (q.length < 2) return [];
+  const destAbortRef = useRef<AbortController | null>(null);
+  const originAbortRef = useRef<AbortController | null>(null);
+  const placesCacheRef = useRef<Map<string, PhotonPlace[]>>(new Map());
+
+  /** Normalize query for deduplication: lowercase, strip trailing punctuation/spaces */
+  const normalizeQuery = (q: string): string =>
+    q.trim().toLowerCase().replace(/[,.\s]+$/, "").trim();
+
+  const fetchPhotonPlaces = async (query: string, signal?: AbortSignal): Promise<PhotonPlace[]> => {
+    const q = normalizeQuery(query);
+    if (q.length < 5) return [];
+
+    // Return from in-memory cache if previously fetched
+    if (placesCacheRef.current.has(q)) {
+      return placesCacheRef.current.get(q)!;
+    }
+
     try {
       const res = await fetch(
-        `${PHOTON_URL}?q=${encodeURIComponent(q)}&lat=9.0320&lon=38.7469&lang=en&limit=12`
+        `${PHOTON_URL}?q=${encodeURIComponent(q)}&lat=9.0320&lon=38.7469&lang=en&limit=6`,
+        { signal }
       );
       if (res.ok) {
         const data = await res.json();
-        return (data.features || []).map((feat: any) => ({
+        const results: PhotonPlace[] = (data.features || []).map((feat: any) => ({
           label: formatPhotonLabel(feat),
           lat: feat.geometry?.coordinates[1] || 0,
           lng: feat.geometry?.coordinates[0] || 0,
         }));
+        placesCacheRef.current.set(q, results);
+        return results;
       }
-    } catch {
-      // API error fallback
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        // network error fallback
+      }
     }
     return [];
   };
 
   useEffect(() => {
-    const q = destQuery.trim();
-    if (!q) {
+    if (!isTypingDestRef.current || !destOpen) return;
+    const q = normalizeQuery(destQuery);
+    if (q.length < 5) {
       setDestResults([]);
       return;
     }
+
+    // If cache already has it, set results immediately without a new request
+    if (placesCacheRef.current.has(q)) {
+      setDestResults(placesCacheRef.current.get(q)!);
+      return;
+    }
+
+    if (destAbortRef.current) {
+      destAbortRef.current.abort();
+    }
+    destAbortRef.current = new AbortController();
+    const signal = destAbortRef.current.signal;
+
     const t = setTimeout(async () => {
-      const res = await fetchPhotonPlaces(q);
-      setDestResults(res);
-    }, 120);
-    return () => clearTimeout(t);
-  }, [destQuery]);
+      const res = await fetchPhotonPlaces(q, signal);
+      if (!signal.aborted) {
+        setDestResults(res);
+      }
+    }, 550);
+
+    return () => {
+      clearTimeout(t);
+      if (destAbortRef.current) {
+        destAbortRef.current.abort();
+      }
+    };
+  }, [destQuery, destOpen]);
 
   useEffect(() => {
-    const q = originQuery.trim();
-    if (!q) {
+    if (!isTypingOriginRef.current || !originOpen) return;
+    const q = normalizeQuery(originQuery);
+    if (q.length < 5) {
       setOriginResults([]);
       return;
     }
+
+    // If cache already has it, set results immediately without a new request
+    if (placesCacheRef.current.has(q)) {
+      setOriginResults(placesCacheRef.current.get(q)!);
+      return;
+    }
+
+    if (originAbortRef.current) {
+      originAbortRef.current.abort();
+    }
+    originAbortRef.current = new AbortController();
+    const signal = originAbortRef.current.signal;
+
     const t = setTimeout(async () => {
-      const res = await fetchPhotonPlaces(q);
-      setOriginResults(res);
-    }, 120);
-    return () => clearTimeout(t);
-  }, [originQuery]);
+      const res = await fetchPhotonPlaces(q, signal);
+      if (!signal.aborted) {
+        setOriginResults(res);
+      }
+    }, 550);
+
+    return () => {
+      clearTimeout(t);
+      if (originAbortRef.current) {
+        originAbortRef.current.abort();
+      }
+    };
+  }, [originQuery, originOpen]);
 
   const selectPlace = (place: PhotonPlace, isOrigin: boolean) => {
     if (isOrigin) {
+      isTypingOriginRef.current = false;
       setValue("originDescription", place.label, { shouldValidate: true });
       setValue("originLatitude", String(place.lat), { shouldValidate: true });
       setValue("originLongitude", String(place.lng), { shouldValidate: true });
@@ -181,6 +250,7 @@ export function CreateOrderModal({
       setOriginResults([]);
       setOriginOpen(false);
     } else {
+      isTypingDestRef.current = false;
       setValue("destinationDescription", place.label, { shouldValidate: true });
       setValue("destinationLatitude", String(place.lat), { shouldValidate: true });
       setValue("destinationLongitude", String(place.lng), { shouldValidate: true });
@@ -190,10 +260,7 @@ export function CreateOrderModal({
     }
   };
 
-  const { data: queueStatusData } = useGetQueueStatusQuery(
-    { queueOrganizationUniqueId },
-    { skip: !queueOrganizationUniqueId }
-  );
+  const { data: apiVehicleTypes } = useListVehicleTypesQuery();
   const [createOrderMutation, { isLoading: isCreating }] = useCreateQueueOrderMutation();
 
   const vehicleTypesList = useMemo(() => {
@@ -202,7 +269,7 @@ export function CreateOrderModal({
     const seenNames = new Set<string>();
 
     const add = (id?: string, name?: string) => {
-      if (!id) return;
+      if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return;
       const cleanName = (name || id).trim();
       const normKey = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "");
       if (!seenIds.has(id) && !seenNames.has(normKey)) {
@@ -212,30 +279,27 @@ export function CreateOrderModal({
       }
     };
 
-    const DEFAULT_TYPES = [
-      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000002", vehicleTypeName: "ISUZU / Light Cargo (50–100 Quintal)" },
-      { vehicleTypeUniqueId: "e93aa27f-364f-4eff-bc26-582b773071d3", vehicleTypeName: "Dry Cargo Truck (100–250 Quintal)" },
+    // 1. From real backend VehicleTypes API
+    if (Array.isArray(apiVehicleTypes?.data)) {
+      apiVehicleTypes.data.forEach((vt) => {
+        add(vt.vehicleTypeUniqueId, vt.vehicleTypeName);
+      });
+    }
+
+    // 2. Known production database UUIDs fallback
+    const KNOWN_DB_TYPES = [
+      { vehicleTypeUniqueId: "e93aa27f-364f-4eff-bc26-582b773071d3", vehicleTypeName: "2×20ft or 40ft Low-Bed Truck (301–350 Quintal)" },
       { vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742", vehicleTypeName: "20ft Container Truck (251–300 Quintal)" },
-      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000005", vehicleTypeName: "2×20ft or 40ft Low-Bed Truck (301–350 Quintal)" },
+      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000002", vehicleTypeName: "ISUZU / Light Cargo (50–100 Quintal)" },
       { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000001", vehicleTypeName: "Heavy Duty Trailer (351–400+ Quintal)" },
       { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000003", vehicleTypeName: "Tanker / Bulk Liquid" },
       { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000004", vehicleTypeName: "Refrigerated Cargo Truck" },
     ];
 
-    // 1. From active terminal queues (live backend data)
-    if (queueStatusData?.data?.queues) {
-      Object.entries(queueStatusData.data.queues).forEach(([typeName, entries]) => {
-        const typeId = (entries as any)[0]?.vehicleTypeUniqueId;
-        const name = (entries as any)[0]?.vehicleTypeName || typeName;
-        if (typeId) add(typeId, name);
-      });
-    }
-
-    // 2. Add complete baseline types including 2×20ft or 40ft Low-Bed Truck
-    DEFAULT_TYPES.forEach((vt) => add(vt.vehicleTypeUniqueId, vt.vehicleTypeName));
+    KNOWN_DB_TYPES.forEach((vt) => add(vt.vehicleTypeUniqueId, vt.vehicleTypeName));
 
     return list;
-  }, [queueStatusData]);
+  }, [apiVehicleTypes]);
 
   const handleFormSubmit = async (values: CreateOrderFormValues) => {
     try {
@@ -468,11 +532,16 @@ export function CreateOrderModal({
                   value={originQuery}
                   placeholder="Search pickup"
                   onChange={(e) => {
+                    isTypingOriginRef.current = true;
                     setOriginQuery(e.target.value);
                     setValue("originDescription", e.target.value, { shouldValidate: true });
                     setOriginOpen(true);
                   }}
-                  onFocus={() => setOriginOpen(true)}
+                  onFocus={() => {
+                    if (originQuery.trim().length >= 3 && originResults.length > 0) {
+                      setOriginOpen(true);
+                    }
+                  }}
                   className={`com-input com-search-input ${errors.originDescription ? "com-input-error" : ""}`}
                 />
                 {originOpen && originResults.length > 0 && (
@@ -511,11 +580,16 @@ export function CreateOrderModal({
                   value={destQuery}
                   placeholder="Search delivery"
                   onChange={(e) => {
+                    isTypingDestRef.current = true;
                     setDestQuery(e.target.value);
                     setValue("destinationDescription", e.target.value, { shouldValidate: true });
                     setDestOpen(true);
                   }}
-                  onFocus={() => setDestOpen(true)}
+                  onFocus={() => {
+                    if (destQuery.trim().length >= 3 && destResults.length > 0) {
+                      setDestOpen(true);
+                    }
+                  }}
                   className={`com-input com-search-input ${errors.destinationDescription ? "com-input-error" : ""}`}
                 />
                 {destOpen && destResults.length > 0 && (

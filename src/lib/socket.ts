@@ -14,15 +14,21 @@ const queueEventHandlers = new Set<QueueEventHandler>();
 let currentSubscription: { queueOrganizationUniqueId: string; queueDate?: string } | null = null;
 
 let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
+let lastInvalidateTime = 0;
 const debouncedInvalidate = () => {
+  const now = Date.now();
+  if (now - lastInvalidateTime < 1200) {
+    return; // Throttle if invalidated very recently by local mutation
+  }
   if (invalidateTimer) clearTimeout(invalidateTimer);
   invalidateTimer = setTimeout(() => {
+    lastInvalidateTime = Date.now();
     import("./redux/store").then(({ store }) => {
       import("./redux/api").then(({ api }) => {
         store.dispatch(api.util.invalidateTags(["QueueStatus", "DriverQueue", "ShipperRequests"]));
       });
     });
-  }, 250);
+  }, 400);
 };
 
 export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | null {
@@ -33,18 +39,8 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
 
   // Don't connect without credentials — server will reject with 400
   if (!formattedToken || !phoneNumber) {
-    console.warn("[Socket] Skipping connect — missing token or phoneNumber", {
-      hasToken: !!token,
-      hasPhone: !!phoneNumber,
-    });
     return socket;
   }
-
-  console.info("[Socket] Connecting →", {
-    phoneNumber,
-    hasToken: !!formattedToken,
-    alreadyExists: !!socket,
-  });
 
   if (socket) {
     // Refresh auth credentials in case token changed
@@ -80,21 +76,23 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     },
     reconnection: true,
     reconnectionAttempts: Infinity,
-    reconnectionDelay: 2000,
-    reconnectionDelayMax: 10000,
+    reconnectionDelay: 3000,
+    reconnectionDelayMax: 15000,
     timeout: 20000,
   });
 
   socket.connect();
 
   socket.on("connect", () => {
+    console.info("[WebSocket] Connected successfully (ID:", socket?.id, ")");
     useQueueAdminStore.getState().setSocketConnected(true);
     if (currentSubscription) {
       socket?.emit("queue:subscribe", currentSubscription);
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", (reason) => {
+    console.warn("[WebSocket] Disconnected:", reason);
     useQueueAdminStore.getState().setSocketConnected(false);
   });
 
@@ -103,13 +101,15 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     useQueueAdminStore.getState().setSocketConnected(false);
   });
 
-  socket.on("queue:subscribed", () => {
+  socket.on("queue:subscribed", (ack) => {
+    console.info("[WebSocket] Room subscribed ack:", ack);
     useQueueAdminStore.getState().setSocketConnected(true);
   });
 
-  socket.on("queue", (msg: unknown) => {
+  const handleQueuePayload = (msg: unknown) => {
     try {
       const parsed = typeof msg === "string" ? JSON.parse(msg) : msg;
+      console.info("[WebSocket] Queue event received:", parsed);
       queueEventHandlers.forEach((handler) => {
         try {
           handler(parsed);
@@ -123,7 +123,16 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     } catch {
       // ignore parse errors
     }
-  });
+  };
+
+  // Primary event from backend
+  socket.on("queue", handleQueuePayload);
+
+  // Additional fallback queue event names
+  socket.on("queue_event", handleQueuePayload);
+  socket.on("queueEvent", handleQueuePayload);
+  socket.on("queue:update", handleQueuePayload);
+  socket.on("queue_updated", handleQueuePayload);
 
   return socket;
 }

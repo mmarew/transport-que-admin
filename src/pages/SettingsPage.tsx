@@ -31,6 +31,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useQueueAdminStore } from "../store/queueAdminStore";
 import type { RootState } from "../lib/redux/store";
 import type { QueueOrgListItem } from "../types/queue";
+import { normalizeOrgList } from "../utils/formatters";
 import "./SettingsPage.css";
 
 const readBool = (key: string, fallback: boolean): boolean => {
@@ -52,17 +53,12 @@ export function SettingsPage() {
   const { data: rawOrgsData } = useListQueueOrganizationsQuery();
 
   const orgList: QueueOrgListItem[] = useMemo(() => {
-    if (!rawOrgsData) return [];
-    if (Array.isArray(rawOrgsData)) return rawOrgsData as QueueOrgListItem[];
-    const payload = rawOrgsData as unknown as Record<string, unknown>;
-    if (Array.isArray(payload.data)) return payload.data as QueueOrgListItem[];
-    if (Array.isArray(payload.organizations)) return payload.organizations as QueueOrgListItem[];
-    return [];
+    return normalizeOrgList(rawOrgsData);
   }, [rawOrgsData]);
 
   const activeOrg = useMemo(() => {
     return (
-      orgList.find((item) => item.organization.queueOrganizationUniqueId === selectedOrgId)?.organization ||
+      orgList.find((item) => item.organization?.queueOrganizationUniqueId === selectedOrgId)?.organization ||
       orgList[0]?.organization ||
       null
     );
