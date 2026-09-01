@@ -7,3 +7,10 @@ export function extractCity(address?: string | null): string {
   }
   return parts[0] || "Addis Ababa";
 }
+
+/** Formats a phone number cleanly */
+export function formatPhone(phone?: string | null): string {
+  if (!phone) return "—";
+  return phone.replace(/^(\+251|0)/, "+251 ");
+}
+

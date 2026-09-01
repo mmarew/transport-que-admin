@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Search,
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import MobileHeader from "../components/common/MobileHeader";
+import { OrgQueueDetailsModal } from "../components/queue/OrgQueueDetailsModal";
 import {
   useListQueueOrganizationsQuery,
   useGetShipperRequestsQuery,
@@ -26,10 +26,10 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 
 function OrgReportRow({
   org,
-  onNavigate,
+  onViewDetails,
 }: {
   org: QueueOrganization;
-  onNavigate: (id: string) => void;
+  onViewDetails: (org: QueueOrganization) => void;
 }) {
   const { t } = useTranslation();
   const { data: queueData } = useGetQueueStatusQuery(
@@ -53,10 +53,10 @@ function OrgReportRow({
     approvalStatusLower === "approved"
       ? t("reports.approved", "Approved")
       : approvalStatusLower === "pending"
-      ? t("reports.pending", "Pending")
-      : org.approvalStatus
-      ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
-      : t("dashboard.enabled", "Active");
+        ? t("reports.pending", "Pending")
+        : org.approvalStatus
+          ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
+          : t("dashboard.enabled", "Active");
 
   return (
     <div className="rep-org-row">
@@ -86,7 +86,7 @@ function OrgReportRow({
       <div>
         <button
           type="button"
-          onClick={() => onNavigate(org.queueOrganizationUniqueId)}
+          onClick={() => onViewDetails(org)}
           className="rep-org-action-btn"
         >
           {t("reports.viewQueue", "View Queue")} <ChevronRight size={15} />
@@ -98,10 +98,9 @@ function OrgReportRow({
 
 export function ReportsPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const selectedOrgId = useQueueAdminStore((s) => s.selectedOrgId);
-  const setSelectedOrgId = useQueueAdminStore((s) => s.setSelectedOrgId);
 
+  const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<QueueOrganization | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<"name" | "status">("name");
   const [currentPage, setCurrentPage] = useState(1);
@@ -240,11 +239,6 @@ export function ReportsPage() {
 
   const totalPages = Math.ceil(filteredOrgs.length / PAGE_SIZE) || 1;
   const paginatedOrgs = filteredOrgs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  const handleNavigateToQueue = (orgId: string) => {
-    setSelectedOrgId(orgId);
-    navigate(`/dashboard?orgId=${orgId}`);
-  };
 
   return (
     <DashboardLayout
@@ -471,7 +465,7 @@ export function ReportsPage() {
                 <OrgReportRow
                   key={item.organization.queueOrganizationUniqueId}
                   org={item.organization}
-                  onNavigate={handleNavigateToQueue}
+                  onViewDetails={(selected) => setSelectedOrgForDetails(selected)}
                 />
               ))
             ) : (
@@ -535,10 +529,10 @@ export function ReportsPage() {
                 const statusLabel = isApproved
                   ? t("reports.approved", "Approved")
                   : isPending
-                  ? t("reports.pending", "Pending")
-                  : org.approvalStatus
-                  ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
-                  : t("reports.approved", "Approved");
+                    ? t("reports.pending", "Pending")
+                    : org.approvalStatus
+                      ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
+                      : t("reports.approved", "Approved");
 
                 return (
                   <tr key={org.queueOrganizationUniqueId}>
@@ -551,7 +545,7 @@ export function ReportsPage() {
                       <button
                         type="button"
                         className="rep-mobile-action-del"
-                        onClick={() => handleNavigateToQueue(org.queueOrganizationUniqueId)}
+                        onClick={() => setSelectedOrgForDetails(org)}
                         title={t("reports.viewManageQueue", "View / Manage Queue")}
                       >
                         <Trash2 size={16} />
@@ -563,6 +557,14 @@ export function ReportsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Queue Details Modal */}
+        {selectedOrgForDetails && (
+          <OrgQueueDetailsModal
+            org={selectedOrgForDetails}
+            onClose={() => setSelectedOrgForDetails(null)}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

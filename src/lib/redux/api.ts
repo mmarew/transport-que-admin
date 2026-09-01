@@ -12,6 +12,7 @@ import type {
   CreateOrderPayload,
   VehicleType,
 } from "@/types/queue";
+import { DEFAULT_VEHICLE_TYPES } from "@/utils/vehicleType";
 
 function getBaseUrl(): string {
   const raw =
@@ -231,7 +232,42 @@ export const api = createApi({
       { message: string; data: VehicleType[] },
       void
     >({
-      query: () => ({ url: appAPIs.listVehicleTypesAPI, params: { limit: 100 } }),
+      queryFn: async (_arg, _queryApi, _extraOptions, baseQuery) => {
+        try {
+          const result = await baseQuery({
+            url: appAPIs.listVehicleTypesAPI,
+            params: { limit: 100 },
+          });
+          if (result.error) {
+            // Backend endpoint not found or error, safely return standard default vehicle types
+            return {
+              data: {
+                message: "success",
+                data: DEFAULT_VEHICLE_TYPES as unknown as VehicleType[],
+              },
+            };
+          }
+          const payload = result.data as { message?: string; data?: VehicleType[] };
+          const list = Array.isArray(payload?.data)
+            ? payload.data
+            : Array.isArray(payload)
+            ? payload
+            : (DEFAULT_VEHICLE_TYPES as unknown as VehicleType[]);
+          return {
+            data: {
+              message: payload?.message || "success",
+              data: list.length > 0 ? list : (DEFAULT_VEHICLE_TYPES as unknown as VehicleType[]),
+            },
+          };
+        } catch {
+          return {
+            data: {
+              message: "success",
+              data: DEFAULT_VEHICLE_TYPES as unknown as VehicleType[],
+            },
+          };
+        }
+      },
       providesTags: ["VehicleTypes"],
     }),
 

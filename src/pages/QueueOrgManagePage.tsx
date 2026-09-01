@@ -3,34 +3,29 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Building2, ShieldCheck } from "lucide-react";
-import parseError from "@/utils/parseError";
-import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
+import parseError from "../utils/parseError";
+import { useAuth } from "../context/AuthContext";
 import {
   queueOrgProfileSchema,
   type QueueOrgProfileFormValues,
-} from "@/schemas/queue";
+} from "../schemas/queue";
 import {
   QUEUE_ORG_TYPES,
   type ApprovalStatus,
   type QueueOrganization,
   type QueueOrgMember,
-} from "@/types/queue";
-import { QueueBoard } from "@/components/queue/QueueBoard";
+} from "../types/queue";
+import { QueueBoard } from "../components/queue/QueueBoard";
 import {
   useGetQueueOrganizationQuery,
   useGetQueueStatusQuery,
   useListQueueOrgMembersQuery,
   useUpdateQueueOrganizationMutation,
   useApproveQueueOrganizationMutation,
-} from "@/lib/redux/api";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-
-const STATUS_STYLES: Record<ApprovalStatus, string> = {
-  approved: "bg-emerald-100 text-emerald-800",
-  pending: "bg-amber-100 text-amber-800",
-  rejected: "bg-rose-100 text-rose-800",
-  suspended: "bg-slate-200 text-slate-700",
-};
+} from "../lib/redux/api";
+import DashboardLayout from "../components/layout/DashboardLayout";
+import "./QueueOrgManagePage.css";
 
 const ROLE_LABELS: Record<number, string> = {
   11: "Queue Org Admin",
@@ -45,18 +40,16 @@ function StatusBadge({
   enabled: boolean;
 }) {
   return (
-    <span className="inline-flex items-center gap-2">
-      <span
-        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}
-      >
+    <span className="qom-status-badge">
+      <span className={`qom-badge-status ${status}`}>
         {status}
       </span>
       {enabled ? (
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+        <span className="qom-badge-active">
           Queue Active
         </span>
       ) : (
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+        <span className="qom-badge-disabled">
           Queue Disabled
         </span>
       )}
@@ -163,18 +156,20 @@ export function QueueOrgManagePage() {
     }
   };
 
+  const { t } = useTranslation();
+
   return (
     <DashboardLayout
-      title={org?.queueOrganizationName ?? "Manage Organization"}
-      subtitle={org ? `${org.queueOrganizationType.toUpperCase()} Terminal Management` : "Organization details"}
+      title={org?.queueOrganizationName ?? t("dashboard.manageOrg", "Manage Organization")}
+      subtitle={org ? `${org.queueOrganizationType.toUpperCase()} Terminal Management` : t("dashboard.orgDetails", "Organization details")}
       activeTab="organizations"
       actions={
-        <div className="flex items-center gap-3">
+        <div className="qom-header-actions">
           <Link
-            to="/organizations"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            to="/dashboard"
+            className="qom-back-btn"
           >
-            <ArrowLeft size={14} /> Back to Organizations
+            <ArrowLeft size={14} /> {t("queue.backToOrgs", "Back to Organizations")}
           </Link>
           {org && (
             <StatusBadge
@@ -186,12 +181,12 @@ export function QueueOrgManagePage() {
       }
     >
       {!orgId && (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-          <p className="text-sm text-slate-500">
+        <div className="qom-card" style={{ textAlign: "center", padding: "3rem" }}>
+          <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
             No organization selected.{" "}
             <Link
-              to="/organizations"
-              className="font-medium text-blue-600 hover:text-blue-700"
+              to="/dashboard"
+              style={{ color: "#0B4D6D", fontWeight: 600 }}
             >
               Go back to organizations
             </Link>
@@ -201,176 +196,172 @@ export function QueueOrgManagePage() {
       )}
 
       {orgId && orgLoading && (
-        <div className="p-8 text-center text-sm text-slate-500 bg-white rounded-xl border border-slate-200">
-          Loading organization details...
+        <div className="qom-card" style={{ textAlign: "center", padding: "3rem", color: "#64748b" }}>
+          <div className="add-docs-spinner" style={{ width: 28, height: 28, margin: "0 auto 0.75rem" }} />
+          <p style={{ margin: 0, fontSize: "0.875rem" }}>{t("common.loading", "Loading organization details...")}</p>
         </div>
       )}
 
       {orgId && orgError && (
-        <div className="mb-6 rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
+        <div className="qom-card" style={{ border: "1px solid #fecdd3", background: "#fff1f2", color: "#e11d48", padding: "1rem" }}>
           {parseError(orgError)}
         </div>
       )}
 
       {org && (
-        <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
+        <div className="qom-container">
+          <div className="qom-grid">
             {/* Organization Profile */}
-            <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Building2 size={18} className="text-blue-600" />
-                Organization Details
+            <section className="qom-card">
+              <h2 className="qom-card-title">
+                <Building2 size={18} color="#0B4D6D" />
+                <span>Organization Details</span>
               </h2>
               <form
                 onSubmit={handleSubmit(onUpdateProfile)}
-                className="mt-4 space-y-4"
+                className="qom-form"
               >
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                <div className="qom-field">
+                  <label className="qom-label">
                     Organization Name
                   </label>
                   <input
                     {...register("queueOrganizationName")}
-                    className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
+                    className="qom-input"
                   />
                   {errors.queueOrganizationName && (
-                    <p className="mt-1 text-xs text-rose-600">
+                    <p className="qom-error-text">
                       {errors.queueOrganizationName.message}
                     </p>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                <div className="qom-field">
+                  <label className="qom-label">
                     Organization Type
                   </label>
                   <select
                     {...register("queueOrganizationType")}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
+                    className="qom-select"
                   >
-                    {QUEUE_ORG_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {QUEUE_ORG_TYPES.map((typeVal) => (
+                      <option key={typeVal} value={typeVal}>
+                        {typeVal}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                <div className="qom-field">
+                  <label className="qom-label">
                     Phone Number
                   </label>
                   <input
                     {...register("queueOrganizationPhone")}
                     placeholder="+251 9 00 00 00 00"
-                    className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
+                    className="qom-input"
                   />
                   {errors.queueOrganizationPhone && (
-                    <p className="mt-1 text-xs text-rose-600">
+                    <p className="qom-error-text">
                       {errors.queueOrganizationPhone.message}
                     </p>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                <div className="qom-field">
+                  <label className="qom-label">
                     Address
                   </label>
                   <input
                     {...register("queueOrganizationAddress")}
-                    className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
+                    className="qom-input"
                   />
                   {errors.queueOrganizationAddress && (
-                    <p className="mt-1 text-xs text-rose-600">
+                    <p className="qom-error-text">
                       {errors.queueOrganizationAddress.message}
                     </p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                <div className="qom-row-2">
+                  <div className="qom-field">
+                    <label className="qom-label">
                       Latitude
                     </label>
                     <input
                       {...register("latitude")}
                       placeholder="e.g. 8.9806"
-                      className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
+                      className="qom-input"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                  <div className="qom-field">
+                    <label className="qom-label">
                       Longitude
                     </label>
                     <input
                       {...register("longitude")}
                       placeholder="e.g. 38.7578"
-                      className="w-full rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
+                      className="qom-input"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="submit"
-                    disabled={isUpdating || !isDirty}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm"
-                  >
-                    {isUpdating ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={isUpdating || !isDirty}
+                  className="qom-submit-btn"
+                >
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </button>
               </form>
             </section>
 
             {/* Members & Admin Controls */}
-            <div className="space-y-6">
-              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-base font-bold text-slate-800">
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <section className="qom-card">
+                <h2 className="qom-card-title">
                   Staff & Members
                 </h2>
                 {membersLoading && (
-                  <p className="mt-3 text-sm text-slate-500">
+                  <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
                     Loading members...
                   </p>
                 )}
                 {membersError && (
-                  <p className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  <p className="qom-error-text">
                     {parseError(membersError)}
                   </p>
                 )}
                 {!membersLoading && !membersError && (
-                  <div className="mt-3 overflow-x-auto">
-                    <table className="w-full text-left text-sm">
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="qom-table">
                       <thead>
-                        <tr className="border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
-                          <th className="pb-2 pr-3">Name</th>
-                          <th className="pb-2 pr-3">Phone</th>
-                          <th className="pb-2 pr-3">Role</th>
-                          <th className="pb-2">Status</th>
+                        <tr>
+                          <th>Name</th>
+                          <th>Phone</th>
+                          <th>Role</th>
+                          <th>Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody>
                         {(members ?? []).map((member: QueueOrgMember) => (
-                          <tr
-                            key={member.queueOrganizationMembershipUniqueId}
-                            className="hover:bg-slate-50"
-                          >
-                            <td className="py-2.5 pr-3 font-semibold text-slate-800">
+                          <tr key={member.queueOrganizationMembershipUniqueId}>
+                            <td style={{ fontWeight: 600, color: "#0f172a" }}>
                               {member.fullName}
                             </td>
-                            <td className="py-2.5 pr-3 text-slate-600 text-xs">
+                            <td style={{ color: "#64748b", fontSize: "0.8rem" }}>
                               {member.phoneNumber}
                             </td>
-                            <td className="py-2.5 pr-3 text-slate-600 text-xs">
+                            <td style={{ color: "#475569", fontSize: "0.8rem" }}>
                               {ROLE_LABELS[member.roleId] ?? member.roleId}
                             </td>
-                            <td className="py-2.5">
+                            <td>
                               {member.isActive === 1 ? (
-                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                <span className="qom-badge-active">
                                   active
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                <span className="qom-badge-disabled">
                                   inactive
                                 </span>
                               )}
@@ -381,7 +372,7 @@ export function QueueOrgManagePage() {
                           <tr>
                             <td
                               colSpan={4}
-                              className="py-6 text-center text-sm text-slate-400"
+                              style={{ padding: "1.5rem", textAlign: "center", color: "#94a3b8" }}
                             >
                               No members registered yet.
                             </td>
@@ -394,33 +385,33 @@ export function QueueOrgManagePage() {
               </section>
 
               {isAdmin && (
-                <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <ShieldCheck size={18} className="text-indigo-600" />
-                    Admin Approvals
+                <section className="qom-card">
+                  <h2 className="qom-card-title">
+                    <ShieldCheck size={18} color="#0B4D6D" />
+                    <span>Admin Approvals</span>
                   </h2>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 1rem" }}>
                     Approve enables the queue and activates driver check-in.
                   </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="qom-approval-actions">
                     <button
                       onClick={() => approve("approved")}
                       disabled={isApproving}
-                      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition"
+                      className="qom-btn-approve"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => approve("suspended")}
                       disabled={isApproving}
-                      className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition"
+                      className="qom-btn-suspend"
                     >
                       Suspend
                     </button>
                     <button
                       onClick={() => approve("rejected")}
                       disabled={isApproving}
-                      className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50 transition"
+                      className="qom-btn-reject"
                     >
                       Reject
                     </button>
@@ -431,7 +422,7 @@ export function QueueOrgManagePage() {
           </div>
 
           {/* Live Queue Board */}
-          <div className="mt-8">
+          <div>
             <QueueBoard
               queueOrganizationUniqueId={org.queueOrganizationUniqueId}
               origin={{

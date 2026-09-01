@@ -67,18 +67,19 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     import.meta.env.VITE_API_BASE_URL ||
     "https://dynamicsroute.tech";
 
+  const rawToken = token ? token.replace(/^Bearer\s+/i, "") : undefined;
+
   socket = io(socketUrl, {
-    // Use websocket-only — Nginx on the backend only proxies WebSocket upgrades,
-    // not HTTP long-polling, which causes 400 errors on polling requests.
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
     autoConnect: false,
     auth: {
       user: "queueOrgAdmin",
       phoneNumber,
-      token: formattedToken,
+      token: rawToken || formattedToken,
+      authorization: formattedToken,
     },
     reconnection: true,
-    reconnectionAttempts: 10,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10000,
     timeout: 20000,

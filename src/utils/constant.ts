@@ -16,7 +16,7 @@ const appAPIs = {
     getQueueStatusAPI: "/queue/status",
     manualCheckinAPI: "/queue/manualCheckin",
     manualCheckoutAPI: "/queue/manualCheckout",
-    listVehicleTypesAPI: "/queue/vehicleTypes",
+    listVehicleTypesAPI: "/admin/vehicleTypes",
     listQueueOrgRoutesAPI: "/queueOrganization/:id/routes",
     // Correct backend endpoint for creating shipper requests
     createOrderAPI: "/shipperRequest/createRequest",

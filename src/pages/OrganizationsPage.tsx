@@ -316,8 +316,8 @@ export function OrganizationsPage() {
                     const statusLabel = isApproved
                       ? t("dashboard.approved", "Approved")
                       : status === "pending"
-                      ? t("dashboard.pending", "Pending")
-                      : status.charAt(0).toUpperCase() + status.slice(1);
+                        ? t("dashboard.pending", "Pending")
+                        : status.charAt(0).toUpperCase() + status.slice(1);
 
                     return (
                       <tr key={org.queueOrganizationUniqueId}>
