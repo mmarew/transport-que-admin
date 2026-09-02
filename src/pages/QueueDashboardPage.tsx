@@ -22,6 +22,7 @@ import { createQueueOrganization } from "../services/organization.service";
 import { useQueueAdminStore } from "../store/queueAdminStore";
 import { QueueBoard } from "../components/queue/QueueBoard";
 import { CreateOrgModal } from "../components/queue/CreateOrgModal";
+import { subscribeToQueue, unsubscribeFromQueue } from "../lib/socket";
 import type { QueueOrgListItem, QueueOrganization, QueueOrgType } from "../types/queue";
 import { extractCity, normalizeOrgList } from "../utils/formatters";
 import "./OrganizationsPage.css";
@@ -81,6 +82,28 @@ export function QueueDashboardPage() {
       setSearchParams({}, { replace: true });
     }
   }, [activeOrgId, setSearchParams, setSelectedOrgId]);
+
+  // Subscribe to active organization room so real-time approval/updates arrive even if pending
+  useEffect(() => {
+    if (!activeOrgId) return;
+    subscribeToQueue(activeOrgId);
+    return () => {
+      unsubscribeFromQueue(activeOrgId);
+    };
+  }, [activeOrgId]);
+
+  // If no active org is selected, subscribe to all listed orgs to catch live approval state transitions
+  useEffect(() => {
+    if (activeOrgId) return;
+    const orgIds = orgList
+      .map((item) => item.organization?.queueOrganizationUniqueId)
+      .filter((id): id is string => Boolean(id));
+
+    orgIds.forEach((id) => subscribeToQueue(id));
+    return () => {
+      orgIds.forEach((id) => unsubscribeFromQueue(id));
+    };
+  }, [activeOrgId, orgList]);
 
   const activeOrg = useMemo(() => {
     if (!activeOrgId) return null;

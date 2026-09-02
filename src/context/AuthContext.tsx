@@ -21,8 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [dispatch]);
 
   useEffect(() => {
-    if (auth?.token && auth?.userData?.phoneNumber) {
-      connectSocket({ phoneNumber: auth.userData.phoneNumber });
+    if (auth?.token) {
+      connectSocket(auth.userData?.phoneNumber ? { phoneNumber: auth.userData.phoneNumber } : undefined);
     } else {
       disconnectSocket();
     }

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "react-router-dom";
@@ -6,6 +7,7 @@ import { ArrowLeft, Building2, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import parseError from "../utils/parseError";
 import { useAuth } from "../context/AuthContext";
+import { subscribeToQueue, unsubscribeFromQueue } from "../lib/socket";
 import {
   queueOrgProfileSchema,
   type QueueOrgProfileFormValues,
@@ -63,6 +65,14 @@ export function QueueOrgManagePage() {
     queueOrganizationUniqueId: string;
   }>();
   const orgId = queueOrganizationUniqueId || "";
+
+  useEffect(() => {
+    if (!orgId) return;
+    subscribeToQueue(orgId);
+    return () => {
+      unsubscribeFromQueue(orgId);
+    };
+  }, [orgId]);
 
   const { auth } = useAuth();
   const isAdmin = auth?.userData?.roleId === 11;

@@ -55,8 +55,8 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
 export const api = createApi({
   reducerPath: "api",
-  refetchOnFocus: false,
-  refetchOnReconnect: false,
+  refetchOnFocus: true,
+  refetchOnReconnect: true,
   keepUnusedDataFor: 300,
   baseQuery: baseQueryWithReauth,
   tagTypes: [
@@ -126,7 +126,7 @@ export const api = createApi({
       { id: string; body: Partial<QueueOrganization> }
     >({
       query: ({ id, body }) => ({ url: appAPIs.updateQueueOrganizationAPI.replace(":id", id), method: "PATCH", body }),
-      invalidatesTags: ["QueueOrganizations"],
+      invalidatesTags: (_, __, { id }) => ["QueueOrganizations", { type: "QueueOrganizations", id }],
     }),
 
     approveQueueOrganization: builder.mutation<
@@ -134,7 +134,7 @@ export const api = createApi({
       { id: string; body: { approvalStatus: "approved" | "rejected" | "suspended"; approvalReason?: string; queueEnabled?: boolean } }
     >({
       query: ({ id, body }) => ({ url: appAPIs.approveQueueOrganizationAPI.replace(":id", id), method: "PATCH", body }),
-      invalidatesTags: ["QueueOrganizations"],
+      invalidatesTags: (_, __, { id }) => ["QueueOrganizations", { type: "QueueOrganizations", id }],
     }),
 
     createQueueOrganization: builder.mutation<

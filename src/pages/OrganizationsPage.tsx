@@ -18,6 +18,7 @@ import {
 } from "../lib/redux/api";
 import CreateOrgModal from "../components/queue/CreateOrgModal";
 import { useQueueAdminStore } from "../store/queueAdminStore";
+import { subscribeToQueue, unsubscribeFromQueue } from "../lib/socket";
 import type { QueueOrgListItem } from "../types/queue";
 import { extractCity, normalizeOrgList } from "../utils/formatters";
 import "./OrganizationsPage.css";
@@ -67,6 +68,17 @@ export function OrganizationsPage() {
   const orgList: QueueOrgListItem[] = useMemo(() => {
     return normalizeOrgList(rawData);
   }, [rawData]);
+
+  useEffect(() => {
+    const orgIds = orgList
+      .map((item) => item.organization?.queueOrganizationUniqueId)
+      .filter((id): id is string => Boolean(id));
+
+    orgIds.forEach((id) => subscribeToQueue(id));
+    return () => {
+      orgIds.forEach((id) => unsubscribeFromQueue(id));
+    };
+  }, [orgList]);
 
   const processedOrgs = useMemo(() => {
     const result = orgList.filter((item) => {

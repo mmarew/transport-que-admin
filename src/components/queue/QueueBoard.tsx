@@ -67,12 +67,20 @@ export function QueueBoard({
     if (s?.connected) {
       setSocketConnected(true);
     }
+    const handleConnect = () => setSocketConnected(true);
+    const handleDisconnect = () => setSocketConnected(false);
+
+    s?.on("connect", handleConnect);
+    s?.on("disconnect", handleDisconnect);
+
     subscribeToQueue(queueOrganizationUniqueId);
     const offEvent = onQueueEvent(() => {
       setSocketConnected(true);
     });
 
     return () => {
+      s?.off("connect", handleConnect);
+      s?.off("disconnect", handleDisconnect);
       unsubscribeFromQueue(queueOrganizationUniqueId);
       offEvent();
     };
