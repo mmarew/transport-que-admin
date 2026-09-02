@@ -1,0 +1,12 @@
+comments on view of ui
+
+1) once shipper request are created via {{url}}/api/shipperRequest/createRequest how to view this requests  via getShipperRequest4allOrSingleUser? created requestes must be visible to shipper.
+
+ {{url}}/api/user/getShipperRequest4allOrSingleUser?queueOrganizationUniqueId=58f68fea-99f4-490c-9f8a-7e1978082ba7&target=all&page=1&limit=10
+
+ 2) https://dynamicsroute.tech/api/queue/vehicleTypes?limit=100 is 404 still update it to https://dynamicsroute.tech/api/admin/vehicleTypes?limit=100
+
+3) in https://queue.dynamicsroute.tech/dashboard?orgId=da7ee0aa-c0c5-4c48-9db3-1bfe79c55bc4 the table based on 20ft Container Truck (251–300 Quintal) is not showing driver address. like driver fullname phone no date etc. i think this is pertain to the change in response structure in api/queue/status.
+
+4) text Verify OTP Code and We sent a 6-digit verification code to +2519********. are black in color and we cant see it in mobile app
+
