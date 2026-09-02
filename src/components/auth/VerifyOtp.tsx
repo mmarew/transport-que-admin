@@ -217,8 +217,8 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
         {/* Mobile-only: dark header with overlapping circles */}
         <div className="mobile-otp-header">
           <OverlappingCircles
-            title={t("auth.otpTitle")}
-            subtitle={t("auth.otpSubtitle", { phone: maskedPhone })}
+            title={t("auth.verifyOtpMobileHeading", "Verify OTP")}
+            subtitle={t("auth.verifyOtpMobileSub", "Check your phone to verify your OTP")}
             onBack={onGoBack}
           />
         </div>
@@ -240,6 +240,10 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
 
           <p className="otp-desktop-subtitle">
             {t("auth.otpSubtitle", { phone: maskedPhone })}
+          </p>
+
+          <p className="otp-code-sent">
+            Code has been sent to <strong>{maskedPhone}</strong>
           </p>
 
           <form

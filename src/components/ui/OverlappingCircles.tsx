@@ -40,9 +40,10 @@ export const OverlappingCircles: React.FC<OverlappingCirclesProps> = ({
         {onBack && (
           <button
             type="button"
-            className="otp-back-btn otp-header-inner"
+            className="otp-back-btn"
             onClick={onBack}
             aria-label="Go back"
+            style={{ position: "relative", zIndex: 1 }}
           >
             <ChevronLeft size={28} strokeWidth={2} />
           </button>
@@ -52,12 +53,12 @@ export const OverlappingCircles: React.FC<OverlappingCirclesProps> = ({
 
         <div className="otp-header-text-group">
           {title && (
-            <h1 className="otp-fullscreen-title otp-title-lg">
+            <h1 className="otp-fullscreen-title">
               {title}
             </h1>
           )}
           {subtitle && (
-            <p className="otp-fullscreen-subtitle otp-subtitle-md">
+            <p className="otp-fullscreen-subtitle">
               {subtitle}
             </p>
           )}

@@ -223,6 +223,19 @@
   }
 }
 
+/* ── Mobile-only OTP header and overlapping circles ── */
+.otp-code-sent {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9375rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.otp-code-sent strong {
+  color: var(--primary, #0B4D6D);
+  font-weight: 700;
+}
+
 @media (max-width: 767px) {
   .mobile-otp-header {
     display: flex;
@@ -234,18 +247,140 @@
     min-height: 42vh;
     overflow: hidden;
   }
+
   .otp-desktop-header,
   .otp-desktop-subtitle {
     display: none !important;
   }
+
   .btn-text-desktop {
     display: none;
   }
+
   .btn-text-mobile {
     display: inline;
   }
+
   .otp-code-sent {
-    margin-top: 0.5rem;
+    margin: 0.75rem 0 1.25rem;
+    display: block;
+  }
+
+  /* ── Overlapping Circles Component ── */
+  .otp-header-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .otp-header-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 2.5rem 1.5rem 2rem;
+    box-sizing: border-box;
+  }
+
+  .otp-header-text-group {
+    margin-top: auto;
+  }
+
+  .overlapping-circles-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .overlapping-circles-container .circle-left {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 221px;
+    height: 283px;
+    max-width: none;
+    pointer-events: none;
+  }
+
+  .overlapping-circles-container .circle-right {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 308px;
+    height: 306px;
+    max-width: none;
+    pointer-events: none;
+  }
+
+  .otp-back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    color: #ffffff;
+    margin-bottom: 1.5rem;
+    width: fit-content;
+    opacity: 0.9;
+    transition: opacity 0.2s;
+  }
+
+  .otp-back-btn:hover {
+    opacity: 1;
+  }
+
+  .otp-fullscreen-title {
+    color: #ffffff !important;
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    line-height: 100% !important;
+    letter-spacing: 0 !important;
+    margin: 0 0 0.5rem !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .otp-fullscreen-subtitle {
+    color: #F8F9FA !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    line-height: 100% !important;
+    letter-spacing: -0.04em !important;
+    padding-top: 0.25rem !important;
+    margin: 0 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .otp-form-panel {
+    padding: 0 0 2rem !important;
+  }
+
+  .otp-desktop-card {
+    max-width: 90% !important;
+    margin: 1.5rem auto !important;
+    width: 100% !important;
+  }
+
+  .otp-desktop-card .otp-input-group {
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .otp-desktop-card .otp-digit-input {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 1.25rem !important;
+    border-radius: 0.5rem;
   }
 }
 

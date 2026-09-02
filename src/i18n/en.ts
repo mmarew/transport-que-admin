@@ -158,6 +158,8 @@ export const en = {
     sendingOtp: "Sending OTP...",
     otpTitle: "Verify OTP Code",
     otpSubtitle: "We sent a 6-digit verification code to {{phone}}.",
+    verifyOtpMobileHeading: "Verify OTP",
+    verifyOtpMobileSub: "Check your phone to verify your OTP",
     otpLabel: "Enter OTP",
     verifyBtn: "Verify & Continue",
     verifying: "Verifying...",

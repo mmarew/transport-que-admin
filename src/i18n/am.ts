@@ -158,6 +158,8 @@ export const am = {
     sendingOtp: "ኮድ በመላክ ላይ...",
     otpTitle: "የማረጋገጫ ኮድ ያረጋግጡ",
     otpSubtitle: "ወደ {{phone}} ባለ 6-ዲጂት የማረጋገጫ ኮድ ልከናል::",
+    verifyOtpMobileHeading: "የማረጋገጫ ኮድ (OTP)",
+    verifyOtpMobileSub: "ለማረጋገጥ ወደ ስልክዎ የተላከውን ኮድ ያስገቡ",
     otpLabel: "የማረጋገጫ ኮዱን ያስገቡ",
     verifyBtn: "አረጋግጥ እና ቀጥል",
     verifying: "በማረጋገጥ ላይ...",
