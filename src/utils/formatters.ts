@@ -4,8 +4,8 @@ import type { QueueOrganization, QueueOrgListItem, DriverQueueEntry } from "../t
 export function extractCity(address?: string | null): string {
   if (!address) return "Addis Ababa";
   const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
-  if (parts.length >= 2) {
-    return parts[parts.length - 2] || parts[0];
+  if (parts.length > 0 && parts[0].toLowerCase() !== "ethiopia") {
+    return parts[0];
   }
   return parts[0] || "Addis Ababa";
 }

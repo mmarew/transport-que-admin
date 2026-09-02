@@ -5,7 +5,6 @@ import {
   ChevronRight,
   ChevronDown,
   Building2,
-  Trash2,
   Check,
 } from "lucide-react";
 import DashboardLayout from "../components/layout/DashboardLayout";
@@ -48,28 +47,32 @@ function OrgReportRow({
 
   const totalDrivers = allEntries.length;
 
-  const approvalStatusLower = (org.approvalStatus || "").toLowerCase();
-  const displayStatus =
-    approvalStatusLower === "approved"
-      ? t("reports.approved", "Approved")
-      : approvalStatusLower === "pending"
-        ? t("reports.pending", "Pending")
-        : org.approvalStatus
-          ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
-          : t("dashboard.enabled", "Active");
+  const approvalStatusLower = (org.approvalStatus || "pending").toLowerCase();
+  const isApproved = approvalStatusLower === "approved";
+  const isPending = approvalStatusLower === "pending";
+
+  const statusClass = isApproved ? "active" : isPending ? "pending" : "suspended";
+  const displayStatus = isApproved
+    ? t("dashboard.enabled", "Active")
+    : isPending
+      ? t("reports.pending", "Pending")
+      : org.approvalStatus
+        ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
+        : t("dashboard.enabled", "Active");
+
+  const city = extractCity(org.queueOrganizationAddress);
+  const displayLocation = city ? `${city}, Ethiopia` : (org.queueOrganizationAddress || "Ethiopia");
 
   return (
     <div className="rep-org-row">
       <div className="rep-org-main">
         <div className="rep-org-icon">
-          <Building2 size={20} />
+          <Building2 size={22} />
         </div>
         <div className="rep-org-info">
           <span className="rep-org-name">{org.queueOrganizationName}</span>
-          <span className="rep-org-city">
-            {org.queueOrganizationAddress || t("reports.terminalLocation", "Terminal Location")}
-          </span>
-          <span className="rep-org-status">{displayStatus}</span>
+          <span className="rep-org-city">{displayLocation}</span>
+          <span className={`rep-org-status ${statusClass}`}>{displayStatus}</span>
         </div>
       </div>
 
@@ -83,13 +86,14 @@ function OrgReportRow({
         <span className="rep-org-stat-val">{waitingCount}</span>
       </div>
 
-      <div>
+      <div className="rep-org-action">
         <button
           type="button"
           onClick={() => onViewDetails(org)}
           className="rep-org-action-btn"
         >
-          {t("reports.viewQueue", "View Queue")} <ChevronRight size={15} />
+          <span>{t("reports.viewQueue", "View Queue")}</span>
+          <ChevronRight size={16} />
         </button>
       </div>
     </div>
@@ -401,9 +405,9 @@ export function ReportsPage() {
           </div>
         </div>
 
-        {/* Desktop Organization Overview List */}
+        {/* Organizations Section matching Screenshot 2 */}
         <div className="rep-orgs-card">
-          <h3 className="rep-orgs-title">{t("reports.orgsOverview", "Organizations Overview")}</h3>
+          <h3 className="rep-orgs-title">{t("dashboard.newOrg", "New Organization")}</h3>
 
           <div className="rep-orgs-toolbar">
             <div className="rep-search-wrap">
@@ -480,11 +484,7 @@ export function ReportsPage() {
 
           <div className="rep-pagination">
             <span className="rep-page-info">
-              {t("reports.showOf", {
-                current: paginatedOrgs.length,
-                total: filteredOrgs.length,
-                defaultValue: `Show ${paginatedOrgs.length} of ${filteredOrgs.length}`,
-              })}
+              Show {paginatedOrgs.length} of {filteredOrgs.length}
             </span>
 
             <div className="rep-page-btns">
@@ -502,60 +502,12 @@ export function ReportsPage() {
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="rep-page-btn"
+                className="rep-page-btn next"
               >
-                <ChevronRight size={14} />
+                <ChevronRight size={15} />
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Mobile Reports Table Card matching screenshot */}
-        <div className="rep-mobile-table-card">
-          <table className="rep-mobile-table">
-            <thead>
-              <tr>
-                <th>{t("reports.organization", "Organization")}</th>
-                <th>{t("reports.city", "City")}</th>
-                <th>{t("reports.status", "Status")}</th>
-                <th style={{ textAlign: "center" }}>{t("reports.action", "Action")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrgs.slice(0, 5).map((item) => {
-                const org = item.organization;
-                const isApproved = String(org.approvalStatus || "").toLowerCase() === "approved";
-                const isPending = String(org.approvalStatus || "").toLowerCase() === "pending";
-                const statusLabel = isApproved
-                  ? t("reports.approved", "Approved")
-                  : isPending
-                    ? t("reports.pending", "Pending")
-                    : org.approvalStatus
-                      ? org.approvalStatus.charAt(0).toUpperCase() + org.approvalStatus.slice(1)
-                      : t("reports.approved", "Approved");
-
-                return (
-                  <tr key={org.queueOrganizationUniqueId}>
-                    <td style={{ fontWeight: 600 }}>{org.queueOrganizationName}</td>
-                    <td>{extractCity(org.queueOrganizationAddress)}</td>
-                    <td className={isApproved ? "status-approved" : "status-pending"}>
-                      {statusLabel}
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <button
-                        type="button"
-                        className="rep-mobile-action-del"
-                        onClick={() => setSelectedOrgForDetails(org)}
-                        title={t("reports.viewManageQueue", "View / Manage Queue")}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         </div>
 
         {/* Queue Details Modal */}
