@@ -61,6 +61,7 @@ export function QueueBoard({
   } | null>(null);
   const [overrideEntry, setOverrideEntry] = useState<DriverQueueEntry | null>(null);
   const [cancelEntry, setCancelEntry] = useState<DriverQueueEntry | null>(null);
+  const [viewMode, setViewMode] = useState<"byType" | "all">("byType");
   const onRefetchRef = useRef(onRefetch);
   useEffect(() => {
     onRefetchRef.current = onRefetch;
