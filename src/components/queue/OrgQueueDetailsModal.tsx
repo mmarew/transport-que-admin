@@ -249,7 +249,14 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
                         #{entry.queueNumber}
                       </td>
                       <td style={{ padding: "0.65rem 0.75rem", fontWeight: 600, color: "#1e293b" }}>
-                        {entry.driverName || "Driver"}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span>{entry.driverName || "Driver"}</span>
+                          {entry.driverAddress && (
+                            <span style={{ fontSize: "0.725rem", color: "#64748b", fontWeight: 400 }}>
+                              {entry.driverAddress}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td style={{ padding: "0.65rem 0.75rem", color: "#64748b" }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
