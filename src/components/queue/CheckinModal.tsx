@@ -55,7 +55,7 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
   const driversList = useMemo(() => {
     if (!queueStatusData?.data?.queues) return [];
     const seen = new Set<string>();
-    const result: { vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string }[] = [];
+    const result: { vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string; isInQueue?: boolean }[] = [];
     Object.values(queueStatusData.data.queues).flat().forEach((rawEntry) => {
       const entry = normalizeQueueEntry(rawEntry);
       if (entry.vehicleDriverUniqueId && !seen.has(entry.vehicleDriverUniqueId)) {
@@ -142,7 +142,7 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
           : {}),
       }).unwrap();
 
-      toast.success(res?.message || `Driver checked in at #${res?.data?.queueNumber ?? 1}`);
+      toast.success(res?.message || `Driver checked in at position ${res?.data?.queueNumber ?? 1}`);
       onCheckedIn?.();
       onClose();
     } catch (err: unknown) {
@@ -206,29 +206,33 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
                 />
 
                 {dropdownOpen && (
-                  <div className="dm-dropdown-menu" style={{ maxHeight: "160px" }}>
+                  <div className="dm-dropdown-menu" style={{ maxHeight: "180px", overflowY: "auto" }}>
                     {filteredDrivers.length > 0 ? (
                       filteredDrivers.map((d) => (
                         <div
                           key={d.vehicleDriverUniqueId}
                           className={`dm-dropdown-item ${selectedVehicleDriverUniqueId === d.vehicleDriverUniqueId ? "selected" : ""}`}
+                          style={d.isInQueue ? { opacity: 0.6 } : {}}
                           onClick={() => {
+                            if (d.isInQueue) {
+                              toast.info(`"${d.driverName}" is already waiting in the queue.`);
+                            }
                             setValue("vehicleDriverUniqueId", d.vehicleDriverUniqueId, { shouldValidate: true });
-                            setSearchQuery(`${d.driverName} (${d.driverPhoneNumber})`);
+                            setSearchQuery(d.driverPhoneNumber ? `${d.driverName} (${d.driverPhoneNumber})` : d.driverName);
                             setDropdownOpen(false);
                           }}
                         >
                           <span className="dm-dropdown-item-text">
-                            <strong>{d.driverName}</strong> — {d.driverPhoneNumber}
+                            <strong>{d.driverName}</strong> {d.driverPhoneNumber ? `— ${d.driverPhoneNumber}` : ""}
                           </span>
-                          <span className="dm-dropdown-item-badge">
-                            {d.vehicleTypeName || "Vehicle"}
+                          <span className="dm-dropdown-item-badge" style={d.isInQueue ? { background: "#fef3c7", color: "#92400e" } : {}}>
+                            {d.isInQueue ? "Already in Queue" : d.vehicleTypeName || "Available"}
                           </span>
                         </div>
                       ))
                     ) : (
                       <div style={{ padding: "10px 14px", fontSize: "0.8rem", color: "#64748b" }}>
-                        No matching drivers found
+                        No matching drivers found. You can also paste the Vehicle-Driver ID directly.
                       </div>
                     )}
                   </div>
@@ -270,14 +274,14 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
             {/* Position Preview Card */}
             <div className="qm-card" style={{ marginTop: "6px" }}>
               <div className="qm-icon-circle" style={{ background: "#e0f2fe", color: "#034b6e" }}>
-                #{estimatedPosition}
+                {estimatedPosition}
               </div>
               <div className="qm-card-info">
                 <span className="qm-card-title">
-                  {inputQueueNumber && Number(inputQueueNumber) > 0 ? `Position #${inputQueueNumber}` : "Auto-assigned"}
+                  {inputQueueNumber && Number(inputQueueNumber) > 0 ? `Position ${inputQueueNumber}` : "Auto-assigned"}
                 </span>
                 <span className="qm-card-sub">
-                  Driver will be placed at position #{estimatedPosition} in the {targetVehicleTypeName} queue.
+                  Driver will be placed at position {estimatedPosition} in the {targetVehicleTypeName} queue.
                 </span>
               </div>
             </div>

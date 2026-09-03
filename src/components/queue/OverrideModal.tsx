@@ -55,7 +55,7 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
         },
       }).unwrap();
 
-      toast.success(res?.message || `Driver position updated to #${values.queueNumber}`);
+      toast.success(res?.message || `Driver position updated to ${values.queueNumber}`);
       onOverridden?.();
       onClose();
     } catch (err: unknown) {
@@ -111,7 +111,7 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
                 Vehicle: <strong>{vehicleName}</strong>
               </div>
               <div className="qm-card-line">
-                Current Position: <strong>#{entry.queueNumber}</strong>
+                Current Position: <strong>{entry.queueNumber}</strong>
               </div>
             </div>
           </div>
