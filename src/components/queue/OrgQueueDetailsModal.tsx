@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -27,6 +28,15 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  // Prevent background scrolling while modal is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const orgId = org?.queueOrganizationUniqueId || "";
 
@@ -72,7 +82,7 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
     navigate(`/dashboard?orgId=${org.queueOrganizationUniqueId}`);
   };
 
-  return (
+  return createPortal(
     <div className="qm-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div
         className="qm-modal"
@@ -329,7 +339,8 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

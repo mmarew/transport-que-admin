@@ -687,6 +687,11 @@
     line-height: 1.35;
   }
 
+  .rep-container {
+    gap: 16px !important;
+    padding-bottom: 24px;
+  }
+
   .rep-kpi-grid {
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 10px !important;
@@ -728,22 +733,159 @@
     background: transparent !important;
   }
 
-  .rep-org-row {
-    grid-template-columns: 1fr;
-    gap: 14px;
-    padding: 16px;
+  /* Organizations Card Mobile Layout (Compact) */
+  .rep-orgs-card {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
   }
 
-  .rep-org-stat {
-    display: inline-flex;
-    margin-right: 24px;
+  .rep-orgs-title {
+    font-size: 1.05rem !important;
+    margin-bottom: 12px !important;
   }
 
-  .rep-org-action {
-    justify-content: flex-start;
+  .rep-orgs-toolbar {
+    flex-direction: row;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .rep-search-wrap {
-    max-width: 100%;
+    flex: 1;
+    max-width: 100% !important;
+    padding: 6px 10px;
+  }
+
+  .rep-search-input {
+    font-size: 0.82rem !important;
+  }
+
+  .rep-sort-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .rep-org-list {
+    gap: 8px !important;
+  }
+
+  /* Ultra-Compact 2-Row Card on Mobile */
+  .rep-org-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr auto !important;
+    align-items: center !important;
+    gap: 8px 12px !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid #f1f5f9 !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+
+  /* Row 1: Org main info across top */
+  .rep-org-main {
+    grid-column: 1 / -1 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding-bottom: 6px !important;
+    border-bottom: 1px solid #f8fafc !important;
+  }
+
+  .rep-org-icon {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  .rep-org-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+    min-width: 0 !important;
+  }
+
+  .rep-org-name {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .rep-org-city {
+    font-size: 0.74rem !important;
+    color: #64748b !important;
+    line-height: 1.15 !important;
+  }
+
+  .rep-org-status {
+    font-size: 0.72rem !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Row 2: Drivers (Col 1), Waiting (Col 2), View Queue (Col 3) */
+  .rep-org-stat {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: baseline !important;
+    gap: 4px !important;
+    text-align: left !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .rep-org-stat-label {
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    margin: 0 !important;
+  }
+
+  .rep-org-stat-val {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    line-height: 1 !important;
+  }
+
+  .rep-org-action {
+    grid-column: 3 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .rep-org-action-btn {
+    width: auto !important;
+    justify-content: flex-end !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    font-size: 0.8rem !important;
+    color: #0B4D6D !important;
+    font-weight: 600 !important;
+    gap: 2px !important;
+  }
+
+  .rep-pagination {
+    margin-top: 12px !important;
+    padding-top: 10px !important;
+  }
+
+  .rep-page-info {
+    font-size: 0.76rem !important;
+  }
+
+  .rep-page-btn {
+    min-width: 28px !important;
+    height: 28px !important;
+    font-size: 0.8rem !important;
   }
 }
