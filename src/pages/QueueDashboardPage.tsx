@@ -22,7 +22,7 @@ import { createQueueOrganization } from "../services/organization.service";
 import { useQueueAdminStore } from "../store/queueAdminStore";
 import { QueueBoard } from "../components/queue/QueueBoard";
 import { CreateOrgModal } from "../components/queue/CreateOrgModal";
-import { subscribeToQueue, unsubscribeFromQueue } from "../lib/socket";
+import { subscribeToQueue, unsubscribeFromQueue, onQueueEvent } from "../lib/socket";
 import type { QueueOrgListItem, QueueOrganization, QueueOrgType } from "../types/queue";
 import { extractCity, normalizeOrgList } from "../utils/formatters";
 import "./OrganizationsPage.css";
@@ -113,7 +113,7 @@ export function QueueDashboardPage() {
   }, [orgList, activeOrgId]);
 
   const statusStr = String(activeOrg?.approvalStatus || "").toLowerCase();
-  const isApproved = statusStr === "approved" || statusStr === "active" || activeOrg?.queueEnabled === 1;
+  const isApproved = !activeOrg || statusStr === "approved" || statusStr === "active" || activeOrg?.queueEnabled === 1;
 
   const {
     data: queueStatusData,
@@ -121,8 +121,20 @@ export function QueueDashboardPage() {
     refetch: refetchStatus,
   } = useGetQueueStatusQuery(
     { queueOrganizationUniqueId: activeOrgId || "" },
-    { skip: !activeOrgId || !isApproved },
+    {
+      skip: !activeOrgId,
+      pollingInterval: 4000,
+    },
   );
+
+  // Instant refetch whenever a real-time socket event arrives
+  useEffect(() => {
+    if (!activeOrgId) return;
+    const off = onQueueEvent(() => {
+      refetchStatus();
+    });
+    return () => off();
+  }, [activeOrgId, refetchStatus]);
 
   const processedOrgs = useMemo(() => {
     const result = orgList.filter((item) => {

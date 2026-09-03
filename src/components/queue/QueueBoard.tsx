@@ -116,8 +116,10 @@ export function QueueBoard({
 
   const queuesMap = useMemo<Record<string, DriverQueueEntry[]>>(() => {
     if (!status) return {};
-    const rawQueues = status.queues || (status as any).data?.queues || (status as any).data;
+    const rawPayload: any = (status as any)?.data !== undefined ? (status as any).data : status;
+    const rawQueues = rawPayload?.queues || rawPayload?.data || rawPayload?.list || rawPayload;
     if (!rawQueues) return {};
+
     if (Array.isArray(rawQueues)) {
       const map: Record<string, DriverQueueEntry[]> = {};
       for (const item of rawQueues) {
@@ -129,9 +131,11 @@ export function QueueBoard({
       }
       return map;
     }
+
     if (typeof rawQueues === "object" && rawQueues !== null) {
       const map: Record<string, DriverQueueEntry[]> = {};
       for (const [k, v] of Object.entries(rawQueues)) {
+        if (k === "message" || k === "status" || k === "success" || k === "pagination") continue;
         if (Array.isArray(v)) {
           map[k] = v.map(normalizeQueueEntry);
         } else if (v && typeof v === "object") {
