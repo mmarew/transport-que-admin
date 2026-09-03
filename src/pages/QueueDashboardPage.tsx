@@ -121,25 +121,8 @@ export function QueueDashboardPage() {
     refetch: refetchStatus,
   } = useGetQueueStatusQuery(
     { queueOrganizationUniqueId: activeOrgId || "" },
-    {
-      skip: !activeOrgId,
-      pollingInterval: 4000,
-    },
+    { skip: !activeOrgId },
   );
-
-  // Instant refetch whenever a real-time socket event arrives
-  const refetchStatusRef = useRef(refetchStatus);
-  useEffect(() => {
-    refetchStatusRef.current = refetchStatus;
-  }, [refetchStatus]);
-
-  useEffect(() => {
-    if (!activeOrgId) return;
-    const off = onQueueEvent(() => {
-      refetchStatusRef.current?.();
-    });
-    return () => off();
-  }, [activeOrgId]);
 
   const processedOrgs = useMemo(() => {
     const result = orgList.filter((item) => {

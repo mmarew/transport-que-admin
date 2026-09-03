@@ -196,20 +196,19 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     }
   };
 
-  // Primary event from backend
-  socket.on("queue", handleQueuePayload);
-
-  // Catch-all event listener so ANY event emitted by backend triggers instant UI update
+  // Catch-all event listener for live events (deduplicated)
   socket.onAny((eventName: string, ...args: unknown[]) => {
     if (
       eventName === "connect" ||
       eventName === "disconnect" ||
       eventName === "connect_error" ||
-      eventName === "queue:subscribed"
+      eventName === "queue:subscribed" ||
+      eventName === "ping" ||
+      eventName === "pong"
     ) {
       return;
     }
-    console.info(`[WebSocket] onAny event "${eventName}":`, args[0]);
+    console.info(`[WebSocket] Event "${eventName}":`, args[0]);
     handleQueuePayload(args[0]);
   });
 

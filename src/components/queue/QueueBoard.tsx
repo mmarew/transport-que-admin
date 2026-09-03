@@ -80,7 +80,6 @@ export function QueueBoard({
     subscribeToQueue(queueOrganizationUniqueId);
     const offEvent = onQueueEvent(() => {
       setSocketConnected(true);
-      onRefetchRef.current?.();
     });
 
     return () => {
