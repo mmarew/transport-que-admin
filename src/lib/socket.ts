@@ -1,8 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { getStoredAuth } from "./auth";
 import { useQueueAdminStore } from "../store/queueAdminStore";
-import { store } from "./redux/store";
-import { api } from "./redux/api";
 import type { AuthUser } from "../types/queue";
 
 export type QueueEventHandler = (payload: {
@@ -21,8 +19,12 @@ const activeSubscriptions = new Map<
 let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
 const debouncedInvalidate = (isOrgEvent = false) => {
   if (invalidateTimer) clearTimeout(invalidateTimer);
-  invalidateTimer = setTimeout(() => {
+  invalidateTimer = setTimeout(async () => {
     try {
+      const [{ store }, { api }] = await Promise.all([
+        import("./redux/store"),
+        import("./redux/api"),
+      ]);
       store.dispatch(
         api.util.invalidateTags([
           { type: "QueueStatus" },
