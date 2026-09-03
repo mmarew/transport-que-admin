@@ -40,7 +40,7 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
         <table className="qb-table-grid">
           <thead>
             <tr>
-              <th className="qb-th-num">#</th>
+              <th className="qb-th-num">{t("queue.positions", "Positions")}</th>
               <th>{t("queue.driver")}</th>
               <th>{t("queue.phone")}</th>
               <th>{t("queue.address", "Address")}</th>
@@ -101,7 +101,7 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
         <table className="qb-table-grid qb-table-grid--mobile">
           <thead>
             <tr>
-              <th className="qb-th-num">#</th>
+              <th className="qb-th-num">{t("queue.positions", "Positions")}</th>
               <th>{t("queue.driver")}</th>
               <th>{t("queue.joined")}</th>
               <th>{t("queue.status")}</th>

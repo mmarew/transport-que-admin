@@ -257,8 +257,8 @@ export const api = createApi({
           const list = Array.isArray(payload?.data)
             ? payload.data
             : Array.isArray(payload)
-            ? payload
-            : (DEFAULT_VEHICLE_TYPES as unknown as VehicleType[]);
+              ? payload
+              : (DEFAULT_VEHICLE_TYPES as unknown as VehicleType[]);
           return {
             data: {
               message: payload?.message || "success",
