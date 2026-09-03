@@ -37,6 +37,8 @@ const rawBaseQuery = fetchBaseQuery({
       const cleanToken = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
       headers.set("Authorization", cleanToken);
     }
+    headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    headers.set("Pragma", "no-cache");
     return headers;
   },
 });
@@ -179,6 +181,9 @@ export const api = createApi({
       }),
       providesTags: (_, __, { queueOrganizationUniqueId, queueDate }) => [
         { type: "QueueStatus", id: `${queueOrganizationUniqueId}|${queueDate ?? "today"}` },
+        { type: "QueueStatus", id: "LIST" },
+        { type: "QueueStatus" },
+        "QueueStatus",
       ],
     }),
 
@@ -325,7 +330,15 @@ export const api = createApi({
       },
       { queueOrganizationUniqueId: string; target?: "all" | "single"; page?: number; limit?: number }
     >({
-      query: (params) => ({ url: appAPIs.getShipperRequestsAPI, params }),
+      query: (params) => ({
+        url: appAPIs.getShipperRequestsAPI,
+        params: {
+          target: "all",
+          page: 1,
+          limit: 50,
+          ...params,
+        },
+      }),
       providesTags: ["ShipperRequests"],
     }),
   }),

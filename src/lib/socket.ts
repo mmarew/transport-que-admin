@@ -1,6 +1,8 @@
 import { io, Socket } from "socket.io-client";
 import { getStoredAuth } from "./auth";
 import { useQueueAdminStore } from "../store/queueAdminStore";
+import { store } from "./redux/store";
+import { api } from "./redux/api";
 import type { AuthUser } from "../types/queue";
 
 export type QueueEventHandler = (payload: {
@@ -17,28 +19,26 @@ const activeSubscriptions = new Map<
 >();
 
 let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
-let lastInvalidateTime = 0;
 const debouncedInvalidate = (isOrgEvent = false) => {
-  const now = Date.now();
-  if (!isOrgEvent && now - lastInvalidateTime < 1200) {
-    return; // Throttle if invalidated very recently by local mutation
-  }
   if (invalidateTimer) clearTimeout(invalidateTimer);
   invalidateTimer = setTimeout(() => {
-    lastInvalidateTime = Date.now();
-    import("./redux/store").then(({ store }) => {
-      import("./redux/api").then(({ api }) => {
-        store.dispatch(
-          api.util.invalidateTags([
-            "QueueStatus",
-            "DriverQueue",
-            "ShipperRequests",
-            "QueueOrganizations",
-          ])
-        );
-      });
-    });
-  }, isOrgEvent ? 50 : 400);
+    try {
+      store.dispatch(
+        api.util.invalidateTags([
+          { type: "QueueStatus" },
+          { type: "DriverQueue" },
+          { type: "ShipperRequests" },
+          { type: "QueueOrganizations" },
+          "QueueStatus",
+          "DriverQueue",
+          "ShipperRequests",
+          "QueueOrganizations",
+        ])
+      );
+    } catch (err) {
+      console.error("[WebSocket] Failed to invalidate RTK Query tags:", err);
+    }
+  }, isOrgEvent ? 30 : 150);
 };
 
 function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
@@ -72,6 +72,27 @@ function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
   const rawToken = token ? token.replace(/^Bearer\s+/i, "") : undefined;
 
   return { token: formattedToken, rawToken, phoneNumber, userType };
+}
+
+function emitSubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string; queueDate?: string }) {
+  const payload = {
+    queueOrganizationUniqueId: sub.queueOrganizationUniqueId,
+    queueDate: sub.queueDate,
+  };
+  sock.emit("queue:subscribe", payload);
+  sock.emit("subscribe", payload);
+  sock.emit("join", payload);
+  sock.emit("joinQueue", payload);
+}
+
+function emitUnsubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string; queueDate?: string }) {
+  const payload = {
+    queueOrganizationUniqueId: sub.queueOrganizationUniqueId,
+    queueDate: sub.queueDate,
+  };
+  sock.emit("queue:unsubscribe", payload);
+  sock.emit("unsubscribe", payload);
+  sock.emit("leave", payload);
 }
 
 export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | null {
@@ -127,10 +148,7 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     console.info("[WebSocket] Connected successfully (ID:", socket?.id, ")");
     useQueueAdminStore.getState().setSocketConnected(true);
     activeSubscriptions.forEach((sub) => {
-      socket?.emit("queue:subscribe", {
-        queueOrganizationUniqueId: sub.queueOrganizationUniqueId,
-        queueDate: sub.queueDate,
-      });
+      if (socket) emitSubscribe(socket, sub);
     });
   });
 
@@ -151,19 +169,20 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
 
   const handleQueuePayload = (msg: unknown) => {
     try {
+      if (!msg) return;
       const parsed = typeof msg === "string" ? JSON.parse(msg) : msg;
       console.info("[WebSocket] Queue event received:", parsed);
 
-      const messageType = parsed?.messageTypes || parsed?.message;
+      const messageType = (parsed as any)?.messageTypes || (parsed as any)?.message;
       const isOrgEvent =
         messageType === "queue_org_approved" ||
         messageType === "queue_org_updated" ||
         messageType === "org_approved" ||
-        Boolean(parsed?.data?.queueOrganizationUniqueId && parsed?.data?.approvalStatus);
+        Boolean((parsed as any)?.data?.queueOrganizationUniqueId && (parsed as any)?.data?.approvalStatus);
 
       queueEventHandlers.forEach((handler) => {
         try {
-          handler(parsed);
+          handler(parsed as any);
         } catch (err) {
           console.error("Error in queue event listener:", err);
         }
@@ -179,14 +198,19 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
   // Primary event from backend
   socket.on("queue", handleQueuePayload);
 
-  // Additional fallback and organization event names
-  socket.on("queue_event", handleQueuePayload);
-  socket.on("queueEvent", handleQueuePayload);
-  socket.on("queue:update", handleQueuePayload);
-  socket.on("queue_updated", handleQueuePayload);
-  socket.on("queue_org_approved", handleQueuePayload);
-  socket.on("queue_org_updated", handleQueuePayload);
-  socket.on("org_approved", handleQueuePayload);
+  // Catch-all event listener so ANY event emitted by backend triggers instant UI update
+  socket.onAny((eventName: string, ...args: unknown[]) => {
+    if (
+      eventName === "connect" ||
+      eventName === "disconnect" ||
+      eventName === "connect_error" ||
+      eventName === "queue:subscribed"
+    ) {
+      return;
+    }
+    console.info(`[WebSocket] onAny event "${eventName}":`, args[0]);
+    handleQueuePayload(args[0]);
+  });
 
   return socket;
 }
@@ -216,14 +240,12 @@ export function subscribeToQueue(queueOrganizationUniqueId: string, queueDate?: 
   }
 
   if (!socket) {
-    // Only connect if we have credentials; if not, the AuthContext will connect when auth is set
     connectSocket();
     return;
   }
   if (socket.connected) {
-    socket.emit("queue:subscribe", { queueOrganizationUniqueId, queueDate });
+    emitSubscribe(socket, { queueOrganizationUniqueId, queueDate });
   } else {
-    // Socket exists but not connected — wait for the "connect" event which will re-emit subscribe
     socket.connect();
   }
 }
@@ -237,7 +259,7 @@ export function unsubscribeFromQueue(queueOrganizationUniqueId: string, queueDat
     if (existing.refCount <= 0) {
       activeSubscriptions.delete(key);
       if (socket?.connected) {
-        socket.emit("queue:unsubscribe", { queueOrganizationUniqueId, queueDate });
+        emitUnsubscribe(socket, { queueOrganizationUniqueId, queueDate });
       }
     }
   }
