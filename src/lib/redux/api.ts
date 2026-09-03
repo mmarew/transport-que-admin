@@ -37,8 +37,6 @@ const rawBaseQuery = fetchBaseQuery({
       const cleanToken = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
       headers.set("Authorization", cleanToken);
     }
-    headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
-    headers.set("Pragma", "no-cache");
     return headers;
   },
 });
