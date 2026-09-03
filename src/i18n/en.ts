@@ -216,6 +216,7 @@ export const en = {
     dispatch: "Dispatch",
     driver: "Driver",
     phone: "Phone",
+    address: "Address",
     joined: "Joined",
     status: "Status",
     action: "Action",

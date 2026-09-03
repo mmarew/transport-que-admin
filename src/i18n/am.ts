@@ -216,6 +216,7 @@ export const am = {
     dispatch: "አሰማራ",
     driver: "አሽከርካሪ",
     phone: "ስልክ ቁጥር",
+    address: "አድራሻ",
     joined: "የገባበት ሰዓት",
     status: "ሁኔታ",
     action: "እርምጃ",
