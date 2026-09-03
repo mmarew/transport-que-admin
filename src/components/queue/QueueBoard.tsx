@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Plus, UserPlus, Play, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { connectSocket, onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
@@ -61,7 +61,10 @@ export function QueueBoard({
   } | null>(null);
   const [overrideEntry, setOverrideEntry] = useState<DriverQueueEntry | null>(null);
   const [cancelEntry, setCancelEntry] = useState<DriverQueueEntry | null>(null);
-  const [viewMode, setViewMode] = useState<"byType" | "all">("byType");
+  const onRefetchRef = useRef(onRefetch);
+  useEffect(() => {
+    onRefetchRef.current = onRefetch;
+  }, [onRefetch]);
 
   useEffect(() => {
     const s = connectSocket();
@@ -77,7 +80,7 @@ export function QueueBoard({
     subscribeToQueue(queueOrganizationUniqueId);
     const offEvent = onQueueEvent(() => {
       setSocketConnected(true);
-      onRefetch?.();
+      onRefetchRef.current?.();
     });
 
     return () => {
