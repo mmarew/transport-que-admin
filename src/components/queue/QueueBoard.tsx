@@ -41,6 +41,7 @@ export function QueueBoard({
   origin,
   status,
   isLoading,
+  onRefetch,
   onBack,
 }: QueueBoardProps) {
   const { t } = useTranslation();
