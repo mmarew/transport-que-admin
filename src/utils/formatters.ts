@@ -178,6 +178,25 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     raw.phone ||
     "—";
 
+  const rawAddress =
+    driverObj.address ||
+    driverObj.city ||
+    driverObj.location ||
+    driverObj.driverAddress ||
+    driverObj.user?.address ||
+    driverObj.driverUser?.address ||
+    q.driverAddress ||
+    q.address ||
+    raw.driverAddress ||
+    raw.address ||
+    "";
+
+  let driverAddress: string | undefined = undefined;
+  if (rawAddress && typeof rawAddress === "string") {
+    const city = extractCity(rawAddress);
+    driverAddress = city ? `${city}, Ethiopia` : rawAddress;
+  }
+
   const vehicleTypeUniqueId =
     vehicleObj.vehicleTypeUniqueId ||
     driverObj.vehicleTypeUniqueId ||
@@ -206,6 +225,7 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     driverUserUniqueId,
     driverName,
     driverPhoneNumber,
+    driverAddress,
     vehicleTypeUniqueId,
     vehicleTypeName,
     shipperRequestUniqueId,

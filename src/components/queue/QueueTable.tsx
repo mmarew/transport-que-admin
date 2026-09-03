@@ -58,7 +58,16 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
                 <td className="qb-th-num">
                   <span className="qb-num-circle">{num}</span>
                 </td>
-                <td className="qb-driver-name">{entry.driverName}</td>
+                <td className="qb-driver-name">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <span style={{ fontWeight: 600, color: "#0f172a" }}>{entry.driverName}</span>
+                    {entry.driverAddress && (
+                      <span style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 400 }}>
+                        {entry.driverAddress}
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className="qb-time-text">{entry.driverPhoneNumber}</td>
                 <td className="qb-time-text">{joinedTime}</td>
                 <td>
@@ -114,7 +123,16 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
                 <td className="qb-th-num">
                   <span className="qb-num-circle">{num}</span>
                 </td>
-                <td className="qb-driver-name">{entry.driverName}</td>
+                <td className="qb-driver-name">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <span style={{ fontWeight: 600, color: "#0f172a" }}>{entry.driverName}</span>
+                    {entry.driverAddress && (
+                      <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 400 }}>
+                        {entry.driverAddress}
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className="qb-time-text">{joinedTime}</td>
                 <td>
                   <span className={`qb-status-text ${statusKey}`}>{statusLabel}</span>
