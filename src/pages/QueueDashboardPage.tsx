@@ -286,7 +286,7 @@ export function QueueDashboardPage() {
                 longitude: activeOrg.longitude != null ? Number(activeOrg.longitude) : null,
                 description: activeOrg.queueOrganizationAddress,
               }}
-              status={queueStatusData?.data}
+              status={queueStatusData?.data || (queueStatusData as any)}
               isLoading={statusLoading}
               onRefetch={refetchStatus}
               onBack={() => setActiveOrgId(null)}

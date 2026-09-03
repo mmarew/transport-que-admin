@@ -128,7 +128,7 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     (typeof window !== "undefined" ? window.location.origin : "");
 
   socket = io(socketUrl, {
-    transports: ["websocket"],
+    transports: ["polling", "websocket"],
     autoConnect: true,
     auth: (cb) => {
       const creds = extractCredentials(user);
