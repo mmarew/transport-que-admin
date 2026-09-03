@@ -128,16 +128,15 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     (typeof window !== "undefined" ? window.location.origin : "");
 
   socket = io(socketUrl, {
-    transports: ["polling", "websocket"],
+    transports: ["websocket"],
+    upgrade: false,
     autoConnect: true,
-    auth: (cb) => {
-      const creds = extractCredentials(user);
-      cb({
-        user: creds.userType,
-        phoneNumber: creds.phoneNumber || "",
-        token: creds.rawToken || creds.token,
-        authorization: creds.token,
-      });
+    auth: {
+      user: userType,
+      phoneNumber: phoneNumber || "",
+      token: rawToken || token,
+      authorization: token,
+      Authorization: token,
     },
     reconnection: true,
     reconnectionAttempts: Infinity,
