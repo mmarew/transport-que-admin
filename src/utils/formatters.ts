@@ -77,15 +77,26 @@ export function normalizeOrgList(rawData: unknown): QueueOrgListItem[] {
 export function normalizeQueueEntry(raw: any): DriverQueueEntry {
   if (!raw || typeof raw !== "object") return raw;
   const q = raw.queue && typeof raw.queue === "object" ? raw.queue : raw;
-  const driver =
-    raw.driverRequests && typeof raw.driverRequests === "object"
-      ? raw.driverRequests
-      : raw.driver && typeof raw.driver === "object"
-      ? raw.driver
-      : raw.driverUser && typeof raw.driverUser === "object"
-      ? raw.driverUser
-      : {};
-  const vehicle = driver.vehicleOfDriver || raw.vehicleOfDriver || raw.vehicle || {};
+  const driverObj =
+    raw.driver ||
+    raw.driverUser ||
+    raw.driverRequests ||
+    raw.vehicleDriver ||
+    raw.vehicleDriver?.driverUser ||
+    raw.vehicleDriver?.driver ||
+    raw.user ||
+    q.driver ||
+    q.driverUser ||
+    q.vehicleDriver ||
+    {};
+
+  const vehicleObj =
+    driverObj.vehicleOfDriver ||
+    driverObj.vehicle ||
+    raw.vehicleOfDriver ||
+    raw.vehicle ||
+    q.vehicle ||
+    {};
 
   const queueUniqueId =
     q.queueUniqueId ||
@@ -99,49 +110,90 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     raw.queueId ||
     "";
 
-  const queueNumber = Number(q.queueNumber ?? q.position ?? raw.queueNumber ?? raw.position ?? 1);
+  const queueNumber = Number(
+    q.queueNumber ?? q.position ?? raw.queueNumber ?? raw.position ?? 1
+  );
+
   const joinedAt =
-    q.joinedAt || q.createdAt || q.queueCreatedAt || raw.joinedAt || raw.createdAt || new Date().toISOString();
-  const status = (String(q.status || raw.status || "waiting").toLowerCase()) as any;
+    q.joinedAt ||
+    q.createdAt ||
+    q.queueCreatedAt ||
+    q.date ||
+    raw.joinedAt ||
+    raw.createdAt ||
+    raw.queueCreatedAt ||
+    raw.date ||
+    driverObj.createdAt ||
+    new Date().toISOString();
+
+  const status = (String(
+    q.status || raw.status || driverObj.status || q.queueStatus || "waiting"
+  ).toLowerCase()) as any;
 
   const vehicleDriverUniqueId =
-    q.vehicleDriverUniqueId || raw.vehicleDriverUniqueId || driver.vehicleDriverUniqueId || "";
+    q.vehicleDriverUniqueId ||
+    raw.vehicleDriverUniqueId ||
+    driverObj.vehicleDriverUniqueId ||
+    driverObj.uniqueId ||
+    "";
+
   const driverUserUniqueId =
-    q.driverUserUniqueId || raw.driverUserUniqueId || driver.userUniqueId || driver.driverUserUniqueId || "";
+    q.driverUserUniqueId ||
+    raw.driverUserUniqueId ||
+    driverObj.userUniqueId ||
+    driverObj.driverUserUniqueId ||
+    driverObj.id ||
+    "";
 
   const driverName =
-    driver.fullName ||
-    driver.name ||
-    driver.driverName ||
+    driverObj.fullName ||
+    driverObj.name ||
+    driverObj.driverName ||
+    driverObj.driverFullName ||
+    driverObj.user?.fullName ||
+    driverObj.driverUser?.fullName ||
     q.driverName ||
+    q.driverFullName ||
+    q.fullName ||
     raw.driverName ||
+    raw.driverFullName ||
     raw.fullName ||
+    raw.name ||
     "Driver";
 
   const driverPhoneNumber =
-    driver.phoneNumber ||
-    driver.phone ||
-    driver.driverPhoneNumber ||
+    driverObj.phoneNumber ||
+    driverObj.phone ||
+    driverObj.driverPhoneNumber ||
+    driverObj.driverPhone ||
+    driverObj.user?.phoneNumber ||
+    driverObj.driverUser?.phoneNumber ||
     q.driverPhoneNumber ||
+    q.driverPhone ||
+    q.phoneNumber ||
+    q.phone ||
     raw.driverPhoneNumber ||
+    raw.driverPhone ||
     raw.phoneNumber ||
-    "";
+    raw.phone ||
+    "—";
 
   const vehicleTypeUniqueId =
-    vehicle.vehicleTypeUniqueId ||
-    driver.vehicleTypeUniqueId ||
+    vehicleObj.vehicleTypeUniqueId ||
+    driverObj.vehicleTypeUniqueId ||
     q.vehicleTypeUniqueId ||
     raw.vehicleTypeUniqueId ||
     "";
 
   const vehicleTypeName =
-    vehicle.vehicleTypeName ||
-    driver.vehicleTypeName ||
+    vehicleObj.vehicleTypeName ||
+    driverObj.vehicleTypeName ||
     q.vehicleTypeName ||
     raw.vehicleTypeName ||
     undefined;
 
-  const shipperRequestUniqueId = q.shipperRequestUniqueId || raw.shipperRequestUniqueId || null;
+  const shipperRequestUniqueId =
+    q.shipperRequestUniqueId || raw.shipperRequestUniqueId || null;
 
   return {
     queueUniqueId,
