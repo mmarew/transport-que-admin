@@ -35,7 +35,7 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
 
   return (
     <>
-      {/* ── Desktop Table: 6 columns with phone + text action buttons ── */}
+      {/* ── Desktop Table: 7 columns with phone + address + text action buttons ── */}
       <div className="qb-table-responsive qb-table--desktop">
         <table className="qb-table-grid">
           <thead>
@@ -43,6 +43,7 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
               <th className="qb-th-num">#</th>
               <th>{t("queue.driver")}</th>
               <th>{t("queue.phone")}</th>
+              <th>{t("queue.address", "Address")}</th>
               <th>{t("queue.joined")}</th>
               <th>{t("queue.status")}</th>
               <th style={{ textAlign: "center", width: "220px" }}>{t("queue.action")}</th>
@@ -51,24 +52,18 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="qb-empty-row-text">{t("queue.noDrivers")}</td>
+                <td colSpan={7} className="qb-empty-row-text">{t("queue.noDrivers")}</td>
               </tr>
             ) : rows.map(({ entry, statusKey, statusLabel, num, joinedTime, key }) => (
               <tr key={key}>
                 <td className="qb-th-num">
                   <span className="qb-num-circle">{num}</span>
                 </td>
-                <td className="qb-driver-name">
-                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                    <span style={{ fontWeight: 600, color: "#0f172a" }}>{entry.driverName}</span>
-                    {entry.driverAddress && (
-                      <span style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 400 }}>
-                        {entry.driverAddress}
-                      </span>
-                    )}
-                  </div>
-                </td>
+                <td className="qb-driver-name">{entry.driverName}</td>
                 <td className="qb-time-text">{entry.driverPhoneNumber}</td>
+                <td className="qb-time-text" style={{ color: "#334155", fontWeight: 500 }}>
+                  {entry.driverAddress || "—"}
+                </td>
                 <td className="qb-time-text">{joinedTime}</td>
                 <td>
                   <span className={`qb-status-text ${statusKey}`}>{statusLabel}</span>
