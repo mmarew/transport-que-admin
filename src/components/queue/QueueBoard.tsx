@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Plus, UserPlus, Play, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { connectSocket, onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
+import { connectSocket, getSocket, onQueueEvent, subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import { useListVehicleTypesQuery } from "../../lib/redux/api";
 import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
@@ -183,12 +183,19 @@ export function QueueBoard({
       <div className="qb-header-section">
         <div className="qb-title-group">
           <div className="qb-title-row">
-            <span className="qb-live-dot-indicator" title={socketConnected ? "Live" : "Connecting"} />
-            <h1 className="qb-title-text">{t("queue.liveQueue")}</h1>
-            <span className={`qb-live-badge ${socketConnected ? "live" : "connecting"}`}>
-              <span className="qb-live-badge-dot" />
-              {socketConnected ? t("queue.live") : t("queue.connecting")}
-            </span>
+            {(() => {
+              const isLive = socketConnected || (getSocket()?.connected ?? false) || Boolean(status);
+              return (
+                <>
+                  <span className="qb-live-dot-indicator" title={isLive ? "Live" : "Connecting"} />
+                  <h1 className="qb-title-text">{t("queue.liveQueue")}</h1>
+                  <span className={`qb-live-badge ${isLive ? "live" : "connecting"}`}>
+                    <span className="qb-live-badge-dot" />
+                    {isLive ? t("queue.live") : t("queue.connecting")}
+                  </span>
+                </>
+              );
+            })()}
           </div>
           <p className="qb-subtitle-text">{subtitle}</p>
         </div>

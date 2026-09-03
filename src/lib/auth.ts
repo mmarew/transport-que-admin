@@ -15,7 +15,29 @@ export interface StoredAuth {
 export function getStoredAuth(): StoredAuth | null {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as StoredAuth) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.token) return parsed as StoredAuth;
+    }
+
+    const rawToken =
+      localStorage.getItem("token") ||
+      localStorage.getItem("jwt") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("access_token");
+
+    if (rawToken) {
+      let userData: any = {};
+      const userRaw = localStorage.getItem("user") || localStorage.getItem("userData");
+      if (userRaw) {
+        try {
+          userData = JSON.parse(userRaw);
+        } catch {}
+      }
+      return { token: rawToken, userData };
+    }
+
+    return null;
   } catch {
     return null;
   }

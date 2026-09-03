@@ -55,7 +55,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
 export const api = createApi({
   reducerPath: "api",
-  refetchOnFocus: true,
+  refetchOnFocus: false,
   refetchOnReconnect: true,
   keepUnusedDataFor: 300,
   baseQuery: baseQueryWithReauth,

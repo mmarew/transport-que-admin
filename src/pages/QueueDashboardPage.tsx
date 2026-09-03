@@ -22,7 +22,7 @@ import { createQueueOrganization } from "../services/organization.service";
 import { useQueueAdminStore } from "../store/queueAdminStore";
 import { QueueBoard } from "../components/queue/QueueBoard";
 import { CreateOrgModal } from "../components/queue/CreateOrgModal";
-import { subscribeToQueue, unsubscribeFromQueue, onQueueEvent } from "../lib/socket";
+import { subscribeToQueue, unsubscribeFromQueue } from "../lib/socket";
 import type { QueueOrgListItem, QueueOrganization, QueueOrgType } from "../types/queue";
 import { extractCity, normalizeOrgList } from "../utils/formatters";
 import "./OrganizationsPage.css";
@@ -105,6 +105,15 @@ export function QueueDashboardPage() {
     };
   }, [activeOrgId, orgList]);
 
+  const {
+    data: queueStatusData,
+    isLoading: statusLoading,
+    refetch: refetchStatus,
+  } = useGetQueueStatusQuery(
+    { queueOrganizationUniqueId: activeOrgId || "" },
+    { skip: !activeOrgId },
+  );
+
   const activeOrg = useMemo(() => {
     if (!activeOrgId) return null;
     return orgList.find(
@@ -114,15 +123,6 @@ export function QueueDashboardPage() {
 
   const statusStr = String(activeOrg?.approvalStatus || "").toLowerCase();
   const isApproved = !activeOrg || statusStr === "approved" || statusStr === "active" || activeOrg?.queueEnabled === 1;
-
-  const {
-    data: queueStatusData,
-    isLoading: statusLoading,
-    refetch: refetchStatus,
-  } = useGetQueueStatusQuery(
-    { queueOrganizationUniqueId: activeOrgId || "" },
-    { skip: !activeOrgId },
-  );
 
   const processedOrgs = useMemo(() => {
     const result = orgList.filter((item) => {

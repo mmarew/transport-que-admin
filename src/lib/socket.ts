@@ -45,23 +45,32 @@ const debouncedInvalidate = (isOrgEvent = false) => {
 
 function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
   const storedAuth = getStoredAuth();
-  const token = storedAuth?.token;
-  const userData = storedAuth?.userData as Record<string, unknown> | undefined;
+  const token =
+    storedAuth?.token ||
+    localStorage.getItem("token") ||
+    localStorage.getItem("jwt") ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("access_token") ||
+    "";
+
+  const userData = (storedAuth?.userData || {}) as Record<string, unknown>;
 
   let phoneNumber =
     user?.phoneNumber ||
     (userData?.phoneNumber as string) ||
     (userData?.phone as string) ||
-    (userData?.driverPhoneNumber as string);
+    (userData?.driverPhoneNumber as string) ||
+    "";
 
   let roleId = userData?.roleId as number | undefined;
 
   if (token && (!phoneNumber || !roleId)) {
     try {
-      const parts = token.replace(/^Bearer\s+/i, "").split(".");
+      const cleanToken = token.replace(/^Bearer\s+/i, "");
+      const parts = cleanToken.split(".");
       if (parts.length === 3) {
         const payload = JSON.parse(atob(parts[1]));
-        if (!phoneNumber) phoneNumber = payload.phoneNumber || payload.phone;
+        if (!phoneNumber) phoneNumber = payload.phoneNumber || payload.phone || "";
         if (!roleId) roleId = payload.roleId;
       }
     } catch {
@@ -70,8 +79,8 @@ function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
   }
 
   const userType = roleId === 3 || roleId === 6 ? "admin" : "queueOrgAdmin";
-  const formattedToken = token ? (token.startsWith("Bearer ") ? token : `Bearer ${token}`) : undefined;
-  const rawToken = token ? token.replace(/^Bearer\s+/i, "") : undefined;
+  const formattedToken = token ? (token.startsWith("Bearer ") ? token : `Bearer ${token}`) : "";
+  const rawToken = token ? token.replace(/^Bearer\s+/i, "") : "";
 
   return { token: formattedToken, rawToken, phoneNumber, userType };
 }
@@ -82,9 +91,6 @@ function emitSubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string; q
     queueDate: sub.queueDate,
   };
   sock.emit("queue:subscribe", payload);
-  sock.emit("subscribe", payload);
-  sock.emit("join", payload);
-  sock.emit("joinQueue", payload);
 }
 
 function emitUnsubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string; queueDate?: string }) {
@@ -93,31 +99,27 @@ function emitUnsubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string;
     queueDate: sub.queueDate,
   };
   sock.emit("queue:unsubscribe", payload);
-  sock.emit("unsubscribe", payload);
-  sock.emit("leave", payload);
 }
 
 export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | null {
   const { token, rawToken, phoneNumber, userType } = extractCredentials(user);
 
-  if (!token) {
-    console.warn("[WebSocket] No token found — skipping WebSocket connection until logged in");
-    return socket;
-  }
-
   if (socket) {
-    socket.io.opts.transports = ["websocket"];
     socket.auth = {
       user: userType,
       phoneNumber: phoneNumber || "",
-      token: rawToken || token,
+      token: token,
+      rawToken: rawToken,
       authorization: token,
+      Authorization: token,
     };
     if (socket.connected) {
       useQueueAdminStore.getState().setSocketConnected(true);
       return socket;
     }
-    socket.connect();
+    if (!socket.active && !socket.connected) {
+      socket.connect();
+    }
     return socket;
   }
 
@@ -129,19 +131,20 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
 
   socket = io(socketUrl, {
     transports: ["websocket"],
-    upgrade: false,
     autoConnect: true,
     auth: {
       user: userType,
       phoneNumber: phoneNumber || "",
-      token: rawToken || token,
+      token: token,
+      rawToken: rawToken,
       authorization: token,
       Authorization: token,
     },
+    extraHeaders: token ? { Authorization: token } : undefined,
     reconnection: true,
     reconnectionAttempts: Infinity,
-    reconnectionDelay: 2000,
-    reconnectionDelayMax: 10000,
+    reconnectionDelay: 1500,
+    reconnectionDelayMax: 5000,
     timeout: 20000,
   });
 
