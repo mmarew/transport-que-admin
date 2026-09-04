@@ -308,8 +308,11 @@ export function QueueDashboardPage() {
             <div className="org-search-box">
               <Search size={16} className="search-icon" />
               <input
+                id="dashboard-search-orgs"
+                name="searchOrgs"
                 type="text"
                 placeholder={t("dashboard.searchOrgs")}
+                aria-label={t("dashboard.searchOrgs")}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);

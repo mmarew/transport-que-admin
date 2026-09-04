@@ -189,10 +189,11 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
         <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
           {/* Organization Name */}
           <div className="com-field-group">
-            <label className="com-label">
+            <label className="com-label" htmlFor="create-org-name">
               {t("org.nameLabel")} <span style={{ color: "#E80000" }}>*</span>
             </label>
             <input
+              id="create-org-name"
               {...register("queueOrganizationName")}
               placeholder="e.g. Addis Freight Terminal"
               className="com-input"
@@ -204,11 +205,15 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
 
           {/* Organization Type */}
           <div className="com-field-group">
-            <label className="com-label">
+            <label className="com-label" htmlFor="create-org-type">
               {t("org.typeLabel")} <span style={{ color: "#E80000" }}>*</span>
             </label>
             <div className="com-input-wrap">
-              <select {...register("queueOrganizationType")} className="com-input com-select has-icon-right">
+              <select
+                id="create-org-type"
+                {...register("queueOrganizationType")}
+                className="com-input com-select has-icon-right"
+              >
                 <option value="">{t("org.selectType")}...</option>
                 {QUEUE_ORG_TYPES.map((typeKey) => (
                   <option key={typeKey} value={typeKey}>
@@ -237,14 +242,17 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
 
           {/* Address */}
           <div className="com-field-group" ref={dropdownRef}>
-            <label className="com-label">
+            <label className="com-label" htmlFor="create-org-address-search">
               {t("org.addressLabel")} <span style={{ color: "#E80000" }}>*</span>
             </label>
             <div className="com-input-wrap">
               <input
+                id="create-org-address-search"
+                name="orgAddressSearch"
                 value={addressValue ?? ""}
                 onChange={handleAddressInput}
                 placeholder={t("org.searchAddressPlaceholder")}
+                aria-label={t("org.searchAddressPlaceholder")}
                 className="com-input"
                 autoComplete="off"
                 onFocus={() => {
