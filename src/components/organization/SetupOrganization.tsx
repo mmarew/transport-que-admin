@@ -197,18 +197,8 @@ export const SetupOrganization: React.FC = () => {
       {/* Left: hero image (desktop only) */}
       <div className="login-hero">
         <img src={heroImg} alt="Transport Hero" />
-        <div className="desktop-lang-selector" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="desktop-lang-selector">
           <LanguageSelector />
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="lang-selector-btn"
-            style={{ display: "inline-flex", alignItems: "center", gap: "5px", cursor: "pointer" }}
-            title={t("common.logout")}
-          >
-            <LogOut size={14} />
-            <span>{t("common.logout")}</span>
-          </button>
         </div>
       </div>
 
@@ -216,21 +206,21 @@ export const SetupOrganization: React.FC = () => {
       <div className="login-form-panel">
         {/* Mobile hero */}
         <div className="login-mobile-hero">
-          <div className="login-mobile-title-row">
+          <div className="login-mobile-title-row" style={{ position: "relative" }}>
             <span className="login-app-title">{t("auth.loginTitle")}</span>
-          </div>
-          <div className="login-mobile-lang-row" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-            <LanguageSelector />
             <button
               type="button"
               onClick={handleLogout}
-              className="lang-selector-btn"
-              style={{ display: "inline-flex", alignItems: "center", gap: "5px", cursor: "pointer" }}
+              className="register-logout-btn"
+              aria-label={t("common.logout")}
               title={t("common.logout")}
+              style={{ position: "absolute", right: "1.5rem" }}
             >
-              <LogOut size={14} />
-              <span>{t("common.logout")}</span>
+              <LogOut size={22} />
             </button>
+          </div>
+          <div className="login-mobile-lang-row">
+            <LanguageSelector />
           </div>
           <div className="login-mobile-hero-text" style={{ paddingBottom: "1.5rem" }}>
             <h1>{t("org.setupTitle")}</h1>
@@ -242,6 +232,15 @@ export const SetupOrganization: React.FC = () => {
           <div className="login-header login-header--desktop" style={{ position: "relative" }}>
             <h1>{t("org.setupTitle")}</h1>
             <p>{t("org.setupSubtitle")}</p>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="register-logout-btn-desktop"
+              aria-label={t("common.logout")}
+              title={t("common.logout")}
+            >
+              <LogOut size={22} />
+            </button>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -360,23 +359,6 @@ export const SetupOrganization: React.FC = () => {
               )}
             </button>
 
-            <div className="login-footer form-group-mb login-footer-spaced">
-              <p style={{ color: "#64748b", fontSize: "0.8rem", textAlign: "center", margin: "0 0 0.5rem 0" }}>
-                {t("org.pendingReview")}
-              </p>
-              <div style={{ fontSize: "0.85rem", textAlign: "center", color: "#64748b" }}>
-                {t("org.switchAccount")}{" "}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleLogout();
-                  }}
-                >
-                  {t("common.logout")}
-                </a>
-              </div>
-            </div>
           </form>
         </div>
       </div>

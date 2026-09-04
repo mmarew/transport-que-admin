@@ -13,19 +13,19 @@ import {
   Plus,
   Check,
 } from "lucide-react";
-import DashboardLayout from "../components/layout/DashboardLayout";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 import {
   useListQueueOrganizationsQuery,
   useGetQueueStatusQuery,
-} from "../lib/redux/api";
-import { createQueueOrganization } from "../services/organization.service";
-import { useQueueAdminStore } from "../store/queueAdminStore";
-import { QueueBoard } from "../components/queue/QueueBoard";
-import { CreateOrgModal } from "../components/queue/CreateOrgModal";
-import { subscribeToQueue, unsubscribeFromQueue } from "../lib/socket";
-import type { QueueOrgListItem, QueueOrganization, QueueOrgType } from "../types/queue";
-import { extractCity, normalizeOrgList } from "../utils/formatters";
-import "./OrganizationsPage.css";
+} from "../../lib/redux/api";
+import { createQueueOrganization } from "../../services/organization.service";
+import { useQueueAdminStore } from "../../store/queueAdminStore";
+import { QueueBoard } from "../../components/queue/QueueBoard";
+import { CreateOrgModal } from "../../components/queue/CreateOrgModal";
+import { subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
+import type { QueueOrgListItem, QueueOrganization, QueueOrgType } from "../../types/queue";
+import { extractCity, normalizeOrgList } from "../../utils/formatters";
+import "../organizations/OrganizationsPage.css";
 
 const PAGE_SIZE = 8;
 
@@ -36,6 +36,17 @@ export function QueueDashboardPage() {
 
   const urlOrgId = searchParams.get("orgId");
   const [activeOrgId, setActiveOrgId] = useState<string | null>(urlOrgId || null);
+
+  // Sync state if URL changes externally (e.g. Back button, sidebar navigation)
+  useEffect(() => {
+    if (urlOrgId && urlOrgId !== activeOrgId) {
+      setActiveOrgId(urlOrgId);
+      setSelectedOrgId(urlOrgId);
+    } else if (!urlOrgId && activeOrgId) {
+      setActiveOrgId(null);
+      setSelectedOrgId("");
+    }
+  }, [urlOrgId]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<"name" | "type" | "city" | "status" | "enabled">("name");
@@ -80,6 +91,7 @@ export function QueueDashboardPage() {
       setSelectedOrgId(activeOrgId);
     } else {
       setSearchParams({}, { replace: true });
+      setSelectedOrgId("");
     }
   }, [activeOrgId, setSearchParams, setSelectedOrgId]);
 
@@ -189,7 +201,16 @@ export function QueueDashboardPage() {
       );
       return;
     }
-    setActiveOrgId(org.queueOrganizationUniqueId);
+    const orgId = org.queueOrganizationUniqueId;
+    setActiveOrgId(orgId);
+    setSelectedOrgId(orgId);
+    setSearchParams({ orgId }, { replace: true });
+  };
+
+  const handleBackToOrgs = () => {
+    setActiveOrgId(null);
+    setSelectedOrgId("");
+    setSearchParams({}, { replace: true });
   };
 
   const handleCreateOrg = async (data: {
@@ -208,7 +229,7 @@ export function QueueDashboardPage() {
     <DashboardLayout
       title={activeOrg ? undefined : t("dashboard.title")}
       subtitle={activeOrg ? undefined : t("dashboard.subtitle")}
-      activeTab="dashboard"
+      activeTab={activeOrg ? "liveQueue" : "dashboard"}
       actions={
         !activeOrgId ? (
           <button
@@ -231,7 +252,7 @@ export function QueueDashboardPage() {
                 <h3>Approval Pending</h3>
                 <p>This organization is awaiting administrator approval. The live queue board will be available once approved.</p>
               </div>
-              <button type="button" className="org-approval-back-btn" onClick={() => setActiveOrgId(null)}>
+              <button type="button" className="org-approval-back-btn" onClick={handleBackToOrgs}>
                 <ArrowLeft size={16} /> {t("queue.backToOrgs")}
               </button>
             </div>
@@ -244,7 +265,7 @@ export function QueueDashboardPage() {
                 <h3>Organization Rejected</h3>
                 <p>This organization was rejected and cannot operate a live queue.</p>
               </div>
-              <button type="button" className="org-approval-back-btn" onClick={() => setActiveOrgId(null)}>
+              <button type="button" className="org-approval-back-btn" onClick={handleBackToOrgs}>
                 <ArrowLeft size={16} /> {t("queue.backToOrgs")}
               </button>
             </div>
@@ -257,7 +278,7 @@ export function QueueDashboardPage() {
                 <h3>Organization Suspended</h3>
                 <p>Queue operations are temporarily suspended for this organization.</p>
               </div>
-              <button type="button" className="org-approval-back-btn" onClick={() => setActiveOrgId(null)}>
+              <button type="button" className="org-approval-back-btn" onClick={handleBackToOrgs}>
                 <ArrowLeft size={16} /> {t("queue.backToOrgs")}
               </button>
             </div>
@@ -277,7 +298,7 @@ export function QueueDashboardPage() {
               status={queueStatusData?.data || (queueStatusData as any)}
               isLoading={statusLoading}
               onRefetch={refetchStatus}
-              onBack={() => setActiveOrgId(null)}
+              onBack={handleBackToOrgs}
             />
           )}
         </div>
@@ -391,7 +412,7 @@ export function QueueDashboardPage() {
                       <th onClick={() => handleSort("enabled")} style={{ cursor: "pointer" }}>
                         <span className="org-th-sortable">{t("dashboard.enabled")} <ChevronDown size={13} /></span>
                       </th>
-                      <th style={{ textAlign: "center" }}>{t("queue.action")}</th>
+                      <th className="org-th-action">{t("queue.action")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -417,13 +438,13 @@ export function QueueDashboardPage() {
                             </span>
                           </td>
                           <td>{isEnabled}</td>
-                          <td>
+                          <td className="org-td-action">
                             <button
                               type="button"
                               className={`org-manage-link ${!isOrgApproved ? "disabled" : ""}`}
                               onClick={() => handleManage(org)}
                               disabled={!isOrgApproved}
-                              title={!isOrgApproved ? `Cannot open queue: Organization is ${org.approvalStatus}` : "Manage Queue"}
+                              title={!isOrgApproved ? `Cannot open queue: Organization is ${org.approvalStatus}` : "Manage Live Queue"}
                             >
                               {t("dashboard.manage", "Manage")}
                             </button>

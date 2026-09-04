@@ -281,6 +281,7 @@
 .qb-table--desktop {
   display: block;
 }
+
 .qb-table--mobile {
   display: none;
 }
@@ -592,6 +593,7 @@
   .qb-table--desktop {
     display: none;
   }
+
   .qb-table--mobile {
     display: block;
   }

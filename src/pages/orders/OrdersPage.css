@@ -1,0 +1,898 @@
+/* ── Orders / Shipper Requests Page Styles ────────────────────────────── */
+
+.orders-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Back to Organizations Link ── */
+.orders-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0B4D6D;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: -0.25rem;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  align-self: flex-start;
+}
+
+.orders-back-link:hover {
+  opacity: 0.8;
+  transform: translateX(-2px);
+}
+
+/* ── Header Row ── */
+.orders-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.orders-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.orders-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.orders-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.orders-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #ecfdf5;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.orders-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #16a34a;
+}
+
+.orders-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.orders-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.orders-btn-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #0B4D6D;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.55rem 1.125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.orders-btn-new:hover {
+  background-color: #083c55;
+  transform: translateY(-1px);
+}
+
+/* ── Filter Tabs: Ongoing | Complete ── */
+.orders-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+.orders-tab-pill {
+  padding: 0.45rem 1.125rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.orders-tab-pill.active {
+  background-color: #0B4D6D;
+  color: #ffffff;
+  border-color: #0B4D6D;
+}
+
+.orders-tab-pill:not(.active) {
+  background-color: #f8fafc;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+
+.orders-tab-pill:not(.active):hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+/* ── Table Card ── */
+.orders-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.orders-mobile-card-list {
+  display: none;
+}
+
+.orders-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.orders-table thead {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.orders-table th {
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.th-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #475569;
+  transition: color 0.15s ease;
+}
+
+.th-sortable:hover .th-content {
+  color: #0B4D6D;
+}
+
+.th-num {
+  width: 48px;
+  text-align: center;
+}
+
+.th-action {
+  text-align: center;
+  width: 90px;
+}
+
+.orders-row {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.orders-row:last-child {
+  border-bottom: none;
+}
+
+.orders-row:hover {
+  background-color: #f8fafc;
+}
+
+.orders-table td {
+  padding: 0.9rem 1rem;
+  color: #334155;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.td-num {
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+  width: 48px;
+}
+
+.td-shipper {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.orders-shipper-desktop,
+.orders-loc-desktop {
+  display: inline;
+}
+
+.orders-shipper-mobile,
+.orders-loc-mobile {
+  display: none;
+}
+
+.td-type {
+  color: #475569;
+}
+
+.td-vehicletype {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.td-item {
+  color: #475569;
+}
+
+.td-location {
+  color: #475569;
+}
+
+.orders-arrow {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.td-quintal {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.td-cost {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.td-action {
+  text-align: center;
+}
+
+.orders-actions-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+.orders-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  line-height: 1;
+}
+
+.orders-action-btn:hover {
+  transform: scale(1.18);
+  opacity: 0.8;
+}
+
+.orders-action-btn--edit {
+  color: #0B4D6D;
+}
+
+.orders-action-btn--delete {
+  color: #ef4444;
+}
+
+/* ── Empty State ── */
+.orders-empty-cell {
+  text-align: center;
+  padding: 3.5rem 1rem !important;
+}
+
+.orders-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+}
+
+.orders-empty-state svg {
+  color: #94a3b8;
+}
+
+.orders-empty-state p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* ── Modals ── */
+.orders-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.orders-modal-content {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 540px;
+  overflow: hidden;
+  animation: ordersModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.orders-modal-content--sm {
+  max-width: 440px;
+}
+
+@keyframes ordersModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.orders-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.orders-modal-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.orders-modal-subtitle {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0.25rem 0 0;
+}
+
+.orders-modal-close {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.orders-modal-close:hover {
+  color: #0f172a;
+  background-color: #f1f5f9;
+}
+
+.orders-modal-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.orders-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.orders-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.orders-form-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.orders-form-input,
+.orders-form-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.orders-form-input:focus,
+.orders-form-select:focus {
+  border-color: #0B4D6D;
+  box-shadow: 0 0 0 3px rgba(11, 77, 109, 0.15);
+}
+
+.orders-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.orders-modal-btn-cancel {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.orders-modal-btn-cancel:hover {
+  background-color: #f8fafc;
+}
+
+.orders-modal-btn-submit {
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.375rem;
+  border: none;
+  background-color: #0B4D6D;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.orders-modal-btn-submit:hover {
+  background-color: #083c55;
+}
+
+/* ── Delete Modal Elements ── */
+.orders-delete-body {
+  padding: 1.75rem 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.orders-delete-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.orders-delete-highlight {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.orders-modal-btn-delete {
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.375rem;
+  border: none;
+  background-color: #dc2626;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.orders-modal-btn-delete:hover {
+  background-color: #b91c1c;
+}
+
+/* Footer & Pagination */
+.orders-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 0.25rem 0.25rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.orders-pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.orders-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.orders-page-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.orders-page-btn.active {
+  background: var(--primary, #0B4D6D);
+  border-color: var(--primary, #0B4D6D);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.orders-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Mobile & Responsive Styles ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .orders-page-container {
+    padding: 1rem 0.75rem;
+    margin-bottom: 5.5rem;
+  }
+
+  .orders-header-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .orders-title {
+    font-size: 1.25rem;
+  }
+
+  .orders-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .orders-header-actions {
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .orders-btn-new {
+    width: auto;
+    justify-content: center;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.8rem;
+    border-radius: 0.45rem;
+    white-space: nowrap;
+    gap: 0.35rem;
+  }
+
+  .orders-btn-new svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .orders-tabs {
+    width: auto;
+    gap: 0.4rem;
+  }
+
+  .orders-tab-pill {
+    flex: initial;
+    text-align: center;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8rem;
+  }
+
+  /* Show secondary item & vehicle info under shipper name */
+  .orders-mobile-subtext {
+    display: block;
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 400;
+  }
+
+  /* Hide desktop table on mobile */
+  .orders-table-card {
+    display: none !important;
+  }
+
+  /* Show rich, fully legible compact mobile order cards */
+  .orders-mobile-card-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.55rem;
+    width: 100%;
+  }
+
+  .orders-m-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.625rem;
+    padding: 0.65rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  .orders-m-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .orders-m-shipper-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .orders-m-num {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .orders-m-shipper {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .orders-m-type-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #0B4D6D;
+    background: #f0f7fa;
+    padding: 0 5px;
+    border-radius: 3px;
+    border: 1px solid #bae6fd;
+    flex-shrink: 0;
+  }
+
+  .orders-m-cost {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .orders-m-cost-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .orders-m-cost-cur {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .orders-m-route {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: #475569;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+
+  .orders-m-city {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .orders-m-arrow {
+    color: #94a3b8;
+    flex-shrink: 0;
+  }
+
+  .orders-m-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.25rem;
+    border-top: 1px solid #f8fafc;
+    gap: 0.5rem;
+  }
+
+  .orders-m-tags {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .orders-m-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .orders-m-tag.item {
+    color: #0369a1;
+    background: #e0f2fe;
+    font-weight: 600;
+  }
+
+  .orders-m-tag.quintal {
+    color: #92400e;
+    background: #fef3c7;
+    font-weight: 600;
+  }
+
+  .orders-m-tag.vehicle {
+    color: #475569;
+    background: #f1f5f9;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .orders-m-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .orders-m-btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #f0f7fa;
+    color: #0B4D6D;
+    border: 1px solid #bae6fd;
+    border-radius: 5px;
+    padding: 0.22rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .orders-m-btn-edit:hover {
+    background: #e0f2fe;
+  }
+
+  .orders-m-btn-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+    border-radius: 5px;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .orders-m-btn-delete:hover {
+    background: #fee2e2;
+  }
+
+  .orders-mobile-empty {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  .orders-table-footer {
+    flex-direction: column;
+    gap: 0.85rem;
+    align-items: center;
+    text-align: center;
+    padding: 1rem 0 0.5rem;
+  }
+
+  /* Modals on mobile */
+  .orders-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .orders-modal-content {
+    max-width: 95vw;
+    margin: auto;
+  }
+}

@@ -132,6 +132,35 @@
   font-weight: 600;
 }
 
+.sidebar-link--disabled {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+}
+
+.sidebar-link--disabled:hover {
+  background-color: transparent !important;
+  color: #cce3f0 !important;
+}
+
+.sidebar-link-badge {
+  margin-left: auto;
+  background-color: #38bdf8;
+  color: #075985;
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-link.active .sidebar-link-badge {
+  background-color: #38bdf8;
+  color: #0f172a;
+}
+
 .sidebar-bottom {
   display: flex;
   flex-direction: column;
