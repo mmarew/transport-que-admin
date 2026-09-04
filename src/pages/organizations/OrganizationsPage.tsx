@@ -197,8 +197,11 @@ export function OrganizationsPage() {
           <div className="org-search-box">
             <Search size={16} className="search-icon" />
             <input
+              id="organizations-search-input"
+              name="searchOrgs"
               type="text"
               placeholder={t("dashboard.searchOrgs", "Search Organizations")}
+              aria-label={t("dashboard.searchOrgs", "Search Organizations")}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);

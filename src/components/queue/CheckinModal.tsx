@@ -186,6 +186,9 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
               <div className="qm-input-wrap" ref={searchWrapRef}>
                 <Search size={16} className="qm-input-icon" />
                 <input
+                  id="checkin-search-driver"
+                  name="searchVehicleDriver"
+                  aria-label="Search or enter vehicle-driver ID"
                   type="text"
                   value={searchQuery}
                   onFocus={() => setDropdownOpen(true)}
