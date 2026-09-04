@@ -128,3 +128,39 @@
   margin-top: 0.35rem;
   margin-bottom: 0;
 }
+
+/* ── Logout Button (matching transportCompany RegisterCompany) ── */
+.register-logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  margin-left: auto;
+  transition: opacity 0.15s ease;
+}
+
+.register-logout-btn:hover {
+  opacity: 0.8;
+}
+
+.register-logout-btn-desktop {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--primary, #0B4D6D);
+  padding: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.register-logout-btn-desktop:hover {
+  color: #ef4444;
+  transform: scale(1.08);
+}

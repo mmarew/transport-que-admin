@@ -7,17 +7,17 @@ import {
   Building2,
   Check,
 } from "lucide-react";
-import DashboardLayout from "../components/layout/DashboardLayout";
-import MobileHeader from "../components/common/MobileHeader";
-import { OrgQueueDetailsModal } from "../components/queue/OrgQueueDetailsModal";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import MobileHeader from "../../components/common/MobileHeader";
+import { OrgQueueDetailsModal } from "../../components/queue/OrgQueueDetailsModal";
 import {
   useListQueueOrganizationsQuery,
   useGetShipperRequestsQuery,
   useGetQueueStatusQuery,
-} from "../lib/redux/api";
-import { useQueueAdminStore } from "../store/queueAdminStore";
-import type { QueueOrgListItem, QueueOrganization } from "../types/queue";
-import { extractCity } from "../utils/formatters";
+} from "../../lib/redux/api";
+import { useQueueAdminStore } from "../../store/queueAdminStore";
+import type { QueueOrgListItem, QueueOrganization } from "../../types/queue";
+import { extractCity } from "../../utils/formatters";
 import "./ReportsPage.css";
 
 const PAGE_SIZE = 5;

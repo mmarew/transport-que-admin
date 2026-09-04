@@ -252,6 +252,16 @@
   transition: color 0.15s ease, opacity 0.15s ease;
 }
 
+.org-table th.org-th-action {
+  text-align: right;
+  padding-right: 1.75rem;
+}
+
+.org-table td.org-td-action {
+  text-align: right;
+  padding-right: 1.75rem;
+}
+
 .org-manage-link:hover:not(:disabled) {
   color: #002B44;
   text-decoration: none;
@@ -378,6 +388,7 @@
   .org-table td:nth-child(2),
   .org-table th:nth-child(5),
   .org-table td:nth-child(5) {
-    display: none; /* Shows exactly the 4 columns: Organization, City, Status, Action */
+    display: none;
+    /* Shows exactly the 4 columns: Organization, City, Status, Action */
   }
 }

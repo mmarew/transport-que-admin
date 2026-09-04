@@ -22,16 +22,16 @@ import {
   X,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import DashboardLayout from "../components/layout/DashboardLayout";
-import MobileHeader from "../components/common/MobileHeader";
-import { useListQueueOrganizationsQuery } from "../lib/redux/api";
-import { logout } from "../lib/redux/slices/authSlice";
-import { setAppLanguage, getAppLanguage } from "../i18n";
-import { useTheme } from "../contexts/ThemeContext";
-import { useQueueAdminStore } from "../store/queueAdminStore";
-import type { RootState } from "../lib/redux/store";
-import type { QueueOrgListItem } from "../types/queue";
-import { normalizeOrgList } from "../utils/formatters";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import MobileHeader from "../../components/common/MobileHeader";
+import { useListQueueOrganizationsQuery } from "../../lib/redux/api";
+import { logout } from "../../lib/redux/slices/authSlice";
+import { setAppLanguage, getAppLanguage } from "../../i18n";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useQueueAdminStore } from "../../store/queueAdminStore";
+import type { RootState } from "../../lib/redux/store";
+import type { QueueOrgListItem } from "../../types/queue";
+import { normalizeOrgList } from "../../utils/formatters";
 import "./SettingsPage.css";
 
 const readBool = (key: string, fallback: boolean): boolean => {

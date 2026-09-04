@@ -996,3 +996,138 @@ html.dark,
   background-color: #0284c7 !important;
   color: #ffffff !important;
 }
+
+/* ─── Orders Page Dark Theme ─── */
+.dark .orders-page-container {
+  color: #e2e8f0;
+}
+
+.dark .orders-back-link {
+  color: #38bdf8 !important;
+}
+
+.dark .orders-title {
+  color: #f8fafc !important;
+}
+
+.dark .orders-live-badge {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.dark .orders-subtitle {
+  color: #94a3b8 !important;
+}
+
+.dark .orders-tab-pill {
+  color: #94a3b8 !important;
+}
+
+.dark .orders-tab-pill:hover {
+  color: #f8fafc !important;
+  background-color: #1e293b !important;
+}
+
+.dark .orders-tab-pill.active {
+  background-color: #1e293b !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+.dark .orders-table-card {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .orders-table th {
+  background-color: #111827 !important;
+  border-bottom-color: #1f2937 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .orders-table th.th-sortable:hover,
+.dark .orders-table th.th-sortable:hover .th-content svg {
+  color: #38bdf8 !important;
+}
+
+.dark .orders-table td {
+  border-bottom-color: #1f2937 !important;
+  color: #cbd5e1 !important;
+}
+
+.dark .orders-row:hover {
+  background-color: #1e293b !important;
+}
+
+.dark .orders-table .td-shipper {
+  color: #f8fafc !important;
+}
+
+.dark .orders-table .td-type {
+  color: #94a3b8 !important;
+}
+
+.dark .orders-table .td-vehicletype {
+  color: #e2e8f0 !important;
+}
+
+.dark .orders-table .td-quintal,
+.dark .orders-table .td-cost {
+  color: #f8fafc !important;
+}
+
+.dark .orders-action-btn--edit:hover {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+}
+
+.dark .orders-action-btn--delete:hover {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.dark .orders-modal-content {
+  background-color: #111827 !important;
+  border: 1px solid #1f2937 !important;
+  color: #f8fafc !important;
+}
+
+.dark .orders-modal-title {
+  color: #f8fafc !important;
+}
+
+.dark .orders-modal-subtitle {
+  color: #94a3b8 !important;
+}
+
+.dark .orders-form-label {
+  color: #cbd5e1 !important;
+}
+
+.dark .orders-form-input,
+.dark .orders-form-select {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #f8fafc !important;
+}
+
+.dark .orders-modal-footer {
+  border-top-color: #1f2937 !important;
+}
+
+.dark .orders-modal-btn-cancel {
+  border-color: #374151 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .orders-modal-btn-cancel:hover {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .orders-delete-highlight {
+  background-color: #1e293b !important;
+  border-color: #374151 !important;
+  color: #cbd5e1 !important;
+}
+

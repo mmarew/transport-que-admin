@@ -11,16 +11,16 @@ import {
   AlertCircle,
   Check,
 } from "lucide-react";
-import DashboardLayout from "../components/layout/DashboardLayout";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 import {
   useListQueueOrganizationsQuery,
   useCreateQueueOrganizationMutation,
-} from "../lib/redux/api";
-import CreateOrgModal from "../components/queue/CreateOrgModal";
-import { useQueueAdminStore } from "../store/queueAdminStore";
-import { subscribeToQueue, unsubscribeFromQueue } from "../lib/socket";
-import type { QueueOrgListItem } from "../types/queue";
-import { extractCity, normalizeOrgList } from "../utils/formatters";
+} from "../../lib/redux/api";
+import CreateOrgModal from "../../components/queue/CreateOrgModal";
+import { useQueueAdminStore } from "../../store/queueAdminStore";
+import { subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
+import type { QueueOrgListItem } from "../../types/queue";
+import { extractCity, normalizeOrgList } from "../../utils/formatters";
 import "./OrganizationsPage.css";
 
 const PAGE_SIZE = 8;

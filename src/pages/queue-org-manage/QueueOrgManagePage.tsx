@@ -5,29 +5,29 @@ import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Building2, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import parseError from "../utils/parseError";
-import { useAuth } from "../context/AuthContext";
-import { subscribeToQueue, unsubscribeFromQueue } from "../lib/socket";
+import parseError from "../../utils/parseError";
+import { useAuth } from "../../context/AuthContext";
+import { subscribeToQueue, unsubscribeFromQueue } from "../../lib/socket";
 import {
   queueOrgProfileSchema,
   type QueueOrgProfileFormValues,
-} from "../schemas/queue";
+} from "../../schemas/queue";
 import {
   QUEUE_ORG_TYPES,
   type ApprovalStatus,
   type QueueOrganization,
   type QueueOrgMember,
-} from "../types/queue";
-import { QueueBoard } from "../components/queue/QueueBoard";
+} from "../../types/queue";
+import { QueueBoard } from "../../components/queue/QueueBoard";
 import {
   useGetQueueOrganizationQuery,
   useGetQueueStatusQuery,
   useListQueueOrgMembersQuery,
   useUpdateQueueOrganizationMutation,
   useApproveQueueOrganizationMutation,
-} from "../lib/redux/api";
-import DashboardLayout from "../components/layout/DashboardLayout";
-import { normalizeOrg } from "../utils/formatters";
+} from "../../lib/redux/api";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import { normalizeOrg } from "../../utils/formatters";
 import "./QueueOrgManagePage.css";
 
 const ROLE_LABELS: Record<number, string> = {
