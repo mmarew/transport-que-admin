@@ -70,3 +70,20 @@ export function formatRoute(origin: string, destination: string): string {
   if (orig.toLowerCase() === dest.toLowerCase()) return dest;
   return `${orig} → ${dest}`;
 }
+
+export function trimAddress(addr?: string, maxLen = 18): string {
+  if (!addr) return "";
+  const cleaned = addr.trim();
+  const firstSegment = cleaned.split(",")[0].trim();
+  const base = firstSegment || cleaned;
+  if (base.length <= maxLen) return base;
+  return base.slice(0, maxLen).trim() + "…";
+}
+
+export function formatTrimmedRoute(origin?: string, destination?: string): string {
+  const orig = trimAddress(origin) || "Terminal";
+  const dest = trimAddress(destination) || "Destination";
+  if (orig.toLowerCase() === dest.toLowerCase()) return orig;
+  return `${orig} → ${dest}`;
+}
+

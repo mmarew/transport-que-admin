@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ArrowUp, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { DriverQueueEntry, QueueStatus } from "../../types/queue";
@@ -22,6 +23,17 @@ function formatJoinedTime(dateStr: string): string {
 
 export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
   const { t } = useTranslation();
+  const [expandedAddresses, setExpandedAddresses] = useState<Set<string>>(new Set());
+
+  const toggleAddress = (key: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedAddresses((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const rows = (entries || []).map((rawEntry, index) => {
     const entry = normalizeQueueEntry(rawEntry);
@@ -62,7 +74,28 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
                 <td className="qb-driver-name">{entry.driverName}</td>
                 <td className="qb-time-text">{entry.driverPhoneNumber}</td>
                 <td className="qb-time-text" style={{ color: "#334155", fontWeight: 500 }}>
-                  {entry.driverAddress || "—"}
+                  {entry.driverAddress ? (
+                    entry.driverAddress.length > 22 ? (
+                      <button
+                        type="button"
+                        className={`qb-address-toggle-btn ${expandedAddresses.has(key) ? "expanded" : ""}`}
+                        onClick={(e) => toggleAddress(key, e)}
+                        title={
+                          expandedAddresses.has(key)
+                            ? t("common.clickToCollapse", "Click to collapse")
+                            : `${entry.driverAddress} (${t("common.clickForFull", "Click for full address")})`
+                        }
+                      >
+                        {expandedAddresses.has(key)
+                          ? entry.driverAddress
+                          : `${entry.driverAddress.slice(0, 20)}…`}
+                      </button>
+                    ) : (
+                      entry.driverAddress
+                    )
+                  ) : (
+                    "—"
+                  )}
                 </td>
                 <td className="qb-time-text">{joinedTime}</td>
                 <td>

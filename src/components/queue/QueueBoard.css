@@ -378,6 +378,37 @@
   color: #059669;
 }
 
+/* Address Trimmed & Click-to-Expand */
+.qb-address-toggle-btn {
+  background: transparent;
+  border: 1px dashed transparent;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  color: #334155;
+  font-size: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-word;
+  font-family: inherit;
+}
+
+.qb-address-toggle-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.qb-address-toggle-btn.expanded {
+  background: #f8fafc;
+  border-color: #93c5fd;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  color: #1d4ed8;
+}
+
 /* Action Buttons */
 .qb-actions-cell {
   display: inline-flex;
