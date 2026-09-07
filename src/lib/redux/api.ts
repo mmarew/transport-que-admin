@@ -138,7 +138,7 @@ export const api = createApi({
     }),
 
     createQueueOrganization: builder.mutation<
-      { message: string; data: { queueOrganizationUniqueId: string; approvalStatus: string } },
+      { message: string; data: { queueOrganizationUniqueId: string; approvalStatus: string; alreadyExisted?: boolean } },
       {
         queueOrganizationName: string;
         queueOrganizationType: QueueOrgType;

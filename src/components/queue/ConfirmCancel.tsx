@@ -71,7 +71,7 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
   const driverName = entry.driverName || "Driver";
   const driverPhone = entry.driverPhoneNumber || "";
   const vehicleName = resolveVehicleName(entry.vehicleTypeUniqueId, entry.vehicleTypeName, vtList);
-  const statusDisplay = entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Waiting";
+  const statusDisplay = entry.statusLabel || (entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Waiting");
 
   return createPortal(
     <div className="qm-overlay">

@@ -11,7 +11,11 @@ import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import { useAuth } from "../../context/AuthContext";
 import { disconnectSocket } from "../../lib/socket";
 import { hasOrganizationData } from "../../services/organization.service";
-import { useCreateQueueOrganizationMutation, useListQueueOrganizationsQuery } from "../../lib/redux/api";
+import {
+  useCreateQueueOrganizationMutation,
+  useListQueueOrganizationsQuery,
+  useAddQueueOrgMemberMutation,
+} from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import { setupOrgSchema, type SetupOrgFormValues } from "../../schemas/queue";
 import { QUEUE_ORG_TYPES, type QueueOrgType } from "../../types/queue";
@@ -51,8 +55,14 @@ function formatPhotonLabel(feature: any): string {
 export const SetupOrganization: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const { data: orgsData, isSuccess } = useListQueueOrganizationsQuery();
+  const { logout, auth } = useAuth();
+  const {
+    data: orgsData,
+    isSuccess,
+    isLoading: isOrgsLoading,
+    isFetching: isOrgsFetching,
+    refetch: refetchOrgs,
+  } = useListQueueOrganizationsQuery();
 
   const handleLogout = () => {
     disconnectSocket();
@@ -62,12 +72,13 @@ export const SetupOrganization: React.FC = () => {
 
   // If user already has an organization, forward directly to dashboard
   useEffect(() => {
-    if (isSuccess && hasOrganizationData(orgsData)) {
+    if (isSuccess && !isOrgsFetching && hasOrganizationData(orgsData)) {
       navigate("/dashboard", { replace: true });
     }
-  }, [isSuccess, orgsData, navigate]);
+  }, [isSuccess, isOrgsFetching, orgsData, navigate]);
 
   const [createOrgMutation, { isLoading: isCreating }] = useCreateQueueOrganizationMutation();
+  const [addMemberMutation] = useAddQueueOrgMemberMutation();
 
   const {
     register,
@@ -174,7 +185,7 @@ export const SetupOrganization: React.FC = () => {
 
   const onSubmit = async (data: SetupOrgFormValues) => {
     try {
-      await createOrgMutation({
+      const res = await createOrgMutation({
         queueOrganizationName: data.queueOrganizationName,
         queueOrganizationType: data.queueOrganizationType,
         queueOrganizationPhone: data.queueOrganizationPhone || null,
@@ -182,7 +193,30 @@ export const SetupOrganization: React.FC = () => {
         latitude: data.latitude != null ? Number(data.latitude) : null,
         longitude: data.longitude != null ? Number(data.longitude) : null,
       }).unwrap();
-      toast.success("Organization created! Pending admin approval.");
+
+      const orgId = res?.data?.queueOrganizationUniqueId;
+      const userUniqueId = auth?.userData?.userUniqueId;
+
+      if (orgId && userUniqueId) {
+        try {
+          await addMemberMutation({
+            id: orgId,
+            userUniqueId,
+            roleId: auth.userData.roleId || 11,
+          }).unwrap();
+        } catch {
+          // If already a member or insufficient permissions, proceed gracefully
+        }
+      }
+
+      // Ensure cache is updated with the newly created/linked org before navigating
+      await refetchOrgs();
+
+      toast.success(
+        res?.data?.alreadyExisted
+          ? "Organization linked successfully! Opening dashboard."
+          : "Organization created! Pending admin approval."
+      );
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       const msg = parseError(err);
@@ -191,6 +225,14 @@ export const SetupOrganization: React.FC = () => {
   };
 
   const { ref: formAddressRef, ...addressRest } = register("queueOrganizationAddress");
+
+  if (isOrgsLoading || (isOrgsFetching && hasOrganizationData(orgsData))) {
+    return (
+      <div className="login-container" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <div className="add-docs-spinner" style={{ width: 36, height: 36 }} />
+      </div>
+    );
+  }
 
   return (
     <div className="login-container">

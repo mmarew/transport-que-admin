@@ -48,7 +48,19 @@ export const Login: React.FC<LoginProps> = ({
       onOtpRequested({ phoneNumber: data.phoneNumber });
     } catch (err: unknown) {
       const msg = parseError(err);
-      toast.error(msg);
+      if (
+        msg.toLowerCase().includes("not found") ||
+        msg.toLowerCase().includes("register first")
+      ) {
+        toast.error(msg, {
+          action: {
+            label: t("auth.signUp") || "Register",
+            onClick: () => onSwitchToRegister(),
+          },
+        });
+      } else {
+        toast.error(msg);
+      }
     }
   };
 

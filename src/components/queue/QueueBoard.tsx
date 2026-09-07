@@ -7,6 +7,7 @@ import { useListVehicleTypesQuery } from "../../lib/redux/api";
 import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
 import { normalizeQueueEntry } from "../../utils/formatters";
+import { isDriverWaiting } from "../../utils/journeyStatus";
 import { QueueTable } from "./QueueTable";
 import { CheckinModal } from "./CheckinModal";
 import { CreateOrderModal } from "./CreateOrderModal";
@@ -157,8 +158,7 @@ export function QueueBoard({
   }, [queuesMap]);
 
   const allWaitingCount = allEntries.filter((e) => {
-    const s = String(e?.status || "").toLowerCase();
-    return !s || s === "waiting" || s === "offered";
+    return isDriverWaiting(e?.status, e?.journeyStatusId);
   }).length;
 
   const formattedType = orgType ? orgType.charAt(0).toUpperCase() + orgType.slice(1) : "";
@@ -259,13 +259,11 @@ export function QueueBoard({
               const entries = (rawEntries || []) as DriverQueueEntry[];
               const { id: typeId, name: typeName } = resolveVehicleType(typeKey, entries);
               const waitingCount = entries.filter((e: DriverQueueEntry) => {
-                const s = String(e?.status || "").toLowerCase();
-                return !s || s === "waiting" || s === "offered";
+                return isDriverWaiting(e?.status, e?.journeyStatusId);
               }).length;
               const firstWaiting =
                 entries.find((e: DriverQueueEntry) => {
-                  const s = String(e?.status || "").toLowerCase();
-                  return !s || s === "waiting" || s === "offered";
+                  return isDriverWaiting(e?.status, e?.journeyStatusId);
                 }) || entries[0];
 
               return (
@@ -329,8 +327,8 @@ export function QueueBoard({
                   allEntries.find(
                     (e) =>
                       e.vehicleTypeUniqueId &&
-                      (!e.status || e.status === "waiting" || e.status === "offered")
-                  ) || allEntries.find((e) => !e.status || e.status === "waiting" || e.status === "offered") || allEntries[0];
+                      isDriverWaiting(e?.status, e?.journeyStatusId)
+                  ) || allEntries.find((e) => isDriverWaiting(e?.status, e?.journeyStatusId)) || allEntries[0];
 
                 if (firstWaiting) {
                   const { id, name } = resolveVehicleType(

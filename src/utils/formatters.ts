@@ -1,4 +1,9 @@
 import type { QueueOrganization, QueueOrgListItem, DriverQueueEntry } from "../types/queue";
+import {
+  resolveJourneyStatus,
+  mapJourneyStatusToQueueStatus,
+  formatJourneyStatusLabel,
+} from "./journeyStatus";
 
 /** Extract city from a standard address string */
 export function extractCity(address?: string | null): string {
@@ -189,9 +194,28 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     driverObj.createdAt ||
     new Date().toISOString();
 
-  const status = (String(
-    q.status || raw.status || driverObj.status || q.queueStatus || "waiting"
-  ).toLowerCase()) as any;
+  const rawStatusVal =
+    q.journeyStatusId ??
+    raw.journeyStatusId ??
+    driverObj.journeyStatusId ??
+    q.journeyStatusName ??
+    raw.journeyStatusName ??
+    driverObj.journeyStatusName ??
+    q.status ??
+    raw.status ??
+    driverObj.status ??
+    q.queueStatus ??
+    "waiting";
+
+  const resolvedJourneyStatus = resolveJourneyStatus(rawStatusVal);
+  const status = mapJourneyStatusToQueueStatus(rawStatusVal);
+  const statusLabel = formatJourneyStatusLabel(rawStatusVal);
+  const journeyStatusId = resolvedJourneyStatus?.journeyStatusId;
+  const journeyStatusName =
+    resolvedJourneyStatus?.journeyStatusName ||
+    (typeof rawStatusVal === "string" && rawStatusVal !== "[object Object]"
+      ? rawStatusVal
+      : undefined);
 
   const vehicleDriverUniqueId =
     q.vehicleDriverUniqueId ||
@@ -308,6 +332,9 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     queueNumber,
     joinedAt,
     status,
+    journeyStatusId,
+    journeyStatusName,
+    statusLabel,
     offeredAt: q.offeredAt || raw.offeredAt || null,
     loadedAt: q.loadedAt || raw.loadedAt || null,
     vehicleDriverUniqueId,

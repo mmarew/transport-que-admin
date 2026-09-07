@@ -18,6 +18,7 @@ import {
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import type { QueueOrgListItem, QueueOrganization } from "../../types/queue";
 import { extractCity } from "../../utils/formatters";
+import { isDriverWaiting } from "../../utils/journeyStatus";
 import "./ReportsPage.css";
 
 const PAGE_SIZE = 5;
@@ -42,7 +43,7 @@ function OrgReportRow({
   }, [queueData]);
 
   const waitingCount = allEntries.filter(
-    (e) => !e.status || e.status === "waiting" || e.status === "offered"
+    (e) => isDriverWaiting(e.status, (e as any).journeyStatusId)
   ).length;
 
   const totalDrivers = allEntries.length;
@@ -170,7 +171,7 @@ export function ReportsPage() {
   const totalOrdersCount = allOrders.length;
 
   // Real Driver Status Counts
-  const waitingCount = allQueueEntries.filter((e) => !e.status || e.status === "waiting").length;
+  const waitingCount = allQueueEntries.filter((e) => isDriverWaiting(e.status, (e as any).journeyStatusId)).length;
   const offeredCount = allQueueEntries.filter((e) => e.status === "offered").length;
   const loadedCount = allQueueEntries.filter(
     (e) => (e.status as string) === "loaded" || (e.status as string) === "assigned" || (e.status as string) === "completed"

@@ -374,6 +374,10 @@
   color: #94a3b8;
 }
 
+.qb-status-text.completed {
+  color: #059669;
+}
+
 /* Action Buttons */
 .qb-actions-cell {
   display: inline-flex;

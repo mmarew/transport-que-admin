@@ -26,7 +26,7 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
   const rows = (entries || []).map((rawEntry, index) => {
     const entry = normalizeQueueEntry(rawEntry);
     const statusKey = (entry.status || "waiting") as QueueStatus;
-    const statusLabel = statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
+    const statusLabel = entry.statusLabel || (statusKey.charAt(0).toUpperCase() + statusKey.slice(1));
     const num = entry.queueNumber || index + 1;
     const joinedTime = formatJoinedTime(entry.joinedAt);
     const key = entry.queueUniqueId || `${entry.queueNumber}-${index}`;
@@ -69,7 +69,7 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
                   <span className={`qb-status-text ${statusKey}`}>{statusLabel}</span>
                 </td>
                 <td style={{ textAlign: "center" }}>
-                  {statusKey === "removed" ? (
+                  {statusKey === "removed" || statusKey === "completed" ? (
                     <span className="qb-action-dash">—</span>
                   ) : (
                     <div className="qb-actions-cell">
@@ -133,7 +133,7 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
                   <span className={`qb-status-text ${statusKey}`}>{statusLabel}</span>
                 </td>
                 <td className="qb-th-action">
-                  {statusKey === "removed" ? (
+                  {statusKey === "removed" || statusKey === "completed" ? (
                     <span className="qb-action-dash">—</span>
                   ) : (
                     <div className="qb-actions-cell">
