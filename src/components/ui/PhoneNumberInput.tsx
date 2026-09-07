@@ -6,7 +6,7 @@ import {
   toE164,
   isValidPhoneDigits,
   PHONE_MAX_DIGITS,
-  stripNonDigits,
+  cleanDigits,
 } from "../../utils/phoneFormatter";
 import "../../styles/auth.css";
 import "./PhoneNumberInput.css";
@@ -47,9 +47,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = React.useState(false);
 
-  const rawDigits = fromE164(
-    value.startsWith("+251") ? value : `+251${stripNonDigits(value)}`
-  );
+  const rawDigits = fromE164(value);
   const displayValue = formatPhoneDisplay(rawDigits);
 
   const maskedCaretPosition = useCallback((digitPos: number): number => {
@@ -68,8 +66,8 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
       const rawInput = e.target.value;
       const selectionStart = e.target.selectionStart ?? rawInput.length;
       const beforeCursor = rawInput.slice(0, selectionStart);
-      const digitCountBeforeCursor = stripNonDigits(beforeCursor).length;
-      const newDigits = stripNonDigits(rawInput).slice(0, PHONE_MAX_DIGITS);
+      const digitCountBeforeCursor = cleanDigits(beforeCursor).length;
+      const newDigits = cleanDigits(rawInput);
 
       onChange(toE164(newDigits));
       onDigitsChange?.(newDigits);
@@ -103,7 +101,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
           const beforeHyphen = displayValue.slice(0, start - 2);
           const afterHyphen = displayValue.slice(start);
           const merged = beforeHyphen + afterHyphen;
-          const newDigits = stripNonDigits(merged).slice(0, PHONE_MAX_DIGITS);
+          const newDigits = cleanDigits(merged);
 
           onChange(toE164(newDigits));
           onDigitsChange?.(newDigits);
@@ -111,7 +109,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
           requestAnimationFrame(() => {
             if (inputRef.current) {
               const caretPos = maskedCaretPosition(
-                Math.max(0, stripNonDigits(beforeHyphen).length)
+                Math.max(0, cleanDigits(beforeHyphen).length)
               );
               inputRef.current.setSelectionRange(caretPos, caretPos);
             }
@@ -128,10 +126,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
       if (disabled) return;
 
       const pasted = e.clipboardData.getData("text");
-      const pastedDigits = stripNonDigits(pasted.replace(/^\+?251/, "")).slice(
-        0,
-        PHONE_MAX_DIGITS
-      );
+      const pastedDigits = cleanDigits(pasted);
 
       onChange(toE164(pastedDigits));
       onDigitsChange?.(pastedDigits);

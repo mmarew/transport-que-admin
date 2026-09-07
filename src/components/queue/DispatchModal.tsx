@@ -14,6 +14,7 @@ import {
 import parseError from "../../utils/parseError";
 import { dispatchSchema, type DispatchFormValues } from "../../schemas/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
+import { isDriverWaiting } from "../../utils/journeyStatus";
 import { useModalA11y } from "../../hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 import "./DispatchModal.css";
@@ -127,7 +128,7 @@ export function DispatchModal({
 
         if (isMatch && Array.isArray(entries) && entries.length > 0) {
           const waiting =
-            entries.find((e: any) => !e.status || e.status === "waiting" || e.status === "offered") ||
+            entries.find((e: any) => isDriverWaiting(e?.status, e?.journeyStatusId)) ||
             entries[0];
           if (waiting) {
             const w = waiting as Record<string, any>;
@@ -141,7 +142,7 @@ export function DispatchModal({
       // 2. Search all queues for any waiting driver
       const allEntries = Object.values(queueStatusData.data.queues).flat();
       const waiting =
-        allEntries.find((e: any) => !e.status || e.status === "waiting" || e.status === "offered") ||
+        allEntries.find((e: any) => isDriverWaiting(e?.status, e?.journeyStatusId)) ||
         allEntries[0];
       if (waiting) {
         const w = waiting as Record<string, any>;

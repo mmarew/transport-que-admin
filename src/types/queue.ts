@@ -20,6 +20,7 @@ export const QUEUE_STATUSES = [
   "offered",
   "loaded",
   "removed",
+  "completed",
 ] as const;
 export type QueueStatus = (typeof QUEUE_STATUSES)[number];
 
@@ -97,7 +98,10 @@ export interface DriverQueueEntry {
   queueUniqueId: string;
   queueNumber: number;
   joinedAt: string;
-  status: QueueStatus;
+  status: QueueStatus | string;
+  journeyStatusId?: number;
+  journeyStatusName?: string;
+  statusLabel?: string;
   offeredAt: string | null;
   loadedAt: string | null;
   vehicleDriverUniqueId: string;

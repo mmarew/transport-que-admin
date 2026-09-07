@@ -14,6 +14,7 @@ import {
 import { useGetQueueStatusQuery } from "../../lib/redux/api";
 import type { QueueOrganization, DriverQueueEntry } from "../../types/queue";
 import { formatPhone, extractCity, normalizeQueueEntry } from "../../utils/formatters";
+import { isDriverWaiting } from "../../utils/journeyStatus";
 import MobileHeader from "../common/MobileHeader";
 import "./QueueModals.css";
 
@@ -53,7 +54,7 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
   }, [queueData]);
 
   const waitingCount = allEntries.filter(
-    (e) => !e.status || e.status === "waiting"
+    (e) => isDriverWaiting(e.status, e.journeyStatusId)
   ).length;
 
   const offeredCount = allEntries.filter((e) => e.status === "offered").length;
@@ -248,7 +249,7 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
                               color: statusColor,
                             }}
                           >
-                            {t(`reports.${statusKey}`, statusKey)}
+                            {entry.statusLabel || t(`reports.${statusKey}`, statusKey)}
                           </span>
                         </td>
                       </tr>

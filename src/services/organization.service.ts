@@ -65,6 +65,10 @@ export function hasOrganizationData(payload: unknown): boolean {
     if (Array.isArray(obj.records)) return obj.records.length > 0;
     if (typeof obj.count === "number" && obj.count > 0) return true;
     if (typeof obj.total === "number" && obj.total > 0) return true;
+    if (obj.pagination && typeof obj.pagination === "object") {
+      const pag = obj.pagination as Record<string, unknown>;
+      if (typeof pag.totalItems === "number" && pag.totalItems > 0) return true;
+    }
     if (obj.meta && typeof obj.meta === "object") {
       const meta = obj.meta as Record<string, unknown>;
       if (typeof meta.total === "number" && meta.total > 0) return true;
@@ -76,6 +80,10 @@ export function hasOrganizationData(payload: unknown): boolean {
       if (Array.isArray(nested.rows)) return nested.rows.length > 0;
       if (Array.isArray(nested.records)) return nested.records.length > 0;
       if (typeof nested.total === "number" && nested.total > 0) return true;
+      if (nested.pagination && typeof nested.pagination === "object") {
+        const pag = nested.pagination as Record<string, unknown>;
+        if (typeof pag.totalItems === "number" && pag.totalItems > 0) return true;
+      }
       if (nested.meta && typeof nested.meta === "object") {
         const meta = nested.meta as Record<string, unknown>;
         if (typeof meta.total === "number" && meta.total > 0) return true;

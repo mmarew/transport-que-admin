@@ -102,13 +102,14 @@ export const defaultAuthConfig: AuthConfig = {
 };
 
 // --- Phone helpers (Ethiopia default: +251) ---
-const PHONE_MAX_DIGITS = 12;
+const PHONE_MAX_DIGITS = 9;
 
 export function normalizePhone(raw: string): string {
   let digits = raw.replace(/\D/g, "");
-  if (!digits.startsWith("251")) digits = `251${digits}`;
+  if (digits.startsWith("251")) digits = digits.slice(3);
+  if (digits.startsWith("0")) digits = digits.slice(1);
   digits = digits.slice(0, PHONE_MAX_DIGITS);
-  return `+${digits}`;
+  return digits ? `+251${digits}` : "";
 }
 
 export function normalizeFieldValue(
@@ -121,12 +122,13 @@ export function normalizeFieldValue(
 
 // +251 9 22 11 24 80 (country code + 1 digit + pairs)
 export function groupPhoneDigits(digits: string): string {
-  const d = digits.startsWith("251") ? digits : `251${digits}`;
-  const rest = d.slice(3);
+  let d = digits.replace(/\D/g, "");
+  if (d.startsWith("251")) d = d.slice(3);
+  if (d.startsWith("0")) d = d.slice(1);
   const chunks: string[] = [];
-  if (rest.length > 0) chunks.push(rest.slice(0, 1));
-  for (let i = 1; i < rest.length; i += 2) {
-    chunks.push(rest.slice(i, i + 2));
+  if (d.length > 0) chunks.push(d.slice(0, 1));
+  for (let i = 1; i < d.length; i += 2) {
+    chunks.push(d.slice(i, i + 2));
   }
   return chunks.join(" ");
 }

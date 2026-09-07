@@ -20,6 +20,7 @@ export function ProtectedRoute({ children, requireOrg = true }: ProtectedRoutePr
   const {
     data: orgsData,
     isLoading: orgsLoading,
+    isFetching: orgsFetching,
     isSuccess: orgsSuccess,
     isError: orgsError,
   } = useListQueueOrganizationsQuery(undefined, {
@@ -36,8 +37,9 @@ export function ProtectedRoute({ children, requireOrg = true }: ProtectedRoutePr
     return <>{children}</>;
   }
 
-  // Still checking org status → show nothing (brief flash prevention)
-  if (orgsLoading) {
+  // Still checking org status (initial load or active refetch where org is not yet confirmed)
+  // Prevents stale cache from prematurely redirecting back to /setup-org while new org is being fetched
+  if (orgsLoading || (orgsFetching && !hasOrganizationData(orgsData))) {
     return null;
   }
 
