@@ -1,7 +1,8 @@
-import { ChevronDown, Package, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, ChevronUp, Package, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, SortColumn } from "./OrdersTypes";
-import { PAGE_SIZE, formatShortName } from "./OrdersTypes";
+import { PAGE_SIZE, formatShortName, formatTrimmedRoute } from "./OrdersTypes";
 
 
 interface OrdersTableProps {
@@ -24,6 +25,20 @@ export function OrdersTable({
   onDelete,
 }: OrdersTableProps) {
   const { t } = useTranslation();
+  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
+
+  const toggleLocation = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedLocations((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="orders-table-card">
@@ -104,9 +119,52 @@ export function OrdersTable({
                     <td className="td-type">{order.type}</td>
                     <td className="td-vehicletype">{order.vehicleType}</td>
                     <td className="td-item">{order.item}</td>
-                    <td className="td-location" title={`${order.origin} → ${order.destination}`}>
-                      <span className="orders-loc-desktop">{order.origin} → {order.destination}</span>
-                      <span className="orders-loc-mobile">{order.origin} → {order.destination}</span>
+                    <td className={`td-location ${expandedLocations.has(order.id) ? "td-location--expanded" : ""}`}>
+                      {expandedLocations.has(order.id) ? (
+                        <div
+                          className="orders-loc-box orders-loc-box--expanded"
+                          onClick={(e) => toggleLocation(order.id, e)}
+                          title={t("orders.clickToCollapse", "Click to collapse")}
+                          role="button"
+                          tabIndex={0}
+                          aria-expanded={true}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              toggleLocation(order.id, e as any);
+                            }
+                          }}
+                        >
+                          <div className="orders-loc-full-row">
+                            <span className="orders-loc-dot orders-loc-dot--origin" />
+                            <span className="orders-loc-detail">
+                              <strong>{t("orders.from", "From")}:</strong> {order.origin}
+                            </span>
+                          </div>
+                          <div className="orders-loc-full-row">
+                            <span className="orders-loc-dot orders-loc-dot--dest" />
+                            <span className="orders-loc-detail">
+                              <strong>{t("orders.to", "To")}:</strong> {order.destination}
+                            </span>
+                          </div>
+                          <span className="orders-loc-collapse-hint">
+                            <ChevronUp size={12} /> {t("orders.collapse", "Collapse")}
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="orders-loc-btn orders-loc-btn--trimmed"
+                          onClick={(e) => toggleLocation(order.id, e)}
+                          title={t("orders.clickForFullLocation", "Click to view full location")}
+                          aria-expanded={false}
+                        >
+                          <span className="orders-loc-trimmed-text">
+                            {formatTrimmedRoute(order.origin, order.destination)}
+                          </span>
+                          <ChevronDown size={12} className="orders-loc-chevron" />
+                        </button>
+                      )}
                     </td>
                     <td className="td-quintal">{order.quintal}</td>
                     <td className="td-cost">{order.cost.toLocaleString()}</td>

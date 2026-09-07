@@ -1,4 +1,5 @@
-import { ArrowRight, Package, Pencil, Trash2, Truck } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, ChevronDown, ChevronUp, Package, Pencil, Trash2, Truck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { extractCity } from "../../utils/formatters";
 import type { OrderDisplayItem } from "./OrdersTypes";
@@ -17,6 +18,19 @@ export function OrdersMobileCards({
   onDelete,
 }: OrdersMobileCardsProps) {
   const { t } = useTranslation();
+  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
+
+  const toggleLocation = (id: string) => {
+    setExpandedLocations((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="orders-mobile-card-list">
@@ -44,12 +58,44 @@ export function OrdersMobileCards({
               </div>
             </div>
 
-            {/* Row 2: Origin → Destination plain text */}
-            <div className="orders-m-route">
-              <span className="orders-m-city">{extractCity(order.origin)}</span>
-              <ArrowRight size={12} className="orders-m-arrow" />
-              <span className="orders-m-city">{extractCity(order.destination)}</span>
-            </div>
+            {/* Row 2: Location (Trimmed by default, click for whole location) */}
+            {expandedLocations.has(order.id) ? (
+              <div
+                className="orders-m-route orders-m-route--expanded"
+                onClick={() => toggleLocation(order.id)}
+                title={t("orders.clickToCollapse", "Click to collapse")}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="orders-m-loc-row">
+                  <span className="orders-loc-dot orders-loc-dot--origin" />
+                  <span className="orders-m-loc-text">
+                    <strong>{t("orders.from", "From")}:</strong> {order.origin}
+                  </span>
+                </div>
+                <div className="orders-m-loc-row">
+                  <span className="orders-loc-dot orders-loc-dot--dest" />
+                  <span className="orders-m-loc-text">
+                    <strong>{t("orders.to", "To")}:</strong> {order.destination}
+                  </span>
+                </div>
+                <span className="orders-loc-collapse-hint">
+                  <ChevronUp size={11} /> {t("orders.collapse", "Collapse")}
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="orders-m-route orders-m-route--trimmed"
+                onClick={() => toggleLocation(order.id)}
+                title={t("orders.clickForFullLocation", "Click to view full location")}
+              >
+                <span className="orders-m-city">{extractCity(order.origin)}</span>
+                <ArrowRight size={12} className="orders-m-arrow" />
+                <span className="orders-m-city">{extractCity(order.destination)}</span>
+                <ChevronDown size={11} className="orders-m-loc-chevron" />
+              </button>
+            )}
 
             {/* Row 3: Meta tags + Actions */}
             <div className="orders-m-footer">
