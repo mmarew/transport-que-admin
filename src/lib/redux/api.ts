@@ -165,7 +165,7 @@ export const api = createApi({
       { id: string; userUniqueId: string; roleId: number; isActive?: boolean }
     >({
       query: ({ id, userUniqueId, ...body }) => ({ url: appAPIs.addQueueOrgMemberAPI.replace(":id", id).replace(":userUniqueId", userUniqueId), method: "POST", body }),
-      invalidatesTags: (_, __, { id }) => [{ type: "QueueOrgMembers", id }],
+      invalidatesTags: (_, __, { id }) => [{ type: "QueueOrgMembers", id }, "QueueOrganizations"],
     }),
 
     // --- Driver Queue ---

@@ -146,8 +146,22 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       expect(parseError("Unauthorized action")).toBe("Unauthorized action");
     });
 
+    it("should extract message from 409 conflict response", () => {
+      const conflictError = {
+        status: 409,
+        data: { message: "User is already a member of this organization" },
+      };
+      expect(parseError(conflictError)).toBe("User is already a member of this organization");
+    });
+
+    it("should correctly extract message from query-not-started Error", () => {
+      const unstartedError = new Error("Cannot refetch a query that has not been started yet.");
+      expect(parseError(unstartedError)).toBe("Cannot refetch a query that has not been started yet.");
+    });
+
     it("should return fallback message for unknown null/undefined errors", () => {
       expect(parseError(null)).toBe("An unexpected error occurred. Please try again.");
     });
   });
 });
+
