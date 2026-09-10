@@ -4,11 +4,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { X, ChevronDown } from "lucide-react";
+import { X } from "lucide-react";
 import parseError from "@/utils/parseError";
 import { setupOrgSchema, type SetupOrgFormValues } from "@/schemas/queue";
 import { QUEUE_ORG_TYPES, type QueueOrgType } from "@/types/queue";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
+import { CustomSelect } from "../ui/CustomSelect";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import MobileHeader from "../common/MobileHeader";
 import "./CreateOrderModal.css";
@@ -208,21 +209,20 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
             <label className="com-label" htmlFor="create-org-type">
               {t("org.typeLabel")} <span style={{ color: "#E80000" }}>*</span>
             </label>
-            <div className="com-input-wrap">
-              <select
-                id="create-org-type"
-                {...register("queueOrganizationType")}
-                className="com-input com-select has-icon-right"
-              >
-                <option value="">{t("org.selectType")}...</option>
-                {QUEUE_ORG_TYPES.map((typeKey) => (
-                  <option key={typeKey} value={typeKey}>
-                    {t(`org.types.${typeKey}`, { defaultValue: ORG_TYPE_LABELS[typeKey] })}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="com-input-icon-right" />
-            </div>
+            <CustomSelect
+              id="create-org-type"
+              value={watch("queueOrganizationType") || ""}
+              onChange={(val) => setValue("queueOrganizationType", val as QueueOrgType, { shouldValidate: true })}
+              placeholder={`${t("org.selectType")}...`}
+              error={!!errors.queueOrganizationType}
+              options={[
+                { value: "", label: `${t("org.selectType")}...` },
+                ...QUEUE_ORG_TYPES.map((typeKey) => ({
+                  value: typeKey,
+                  label: t(`org.types.${typeKey}`, { defaultValue: ORG_TYPE_LABELS[typeKey] }),
+                })),
+              ]}
+            />
             {errors.queueOrganizationType && (
               <p className="com-error-text">{errors.queueOrganizationType.message}</p>
             )}

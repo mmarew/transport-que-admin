@@ -86,6 +86,7 @@ export const dispatchSchema = z.object({
 
 export const createOrderSchema = z
   .object({
+    isBiddingApproved: z.boolean().optional(),
     shipperPhoneNumber: z
       .string()
       .trim()

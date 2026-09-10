@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
 
 :root {
+  accent-color: #0B4D6D;
   --primary: #0B4D6D;
   --primary-hover: #00567A;
   --secondary: #002B44;

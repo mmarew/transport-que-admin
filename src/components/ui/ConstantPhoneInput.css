@@ -96,3 +96,26 @@
   color: #dc2626;
   margin-top: 0.25rem;
 }
+
+/* ── Dark Mode ── */
+.dark .cpi-box {
+  background-color: #1a2234 !important;
+  border-color: #2b3548 !important;
+}
+
+.dark .cpi-prefix {
+  color: #f8fafc !important;
+}
+
+.dark .cpi-input {
+  color: #f8fafc !important;
+}
+
+.dark .cpi-input::placeholder {
+  color: #64748b !important;
+}
+
+.dark .cpi-label {
+  color: #e2e8f0 !important;
+}
+
