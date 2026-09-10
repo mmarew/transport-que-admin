@@ -11,7 +11,10 @@ import {
   useListVehicleTypesQuery,
 } from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
-import { createOrderSchema, type CreateOrderFormValues } from "../../schemas/queue";
+import {
+  createOrderSchema,
+  type CreateOrderFormValues,
+} from "../../schemas/queue";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import { DatePickerField } from "../ui/DatePickerField";
 import { CustomSelect } from "../ui/CustomSelect";
@@ -36,7 +39,9 @@ function formatPhotonLabel(feature: any): string {
     p.state,
     p.country,
   ].filter(Boolean);
-  return parts.length > 0 ? Array.from(new Set(parts)).join(", ") : p.name || p.street || "Location";
+  return parts.length > 0
+    ? Array.from(new Set(parts)).join(", ")
+    : p.name || p.street || "Location";
 }
 
 interface CreateOrderModalProps {
@@ -61,7 +66,8 @@ function toISOStringSafe(d: string): string {
 }
 
 function newBatchId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto)
+    return crypto.randomUUID();
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
@@ -90,7 +96,8 @@ export function CreateOrderModal({
       requestMode: "individual_target",
       originDescription: origin?.description ?? "",
       originLatitude: origin?.latitude != null ? String(origin.latitude) : "",
-      originLongitude: origin?.longitude != null ? String(origin.longitude) : "",
+      originLongitude:
+        origin?.longitude != null ? String(origin.longitude) : "",
       destinationDescription: "",
       destinationLatitude: "",
       destinationLongitude: "",
@@ -120,11 +127,17 @@ export function CreateOrderModal({
 
   useEffect(() => {
     const handlePointerDown = (e: MouseEvent) => {
-      if (originWrapRef.current && !originWrapRef.current.contains(e.target as Node)) {
+      if (
+        originWrapRef.current &&
+        !originWrapRef.current.contains(e.target as Node)
+      ) {
         setOriginOpen(false);
         isTypingOriginRef.current = false;
       }
-      if (destWrapRef.current && !destWrapRef.current.contains(e.target as Node)) {
+      if (
+        destWrapRef.current &&
+        !destWrapRef.current.contains(e.target as Node)
+      ) {
         setDestOpen(false);
         isTypingDestRef.current = false;
       }
@@ -139,9 +152,16 @@ export function CreateOrderModal({
 
   /** Normalize query for deduplication: lowercase, strip trailing punctuation/spaces */
   const normalizeQuery = (q: string): string =>
-    q.trim().toLowerCase().replace(/[,.\s]+$/, "").trim();
+    q
+      .trim()
+      .toLowerCase()
+      .replace(/[,.\s]+$/, "")
+      .trim();
 
-  const fetchPhotonPlaces = async (query: string, signal?: AbortSignal): Promise<PhotonPlace[]> => {
+  const fetchPhotonPlaces = async (
+    query: string,
+    signal?: AbortSignal,
+  ): Promise<PhotonPlace[]> => {
     const q = normalizeQuery(query);
     if (q.length < 5) return [];
 
@@ -153,15 +173,17 @@ export function CreateOrderModal({
     try {
       const res = await fetch(
         `${PHOTON_URL}?q=${encodeURIComponent(q)}&lat=9.0320&lon=38.7469&lang=en&limit=6`,
-        { signal }
+        { signal },
       );
       if (res.ok) {
         const data = await res.json();
-        const results: PhotonPlace[] = (data.features || []).map((feat: any) => ({
-          label: formatPhotonLabel(feat),
-          lat: feat.geometry?.coordinates[1] || 0,
-          lng: feat.geometry?.coordinates[0] || 0,
-        }));
+        const results: PhotonPlace[] = (data.features || []).map(
+          (feat: any) => ({
+            label: formatPhotonLabel(feat),
+            lat: feat.geometry?.coordinates[1] || 0,
+            lng: feat.geometry?.coordinates[0] || 0,
+          }),
+        );
         placesCacheRef.current.set(q, results);
         return results;
       }
@@ -255,8 +277,12 @@ export function CreateOrderModal({
     } else {
       isTypingDestRef.current = false;
       setValue("destinationDescription", place.label, { shouldValidate: true });
-      setValue("destinationLatitude", String(place.lat), { shouldValidate: true });
-      setValue("destinationLongitude", String(place.lng), { shouldValidate: true });
+      setValue("destinationLatitude", String(place.lat), {
+        shouldValidate: true,
+      });
+      setValue("destinationLongitude", String(place.lng), {
+        shouldValidate: true,
+      });
       setDestQuery(place.label);
       setDestResults([]);
       setDestOpen(false);
@@ -264,15 +290,25 @@ export function CreateOrderModal({
   };
 
   const { data: apiVehicleTypes } = useListVehicleTypesQuery();
-  const [createOrderMutation, { isLoading: isCreating }] = useCreateQueueOrderMutation();
+  const [createOrderMutation, { isLoading: isCreating }] =
+    useCreateQueueOrderMutation();
 
   const vehicleTypesList = useMemo(() => {
-    const list: Array<{ vehicleTypeUniqueId: string; vehicleTypeName: string }> = [];
+    const list: Array<{
+      vehicleTypeUniqueId: string;
+      vehicleTypeName: string;
+    }> = [];
     const seenIds = new Set<string>();
     const seenNames = new Set<string>();
 
     const add = (id?: string, name?: string) => {
-      if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return;
+      if (
+        !id ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          id,
+        )
+      )
+        return;
       const cleanName = (name || id).trim();
       const normKey = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "");
       if (!seenIds.has(id) && !seenNames.has(normKey)) {
@@ -291,15 +327,35 @@ export function CreateOrderModal({
 
     // 2. Known production database UUIDs fallback
     const KNOWN_DB_TYPES = [
-      { vehicleTypeUniqueId: "e93aa27f-364f-4eff-bc26-582b773071d3", vehicleTypeName: "2×20ft or 40ft Low-Bed Truck (301–350 Quintal)" },
-      { vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742", vehicleTypeName: "20ft Container Truck (251–300 Quintal)" },
-      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000002", vehicleTypeName: "ISUZU / Light Cargo (50–100 Quintal)" },
-      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000001", vehicleTypeName: "Heavy Duty Trailer (351–400+ Quintal)" },
-      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000003", vehicleTypeName: "Tanker / Bulk Liquid" },
-      { vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000004", vehicleTypeName: "Refrigerated Cargo Truck" },
+      {
+        vehicleTypeUniqueId: "e93aa27f-364f-4eff-bc26-582b773071d3",
+        vehicleTypeName: "2×20ft or 40ft Low-Bed Truck (301–350 Quintal)",
+      },
+      {
+        vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742",
+        vehicleTypeName: "20ft Container Truck (251–300 Quintal)",
+      },
+      {
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000002",
+        vehicleTypeName: "ISUZU / Light Cargo (50–100 Quintal)",
+      },
+      {
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000001",
+        vehicleTypeName: "Heavy Duty Trailer (351–400+ Quintal)",
+      },
+      {
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000003",
+        vehicleTypeName: "Tanker / Bulk Liquid",
+      },
+      {
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000004",
+        vehicleTypeName: "Refrigerated Cargo Truck",
+      },
     ];
 
-    KNOWN_DB_TYPES.forEach((vt) => add(vt.vehicleTypeUniqueId, vt.vehicleTypeName));
+    KNOWN_DB_TYPES.forEach((vt) =>
+      add(vt.vehicleTypeUniqueId, vt.vehicleTypeName),
+    );
 
     return list;
   }, [apiVehicleTypes]);
@@ -340,6 +396,8 @@ export function CreateOrderModal({
           description: values.originDescription,
         },
       };
+      console.log("🚀 ~ handleFormSubmit ~ payload:", payload);
+
       const res = await createOrderMutation(payload).unwrap();
 
       toast.success(res?.message || "Order created and offered to the queue");
@@ -350,7 +408,9 @@ export function CreateOrderModal({
     }
   };
 
-  const onInvalidSubmit = (formErrors: Record<string, { message?: string } | undefined>) => {
+  const onInvalidSubmit = (
+    formErrors: Record<string, { message?: string } | undefined>,
+  ) => {
     const firstError = Object.values(formErrors).find(Boolean)?.message;
     if (firstError) {
       toast.error(String(firstError));
@@ -368,26 +428,39 @@ export function CreateOrderModal({
       >
         {/* Mobile Header */}
         <div className="com-mobile-header">
-          <MobileHeader title={t("orders.newOrderBtn", "New Order")} onBack={onClose} />
+          <MobileHeader
+            title={t("orders.newOrderBtn", "New Order")}
+            onBack={onClose}
+          />
         </div>
 
         {/* Desktop Header */}
         <div className="com-header com-header--desktop">
           <div>
-            <h2 id="create-order-modal-title" className="com-title">{t("orders.createOrderTitle")}</h2>
-            <p className="com-subtitle">
-              {t("orders.createOrderSubtitle")}
-            </p>
+            <h2 id="create-order-modal-title" className="com-title">
+              {t("orders.createOrderTitle")}
+            </h2>
+            <p className="com-subtitle">{t("orders.createOrderSubtitle")}</p>
           </div>
-          <button type="button" className="com-close-btn" onClick={onClose} aria-label="Close modal">
+          <button
+            type="button"
+            className="com-close-btn"
+            onClick={onClose}
+            aria-label="Close modal"
+          >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(handleFormSubmit, onInvalidSubmit)} className="com-form-body">
+        <form
+          onSubmit={handleSubmit(handleFormSubmit, onInvalidSubmit)}
+          className="com-form-body"
+        >
           {/* Request Type */}
           <div>
-            <h3 className="com-section-title">{t("orders.requestType", "Request Type")}</h3>
+            <h3 className="com-section-title">
+              {t("orders.requestType", "Request Type")}
+            </h3>
             <div className="com-type-grid">
               <button
                 type="button"
@@ -410,38 +483,71 @@ export function CreateOrderModal({
 
           {/* Dispatch Mode Dropdown */}
           <div className="com-field-group">
-            <label className="com-label">{t("orders.dispatchMode", "Dispatch Mode")}</label>
+            <label className="com-label">
+              {t("orders.dispatchMode", "Dispatch Mode")}
+            </label>
             <CustomSelect
               value={watch("isBiddingApproved") ? "true" : "false"}
               onChange={(val) => setValue("isBiddingApproved", val === "true")}
               options={[
-                { value: "false", label: t("orders.fifoQueueOption", "FIFO Queue (Auto-offer to front waiting driver)") },
-                { value: "true", label: t("orders.openBiddingOption", "Open for Bidding (Biddable job for carriers)") },
+                {
+                  value: "false",
+                  label: t(
+                    "orders.fifoQueueOption",
+                    "FIFO Queue (Auto-offer to front waiting driver)",
+                  ),
+                },
+                {
+                  value: "true",
+                  label: t(
+                    "orders.openBiddingOption",
+                    "Open for Bidding (Biddable job for carriers)",
+                  ),
+                },
               ]}
             />
           </div>
 
           {/* Shipper */}
           <div>
-            <h3 className="com-section-title">{t("orders.shipperSection", "Shipper")}</h3>
+            <h3 className="com-section-title">
+              {t("orders.shipperSection", "Shipper")}
+            </h3>
             <div className="com-grid-2">
               <ConstantPhoneInput
                 label={t("orders.shipperPhone", "Phone Number")}
                 value={watch("shipperPhoneNumber")}
-                onChange={(val) => setValue("shipperPhoneNumber", val, { shouldValidate: true })}
+                onChange={(val) =>
+                  setValue("shipperPhoneNumber", val, { shouldValidate: true })
+                }
                 error={errors.shipperPhoneNumber?.message}
                 placeholder="9XX XXX XXX"
               />
 
               <div className="com-field-group">
-                <label className="com-label">{t("orders.vehicleType", "Vehicle Type")}</label>
+                <label className="com-label">
+                  {t("orders.vehicleType", "Vehicle Type")}
+                </label>
                 <CustomSelect
                   value={watch("vehicleTypeUniqueId") || ""}
-                  onChange={(val) => setValue("vehicleTypeUniqueId", val, { shouldValidate: true })}
-                  placeholder={t("orders.selectVehicleType", "Select vehicle type")}
+                  onChange={(val) =>
+                    setValue("vehicleTypeUniqueId", val, {
+                      shouldValidate: true,
+                    })
+                  }
+                  placeholder={t(
+                    "orders.selectVehicleType",
+                    "Select vehicle type",
+                  )}
                   error={!!errors.vehicleTypeUniqueId}
                   options={[
-                    { value: "", label: t("orders.selectVehicleType", "Select vehicle type") },
+                    {
+                      value: "",
+                      label: t(
+                        "orders.selectVehicleType",
+                        "Select vehicle type",
+                      ),
+                    },
                     ...vehicleTypesList.map((vt) => ({
                       value: vt.vehicleTypeUniqueId,
                       label: vt.vehicleTypeName,
@@ -449,7 +555,9 @@ export function CreateOrderModal({
                   ]}
                 />
                 {errors.vehicleTypeUniqueId && (
-                  <p className="com-error-text">{errors.vehicleTypeUniqueId.message}</p>
+                  <p className="com-error-text">
+                    {errors.vehicleTypeUniqueId.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -457,52 +565,73 @@ export function CreateOrderModal({
 
           {/* Order Details */}
           <div>
-            <h3 className="com-section-title">{t("orders.orderDetails", "Order Details")}</h3>
+            <h3 className="com-section-title">
+              {t("orders.orderDetails", "Order Details")}
+            </h3>
             <div className="com-grid-2">
               <div className="com-field-group">
-                <label className="com-label">{t("orders.cargoItem", "Item Name")}</label>
+                <label className="com-label">
+                  {t("orders.cargoItem", "Item Name")}
+                </label>
                 <input
                   {...register("shippableItemName")}
                   placeholder={t("orders.cargoItemPlaceholder", "Cement")}
                   className={`com-input ${errors.shippableItemName ? "com-input-error" : ""}`}
                 />
                 {errors.shippableItemName && (
-                  <p className="com-error-text">{errors.shippableItemName.message}</p>
+                  <p className="com-error-text">
+                    {errors.shippableItemName.message}
+                  </p>
                 )}
               </div>
 
               <div className="com-field-group">
-                <label className="com-label">{t("orders.quantityQuintal", "Quantity (Quintal)")}</label>
+                <label className="com-label">
+                  {t("orders.quantityQuintal", "Quantity (Quintal)")}
+                </label>
                 <input
                   type="number"
                   step="any"
                   placeholder={t("orders.enterQuantity", "Enter quantity")}
-                  {...register("shippableItemQtyInQuintal", { valueAsNumber: true })}
+                  {...register("shippableItemQtyInQuintal", {
+                    valueAsNumber: true,
+                  })}
                   className={`com-input ${errors.shippableItemQtyInQuintal ? "com-input-error" : ""}`}
                 />
                 {errors.shippableItemQtyInQuintal && (
-                  <p className="com-error-text">{errors.shippableItemQtyInQuintal.message}</p>
+                  <p className="com-error-text">
+                    {errors.shippableItemQtyInQuintal.message}
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="com-grid-2">
               <div className="com-field-group">
-                <label className="com-label">{t("orders.shippingCost", "Shipping Cost (ETB)")}</label>
+                <label className="com-label">
+                  {t("orders.shippingCost", "Shipping Cost (ETB)")}
+                </label>
                 <input
                   type="number"
                   step="any"
-                  placeholder={t("orders.enterShippingCost", "Enter shipping cost")}
+                  placeholder={t(
+                    "orders.enterShippingCost",
+                    "Enter shipping cost",
+                  )}
                   {...register("shippingCost", { valueAsNumber: true })}
                   className={`com-input ${errors.shippingCost ? "com-input-error" : ""}`}
                 />
                 {errors.shippingCost && (
-                  <p className="com-error-text">{errors.shippingCost.message}</p>
+                  <p className="com-error-text">
+                    {errors.shippingCost.message}
+                  </p>
                 )}
               </div>
 
               <div className="com-field-group">
-                <label className="com-label">{t("orders.numberOfVehicles", "Number of Vehicles")}</label>
+                <label className="com-label">
+                  {t("orders.numberOfVehicles", "Number of Vehicles")}
+                </label>
                 <input
                   type="number"
                   min={1}
@@ -510,7 +639,9 @@ export function CreateOrderModal({
                   className={`com-input ${errors.numberOfVehicles ? "com-input-error" : ""}`}
                 />
                 {errors.numberOfVehicles && (
-                  <p className="com-error-text">{errors.numberOfVehicles.message}</p>
+                  <p className="com-error-text">
+                    {errors.numberOfVehicles.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -520,14 +651,18 @@ export function CreateOrderModal({
                 label={t("orders.shippingDate", "Shipping Date")}
                 value={shippingDate}
                 placeholder={t("orders.selectDate", "Select date")}
-                onChange={(val) => setValue("shippingDate", val, { shouldValidate: true })}
+                onChange={(val) =>
+                  setValue("shippingDate", val, { shouldValidate: true })
+                }
                 error={errors.shippingDate?.message}
               />
               <DatePickerField
                 label={t("orders.deliveryDate", "Delivery Date")}
                 value={deliveryDate}
                 placeholder={t("orders.selectDate", "Select date")}
-                onChange={(val) => setValue("deliveryDate", val, { shouldValidate: true })}
+                onChange={(val) =>
+                  setValue("deliveryDate", val, { shouldValidate: true })
+                }
                 error={errors.deliveryDate?.message}
               />
             </div>
@@ -535,8 +670,12 @@ export function CreateOrderModal({
 
           {/* ── Origin & Destination Sections (Aligned Rows) ── */}
           <div className="com-grid-2" style={{ marginBottom: "-4px" }}>
-            <h3 className="com-section-title">{t("orders.origin", "Origin")}</h3>
-            <h3 className="com-section-title">{t("orders.destination", "Destination")}</h3>
+            <h3 className="com-section-title">
+              {t("orders.origin", "Origin")}
+            </h3>
+            <h3 className="com-section-title">
+              {t("orders.destination", "Destination")}
+            </h3>
           </div>
 
           <div className="com-grid-2">
@@ -546,15 +685,23 @@ export function CreateOrderModal({
                 <Search size={16} className="com-search-icon" />
                 <input
                   value={originQuery}
-                  placeholder={t("orders.originPlaceholder", "Search pickup location")}
+                  placeholder={t(
+                    "orders.originPlaceholder",
+                    "Search pickup location",
+                  )}
                   onChange={(e) => {
                     isTypingOriginRef.current = true;
                     setOriginQuery(e.target.value);
-                    setValue("originDescription", e.target.value, { shouldValidate: true });
+                    setValue("originDescription", e.target.value, {
+                      shouldValidate: true,
+                    });
                     setOriginOpen(true);
                   }}
                   onFocus={() => {
-                    if (originQuery.trim().length >= 3 && originResults.length > 0) {
+                    if (
+                      originQuery.trim().length >= 3 &&
+                      originResults.length > 0
+                    ) {
                       setOriginOpen(true);
                     }
                   }}
@@ -580,11 +727,19 @@ export function CreateOrderModal({
               </div>
               <div style={{ minHeight: "14px" }}>
                 {errors.originDescription && (
-                  <p className="com-error-text" style={{ margin: 0 }}>{errors.originDescription.message}</p>
+                  <p className="com-error-text" style={{ margin: 0 }}>
+                    {errors.originDescription.message}
+                  </p>
                 )}
-                {!errors.originDescription && (errors.originLatitude || errors.originLongitude) && (
-                  <p className="com-error-text" style={{ margin: 0 }}>{t("orders.pickLocationFromSearch", "Please pick a location from search")}</p>
-                )}
+                {!errors.originDescription &&
+                  (errors.originLatitude || errors.originLongitude) && (
+                    <p className="com-error-text" style={{ margin: 0 }}>
+                      {t(
+                        "orders.pickLocationFromSearch",
+                        "Please pick a location from search",
+                      )}
+                    </p>
+                  )}
               </div>
             </div>
 
@@ -594,15 +749,23 @@ export function CreateOrderModal({
                 <Search size={16} className="com-search-icon" />
                 <input
                   value={destQuery}
-                  placeholder={t("orders.destPlaceholder", "Search delivery location")}
+                  placeholder={t(
+                    "orders.destPlaceholder",
+                    "Search delivery location",
+                  )}
                   onChange={(e) => {
                     isTypingDestRef.current = true;
                     setDestQuery(e.target.value);
-                    setValue("destinationDescription", e.target.value, { shouldValidate: true });
+                    setValue("destinationDescription", e.target.value, {
+                      shouldValidate: true,
+                    });
                     setDestOpen(true);
                   }}
                   onFocus={() => {
-                    if (destQuery.trim().length >= 3 && destResults.length > 0) {
+                    if (
+                      destQuery.trim().length >= 3 &&
+                      destResults.length > 0
+                    ) {
                       setDestOpen(true);
                     }
                   }}
@@ -628,11 +791,20 @@ export function CreateOrderModal({
               </div>
               <div style={{ minHeight: "14px" }}>
                 {errors.destinationDescription && (
-                  <p className="com-error-text" style={{ margin: 0 }}>{errors.destinationDescription.message}</p>
+                  <p className="com-error-text" style={{ margin: 0 }}>
+                    {errors.destinationDescription.message}
+                  </p>
                 )}
-                {!errors.destinationDescription && (errors.destinationLatitude || errors.destinationLongitude) && (
-                  <p className="com-error-text" style={{ margin: 0 }}>{t("orders.pickLocationFromSearch", "Please pick a location from search")}</p>
-                )}
+                {!errors.destinationDescription &&
+                  (errors.destinationLatitude ||
+                    errors.destinationLongitude) && (
+                    <p className="com-error-text" style={{ margin: 0 }}>
+                      {t(
+                        "orders.pickLocationFromSearch",
+                        "Please pick a location from search",
+                      )}
+                    </p>
+                  )}
               </div>
             </div>
           </div>
@@ -686,14 +858,20 @@ export function CreateOrderModal({
             <button type="button" className="com-btn-cancel" onClick={onClose}>
               {t("common.cancel")}
             </button>
-            <button type="submit" className="com-btn-submit" disabled={isSubmitting || isCreating}>
-              {isSubmitting || isCreating ? t("orders.creating") : t("orders.createOrderBtn")}
+            <button
+              type="submit"
+              className="com-btn-submit"
+              disabled={isSubmitting || isCreating}
+            >
+              {isSubmitting || isCreating
+                ? t("orders.creating")
+                : t("orders.createOrderBtn")}
             </button>
           </div>
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
