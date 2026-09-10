@@ -11,7 +11,9 @@ import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import { useAuth } from "../../context/AuthContext";
 import { disconnectSocket } from "../../lib/socket";
 import { hasOrganizationData } from "../../services/organization.service";
+import { useAppDispatch } from "../../lib/redux/hooks";
 import {
+  api,
   useCreateQueueOrganizationMutation,
   useListQueueOrganizationsQuery,
   useAddQueueOrgMemberMutation,
@@ -53,6 +55,7 @@ function formatPhotonLabel(feature: any): string {
 }
 
 export const SetupOrganization: React.FC = () => {
+  const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { logout, auth } = useAuth();
@@ -185,16 +188,39 @@ export const SetupOrganization: React.FC = () => {
 
   const onSubmit = async (data: SetupOrgFormValues) => {
     try {
-      const res = await createOrgMutation({
-        queueOrganizationName: data.queueOrganizationName,
-        queueOrganizationType: data.queueOrganizationType,
-        queueOrganizationPhone: data.queueOrganizationPhone || null,
-        queueOrganizationAddress: data.queueOrganizationAddress,
-        latitude: data.latitude != null ? Number(data.latitude) : null,
-        longitude: data.longitude != null ? Number(data.longitude) : null,
-      }).unwrap();
+      let res: any = null;
+      let alreadyExisted = false;
 
-      const orgId = res?.data?.queueOrganizationUniqueId;
+      try {
+        res = await createOrgMutation({
+          queueOrganizationName: data.queueOrganizationName,
+          queueOrganizationType: data.queueOrganizationType,
+          queueOrganizationPhone: data.queueOrganizationPhone || null,
+          queueOrganizationAddress: data.queueOrganizationAddress,
+          latitude: data.latitude != null ? Number(data.latitude) : null,
+          longitude: data.longitude != null ? Number(data.longitude) : null,
+        }).unwrap();
+        alreadyExisted = Boolean(res?.data?.alreadyExisted);
+      } catch (createErr: any) {
+        // If 409 Conflict (organization already exists), proceed gracefully
+        const status =
+          createErr?.status ||
+          createErr?.originalStatus ||
+          createErr?.response?.status;
+        if (
+          status === 409 ||
+          Number(status) === 409 ||
+          createErr?.data?.statusCode === 409 ||
+          createErr?.data?.status === 409
+        ) {
+          alreadyExisted = true;
+          res = createErr?.data;
+        } else {
+          throw createErr;
+        }
+      }
+
+      const orgId = res?.data?.queueOrganizationUniqueId || res?.queueOrganizationUniqueId;
       const userUniqueId = auth?.userData?.userUniqueId;
 
       if (orgId && userUniqueId) {
@@ -202,7 +228,7 @@ export const SetupOrganization: React.FC = () => {
           await addMemberMutation({
             id: orgId,
             userUniqueId,
-            roleId: auth.userData.roleId || 11,
+            roleId: auth.userData?.roleId || 11,
           }).unwrap();
         } catch {
           // If already a member or insufficient permissions, proceed gracefully
@@ -210,10 +236,29 @@ export const SetupOrganization: React.FC = () => {
       }
 
       // Ensure cache is updated with the newly created/linked org before navigating
-      await refetchOrgs();
+      dispatch(api.util.invalidateTags(["QueueOrganizations"]));
+
+      // Fetch fresh organizations list into cache
+      try {
+        await dispatch(
+          api.endpoints.listQueueOrganizations.initiate(undefined, {
+            subscribe: false,
+            forceRefetch: true,
+          })
+        );
+      } catch {
+        // Proceed even if direct fetch threw; tag invalidation handles background sync
+      }
+
+      // Safely call refetchOrgs if query was started
+      try {
+        await refetchOrgs?.();
+      } catch {
+        // Safely ignore if query has not been started yet
+      }
 
       toast.success(
-        res?.data?.alreadyExisted
+        alreadyExisted
           ? "Organization linked successfully! Opening dashboard."
           : "Organization created! Pending admin approval."
       );
@@ -297,6 +342,10 @@ export const SetupOrganization: React.FC = () => {
                   type="text"
                   placeholder="e.g. Addis Freight Terminal"
                   autoComplete="organization"
+                  spellCheck={false}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
                   {...register("queueOrganizationName")}
                 />
               </div>
@@ -355,6 +404,10 @@ export const SetupOrganization: React.FC = () => {
                   type="text"
                   placeholder={t("org.searchAddressPlaceholder")}
                   autoComplete="off"
+                  spellCheck={false}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
                   value={addressValue ?? ""}
                   {...addressRest}
                   ref={(el) => {

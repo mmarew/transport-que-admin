@@ -50,7 +50,11 @@ export function OrdersMobileCards({
             <div className="orders-m-header">
               <div className="orders-m-shipper-wrap">
                 <span className="orders-m-shipper">{order.shipper}</span>
-                <span className="orders-m-type-badge">{order.type}</span>
+                <span className="orders-m-type-badge">
+                  {order.type === "Group"
+                    ? t("orders.modeGroup", "Group")
+                    : t("orders.modeIndividual", "Individual")}
+                </span>
               </div>
               <div className="orders-m-cost">
                 <span className="orders-m-cost-val">{order.cost.toLocaleString()}</span>

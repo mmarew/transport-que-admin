@@ -6,6 +6,7 @@ html.dark,
   background-color: #0b0f19 !important;
   color: #e2e8f0 !important;
   color-scheme: dark;
+  accent-color: #38bdf8;
 }
 
 /* ── Layout & Main Wrappers ── */

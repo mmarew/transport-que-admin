@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { checkinSchema, dispatchSchema, setupOrgSchema, overrideSchema } from "../schemas/queue";
+import { checkinSchema, dispatchSchema, setupOrgSchema, overrideSchema, createOrderSchema } from "../schemas/queue";
 import { resolveVehicleName } from "../utils/vehicleType";
 import parseError from "../utils/parseError";
 
@@ -106,6 +106,98 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
     });
   });
 
+  describe("Create Shipper Request Order Validation (createOrderSchema)", () => {
+    const validOrderPayload = {
+      shipperPhoneNumber: "+251911223344",
+      shippableItemName: "Wheat Grain",
+      shippableItemQtyInQuintal: 150,
+      shippingCost: 85000,
+      shippingDate: "2026-09-12T08:00:00.000Z",
+      deliveryDate: "2026-09-15T18:00:00.000Z",
+      numberOfVehicles: 2,
+      requestMode: "individual_target" as const,
+      vehicleTypeUniqueId: "e93aa27f-364f-4eff-bc26-582b773071d3",
+      originDescription: "Modjo Dry Port, Ethiopia",
+      originLatitude: "8.5912",
+      originLongitude: "39.1245",
+      destinationDescription: "Djibouti Port Container Terminal",
+      destinationLatitude: "11.5886",
+      destinationLongitude: "43.1456",
+    };
+
+    it("should validate a complete valid shipper request order payload", () => {
+      const result = createOrderSchema.safeParse(validOrderPayload);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.isBiddingApproved).toBeUndefined();
+      }
+    });
+
+    it("should correctly handle isBiddingApproved: true for biddable jobs", () => {
+      const biddablePayload = {
+        ...validOrderPayload,
+        isBiddingApproved: true,
+      };
+      const result = createOrderSchema.safeParse(biddablePayload);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.isBiddingApproved).toBe(true);
+      }
+    });
+
+    it("should correctly handle isBiddingApproved: false for FIFO queue dispatch", () => {
+      const fifoPayload = {
+        ...validOrderPayload,
+        isBiddingApproved: false,
+      };
+      const result = createOrderSchema.safeParse(fifoPayload);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.isBiddingApproved).toBe(false);
+      }
+    });
+
+    it("should reject order when deliveryDate is before shippingDate", () => {
+      const invalidPayload = {
+        ...validOrderPayload,
+        shippingDate: "2026-09-15T18:00:00.000Z",
+        deliveryDate: "2026-09-12T08:00:00.000Z",
+      };
+      const result = createOrderSchema.safeParse(invalidPayload);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain("Delivery date cannot be before shipping date");
+      }
+    });
+
+    it("should reject order with invalid coordinates outside boundary", () => {
+      const invalidPayload = {
+        ...validOrderPayload,
+        originLatitude: "195.45", // invalid latitude > 90
+      };
+      const result = createOrderSchema.safeParse(invalidPayload);
+      expect(result.success).toBe(false);
+    });
+
+    it("should reject order with non-positive numberOfVehicles", () => {
+      const invalidPayload = {
+        ...validOrderPayload,
+        numberOfVehicles: 0,
+      };
+      const result = createOrderSchema.safeParse(invalidPayload);
+      expect(result.success).toBe(false);
+    });
+
+    it("should reject order with negative shippingCost", () => {
+      const invalidPayload = {
+        ...validOrderPayload,
+        shippingCost: -500,
+      };
+      const result = createOrderSchema.safeParse(invalidPayload);
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe("Vehicle Name Resolution Utility (resolveVehicleName)", () => {
     const mockVehicleTypes = [
       { vehicleTypeUniqueId: "vt-uuid-1", vehicleTypeName: "Heavy Freight Truck" },
@@ -146,8 +238,22 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       expect(parseError("Unauthorized action")).toBe("Unauthorized action");
     });
 
+    it("should extract message from 409 conflict response", () => {
+      const conflictError = {
+        status: 409,
+        data: { message: "User is already a member of this organization" },
+      };
+      expect(parseError(conflictError)).toBe("User is already a member of this organization");
+    });
+
+    it("should correctly extract message from query-not-started Error", () => {
+      const unstartedError = new Error("Cannot refetch a query that has not been started yet.");
+      expect(parseError(unstartedError)).toBe("Cannot refetch a query that has not been started yet.");
+    });
+
     it("should return fallback message for unknown null/undefined errors", () => {
       expect(parseError(null)).toBe("An unexpected error occurred. Please try again.");
     });
   });
 });
+

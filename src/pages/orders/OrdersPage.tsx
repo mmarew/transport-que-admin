@@ -118,13 +118,13 @@ export function OrdersPage() {
       let valA: string | number = "";
       let valB: string | number = "";
       switch (sortCol) {
-        case "shipper":   valA = a.shipper.toLowerCase();                         valB = b.shipper.toLowerCase();                         break;
-        case "type":      valA = a.type;                                           valB = b.type;                                           break;
-        case "vehicleType": valA = a.vehicleType.toLowerCase();                   valB = b.vehicleType.toLowerCase();                     break;
-        case "item":      valA = a.item.toLowerCase();                            valB = b.item.toLowerCase();                            break;
-        case "location":  valA = `${a.origin} ${a.destination}`.toLowerCase();    valB = `${b.origin} ${b.destination}`.toLowerCase();    break;
-        case "quintal":   valA = a.quintal;                                        valB = b.quintal;                                        break;
-        case "cost":      valA = a.cost;                                           valB = b.cost;                                           break;
+        case "shipper": valA = a.shipper.toLowerCase(); valB = b.shipper.toLowerCase(); break;
+        case "type": valA = a.type; valB = b.type; break;
+        case "vehicleType": valA = a.vehicleType.toLowerCase(); valB = b.vehicleType.toLowerCase(); break;
+        case "item": valA = a.item.toLowerCase(); valB = b.item.toLowerCase(); break;
+        case "location": valA = `${a.origin} ${a.destination}`.toLowerCase(); valB = `${b.origin} ${b.destination}`.toLowerCase(); break;
+        case "quintal": valA = a.quintal; valB = b.quintal; break;
+        case "cost": valA = a.cost; valB = b.cost; break;
       }
       if (typeof valA === "number" && typeof valB === "number") {
         return sortAsc ? valA - valB : valB - valA;
@@ -162,15 +162,15 @@ export function OrdersPage() {
     const formData = new FormData(e.currentTarget);
     const updatedOrder: OrderDisplayItem = {
       ...editingOrder,
-      shipper:     String(formData.get("shipper")     || editingOrder.shipper),
-      type:        (formData.get("type") as "Individual" | "Group") || editingOrder.type,
+      shipper: String(formData.get("shipper") || editingOrder.shipper),
+      type: (formData.get("type") as "Individual" | "Group") || editingOrder.type,
       vehicleType: String(formData.get("vehicleType") || editingOrder.vehicleType),
-      item:        String(formData.get("item")        || editingOrder.item),
-      origin:      String(formData.get("origin")      || editingOrder.origin),
+      item: String(formData.get("item") || editingOrder.item),
+      origin: String(formData.get("origin") || editingOrder.origin),
       destination: String(formData.get("destination") || editingOrder.destination),
-      quintal:     Number(formData.get("quintal"))    || editingOrder.quintal,
-      cost:        Number(formData.get("cost"))       || editingOrder.cost,
-      status:      (formData.get("status") as "ongoing" | "complete") || editingOrder.status,
+      quintal: Number(formData.get("quintal")) || editingOrder.quintal,
+      cost: Number(formData.get("cost")) || editingOrder.cost,
+      status: (formData.get("status") as "ongoing" | "complete") || editingOrder.status,
     };
     setEditedOrders((prev) => ({ ...prev, [editingOrder.id]: updatedOrder }));
     toast.success(t("orders.orderUpdatedSuccess", "Order updated successfully"));

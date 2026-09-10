@@ -116,7 +116,11 @@ export function OrdersTable({
                       <span className="orders-shipper-desktop">{order.shipper}</span>
                       <span className="orders-shipper-mobile">{formatShortName(order.shipper)}</span>
                     </td>
-                    <td className="td-type">{order.type}</td>
+                    <td className="td-type">
+                      {order.type === "Group"
+                        ? t("orders.modeGroup", "Group")
+                        : t("orders.modeIndividual", "Individual")}
+                    </td>
                     <td className="td-vehicletype">{order.vehicleType}</td>
                     <td className="td-item">{order.item}</td>
                     <td className={`td-location ${expandedLocations.has(order.id) ? "td-location--expanded" : ""}`}>

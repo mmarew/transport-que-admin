@@ -14,6 +14,12 @@ import {
 } from "../utils/journeyStatus";
 
 describe("Journey Status utility", () => {
+  it("provides valid status name and label lookup maps", () => {
+    expect(JOURNEY_STATUS_NAMES[1]).toBe("waiting");
+    expect(JOURNEY_STATUS_LABELS[1]).toBe("Waiting");
+    expect(JOURNEY_STATUS_NAMES[9]).toBe("journeyCompleted");
+    expect(JOURNEY_STATUS_LABELS[9]).toBe("Journey Completed");
+  });
   it("converts journeyStatusId to its canonical name string", () => {
     expect(getJourneyStatusName(1)).toBe("waiting");
     expect(getJourneyStatusName(2)).toBe("requested");

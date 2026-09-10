@@ -184,6 +184,7 @@ export interface CreateOrderPayload {
     longitude: number;
     description: string;
   };
+  isBiddingApproved?: boolean;
 }
 
 export interface CreateOrderResponse {
