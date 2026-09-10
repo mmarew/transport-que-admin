@@ -10,3 +10,5 @@ comments on view of ui
 
 4) text Verify OTP Code and We sent a 6-digit verification code to +2519********. are black in color and we cant see it in mobile app
 
+5 no queue org name after mange
+6) how to see history of loaded data for queue org

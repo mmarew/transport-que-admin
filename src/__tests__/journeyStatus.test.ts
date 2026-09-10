@@ -6,8 +6,11 @@ import {
   resolveJourneyStatus,
   mapJourneyStatusToQueueStatus,
   isDriverWaiting,
+<<<<<<< HEAD
   JOURNEY_STATUS_NAMES,
   JOURNEY_STATUS_LABELS,
+=======
+>>>>>>> dev
 } from "../utils/journeyStatus";
 
 describe("Journey Status utility", () => {
