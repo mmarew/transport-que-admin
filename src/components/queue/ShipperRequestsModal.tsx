@@ -27,6 +27,12 @@ export interface ShipperRequestDriverInfo {
   fullName?: string | null;
   phoneNumber?: string | null;
   journeyStatusId?: number | null;
+  journeyStatus?: string | null;
+  offerCost?: number | string | null;
+  proposedCost?: number | string | null;
+  bidAmount?: number | string | null;
+  vehicleTypeName?: string | null;
+  plateNumber?: string | null;
 }
 
 export interface ShipperRequestDetail {
@@ -316,11 +322,30 @@ export function ShipperRequestsModal({
                                       {d.fullName ||
                                         t("dispatchModal.waitingDriver", "Driver")}
                                     </span>
-                                    {d.phoneNumber && (
-                                      <span className="srm-driver-phone">
-                                        <Phone size={11} /> {d.phoneNumber}
-                                      </span>
-                                    )}
+                                    <div className="srm-driver-submeta">
+                                      {d.phoneNumber && (
+                                        <span className="srm-driver-phone">
+                                          <Phone size={11} /> {d.phoneNumber}
+                                        </span>
+                                      )}
+                                      {(d.vehicleTypeName || d.plateNumber) && (
+                                        <span className="srm-driver-veh-tag">
+                                          {d.vehicleTypeName || ""}
+                                          {d.plateNumber ? ` (${d.plateNumber})` : ""}
+                                        </span>
+                                      )}
+                                      {Boolean(d.offerCost || d.proposedCost || d.bidAmount) && (
+                                        <span className="srm-driver-offer-badge">
+                                          {t("orders.driverOfferCost", "Driver Offer")}:{" "}
+                                          <strong>
+                                            {Number(
+                                              d.offerCost ?? d.proposedCost ?? d.bidAmount
+                                            ).toLocaleString()}{" "}
+                                            ETB
+                                          </strong>
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 

@@ -389,6 +389,13 @@ export const am = {
     acceptBid: "ተቀበል",
     targetCost: "የተጠየቀው ክፍያ",
     driverDetails: "የአሽከርካሪ ዝርዝር",
+    driverOfferCost: "የአሽከርካሪ የቀረበ ክፍያ",
+    matchesShipperTarget: "ከላኪው የታለመ ክፍያ ጋር እኩል ነው",
+    shipperTargetCost: "የላኪው የታለመ ክፍያ",
+    belowTarget: "ከታለመው በታች",
+    aboveTarget: "ከታለመው በላይ",
+    bestDriverOffer: "ምርጥ የአሽከርካሪ ዋጋ",
+    bidFrom: "ጨረታ:",
   },
   dispatchModal: {
     title: "ለቀዳሚው አሽከርካሪ አሰማራ",

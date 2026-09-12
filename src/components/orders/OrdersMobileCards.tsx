@@ -79,6 +79,23 @@ export function OrdersMobileCards({
               <div className="orders-m-cost">
                 <span className="orders-m-cost-val">{order.cost.toLocaleString()}</span>
                 <span className="orders-m-cost-cur">ETB</span>
+                {order.driverRequests && order.driverRequests.length > 0 && (() => {
+                  const validOffers = order.driverRequests
+                    .map((d) => Number(d.offerCost ?? d.proposedCost ?? d.bidAmount))
+                    .filter((c) => !isNaN(c) && c > 0);
+                  if (validOffers.length > 0) {
+                    const minOffer = Math.min(...validOffers);
+                    return (
+                      <span
+                        className="orders-m-cost-bid"
+                        title={t("orders.bestDriverOffer", "Best Driver Offer")}
+                      >
+                        {t("orders.bidFrom", "Bid:")} {minOffer.toLocaleString()} ETB
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
 

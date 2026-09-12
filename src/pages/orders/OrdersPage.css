@@ -500,6 +500,37 @@
 .td-cost {
   font-weight: 500;
   color: #1e293b;
+  vertical-align: middle;
+}
+
+.orders-cost-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.orders-cost-val {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.orders-cost-cur {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.orders-cost-bid-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 4px;
+  padding: 0.08rem 0.4rem;
+  display: inline-block;
+  white-space: nowrap;
+  width: fit-content;
 }
 
 .td-action {
@@ -1036,7 +1067,8 @@
 
   .orders-m-cost {
     display: flex;
-    align-items: baseline;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 2px;
     flex-shrink: 0;
   }
@@ -1051,6 +1083,18 @@
     font-size: 0.68rem;
     font-weight: 600;
     color: #64748b;
+    margin-left: 2px;
+  }
+
+  .orders-m-cost-bid {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    border-radius: 4px;
+    padding: 0.05rem 0.35rem;
+    white-space: nowrap;
   }
 
   .orders-m-route {

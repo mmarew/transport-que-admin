@@ -344,6 +344,67 @@
   color: #64748b;
 }
 
+/* Driver Offer Cost Column */
+.dbm-driver-offer-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  min-width: 145px;
+}
+
+.dbm-offer-tag-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+}
+
+.dbm-offer-amount {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0B4D6D;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.dbm-offer-currency {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-left: 2px;
+}
+
+.dbm-offer-target-diff {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.08rem 0.4rem;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.dbm-offer-target-diff--match {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.dbm-offer-target-diff--below {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.dbm-offer-target-diff--above {
+  background: #fef3c7;
+  color: #b45309;
+}
+
 /* Bid Actions */
 .dbm-bid-actions {
   flex-shrink: 0;
@@ -483,6 +544,13 @@
   .dbm-bid-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .dbm-driver-offer-col {
+    width: 100%;
+    align-items: flex-start;
+    text-align: left;
+    box-sizing: border-box;
   }
 
   .dbm-bid-actions {

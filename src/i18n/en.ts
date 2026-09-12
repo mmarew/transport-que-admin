@@ -403,6 +403,13 @@ export const en = {
     acceptBid: "Accept",
     targetCost: "Target Cost",
     driverDetails: "Driver Details",
+    driverOfferCost: "Driver Offer Cost",
+    matchesShipperTarget: "Matches Shipper Target",
+    shipperTargetCost: "Shipper Target Cost",
+    belowTarget: "below target",
+    aboveTarget: "above target",
+    bestDriverOffer: "Best Driver Offer",
+    bidFrom: "Bid:",
   },
   dispatchModal: {
     title: "Dispatch Driver",

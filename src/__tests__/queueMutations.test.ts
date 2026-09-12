@@ -321,6 +321,48 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       expect(orderItem.driverRequests?.[0].fullName).toBe("Abebe Bikila");
       expect(orderItem.driverRequests?.[0].driverPhoneNumber).toBe("+251922334455");
     });
+
+    it("should correctly handle driver offer cost calculation and comparison against shipper target cost", () => {
+      const targetCost = 50000;
+      const bids = [
+        { name: "Driver 1", offerCost: 45000 }, // below target
+        { name: "Driver 2", proposedCost: 50000 }, // matches target
+        { name: "Driver 3", bidAmount: 55000 }, // above target
+        { name: "Driver 4" }, // fallback to targetCost
+      ];
+
+      const processedBids = bids.map((b) => {
+        const cost = Number(b.offerCost ?? b.proposedCost ?? b.bidAmount ?? targetCost);
+        let diffStatus: "below" | "match" | "above";
+        let diffAmount = 0;
+
+        if (cost === targetCost) {
+          diffStatus = "match";
+        } else if (cost < targetCost) {
+          diffStatus = "below";
+          diffAmount = targetCost - cost;
+        } else {
+          diffStatus = "above";
+          diffAmount = cost - targetCost;
+        }
+
+        return { ...b, cost, diffStatus, diffAmount };
+      });
+
+      expect(processedBids[0].cost).toBe(45000);
+      expect(processedBids[0].diffStatus).toBe("below");
+      expect(processedBids[0].diffAmount).toBe(5000);
+
+      expect(processedBids[1].cost).toBe(50000);
+      expect(processedBids[1].diffStatus).toBe("match");
+
+      expect(processedBids[2].cost).toBe(55000);
+      expect(processedBids[2].diffStatus).toBe("above");
+      expect(processedBids[2].diffAmount).toBe(5000);
+
+      expect(processedBids[3].cost).toBe(50000);
+      expect(processedBids[3].diffStatus).toBe("match");
+    });
   });
 });
 

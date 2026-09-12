@@ -119,6 +119,11 @@ export function OrdersPage() {
           phoneNumber: d.phoneNumber ?? d.driverPhoneNumber ?? null,
           journeyStatusId: d.journeyStatusId ?? d.statusId ?? null,
           journeyStatus: d.journeyStatus ?? null,
+          offerCost: d.offerCost ?? d.proposedCost ?? d.bidAmount ?? d.bidCost ?? d.biddingCost ?? d.cost ?? d.price ?? null,
+          proposedCost: d.proposedCost ?? d.offerCost ?? d.bidAmount ?? null,
+          bidAmount: d.bidAmount ?? d.proposedCost ?? d.offerCost ?? null,
+          vehicleTypeName: d.vehicleTypeName ?? d.vehicleType ?? null,
+          plateNumber: d.plateNumber ?? d.vehiclePlateNumber ?? null,
         }));
 
         return {

@@ -283,9 +283,55 @@ export function DriverBidsModal({
                         )}
                         <span className="dbm-driver-veh">
                           <Truck size={12} />
-                          {order.vehicleType}
+                          {driver.vehicleTypeName || order.vehicleType}
+                          {driver.plateNumber && ` • ${driver.plateNumber}`}
                         </span>
                       </div>
+                    </div>
+
+                    {/* Driver Offer Cost */}
+                    <div className="dbm-driver-offer-col">
+                      <span className="dbm-offer-tag-label">
+                        {t("orders.driverOfferCost", "Driver Offer Cost")}
+                      </span>
+                      <span className="dbm-offer-amount">
+                        {Number(
+                          driver.offerCost ??
+                            driver.proposedCost ??
+                            driver.bidAmount ??
+                            order.cost
+                        ).toLocaleString()}{" "}
+                        <small className="dbm-offer-currency">ETB</small>
+                      </span>
+                      {order.cost > 0 && (() => {
+                        const offerVal = Number(
+                          driver.offerCost ??
+                            driver.proposedCost ??
+                            driver.bidAmount ??
+                            order.cost
+                        );
+                        if (offerVal === order.cost) {
+                          return (
+                            <span className="dbm-offer-target-diff dbm-offer-target-diff--match">
+                              {t("orders.matchesShipperTarget", "Matches Shipper Target")}
+                            </span>
+                          );
+                        } else if (offerVal < order.cost) {
+                          const diff = order.cost - offerVal;
+                          return (
+                            <span className="dbm-offer-target-diff dbm-offer-target-diff--below">
+                              -{diff.toLocaleString()} ETB {t("orders.belowTarget", "below target")}
+                            </span>
+                          );
+                        } else {
+                          const diff = offerVal - order.cost;
+                          return (
+                            <span className="dbm-offer-target-diff dbm-offer-target-diff--above">
+                              +{diff.toLocaleString()} ETB {t("orders.aboveTarget", "above target")}
+                            </span>
+                          );
+                        }
+                      })()}
                     </div>
 
                     <div className="dbm-bid-actions">

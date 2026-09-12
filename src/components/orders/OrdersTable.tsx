@@ -184,8 +184,36 @@ export function OrdersTable({
                         </button>
                       )}
                     </td>
-                    <td className="td-quintal">{order.quintal}</td>
-                    <td className="td-cost">{order.cost.toLocaleString()}</td>
+                    <td className="td-cost">
+                      <div className="orders-cost-cell">
+                        <span className="orders-cost-val">
+                          {order.cost.toLocaleString()}{" "}
+                          <small className="orders-cost-cur">ETB</small>
+                        </span>
+                        {order.driverRequests && order.driverRequests.length > 0 && (() => {
+                          const validOffers = order.driverRequests
+                            .map((d) => Number(d.offerCost ?? d.proposedCost ?? d.bidAmount))
+                            .filter((c) => !isNaN(c) && c > 0);
+                          if (validOffers.length > 0) {
+                            const minOffer = Math.min(...validOffers);
+                            const maxOffer = Math.max(...validOffers);
+                            const rangeStr =
+                              minOffer === maxOffer
+                                ? `${minOffer.toLocaleString()} ETB`
+                                : `${minOffer.toLocaleString()} - ${maxOffer.toLocaleString()} ETB`;
+                            return (
+                              <span
+                                className="orders-cost-bid-pill"
+                                title={`${t("orders.driverOfferCost", "Driver Offer Cost")}: ${rangeStr}`}
+                              >
+                                {t("orders.bidFrom", "Bid:")} {rangeStr}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </td>
                     <td className="td-action">
                       <div className="orders-actions-group">
                         {onViewRequests && (
