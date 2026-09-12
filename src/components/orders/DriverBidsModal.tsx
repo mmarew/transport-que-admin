@@ -43,7 +43,7 @@ export function DriverBidsModal({
   const [acceptedDriverIds, setAcceptedDriverIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"lowest-price" | "highest-price" | "name" | "default">("lowest-price");
-  const [displayLimit, setDisplayLimit] = useState<number>(100);
+  const [displayLimit, setDisplayLimit] = useState<number>(25);
 
   const driverRequests: ShipperRequestDriverInfo[] = order.driverRequests || [];
 

@@ -212,7 +212,8 @@
 
 .th-action {
   text-align: center;
-  width: 90px;
+  min-width: 135px;
+  width: 135px;
 }
 
 .orders-row {

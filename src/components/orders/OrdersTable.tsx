@@ -184,6 +184,7 @@ export function OrdersTable({
                         </button>
                       )}
                     </td>
+                    <td className="td-quintal">{order.quintal}</td>
                     <td className="td-cost">
                       <div className="orders-cost-cell">
                         <span className="orders-cost-val">
