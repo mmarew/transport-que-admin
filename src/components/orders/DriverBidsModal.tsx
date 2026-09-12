@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -11,6 +11,8 @@ import {
   Clock,
   Inbox,
   Tag,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -39,8 +41,49 @@ export function DriverBidsModal({
   const [acceptDriverMutation] = useAcceptDriverRequestMutation();
   const [acceptingDriverId, setAcceptingDriverId] = useState<string | null>(null);
   const [acceptedDriverIds, setAcceptedDriverIds] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"lowest-price" | "highest-price" | "name" | "default">("lowest-price");
+  const [displayLimit, setDisplayLimit] = useState<number>(100);
 
   const driverRequests: ShipperRequestDriverInfo[] = order.driverRequests || [];
+
+  const filteredAndSortedDrivers = useMemo(() => {
+    let list = [...driverRequests];
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase().trim();
+      list = list.filter((d) => {
+        const name = (d.fullName || "").toLowerCase();
+        const phone = (d.phoneNumber || "").toLowerCase();
+        const veh = (d.vehicleTypeName || "").toLowerCase();
+        const plate = (d.plateNumber || "").toLowerCase();
+        return name.includes(q) || phone.includes(q) || veh.includes(q) || plate.includes(q);
+      });
+    }
+
+    if (sortBy === "lowest-price") {
+      list.sort((a, b) => {
+        const priceA = Number(a.offerCost ?? a.proposedCost ?? a.bidAmount ?? order.cost);
+        const priceB = Number(b.offerCost ?? b.proposedCost ?? b.bidAmount ?? order.cost);
+        return priceA - priceB;
+      });
+    } else if (sortBy === "highest-price") {
+      list.sort((a, b) => {
+        const priceA = Number(a.offerCost ?? a.proposedCost ?? a.bidAmount ?? order.cost);
+        const priceB = Number(b.offerCost ?? b.proposedCost ?? b.bidAmount ?? order.cost);
+        return priceB - priceA;
+      });
+    } else if (sortBy === "name") {
+      list.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
+    }
+
+    return list;
+  }, [driverRequests, searchTerm, sortBy, order.cost]);
+
+  const visibleDrivers = useMemo(() => {
+    if (displayLimit <= 0) return filteredAndSortedDrivers;
+    return filteredAndSortedDrivers.slice(0, displayLimit);
+  }, [filteredAndSortedDrivers, displayLimit]);
 
   const handleAcceptDriver = async (driver: ShipperRequestDriverInfo) => {
     const driverKey =
@@ -219,6 +262,94 @@ export function DriverBidsModal({
             </span>
           </div>
 
+          {driverRequests.length > 0 && (
+            <div className="dbm-toolbar">
+              <div className="dbm-search-wrap">
+                <Search size={14} className="dbm-search-icon" />
+                <input
+                  type="text"
+                  className="dbm-search-input"
+                  placeholder={t(
+                    "orders.searchDriversPlaceholder",
+                    "Search by driver name, phone, or plate..."
+                  )}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    className="dbm-search-clear"
+                    onClick={() => setSearchTerm("")}
+                    aria-label={t("common.clear", "Clear")}
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              <div className="dbm-filters-wrap">
+                <div className="dbm-filter-group">
+                  <ArrowUpDown size={13} className="dbm-filter-icon" />
+                  <select
+                    className="dbm-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    aria-label={t("orders.sortBy", "Sort by")}
+                  >
+                    <option value="lowest-price">
+                      {t("orders.lowestPriceFirst", "Lowest Offer First")}
+                    </option>
+                    <option value="highest-price">
+                      {t("orders.highestPriceFirst", "Highest Offer First")}
+                    </option>
+                    <option value="name">
+                      {t("orders.nameAZ", "Driver Name (A-Z)")}
+                    </option>
+                    <option value="default">
+                      {t("orders.defaultOrder", "Default Order")}
+                    </option>
+                  </select>
+                </div>
+
+                <div className="dbm-filter-group">
+                  <select
+                    className="dbm-select dbm-select--limit"
+                    value={displayLimit}
+                    onChange={(e) => setDisplayLimit(Number(e.target.value))}
+                    aria-label="Display Limit"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={0}>{t("orders.showAll", "All")}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {driverRequests.length > 0 && (
+            <div className="dbm-showing-bar">
+              <span className="dbm-showing-text">
+                {t("orders.showingDrivers", {
+                  shown: visibleDrivers.length,
+                  total: filteredAndSortedDrivers.length,
+                  defaultValue: `Showing ${visibleDrivers.length} of ${filteredAndSortedDrivers.length} drivers`,
+                })}
+              </span>
+              {filteredAndSortedDrivers.length > visibleDrivers.length && (
+                <button
+                  type="button"
+                  className="dbm-btn-show-more"
+                  onClick={() => setDisplayLimit(0)}
+                >
+                  {t("orders.showAll", "Show All")} ({filteredAndSortedDrivers.length})
+                </button>
+              )}
+            </div>
+          )}
+
           {driverRequests.length === 0 ? (
             <div className="dbm-empty-state">
               <div className="dbm-empty-icon">
@@ -234,9 +365,25 @@ export function DriverBidsModal({
                 )}
               </p>
             </div>
+          ) : visibleDrivers.length === 0 ? (
+            <div className="dbm-empty-state">
+              <h5 className="dbm-empty-title">
+                {t("orders.noBidsYet", "No matching drivers found")}
+              </h5>
+              <p className="dbm-empty-desc">
+                {t("orders.noMatchingDrivers", "Try adjusting your search query.")}
+              </p>
+              <button
+                type="button"
+                className="dbm-btn-clear-search"
+                onClick={() => setSearchTerm("")}
+              >
+                {t("common.clear", "Clear Search")}
+              </button>
+            </div>
           ) : (
             <div className="dbm-bids-list">
-              {driverRequests.map((driver, idx) => {
+              {visibleDrivers.map((driver, idx) => {
                 const driverKey =
                   driver.userUniqueId ||
                   driver.phoneNumber ||

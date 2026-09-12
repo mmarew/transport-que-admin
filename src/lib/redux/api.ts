@@ -415,7 +415,7 @@ export const api = createApi({
         params: {
           target: "all",
           page: 1,
-          limit: 50,
+          limit: 100,
           ...params,
         },
       }),

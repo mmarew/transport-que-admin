@@ -236,6 +236,153 @@
   border-radius: 9999px;
 }
 
+/* Toolbar for large driver lists (up to 100+ drivers) */
+.dbm-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.dbm-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+}
+
+.dbm-search-icon {
+  position: absolute;
+  left: 0.65rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.dbm-search-input {
+  width: 100%;
+  padding: 0.42rem 1.8rem 0.42rem 2rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.45rem;
+  font-size: 0.8rem;
+  color: #1e293b;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+
+.dbm-search-input:focus {
+  outline: none;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.dbm-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dbm-search-clear:hover {
+  color: #475569;
+}
+
+.dbm-filters-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.dbm-filter-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dbm-filter-icon {
+  position: absolute;
+  left: 0.55rem;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.dbm-select {
+  padding: 0.42rem 0.65rem 0.42rem 1.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #334155;
+  background-color: #ffffff;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.dbm-select:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.dbm-select--limit {
+  padding-left: 0.65rem;
+  min-width: 60px;
+}
+
+.dbm-showing-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+  padding: 0.2rem 0.25rem;
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.dbm-showing-text {
+  font-weight: 600;
+}
+
+.dbm-btn-show-more {
+  background: transparent;
+  border: none;
+  color: #0284c7;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.dbm-btn-show-more:hover {
+  color: #0369a1;
+}
+
+.dbm-btn-clear-search {
+  margin-top: 0.65rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dbm-btn-clear-search:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 /* Bid Item */
 .dbm-bids-list {
   display: flex;
@@ -539,6 +686,20 @@
   .dbm-order-row {
     flex-direction: column;
     gap: 0.4rem;
+  }
+
+  .dbm-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dbm-filters-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dbm-select {
+    flex: 1;
   }
 
   .dbm-bid-item {

@@ -160,7 +160,7 @@ export function DispatchModal({
 
   const [dispatchMutation, { isLoading: isDispatching }] = useDispatchQueueMutation();
   const { data: ordersData } = useGetShipperRequestsQuery(
-    { queueOrganizationUniqueId, target: "all", page: 1, limit: 50 },
+    { queueOrganizationUniqueId, target: "all", page: 1, limit: 100 },
     { skip: !queueOrganizationUniqueId }
   );
 
