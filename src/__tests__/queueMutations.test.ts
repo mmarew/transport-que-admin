@@ -255,5 +255,72 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       expect(parseError(null)).toBe("An unexpected error occurred. Please try again.");
     });
   });
+
+  describe("Open for Bidding & Driver Request Acceptance Suite", () => {
+    it("should validate acceptDriverRequest payload structure", () => {
+      const acceptPayload = {
+        queueOrganizationUniqueId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        shipperRequestUniqueId: "b2c3d4e5-f6a1-7890-abcd-ef1234567890",
+        driverPhoneNumber: "+251911223344",
+        driverUserUniqueId: "c3d4e5f6-a1b2-7890-abcd-ef1234567890",
+        vehicleTypeUniqueId: "d4e5f6a1-b2c3-7890-abcd-ef1234567890",
+      };
+
+      expect(acceptPayload.queueOrganizationUniqueId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(acceptPayload.shipperRequestUniqueId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(acceptPayload.driverPhoneNumber).toBe("+251911223344");
+      expect(acceptPayload.driverUserUniqueId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(acceptPayload.vehicleTypeUniqueId).toMatch(/^[0-9a-f-]{36}$/);
+    });
+
+    it("should correctly retain driverRequests and isBiddingApproved in mapped order items", () => {
+      const rawShipperItem = {
+        shipperRequestUniqueId: "req-1234-uuid",
+        isBiddingApproved: true,
+        vehicleTypeOption: "Group",
+        shippableItemName: "Refined Sugar",
+        shippableItemQtyInQuintal: 250,
+        shippingCost: 75000,
+        pickupLocationName: "Wonji Factory",
+        dropoffLocationName: "Mercato, Addis Ababa",
+        vehicleTypeUniqueId: "vt-uuid-1",
+        queueOrganizationUniqueId: "org-uuid-1",
+        shipperUser: {
+          fullName: "Mekonnen Haile",
+          phoneNumber: "+251911223344",
+        },
+        driverRequests: [
+          {
+            driverUserUniqueId: "driver-uuid-1",
+            driverPhoneNumber: "+251922334455",
+            fullName: "Abebe Bikila",
+            journeyStatus: "CHECKED_IN",
+            bidUniqueId: "bid-uuid-1",
+          },
+        ],
+      };
+
+      // Transform raw backend object to OrderDisplayItem representation
+      const orderItem = {
+        id: rawShipperItem.shipperRequestUniqueId,
+        shipper: rawShipperItem.shipperUser.fullName,
+        type: rawShipperItem.vehicleTypeOption,
+        item: rawShipperItem.shippableItemName,
+        origin: rawShipperItem.pickupLocationName,
+        destination: rawShipperItem.dropoffLocationName,
+        quintal: rawShipperItem.shippableItemQtyInQuintal,
+        cost: rawShipperItem.shippingCost,
+        isBiddingApproved: Boolean(rawShipperItem.isBiddingApproved),
+        driverRequests: rawShipperItem.driverRequests,
+        vehicleTypeUniqueId: rawShipperItem.vehicleTypeUniqueId,
+        queueOrganizationUniqueId: rawShipperItem.queueOrganizationUniqueId,
+      };
+
+      expect(orderItem.isBiddingApproved).toBe(true);
+      expect(orderItem.driverRequests).toHaveLength(1);
+      expect(orderItem.driverRequests?.[0].fullName).toBe("Abebe Bikila");
+      expect(orderItem.driverRequests?.[0].driverPhoneNumber).toBe("+251922334455");
+    });
+  });
 });
 

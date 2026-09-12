@@ -57,6 +57,7 @@ export function QueueTable({
         phoneNumber: own.phoneNumber ?? undefined,
         requestMode: own.requestMode ?? null,
         vehicleTypeName: own.vehicleTypeName ?? null,
+        vehicleTypeUniqueId: (own as any).vehicleTypeUniqueId || null,
         shippableItemName: own.shippableItemName ?? null,
         shippableItemQtyInQuintal: own.shippableItemQtyInQuintal ?? null,
         shippingCost: own.shippingCost ?? null,
@@ -66,6 +67,8 @@ export function QueueTable({
         deliveryDate: own.deliveryDate ?? null,
         shipperRequestCreatedAt: own.shipperRequestCreatedAt ?? null,
         journeyStatusId: own.journeyStatusId ?? null,
+        isBiddingApproved: Boolean((own as any).isBiddingApproved),
+        driverRequests: (own as any).driverRequests || [],
       };
     }
     setShipperModal({ phone, name, request });

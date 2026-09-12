@@ -261,6 +261,32 @@
   color: #475569;
 }
 
+.orders-type-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.orders-badge-bidding {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.orders-badge-bidding svg {
+  color: #b45309;
+}
+
 .td-vehicletype {
   font-weight: 500;
   color: #1e293b;
@@ -502,6 +528,88 @@
 .orders-action-btn:hover {
   transform: scale(1.18);
   opacity: 0.8;
+}
+
+.orders-btn-bids {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background-color: #f0f7fa;
+  color: #0B4D6D;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.orders-btn-bids:hover {
+  background-color: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+  transform: translateY(-1px);
+}
+
+.orders-btn-bids--active {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.orders-btn-bids--active:hover {
+  background-color: #fde68a;
+  border-color: #fcd34d;
+  color: #78350f;
+}
+
+.orders-bids-count {
+  background-color: #0B4D6D;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.orders-btn-bids--active .orders-bids-count {
+  background-color: #b45309;
+}
+
+.orders-action-btn--requests {
+  position: relative;
+  color: #0284c7;
+}
+
+.orders-action-btn--requests:hover {
+  color: #0369a1;
+}
+
+.orders-requests-count-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background-color: #0284c7;
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .orders-action-btn--edit {
@@ -908,6 +1016,13 @@
     text-overflow: ellipsis;
   }
 
+  .orders-m-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
   .orders-m-type-badge {
     font-size: 0.65rem;
     font-weight: 600;
@@ -1017,6 +1132,35 @@
     align-items: center;
     gap: 0.35rem;
     flex-shrink: 0;
+  }
+
+  .orders-m-btn-requests {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    border-radius: 5px;
+    padding: 0.22rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .orders-m-btn-requests:hover {
+    background: #bae6fd;
+  }
+
+  .orders-m-btn-requests--active {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+  }
+
+  .orders-m-btn-requests--active:hover {
+    background: #fde68a;
   }
 
   .orders-m-btn-edit {

@@ -214,6 +214,8 @@ export function formatJourneyStatusLabel(val: unknown): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+export const getJourneyStatusLabel = formatJourneyStatusLabel;
+
 /**
  * Determines whether a queue entry should be considered as actively waiting or offered (available for dispatch)
  */

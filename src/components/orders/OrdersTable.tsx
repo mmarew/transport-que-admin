@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Package, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Package, Pencil, Trash2, Tag, Users, Gavel } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, SortColumn } from "./OrdersTypes";
 import { PAGE_SIZE, formatShortName, formatTrimmedRoute } from "./OrdersTypes";
-
 
 interface OrdersTableProps {
   orders: OrderDisplayItem[];
@@ -13,6 +12,7 @@ interface OrdersTableProps {
   onSort: (col: SortColumn) => void;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
+  onViewRequests?: (order: OrderDisplayItem) => void;
 }
 
 export function OrdersTable({
@@ -23,6 +23,7 @@ export function OrdersTable({
   onSort,
   onEdit,
   onDelete,
+  onViewRequests,
 }: OrdersTableProps) {
   const { t } = useTranslation();
   const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
@@ -117,9 +118,22 @@ export function OrdersTable({
                       <span className="orders-shipper-mobile">{formatShortName(order.shipper)}</span>
                     </td>
                     <td className="td-type">
-                      {order.type === "Group"
-                        ? t("orders.modeGroup", "Group")
-                        : t("orders.modeIndividual", "Individual")}
+                      <div className="orders-type-badges">
+                        <span className="orders-type-label">
+                          {order.type === "Group"
+                            ? t("orders.modeGroup", "Group")
+                            : t("orders.modeIndividual", "Individual")}
+                        </span>
+                        {order.isBiddingApproved && (
+                          <span
+                            className="orders-badge-bidding"
+                            title={t("orders.openBidding", "Open for Bidding")}
+                          >
+                            <Tag size={10} />
+                            {t("orders.openBidding", "Open for Bidding")}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="td-vehicletype">{order.vehicleType}</td>
                     <td className="td-item">{order.item}</td>
@@ -174,6 +188,28 @@ export function OrdersTable({
                     <td className="td-cost">{order.cost.toLocaleString()}</td>
                     <td className="td-action">
                       <div className="orders-actions-group">
+                        {onViewRequests && (
+                          <button
+                            type="button"
+                            className={`orders-btn-bids ${
+                              order.isBiddingApproved ||
+                              (order.driverRequests && order.driverRequests.length > 0)
+                                ? "orders-btn-bids--active"
+                                : ""
+                            }`}
+                            onClick={() => onViewRequests(order)}
+                            title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+                            aria-label={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+                          >
+                            <Gavel size={13} />
+                            <span>{t("orders.bids", "Bids")}</span>
+                            {order.driverRequests && order.driverRequests.length > 0 && (
+                              <span className="orders-bids-count">
+                                {order.driverRequests.length}
+                              </span>
+                            )}
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="orders-action-btn orders-action-btn--edit"

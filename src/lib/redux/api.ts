@@ -208,6 +208,71 @@ export const api = createApi({
       ],
     }),
 
+    acceptDriverRequest: builder.mutation<
+      { message: string; data?: unknown },
+      {
+        queueOrganizationUniqueId: string;
+        shipperRequestUniqueId: string;
+        driverPhoneNumber?: string;
+        driverUserUniqueId?: string;
+        driverRequestId?: number | string;
+        driverRequestUniqueId?: string;
+        vehicleTypeUniqueId?: string;
+      }
+    >({
+      queryFn: async (args, _queryApi, _extraOptions, baseQuery) => {
+        try {
+          const dispatchBody: Record<string, unknown> = {
+            queueOrganizationUniqueId: args.queueOrganizationUniqueId,
+            shipperRequestUniqueId: args.shipperRequestUniqueId,
+          };
+          if (args.driverPhoneNumber) dispatchBody.driverPhoneNumber = args.driverPhoneNumber;
+          if (args.driverUserUniqueId) dispatchBody.driverUserUniqueId = args.driverUserUniqueId;
+          if (args.vehicleTypeUniqueId) dispatchBody.vehicleTypeUniqueId = args.vehicleTypeUniqueId;
+
+          const res = await baseQuery({
+            url: appAPIs.dispatchQueueAPI,
+            method: "POST",
+            body: dispatchBody,
+          });
+
+          if (!res.error) {
+            return {
+              data: (res.data as { message: string; data?: unknown }) || {
+                message: "Driver request accepted",
+              },
+            };
+          }
+
+          if (args.driverRequestUniqueId) {
+            const patchRes = await baseQuery({
+              url: `/company/bids/${args.driverRequestUniqueId}/status`,
+              method: "PATCH",
+              body: { bidStatus: "accepted_by_shipper" },
+            });
+            if (!patchRes.error) {
+              return {
+                data: (patchRes.data as { message: string; data?: unknown }) || {
+                  message: "Driver request accepted",
+                },
+              };
+            }
+          }
+
+          return { error: res.error };
+        } catch (err: unknown) {
+          const message =
+            err instanceof Error ? err.message : "Failed to accept driver request";
+          return { error: { status: "CUSTOM_ERROR", error: message } };
+        }
+      },
+      invalidatesTags: (_, __, { queueOrganizationUniqueId }) => [
+        { type: "QueueStatus", id: `${queueOrganizationUniqueId}|today` },
+        { type: "DriverQueue", id: queueOrganizationUniqueId },
+        "ShipperRequests",
+      ],
+    }),
+
     overrideEntry: builder.mutation<
       { message: string; data: DriverQueueEntry },
       { queueUniqueId: string; body: { queueNumber: number; reason?: string } }
@@ -373,6 +438,7 @@ export const {
   useGetQueueStatusQuery,
   useManualCheckinMutation,
   useDispatchQueueMutation,
+  useAcceptDriverRequestMutation,
   useOverrideEntryMutation,
   useRemoveEntryMutation,
   useCreateQueueOrderMutation,

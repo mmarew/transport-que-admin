@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { ArrowRight, ChevronDown, ChevronUp, Package, Pencil, Trash2, Truck } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Pencil,
+  Trash2,
+  Truck,
+  Tag,
+  Users,
+  Gavel,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { extractCity } from "../../utils/formatters";
 import type { OrderDisplayItem } from "./OrdersTypes";
@@ -9,6 +20,7 @@ interface OrdersMobileCardsProps {
   activeTab: "ongoing" | "complete";
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
+  onViewRequests?: (order: OrderDisplayItem) => void;
 }
 
 export function OrdersMobileCards({
@@ -16,6 +28,7 @@ export function OrdersMobileCards({
   activeTab,
   onEdit,
   onDelete,
+  onViewRequests,
 }: OrdersMobileCardsProps) {
   const { t } = useTranslation();
   const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
@@ -50,11 +63,19 @@ export function OrdersMobileCards({
             <div className="orders-m-header">
               <div className="orders-m-shipper-wrap">
                 <span className="orders-m-shipper">{order.shipper}</span>
-                <span className="orders-m-type-badge">
-                  {order.type === "Group"
-                    ? t("orders.modeGroup", "Group")
-                    : t("orders.modeIndividual", "Individual")}
-                </span>
+                <div className="orders-m-badges">
+                  <span className="orders-m-type-badge">
+                    {order.type === "Group"
+                      ? t("orders.modeGroup", "Group")
+                      : t("orders.modeIndividual", "Individual")}
+                  </span>
+                  {order.isBiddingApproved && (
+                    <span className="orders-badge-bidding">
+                      <Tag size={10} />
+                      {t("orders.openBidding", "Open for Bidding")}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="orders-m-cost">
                 <span className="orders-m-cost-val">{order.cost.toLocaleString()}</span>
@@ -120,6 +141,27 @@ export function OrdersMobileCards({
               </div>
 
               <div className="orders-m-actions">
+                {onViewRequests && (
+                  <button
+                    type="button"
+                    className={`orders-m-btn-requests ${
+                      order.isBiddingApproved ||
+                      (order.driverRequests && order.driverRequests.length > 0)
+                        ? "orders-m-btn-requests--active"
+                        : ""
+                    }`}
+                    onClick={() => onViewRequests(order)}
+                    title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+                  >
+                    <Gavel size={12} />
+                    <span>
+                      {t("orders.bids", "Bids")}
+                      {order.driverRequests && order.driverRequests.length > 0
+                        ? ` (${order.driverRequests.length})`
+                        : ""}
+                    </span>
+                  </button>
+                )}
                 <button
                   type="button"
                   className="orders-m-btn-edit"

@@ -16,6 +16,7 @@ import { OrdersMobileCards } from "../../components/orders/OrdersMobileCards";
 import { OrdersPagination } from "../../components/orders/OrdersPagination";
 import { OrdersEditModal } from "../../components/orders/OrdersEditModal";
 import { OrdersDeleteModal } from "../../components/orders/OrdersDeleteModal";
+import { DriverBidsModal } from "../../components/orders/DriverBidsModal";
 import type {
   OrderDisplayItem,
   ShipperRequestPayloadItem,
@@ -66,6 +67,7 @@ export function OrdersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OrderDisplayItem | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderDisplayItem | null>(null);
+  const [viewingRequestsOrder, setViewingRequestsOrder] = useState<OrderDisplayItem | null>(null);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
   const [editedOrders, setEditedOrders] = useState<Record<string, OrderDisplayItem>>({});
 
@@ -88,12 +90,43 @@ export function OrdersPage() {
           String(req.status || "").toLowerCase() === "delivered" ||
           String(req.requestStatus || "").toLowerCase() === "completed"
         );
+        const rawDriverRequests =
+          (Array.isArray(item.driverRequests) && item.driverRequests.length > 0
+            ? item.driverRequests
+            : null) ||
+          (Array.isArray((req as any).driverRequests) &&
+          (req as any).driverRequests.length > 0
+            ? (req as any).driverRequests
+            : null) ||
+          (Array.isArray((item as any).decisions) ? (item as any).decisions : []) ||
+          [];
+
+        const isBiddingApproved = Boolean(
+          req.isBiddingApproved ||
+          (req as any).is_bidding_approved ||
+          (req as any).biddingApproved ||
+          (item as any).isBiddingApproved ||
+          (item as any).is_bidding_approved ||
+          (item as any).biddingApproved ||
+          rawDriverRequests.length > 0
+        );
+
+        const driverRequests = rawDriverRequests.map((d: any) => ({
+          driverRequestId: d.driverRequestId,
+          driverRequestUniqueId: d.driverRequestUniqueId || d.bidUniqueId || d.userUniqueId,
+          userUniqueId: d.userUniqueId || d.driverUserUniqueId,
+          fullName: d.fullName ?? d.driverName ?? d.name ?? null,
+          phoneNumber: d.phoneNumber ?? d.driverPhoneNumber ?? null,
+          journeyStatusId: d.journeyStatusId ?? d.statusId ?? null,
+          journeyStatus: d.journeyStatus ?? null,
+        }));
 
         return {
           id: req.shipperRequestUniqueId || `real-${idx}`,
           shipper: req.fullName || t("orders.defaultValuedShipper"),
           type: mode,
           vehicleType: req.vehicleTypeName || t("orders.defaultHeavyTruck"),
+          vehicleTypeUniqueId: req.vehicleTypeUniqueId,
           item: req.shippableItemName || t("orders.defaultGeneralCargo"),
           origin: req.originPlace || t("orders.defaultTerminal"),
           destination: req.destinationPlace || t("orders.defaultDestination"),
@@ -102,6 +135,12 @@ export function OrdersPage() {
           status: isComplete ? "complete" : "ongoing",
           phone: req.phoneNumber || "",
           createdAt: req.shipperRequestCreatedAt || "",
+          isBiddingApproved,
+          driverRequests,
+          queueOrganizationUniqueId:
+            req.queueOrganizationUniqueId ||
+            activeOrg?.queueOrganizationUniqueId ||
+            "",
         };
       });
     }
@@ -252,6 +291,7 @@ export function OrdersPage() {
           onSort={handleSort}
           onEdit={setEditingOrder}
           onDelete={setDeletingOrder}
+          onViewRequests={setViewingRequestsOrder}
         />
 
         {/* ── Mobile Cards ── */}
@@ -260,6 +300,7 @@ export function OrdersPage() {
           activeTab={activeTab}
           onEdit={setEditingOrder}
           onDelete={setDeletingOrder}
+          onViewRequests={setViewingRequestsOrder}
         />
 
         {/* ── Pagination ── */}
@@ -271,6 +312,25 @@ export function OrdersPage() {
           totalPages={totalPages}
           onPageChange={setCurrentPage}
         />
+
+        {/* ── Driver Bids & Requests Modal ── */}
+        {viewingRequestsOrder && (
+          <DriverBidsModal
+            order={viewingRequestsOrder}
+            queueOrganizationUniqueId={
+              activeOrg?.queueOrganizationUniqueId ||
+              viewingRequestsOrder.queueOrganizationUniqueId ||
+              ""
+            }
+            onClose={() => {
+              setViewingRequestsOrder(null);
+              refetchOrders();
+            }}
+            onOrderUpdated={() => {
+              refetchOrders();
+            }}
+          />
+        )}
 
         {/* ── Create Modal ── */}
         {showCreateModal && (

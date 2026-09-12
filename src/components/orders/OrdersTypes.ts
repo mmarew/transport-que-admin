@@ -1,10 +1,12 @@
-// ── Shared types & helpers for the Orders feature ────────────────────────────
+import type { ShipperRequestDriverInfo } from "../queue/ShipperRequestsModal";
+export type { ShipperRequestDriverInfo };
 
 export interface OrderDisplayItem {
   id: string;
   shipper: string;
   type: "Individual" | "Group";
   vehicleType: string;
+  vehicleTypeUniqueId?: string;
   item: string;
   origin: string;
   destination: string;
@@ -13,6 +15,9 @@ export interface OrderDisplayItem {
   status: "ongoing" | "complete";
   phone?: string;
   createdAt?: string;
+  isBiddingApproved?: boolean;
+  driverRequests?: ShipperRequestDriverInfo[];
+  queueOrganizationUniqueId?: string;
 }
 
 export type SortColumn =
@@ -30,6 +35,7 @@ export interface ShipperRequestPayloadItem {
     fullName?: string;
     requestMode?: string;
     vehicleTypeName?: string;
+    vehicleTypeUniqueId?: string;
     shippableItemName?: string;
     originPlace?: string;
     destinationPlace?: string;
@@ -41,7 +47,20 @@ export interface ShipperRequestPayloadItem {
     isCompleted?: boolean;
     status?: string;
     requestStatus?: string;
+    isBiddingApproved?: boolean;
+    queueOrganizationUniqueId?: string;
   };
+  driverRequests?: Array<{
+    driverRequestId?: number;
+    driverRequestUniqueId?: string;
+    userUniqueId: string;
+    journeyStatusId?: number | null;
+    fullName?: string | null;
+    phoneNumber?: string | null;
+    email?: string | null;
+    vehicleOfDriver?: unknown;
+    driverProfilePhoto?: string | null;
+  }>;
   [key: string]: unknown;
 }
 

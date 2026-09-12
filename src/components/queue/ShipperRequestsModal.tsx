@@ -1,11 +1,33 @@
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { X, ExternalLink, MapPin } from "lucide-react";
+import { toast } from "sonner";
+import {
+  X,
+  ExternalLink,
+  MapPin,
+  Check,
+  CheckCircle2,
+  Loader2,
+  User,
+  Phone,
+  Tag,
+} from "lucide-react";
 import { useModalA11y } from "../../hooks/useModalA11y";
 import { formatJourneyStatusLabel } from "../../utils/journeyStatus";
+import { useAcceptDriverRequestMutation } from "../../lib/redux/api";
 import "./DispatchModal.css";
 import "./ShipperRequestsModal.css";
+
+export interface ShipperRequestDriverInfo {
+  driverRequestId?: number;
+  driverRequestUniqueId?: string;
+  userUniqueId?: string;
+  fullName?: string | null;
+  phoneNumber?: string | null;
+  journeyStatusId?: number | null;
+}
 
 export interface ShipperRequestDetail {
   shipperRequestUniqueId?: string;
@@ -13,6 +35,7 @@ export interface ShipperRequestDetail {
   phoneNumber?: string;
   requestMode?: string | null;
   vehicleTypeName?: string | null;
+  vehicleTypeUniqueId?: string | null;
   shippableItemName?: string | null;
   shippableItemQtyInQuintal?: string | number | null;
   shippingCost?: string | number | null;
@@ -22,6 +45,8 @@ export interface ShipperRequestDetail {
   deliveryDate?: string | null;
   shipperRequestCreatedAt?: string | null;
   journeyStatusId?: number | null;
+  isBiddingApproved?: boolean | null;
+  driverRequests?: ShipperRequestDriverInfo[];
 }
 
 interface ShipperRequestsModalProps {
@@ -62,6 +87,46 @@ export function ShipperRequestsModal({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
+
+  const [acceptDriverMutation] = useAcceptDriverRequestMutation();
+  const [acceptingDriverId, setAcceptingDriverId] = useState<string | null>(null);
+  const [acceptedDriverIds, setAcceptedDriverIds] = useState<Set<string>>(new Set());
+
+  const handleAcceptDriver = async (driver: ShipperRequestDriverInfo) => {
+    const driverKey =
+      driver.userUniqueId ||
+      driver.phoneNumber ||
+      String(driver.driverRequestId || driver.driverRequestUniqueId || "");
+    if (!driverKey) return;
+
+    setAcceptingDriverId(driverKey);
+    try {
+      await acceptDriverMutation({
+        queueOrganizationUniqueId,
+        shipperRequestUniqueId: request?.shipperRequestUniqueId || "",
+        driverPhoneNumber: driver.phoneNumber || undefined,
+        driverUserUniqueId: driver.userUniqueId || undefined,
+        driverRequestId: driver.driverRequestId,
+        driverRequestUniqueId: driver.driverRequestUniqueId,
+        vehicleTypeUniqueId: request?.vehicleTypeUniqueId || undefined,
+      }).unwrap();
+
+      setAcceptedDriverIds((prev) => new Set([...prev, driverKey]));
+      toast.success(
+        t("orders.driverRequestAccepted", "Driver request accepted successfully")
+      );
+    } catch (err: any) {
+      console.error("Failed to accept driver request:", err);
+      const errMsg =
+        err?.data?.message ||
+        err?.error ||
+        err?.message ||
+        t("orders.failedToAcceptDriver", "Failed to accept driver request");
+      toast.error(errMsg);
+    } finally {
+      setAcceptingDriverId(null);
+    }
+  };
 
   const openOrdersPage = () => {
     onClose();
@@ -123,6 +188,12 @@ export function ShipperRequestsModal({
                   <div className="srm-card-top">
                     <div className="srm-badges">
                       <span className="srm-mode">{mode}</span>
+                      {request.isBiddingApproved ? (
+                        <span className="srm-badge-bidding">
+                          <Tag size={11} />
+                          {t("orders.openBidding", "Open for Bidding")}
+                        </span>
+                      ) : null}
                       {request.journeyStatusId ? (
                         <span className="srm-status">{statusLabel}</span>
                       ) : null}
@@ -192,6 +263,126 @@ export function ShipperRequestsModal({
                       </span>
                     </div>
                   </div>
+
+                  {request.driverRequests &&
+                    request.driverRequests.length > 0 && (
+                      <div className="srm-drivers-section">
+                        <div className="srm-drivers-header">
+                          <span className="srm-drivers-title">
+                            {request.isBiddingApproved
+                              ? t("orders.driverRequests", "Driver Requests")
+                              : t("orders.assignedDrivers", "Assigned Driver(s)")}
+                          </span>
+                          <span className="srm-drivers-count">
+                            {request.driverRequests.length}
+                          </span>
+                        </div>
+                        <div className="srm-drivers-list">
+                          {request.driverRequests.map((d, dIdx) => {
+                            const dKey =
+                              d.userUniqueId ||
+                              d.phoneNumber ||
+                              String(d.driverRequestId || d.driverRequestUniqueId || dIdx);
+                            const isThisAccepting = acceptingDriverId === dKey;
+                            const isAccepted =
+                              acceptedDriverIds.has(dKey) ||
+                              d.journeyStatusId === 4 ||
+                              d.journeyStatusId === 3 ||
+                              d.journeyStatusId === 5 ||
+                              d.journeyStatusId === 6 ||
+                              d.journeyStatusId === 7 ||
+                              d.journeyStatusId === 8 ||
+                              d.journeyStatusId === 9;
+
+                            const driverStatusLabel = isAccepted
+                              ? t("orders.accepted", "Accepted")
+                              : d.journeyStatusId
+                              ? formatJourneyStatusLabel(d.journeyStatusId)
+                              : t("orders.status", "Requested");
+
+                            return (
+                              <div
+                                key={dKey}
+                                className={`srm-driver-item ${
+                                  isAccepted ? "accepted" : ""
+                                }`}
+                              >
+                                <div className="srm-driver-info">
+                                  <div className="srm-driver-avatar">
+                                    <User size={15} />
+                                  </div>
+                                  <div className="srm-driver-details">
+                                    <span className="srm-driver-name">
+                                      {d.fullName ||
+                                        t("dispatchModal.waitingDriver", "Driver")}
+                                    </span>
+                                    {d.phoneNumber && (
+                                      <span className="srm-driver-phone">
+                                        <Phone size={11} /> {d.phoneNumber}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="srm-driver-actions">
+                                  <span
+                                    className={`srm-driver-badge ${
+                                      isAccepted
+                                        ? "status-accepted"
+                                        : "status-pending"
+                                    }`}
+                                  >
+                                    {driverStatusLabel}
+                                  </span>
+
+                                  {isAccepted ? (
+                                    <button
+                                      type="button"
+                                      className="srm-btn-driver-accepted"
+                                      disabled
+                                      aria-label={t("orders.accepted", "Accepted")}
+                                    >
+                                      <CheckCircle2 size={13} />
+                                      <span>{t("orders.accepted", "Accepted")}</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="srm-btn-accept-driver"
+                                      onClick={() => handleAcceptDriver(d)}
+                                      disabled={Boolean(acceptingDriverId)}
+                                      title={t("orders.acceptDriverRequest", "Accept Request")}
+                                    >
+                                      {isThisAccepting ? (
+                                        <>
+                                          <Loader2
+                                            size={13}
+                                            className="srm-spinner"
+                                          />
+                                          <span>
+                                            {t("orders.accepting", "Accepting...")}
+                                          </span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Check size={13} strokeWidth={2.5} />
+                                          <span>
+                                            {t(
+                                              "orders.acceptDriverRequest",
+                                              "Accept Request"
+                                            )}
+                                          </span>
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                 </div>
               );
             })()
