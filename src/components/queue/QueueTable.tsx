@@ -9,19 +9,9 @@ import {
 } from "./ShipperRequestsModal";
 import "./QueueBoard.css";
 
-interface ShipperInfo {
-  fullName?: string;
-  phoneNumber?: string;
-}
-
 interface QueueTableProps {
   typeId: string;
   entries: DriverQueueEntry[];
-  shipperLookup?: Record<string, ShipperInfo>;
-  shipperByUserLookup?: Record<string, ShipperInfo>;
-  shipperByDriverLookup?: Record<string, ShipperInfo>;
-  shipperDetailByRequestId?: Record<string, ShipperRequestDetail>;
-  currentRequestByDriver?: Record<string, ShipperRequestDetail>;
   queueOrganizationUniqueId?: string;
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
@@ -38,11 +28,6 @@ function formatJoinedTime(dateStr: string): string {
 
 export function QueueTable({
   entries,
-  shipperLookup,
-  shipperByUserLookup,
-  shipperByDriverLookup,
-  shipperDetailByRequestId,
-  currentRequestByDriver,
   queueOrganizationUniqueId,
   onOverride,
   onRemove,
@@ -57,7 +42,7 @@ export function QueueTable({
     request: ShipperRequestDetail | null;
   } | null>(null);
 
-  // The ONE current request for this row — never a shipper's history.
+  // The ONE current request for this row — from /api/queue/status only.
   const openShipperModal = (
     phone: string,
     name: string | null,
@@ -81,13 +66,7 @@ export function QueueTable({
         deliveryDate: own.deliveryDate ?? null,
         shipperRequestCreatedAt: own.shipperRequestCreatedAt ?? null,
         journeyStatusId: own.journeyStatusId ?? null,
-        driverRequests:
-          shipperDetailByRequestId?.[own.shipperRequestUniqueId]
-            ?.driverRequests || [],
       };
-    }
-    if (!request) {
-      request = currentRequestByDriver?.[entry.driverUserUniqueId] || null;
     }
     setShipperModal({ phone, name, request });
   };
@@ -111,27 +90,8 @@ export function QueueTable({
     const num = entry.queueNumber || index + 1;
     const joinedTime = formatJoinedTime(entry.joinedAt);
     const key = entry.queueUniqueId || `${entry.queueNumber}-${index}`;
-    const shipper = entry.shipperRequestUniqueId
-      ? shipperLookup?.[entry.shipperRequestUniqueId]
-      : undefined;
-    const targetedShipper = entry.targetedShipperUserUUID
-      ? shipperByUserLookup?.[entry.targetedShipperUserUUID]
-      : undefined;
-    const boundShipper = entry.driverUserUniqueId
-      ? shipperByDriverLookup?.[entry.driverUserUniqueId]
-      : undefined;
-    const shipperName =
-      entry.shipperRequest?.fullName ||
-      shipper?.fullName ||
-      targetedShipper?.fullName ||
-      boundShipper?.fullName ||
-      null;
-    const shipperPhone =
-      entry.shipperRequest?.phoneNumber ||
-      shipper?.phoneNumber ||
-      targetedShipper?.phoneNumber ||
-      boundShipper?.phoneNumber ||
-      null;
+    const shipperName = entry.shipperRequest?.fullName ?? null;
+    const shipperPhone = entry.shipperRequest?.phoneNumber ?? null;
 
     return {
       entry,

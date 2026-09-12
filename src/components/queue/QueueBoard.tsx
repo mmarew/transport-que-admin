@@ -11,14 +11,12 @@ import {
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import {
   useListVehicleTypesQuery,
-  useGetShipperRequestsQuery,
 } from "../../lib/redux/api";
 import type { DriverQueueEntry, QueueStatusPayload } from "../../types/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
 import { normalizeQueueEntry } from "../../utils/formatters";
 import { isDriverWaiting } from "../../utils/journeyStatus";
 import { QueueTable } from "./QueueTable";
-import type { ShipperRequestDetail } from "./ShipperRequestsModal";
 import { CheckinModal } from "./CheckinModal";
 import { CreateOrderModal } from "./CreateOrderModal";
 import { DispatchModal } from "./DispatchModal";
@@ -61,133 +59,6 @@ export function QueueBoard({
 
   const { data: vehicleTypesData } = useListVehicleTypesQuery();
   const vehicleTypesList = vehicleTypesData?.data || [];
-
-  // Shipper requests (the API that carries shipper fullName/phoneNumber):
-  // GET {VITE_API_BASE_URL}/api/user/getShipperRequest4allOrSingleUser?queueOrganizationUniqueId=...&target=all&page=1&limit=100
-  // journeyStatusId 1..8 restricts the response to ACTIVE request-level
-  // statuses so completed/cancelled history never reaches the frontend.
-  const { data: shipperRequestsData } = useGetShipperRequestsQuery({
-    queueOrganizationUniqueId,
-    target: "all",
-    page: 1,
-    limit: 100,
-    journeyStatusId: "1,2,3,4,5,6,7,8",
-  });
-
-  // Lookup: shipperRequestUniqueId -> { fullName, phoneNumber }
-  const shipperMap = useMemo(() => {
-    const map: Record<string, { fullName?: string; phoneNumber?: string }> = {};
-    for (const item of shipperRequestsData?.data || []) {
-      const req = item?.shipperRequest;
-      if (!req?.shipperRequestUniqueId) continue;
-      map[req.shipperRequestUniqueId] = {
-        fullName: req.fullName,
-        phoneNumber: req.phoneNumber,
-      };
-    }
-    return map;
-  }, [shipperRequestsData]);
-
-  // Lookup: shipper userUniqueId -> { fullName, phoneNumber }. A driver who
-  // checked in targeting a shipper phone has targetedShipperUserUUID set even
-  // before any order is dispatched, so we can display the shipper's contacts.
-  const shipperByUserMap = useMemo(() => {
-    const map: Record<string, { fullName?: string; phoneNumber?: string }> = {};
-    for (const item of shipperRequestsData?.data || []) {
-      const req = item?.shipperRequest;
-      if (!req?.userUniqueId) continue;
-      if (!map[req.userUniqueId]) {
-        map[req.userUniqueId] = {
-          fullName: req.fullName,
-          phoneNumber: req.phoneNumber,
-        };
-      }
-    }
-    return map;
-  }, [shipperRequestsData]);
-
-  // Lookup: driverUserUniqueId -> { fullName, phoneNumber } (the SHIPPER of
-  // the request that driver is bound to). The driver↔shipper link lives on the
-  // shipper request's driverRequests (via JourneyDecisions/DriverRequest), not
-  // on the DriverQueue row — so we key by driver to find the shipper.
-  // STRICT: only bind from requests where THIS driver's own request status is
-  // still active (1–8); a completed/rejected history entry can never win.
-  const shipperByDriverMap = useMemo(() => {
-    const map: Record<string, { fullName?: string; phoneNumber?: string }> = {};
-    for (const item of shipperRequestsData?.data || []) {
-      const req = item?.shipperRequest;
-      if (!req?.shipperRequestUniqueId) continue;
-      const shipper = {
-        fullName: req.fullName,
-        phoneNumber: req.phoneNumber,
-      };
-      for (const dr of item?.driverRequests || []) {
-        if (!dr?.userUniqueId || map[dr.userUniqueId]) continue;
-        const status = dr.journeyStatusId;
-        if (typeof status !== "number" || status < 1 || status > 8) continue;
-        map[dr.userUniqueId] = shipper;
-      }
-    }
-    return map;
-  }, [shipperRequestsData]);
-
-  // Lookup: shipperRequestUniqueId -> full request detail. The queue row's own
-  // entry.shipperRequest is authoritative for the CURRENT order; this map only
-  // supplies the assigned-driver list so the modal can render them. Never used
-  // to enumerate a shipper's historical requests.
-  const shipperDetailByRequestId = useMemo(() => {
-    const map: Record<string, ShipperRequestDetail> = {};
-    for (const item of shipperRequestsData?.data || []) {
-      const req = item?.shipperRequest;
-      if (!req?.shipperRequestUniqueId) continue;
-      if (map[req.shipperRequestUniqueId]) continue;
-      map[req.shipperRequestUniqueId] = {
-        shipperRequestUniqueId: req.shipperRequestUniqueId,
-        fullName: req.fullName ?? null,
-        phoneNumber: req.phoneNumber ?? null,
-        requestMode: req.requestMode ?? null,
-        vehicleTypeName: req.vehicleTypeName ?? null,
-        shippableItemName: req.shippableItemName ?? null,
-        shippableItemQtyInQuintal: req.shippableItemQtyInQuintal ?? null,
-        shippingCost: req.shippingCost ?? null,
-        originPlace: req.originPlace ?? null,
-        destinationPlace: req.destinationPlace ?? null,
-        shippingDate: req.shippingDate ?? null,
-        deliveryDate: req.deliveryDate ?? null,
-        shipperRequestCreatedAt: req.shipperRequestCreatedAt ?? null,
-        journeyStatusId: req.journeyStatusId ?? null,
-        driverRequests: (item?.driverRequests || []).map((d) => ({
-          userUniqueId: d.userUniqueId,
-          fullName: d.fullName ?? null,
-          phoneNumber: d.phoneNumber ?? null,
-          journeyStatusId: d.journeyStatusId ?? null,
-        })),
-      };
-    }
-    return map;
-  }, [shipperRequestsData]);
-
-  // Lookup: driverUserUniqueId -> the request that driver is CURRENTLY bound to
-  // (only active 1–8 driver-level statuses). A row whose own link is missing can
-  // resolve its current order from here — never from phone history.
-  const currentRequestByDriver = useMemo(() => {
-    const map: Record<string, ShipperRequestDetail> = {};
-    for (const item of shipperRequestsData?.data || []) {
-      const req = item?.shipperRequest;
-      if (!req?.shipperRequestUniqueId || map[req.shipperRequestUniqueId])
-        continue;
-      const detail = shipperDetailByRequestId[req.shipperRequestUniqueId];
-      if (!detail) continue;
-      for (const dr of detail.driverRequests || []) {
-        if (!dr?.userUniqueId) continue;
-        const status = dr.journeyStatusId;
-        if (typeof status !== "number" || status < 1 || status > 8) continue;
-        if (map[dr.userUniqueId]) continue;
-        map[dr.userUniqueId] = detail;
-      }
-    }
-    return map;
-  }, [shipperRequestsData, shipperDetailByRequestId]);
 
   const [showCheckin, setShowCheckin] = useState(false);
   const [showCreateOrder, setShowCreateOrder] = useState(false);
@@ -508,11 +379,6 @@ export function QueueBoard({
                   <QueueTable
                     typeId={typeId}
                     entries={entries}
-                    shipperLookup={shipperMap}
-                    shipperByUserLookup={shipperByUserMap}
-                    shipperByDriverLookup={shipperByDriverMap}
-                    shipperDetailByRequestId={shipperDetailByRequestId}
-                    currentRequestByDriver={currentRequestByDriver}
                     queueOrganizationUniqueId={queueOrganizationUniqueId}
                     onOverride={setOverrideEntry}
                     onRemove={setCancelEntry}
@@ -577,11 +443,6 @@ export function QueueBoard({
           <QueueTable
             typeId="all"
             entries={allEntries}
-            shipperLookup={shipperMap}
-            shipperByUserLookup={shipperByUserMap}
-            shipperByDriverLookup={shipperByDriverMap}
-            shipperDetailByRequestId={shipperDetailByRequestId}
-            currentRequestByDriver={currentRequestByDriver}
             queueOrganizationUniqueId={queueOrganizationUniqueId}
             onOverride={setOverrideEntry}
             onRemove={setCancelEntry}

@@ -120,15 +120,6 @@
   font-weight: 700;
 }
 
-.srm-drivers {
-  margin-top: 12px;
-  border-top: 1px dashed #cbd5e1;
-  padding-top: 8px;
-  font-size: 12px;
-  color: #475569;
-  overflow-wrap: anywhere;
-}
-
 .srm-footer {
   margin-top: 16px;
   display: flex;

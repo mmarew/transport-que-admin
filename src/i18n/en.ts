@@ -362,7 +362,6 @@ export const en = {
     defaultDestination: "Destination",
     defaultGeneralCargo: "General Cargo",
     defaultHeavyTruck: "Heavy Truck",
-    assignedDrivers: "Assigned Driver(s)",
     status: "Status",
     defaultValuedShipper: "Valued Shipper",
     defaultOrgName: "Cement Factory",

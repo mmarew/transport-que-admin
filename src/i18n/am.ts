@@ -350,7 +350,6 @@ export const am = {
     defaultDestination: "መድረሻ",
     defaultGeneralCargo: "አጠቃላይ ጭነት",
     defaultHeavyTruck: "ከባድ መኪና",
-    assignedDrivers: "የተመደቡ አሽከርካሪዎች",
     status: "ሁኔታ",
     defaultValuedShipper: "ክቡር ላኪ",
     defaultOrgName: "የሲሚንቶ ፋብሪካ",

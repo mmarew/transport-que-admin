@@ -7,13 +7,6 @@ import { formatJourneyStatusLabel } from "../../utils/journeyStatus";
 import "./DispatchModal.css";
 import "./ShipperRequestsModal.css";
 
-export interface ShipperRequestDriverInfo {
-  userUniqueId?: string;
-  fullName?: string | null;
-  phoneNumber?: string | null;
-  journeyStatusId?: number | null;
-}
-
 export interface ShipperRequestDetail {
   shipperRequestUniqueId?: string;
   fullName?: string | null;
@@ -29,7 +22,6 @@ export interface ShipperRequestDetail {
   deliveryDate?: string | null;
   shipperRequestCreatedAt?: string | null;
   journeyStatusId?: number | null;
-  driverRequests?: ShipperRequestDriverInfo[];
 }
 
 interface ShipperRequestsModalProps {
@@ -200,25 +192,6 @@ export function ShipperRequestsModal({
                       </span>
                     </div>
                   </div>
-
-                  {request.driverRequests &&
-                    request.driverRequests.length > 0 && (
-                      <div className="srm-drivers">
-                        <strong>
-                          {t("orders.assignedDrivers", "Assigned Driver(s)")}:
-                        </strong>{" "}
-                        {request.driverRequests
-                          .map(
-                            (d) =>
-                              `${d.fullName ||
-                                d.phoneNumber ||
-                                d.userUniqueId ||
-                                ""}`,
-                          )
-                          .filter(Boolean)
-                          .join(", ")}
-                      </div>
-                    )}
                 </div>
               );
             })()
