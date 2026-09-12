@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "./MobileHeader.css";
 
 export interface MobileHeaderProps {
@@ -18,6 +19,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   className = "",
   showBack = true,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -36,7 +38,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             type="button"
             className="mobile-sub-header__back-btn"
             onClick={handleBack}
-            aria-label="Go back"
+            aria-label={t("common.goBack")}
           >
             <ArrowLeft size={20} strokeWidth={2} />
           </button>

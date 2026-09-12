@@ -203,7 +203,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
         <div className="login-hero-img-wrap">
           <img
             src={heroImg}
-            alt="Transport background"
+            alt={t("auth.transportBackground")}
             className="login-hero-img"
           />
         </div>
@@ -231,7 +231,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
               type="button"
               className="otp-back-btn-desktop"
               onClick={onGoBack}
-              aria-label="Go back"
+              aria-label={t("common.goBack")}
             >
               <ArrowLeft size={22} strokeWidth={2} />
             </button>
@@ -243,7 +243,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
           </p>
 
           <p className="otp-code-sent">
-            Code has been sent to <strong>{maskedPhone}</strong>
+            {t("auth.codeSent", { phone: maskedPhone })}
           </p>
 
           <form
@@ -255,7 +255,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
             <div
               className="otp-input-group"
               role="group"
-              aria-label="One-time password input"
+              aria-label={t("auth.otpGroupAria")}
             >
               {digits.map((digit, i) => (
                 <input
@@ -276,7 +276,7 @@ export const VerifyOtp: React.FC<VerifyOtpProps> = ({
                   onFocus={(e) => e.target.select()}
                   className={`otp-digit-input ${digit ? "filled" : ""}`}
                   placeholder="-"
-                  aria-label={`OTP digit ${i + 1} of ${OTP_LENGTH}`}
+                  aria-label={t("auth.otpDigitOf", { n: i + 1, total: OTP_LENGTH })}
                   aria-invalid={!!otpError}
                   disabled={isLoading}
                 />

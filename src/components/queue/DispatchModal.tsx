@@ -153,10 +153,10 @@ export function DispatchModal({
     }
 
     return {
-      name: "Waiting Driver",
+      name: t("dispatchModal.waitingDriver"),
       phone: driverPhone || "",
     };
-  }, [driverName, driverPhone, queueStatusData, resolvedVehicleTypeId, vehicleTypeId, vehicleTypeName]);
+  }, [t, driverName, driverPhone, queueStatusData, resolvedVehicleTypeId, vehicleTypeId, vehicleTypeName]);
 
   const [dispatchMutation, { isLoading: isDispatching }] = useDispatchQueueMutation();
   const { data: ordersData } = useGetShipperRequestsQuery(
@@ -198,16 +198,16 @@ export function DispatchModal({
 
   const selectedOrderLabel = useMemo(() => {
     if (!selectedOrderUniqueId) {
-      return "-- Direct Dispatch (No Pre-linked Order) --";
+      return t("dispatchModal.directDispatch");
     }
     if (activeOrderObj) {
-      const name = activeOrderObj.shippableItemName || "Cargo";
-      const orig = activeOrderObj.originPlace || "Terminal";
-      const dest = activeOrderObj.destinationPlace || "Destination";
-      return `${name} — ${orig} → ${dest}`;
+      const item = activeOrderObj.shippableItemName || t("dispatchModal.cargo");
+      const orig = activeOrderObj.originPlace || t("orders.defaultTerminal");
+      const dest = activeOrderObj.destinationPlace || t("orders.defaultDestination");
+      return t("dispatchModal.orderLabel", { item, origin: orig, destination: dest });
     }
-    return "-- Direct Dispatch (No Pre-linked Order) --";
-  }, [selectedOrderUniqueId, activeOrderObj]);
+    return t("dispatchModal.directDispatch");
+  }, [t, selectedOrderUniqueId, activeOrderObj]);
 
   const handleFormSubmit = async (values: DispatchFormValues) => {
     try {
@@ -229,7 +229,12 @@ export function DispatchModal({
       const res = await dispatchMutation(payload).unwrap();
 
       const queueNum = res?.data?.queueNumber;
-      toast.success(res?.message || (queueNum ? `Offered to front driver #${queueNum}` : "Dispatch offer sent successfully"));
+      toast.success(
+        res?.message ||
+          (queueNum
+            ? t("dispatchModal.offerSentWithPosition", { queueNum })
+            : t("dispatchModal.offerSent"))
+      );
       onDispatched?.();
       onClose();
     } catch (err: unknown) {
@@ -254,18 +259,16 @@ export function DispatchModal({
       >
         {/* Mobile Header */}
         <div className="dm-mobile-header">
-          <MobileHeader title="Dispatch to Front Driver" onBack={onClose} />
+          <MobileHeader title={t("dispatchModal.title")} onBack={onClose} />
         </div>
 
         {/* Desktop Header */}
         <div className="dm-header dm-header--desktop">
           <div>
-            <h2 id="dispatch-modal-title" className="dm-title">Dispatch to Front Driver</h2>
-            <p className="dm-subtitle">
-              Offer an existing order to the front waiting driver of the selected vehicle type.
-            </p>
+            <h2 id="dispatch-modal-title" className="dm-title">{t("dispatchModal.title")}</h2>
+            <p className="dm-subtitle">{t("dispatchModal.subtitle", { typeName: typeDisplay })}</p>
           </div>
-          <button type="button" className="dm-close-btn" onClick={onClose} aria-label="Close">
+          <button type="button" className="dm-close-btn" onClick={onClose} aria-label={t("common.close")}>
             <X size={20} />
           </button>
         </div>
@@ -274,7 +277,7 @@ export function DispatchModal({
           {/* Top 2 Cards: Vehicle Type & Front Waiting Driver */}
           <div className="dm-top-grid">
             <div className="dm-top-group">
-              <span className="dm-top-label">Vehicle Type</span>
+              <span className="dm-top-label">{t("dispatchModal.vehicleType")}</span>
               <div className="dm-top-card">
                 <div className="dm-icon-circle">
                   <Truck size={20} />
@@ -286,7 +289,7 @@ export function DispatchModal({
             </div>
 
             <div className="dm-top-group">
-              <span className="dm-top-label">Front Waiting Driver</span>
+              <span className="dm-top-label">{t("dispatchModal.frontWaitingDriver")}</span>
               <div className="dm-top-card">
                 <div className="dm-icon-circle">
                   <User size={20} />
@@ -297,7 +300,7 @@ export function DispatchModal({
                     <span className="dm-top-card-sub">{frontDriver.phone}</span>
                   ) : (
                     <span className="dm-top-card-sub" style={{ color: "#166534", fontWeight: 500 }}>
-                      Front Position in Queue
+                      {t("dispatchModal.frontPosition")}
                     </span>
                   )}
                 </div>
@@ -307,9 +310,9 @@ export function DispatchModal({
 
           {/* Select Order Section (Custom Dropdown) */}
           <div style={{ marginTop: "14px" }}>
-            <h3 className="dm-section-heading">Select Order</h3>
+            <h3 className="dm-section-heading">{t("dispatchModal.selectOrder")}</h3>
             <div className="dm-field-group">
-              <label className="dm-field-label">Order</label>
+              <label className="dm-field-label">{t("dispatchModal.order")}</label>
               <div className="dm-select-wrap" ref={dropdownWrapRef}>
                 <button
                   type="button"
@@ -329,7 +332,7 @@ export function DispatchModal({
                         setDropdownOpen(false);
                       }}
                     >
-                      <span className="dm-dropdown-item-text">-- Direct Dispatch (No Pre-linked Order) --</span>
+                      <span className="dm-dropdown-item-text">{t("dispatchModal.directDispatch")}</span>
                     </div>
                     {availableOrders.map(({ shipperRequest }) => {
                       const isSel = selectedOrderUniqueId === shipperRequest.shipperRequestUniqueId;
@@ -343,7 +346,7 @@ export function DispatchModal({
                           }}
                         >
                           <span className="dm-dropdown-item-text">
-                            <strong>{shipperRequest.shippableItemName}</strong> — {shipperRequest.originPlace || "Terminal"} → {shipperRequest.destinationPlace}
+                            <strong>{shipperRequest.shippableItemName}</strong> — {shipperRequest.originPlace || t("orders.defaultTerminal")} → {shipperRequest.destinationPlace}
                           </span>
                           <span className="dm-dropdown-item-badge">
                             {Number(shipperRequest.shippableItemQtyInQuintal)} Qtl
@@ -360,45 +363,45 @@ export function DispatchModal({
           {/* Order Summary Card */}
           {activeOrderObj && (
             <div className="dm-summary-card">
-              <h4 className="dm-summary-title">Order Summary</h4>
+              <h4 className="dm-summary-title">{t("dispatchModal.orderSummary")}</h4>
               <div className="dm-summary-grid">
                 <div className="dm-summary-item">
-                  <span className="dm-summary-label">Item</span>
-                  <span className="dm-summary-val">{activeOrderObj.shippableItemName || "General Cargo"}</span>
+                  <span className="dm-summary-label">{t("orders.table.item")}</span>
+                  <span className="dm-summary-val">{activeOrderObj.shippableItemName || t("dispatchModal.generalCargo")}</span>
                 </div>
                 <div className="dm-summary-item">
-                  <span className="dm-summary-label">Destination</span>
+                  <span className="dm-summary-label">{t("orders.destination")}</span>
                   <span className="dm-summary-val">{activeOrderObj.destinationPlace || "—"}</span>
                 </div>
 
                 <div className="dm-summary-item">
-                  <span className="dm-summary-label">Quantity</span>
+                  <span className="dm-summary-label">{t("orders.quantityQuintal")}</span>
                   <span className="dm-summary-val">
                     {activeOrderObj.shippableItemQtyInQuintal ? `${Number(activeOrderObj.shippableItemQtyInQuintal)} quintal` : "—"}
                   </span>
                 </div>
                 <div className="dm-summary-item">
-                  <span className="dm-summary-label">Number of Vehicles</span>
+                  <span className="dm-summary-label">{t("orders.numberOfVehicles")}</span>
                   <span className="dm-summary-val">1 {typeDisplay}</span>
                 </div>
 
                 <div className="dm-summary-item">
-                  <span className="dm-summary-label">Shipping Cost</span>
+                  <span className="dm-summary-label">{t("orders.shippingCost")}</span>
                   <span className="dm-summary-val">
                     {activeOrderObj.shippingCost ? `${Number(activeOrderObj.shippingCost).toLocaleString()} ETB` : "—"}
                   </span>
                 </div>
                 <div className="dm-summary-item">
-                  <span className="dm-summary-label">Shipping Date</span>
+                  <span className="dm-summary-label">{t("orders.shippingDate")}</span>
                   <span className="dm-summary-val">{formatDateDisplay(activeOrderObj.shippingDate)}</span>
                 </div>
 
                 <div className="dm-summary-item">
-                  <span className="dm-summary-label">Origin</span>
-                  <span className="dm-summary-val">{activeOrderObj.originPlace || "Terminal Location"}</span>
+                  <span className="dm-summary-label">{t("orders.origin")}</span>
+                  <span className="dm-summary-val">{activeOrderObj.originPlace || t("reports.terminalLocation")}</span>
                 </div>
                 <div className="dm-summary-item">
-                  <span className="dm-summary-label">Delivery Date</span>
+                  <span className="dm-summary-label">{t("orders.deliveryDate")}</span>
                   <span className="dm-summary-val">{formatDateDisplay(activeOrderObj.deliveryDate)}</span>
                 </div>
               </div>
@@ -417,7 +420,7 @@ export function DispatchModal({
                   {t("dispatchModal.dispatching")}
                 </>
               ) : (
-                "Dispatch Order"
+                t("dispatchModal.dispatchBtn")
               )}
             </button>
           </div>

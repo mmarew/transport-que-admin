@@ -47,8 +47,8 @@ export function OrdersPagination({
             className="orders-page-btn"
             disabled={currentPage >= totalPages}
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-            title="Next page"
-            aria-label="Next page"
+            title={t("common.nextPage")}
+            aria-label={t("common.nextPage")}
           >
             <ChevronRight size={15} />
           </button>

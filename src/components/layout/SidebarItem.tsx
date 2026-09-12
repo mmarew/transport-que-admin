@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -18,28 +19,31 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
   disabled = false,
   className = "",
   badge,
-}) => (
-  <div
-    className={`sidebar-link ${active ? "active" : ""} ${
-      disabled ? "sidebar-link--disabled" : ""
-    } ${className}`}
-    title={disabled ? `${label} (Select an organization to manage)` : label}
-    onClick={disabled ? undefined : onClick}
-    onKeyDown={(e) => {
-      if (!disabled && (e.key === "Enter" || e.key === " ")) {
-        e.preventDefault();
-        onClick();
-      }
-    }}
-    role="button"
-    tabIndex={disabled ? -1 : 0}
-    aria-pressed={active}
-    aria-disabled={disabled}
-  >
-    {icon}
-    <span>{label}</span>
-    {!disabled && badge != null && <span className="sidebar-link-badge">{badge}</span>}
-  </div>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div
+      className={`sidebar-link ${active ? "active" : ""} ${
+        disabled ? "sidebar-link--disabled" : ""
+      } ${className}`}
+      title={disabled ? t("layout.disabledHint", { label }) : label}
+      onClick={disabled ? undefined : onClick}
+      onKeyDown={(e) => {
+        if (!disabled && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-pressed={active}
+      aria-disabled={disabled}
+    >
+      {icon}
+      <span>{label}</span>
+      {!disabled && badge != null && <span className="sidebar-link-badge">{badge}</span>}
+    </div>
+  );
+};
 
 export default SidebarItem;

@@ -168,7 +168,7 @@ export function SettingsPage() {
     setAppLanguage(lang);
     setLangDropdownOpen(false);
     setMobileLangOpen(false);
-    toast.success(lang === "en" ? "Language switched to English" : "ቋንቋ ወደ አማርኛ ተቀይሯል");
+    toast.success(t("settings.langSwitched", { language: lang === "en" ? "English" : "አማርኛ" }));
   };
 
   const handleLogout = () => {
@@ -300,7 +300,7 @@ export function SettingsPage() {
             </div>
           </div>
         ) : (
-          <div className="settings-mobile" aria-label="Settings screen">
+          <div className="settings-mobile" aria-label={t("settings.screenAria")}>
             {/* Header */}
             <div className="settings-header">
               <h1 className="settings-header__title">{t("settings.title")}</h1>

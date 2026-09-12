@@ -34,7 +34,7 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
         (entry as any)?.queueId;
 
       if (!queueUniqueId) {
-        toast.error("Invalid queue entry identifier");
+        toast.error(t("cancelModal.invalidEntryId"));
         return;
       }
 
@@ -59,7 +59,10 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
         s.emit("queue_removed", payload);
       }
 
-      toast.success(res?.message || `${entry.driverName || "Driver"} removed from queue`);
+      toast.success(
+        res?.message ||
+          t("cancelModal.removedFromQueue", { driverName: entry.driverName || t("queue.driver") })
+      );
       onRemoved?.();
       onClose();
     } catch (err: unknown) {
@@ -68,10 +71,10 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
   };
 
   const vtList = vtData?.data || [];
-  const driverName = entry.driverName || "Driver";
+  const driverName = entry.driverName || t("queue.driver");
   const driverPhone = entry.driverPhoneNumber || "";
   const vehicleName = resolveVehicleName(entry.vehicleTypeUniqueId, entry.vehicleTypeName, vtList);
-  const statusDisplay = entry.statusLabel || (entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Waiting");
+  const statusDisplay = entry.statusLabel || (entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : t("queue.statuses.waiting"));
 
   return createPortal(
     <div className="qm-overlay">
@@ -84,16 +87,16 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
       >
         {/* Mobile Header */}
         <div className="qm-mobile-header">
-          <MobileHeader title="Cancel Driver from Queue" onBack={onClose} />
+          <MobileHeader title={t("cancelModal.title")} onBack={onClose} />
         </div>
 
         {/* Desktop Header */}
         <div className="qm-header qm-header--desktop">
           <div>
-            <h2 id="cancel-modal-title" className="qm-title">Cancel Driver from Queue</h2>
-            <p className="qm-subtitle">Are you sure you want to remove this driver from the queue?</p>
+            <h2 id="cancel-modal-title" className="qm-title">{t("cancelModal.title")}</h2>
+            <p className="qm-subtitle">{t("cancelModal.subtitleGeneric")}</p>
           </div>
-          <button type="button" className="qm-close-btn" onClick={onClose} aria-label="Close">
+          <button type="button" className="qm-close-btn" onClick={onClose} aria-label={t("common.close")}>
             <X size={20} />
           </button>
         </div>
@@ -113,10 +116,10 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
 
             <div className="qm-card-col">
               <div className="qm-card-line">
-                Vehicle: <strong>{vehicleName}</strong>
+                {t("cancelModal.vehicle")}: <strong>{vehicleName}</strong>
               </div>
               <div className="qm-card-line">
-                Current Status: <span className="qm-status-dot" /> <strong>{statusDisplay}</strong>
+                {t("cancelModal.currentStatus")}: <span className="qm-status-dot" /> <strong>{statusDisplay}</strong>
               </div>
             </div>
           </div>
@@ -124,22 +127,22 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
           {/* Reason for Cancellation */}
           <div className="qm-field-group" style={{ marginTop: "10px" }}>
             <label className="qm-section-title" style={{ margin: "0 0 4px 0" }}>
-              Reason for Cancellation
+              {t("cancelModal.reasonLabel")}
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Driver left the loading area."
+              placeholder={t("cancelModal.driverLeft")}
               rows={3}
               className="qm-textarea"
             />
-            <p className="qm-hint-text">Provide a clear reason for removing this driver.</p>
+            <p className="qm-hint-text">{t("cancelModal.provideReason")}</p>
           </div>
 
           {/* Footer Actions */}
           <div className="qm-footer">
             <button type="button" onClick={onClose} className="qm-btn-cancel">
-              Keep Driver
+              {t("cancelModal.keepInQueue")}
             </button>
             <button
               type="button"
@@ -153,7 +156,7 @@ export function ConfirmCancel({ entry, onRemoved, onClose }: ConfirmCancelProps)
                   {t("cancelModal.cancelling")}
                 </>
               ) : (
-                "Cancel Driver"
+                t("cancelModal.cancelDriverBtn")
               )}
             </button>
           </div>

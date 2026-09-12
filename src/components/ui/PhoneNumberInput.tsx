@@ -1,4 +1,5 @@
 import React, { useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import FieldError from "./FieldError";
 import {
   formatPhoneDisplay,
@@ -44,6 +45,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
   autoComplete = "tel",
   name,
 }) => {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = React.useState(false);
 
@@ -196,7 +198,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
           }}
           disabled={disabled}
           tabIndex={tabIndex}
-          aria-label={label ?? "Phone number"}
+          aria-label={label ?? t("ui.phoneNumber")}
           aria-required={required}
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-error` : undefined}

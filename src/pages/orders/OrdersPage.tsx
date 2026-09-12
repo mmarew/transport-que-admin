@@ -91,12 +91,12 @@ export function OrdersPage() {
 
         return {
           id: req.shipperRequestUniqueId || `real-${idx}`,
-          shipper: req.fullName || "Valued Shipper",
+          shipper: req.fullName || t("orders.defaultValuedShipper"),
           type: mode,
-          vehicleType: req.vehicleTypeName || "Heavy Truck",
-          item: req.shippableItemName || "General Cargo",
-          origin: req.originPlace || "Terminal",
-          destination: req.destinationPlace || "Destination",
+          vehicleType: req.vehicleTypeName || t("orders.defaultHeavyTruck"),
+          item: req.shippableItemName || t("orders.defaultGeneralCargo"),
+          origin: req.originPlace || t("orders.defaultTerminal"),
+          destination: req.destinationPlace || t("orders.defaultDestination"),
           quintal: quintalNum,
           cost: costNum,
           status: isComplete ? "complete" : "ongoing",
@@ -109,7 +109,7 @@ export function OrdersPage() {
     return baseList
       .filter((o) => !deletedIds.has(o.id))
       .map((o) => editedOrders[o.id] || o);
-  }, [backendOrdersData, deletedIds, editedOrders]);
+  }, [backendOrdersData, deletedIds, editedOrders, t]);
 
   // Sort & filter
   const processedOrders = useMemo(() => {
@@ -182,7 +182,7 @@ export function OrdersPage() {
     navigate("/dashboard");
   };
 
-  const orgName = activeOrg?.queueOrganizationName || "Cement Factory";
+  const orgName = activeOrg?.queueOrganizationName || t("orders.defaultOrgName");
   const orgCity = extractCity(activeOrg?.queueOrganizationAddress) || "Addis Ababa";
 
   return (

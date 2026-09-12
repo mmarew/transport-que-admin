@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import "./CustomSelect.css";
 
 export interface CustomSelectOption {
@@ -25,11 +26,12 @@ export function CustomSelect({
   value,
   onChange,
   options,
-  placeholder = "Select an option",
+  placeholder,
   error = false,
   disabled = false,
   className = "",
 }: CustomSelectProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -100,7 +102,7 @@ export function CustomSelect({
         <span
           className={`custom-select-value ${!hasValue ? "custom-select-placeholder" : ""}`}
         >
-          {hasValue ? selectedOption.label : placeholder}
+          {hasValue ? selectedOption.label : placeholder || t("ui.selectOption")}
         </span>
         <ChevronDown
           size={16}

@@ -485,7 +485,10 @@ export function ReportsPage() {
 
           <div className="rep-pagination">
             <span className="rep-page-info">
-              Show {paginatedOrgs.length} of {filteredOrgs.length}
+              {t("dashboard.showOf", {
+                current: paginatedOrgs.length,
+                total: filteredOrgs.length,
+              })}
             </span>
 
             <div className="rep-page-btns">

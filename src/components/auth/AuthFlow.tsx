@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuthFlow, type AuthMode } from "./useAuthFlow";
 import { AuthShell } from "./AuthShell";
 import { FieldRenderer } from "./fields";
@@ -34,6 +35,7 @@ export function AuthFlow({
   } = useAuthFlow(config, initialMode);
 
   const theme = authThemes[design];
+  const { t } = useTranslation();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -47,7 +49,7 @@ export function AuthFlow({
           <h2 className={theme.heading}>{screenConfig.title}</h2>
           {mode === "otp" && (
             <p className={`${theme.subtitle} mt-1`}>
-              Enter the 6-digit code sent to{" "}
+              {t("auth.otpCodeSent")}{" "}
               <span className="font-medium">{pendingPhone}</span>
             </p>
           )}
@@ -63,7 +65,7 @@ export function AuthFlow({
               />
             ))}
             <button type="submit" disabled={isPending} className={theme.button}>
-              {isPending ? "Please wait…" : screenConfig.submitLabel}
+              {isPending ? t("auth.pleaseWait") : screenConfig.submitLabel}
             </button>
 
             {mode === "login" && config.register && (
@@ -74,7 +76,7 @@ export function AuthFlow({
                   onClick={() => goTo("register")}
                   className={theme.link}
                 >
-                  Register
+                  {t("auth.signUp")}
                 </button>
               </p>
             )}
@@ -86,7 +88,7 @@ export function AuthFlow({
                   onClick={() => goTo("login")}
                   className={theme.link}
                 >
-                  Login
+                  {t("auth.signIn")}
                 </button>
               </p>
             )}
@@ -96,13 +98,13 @@ export function AuthFlow({
                 onClick={() => goTo(origin)}
                 className={`w-full ${theme.switchText} hover:opacity-80`}
               >
-                Change phone number
+                {t("auth.changePhone")}
               </button>
             )}
           </form>
         </>
       ) : (
-        <p className={`${theme.subtitle} mt-6`}>This screen is not configured.</p>
+        <p className={`${theme.subtitle} mt-6`}>{t("auth.notConfigured")}</p>
       )}
     </AuthShell>
   );

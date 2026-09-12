@@ -40,7 +40,7 @@ const pad = (n: number) => n.toString().padStart(2, "0");
 export function DatePickerField({
   label,
   value,
-  placeholder = "Select date",
+  placeholder,
   onChange,
   error,
 }: DatePickerFieldProps) {
@@ -188,7 +188,7 @@ export function DatePickerField({
           className={`date-picker-trigger ${isOpen ? "open" : ""} ${error ? "error" : ""}`}
         >
           <span className={`date-picker-value ${!displayValue ? "date-picker-placeholder" : ""}`}>
-            {displayValue || placeholder}
+            {displayValue || placeholder || t("orders.selectDate")}
           </span>
           <Calendar size={16} className="date-picker-icon" />
         </button>

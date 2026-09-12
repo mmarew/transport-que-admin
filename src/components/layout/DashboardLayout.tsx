@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Sidebar, { type QueueSidebarTab } from "./Sidebar";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/dashboard.css";
@@ -21,6 +22,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   actions,
 }) => {
   const { auth } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem("queue_sidebar_collapsed") === "true";
@@ -34,7 +36,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  const userName = auth?.userData?.fullName || "Admin User";
+  const userName = auth?.userData?.fullName || t("layout.defaultUserName");
   const userAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
     userName
   )}&background=0B4D6D&color=ffffff&bold=true`;
@@ -58,8 +60,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {/* Notification Bell */}
             <button
               className="mc-icon-btn"
-              title="Notifications"
-              aria-label="Notifications"
+              title={t("layout.notifications")}
+              aria-label={t("layout.notifications")}
             >
               <Bell size={20} strokeWidth={1.8} />
               <span className="notification-dot" />

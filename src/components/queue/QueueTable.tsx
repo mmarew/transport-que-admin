@@ -22,8 +22,11 @@ function formatJoinedTime(dateStr: string): string {
 }
 
 export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
+  console.log("🚀 ~ QueueTable ~ entries:", entries);
   const { t } = useTranslation();
-  const [expandedAddresses, setExpandedAddresses] = useState<Set<string>>(new Set());
+  const [expandedAddresses, setExpandedAddresses] = useState<Set<string>>(
+    new Set(),
+  );
 
   const toggleAddress = (key: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -38,7 +41,9 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
   const rows = (entries || []).map((rawEntry, index) => {
     const entry = normalizeQueueEntry(rawEntry);
     const statusKey = (entry.status || "waiting") as QueueStatus;
-    const statusLabel = entry.statusLabel || (statusKey.charAt(0).toUpperCase() + statusKey.slice(1));
+    const statusLabel =
+      entry.statusLabel ||
+      statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
     const num = entry.queueNumber || index + 1;
     const joinedTime = formatJoinedTime(entry.joinedAt);
     const key = entry.queueUniqueId || `${entry.queueNumber}-${index}`;
@@ -56,75 +61,100 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
               <th>{t("queue.driver")}</th>
               <th>{t("queue.phone")}</th>
               <th>{t("queue.address", "Address")}</th>
+              <th>{"Shipper Name/phone"}</th>
               <th>{t("queue.joined")}</th>
               <th>{t("queue.status")}</th>
-              <th style={{ textAlign: "center", width: "220px" }}>{t("queue.action")}</th>
+              <th style={{ textAlign: "center", width: "220px" }}>
+                {t("queue.action")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="qb-empty-row-text">{t("queue.noDrivers")}</td>
-              </tr>
-            ) : rows.map(({ entry, statusKey, statusLabel, num, joinedTime, key }) => (
-              <tr key={key}>
-                <td className="qb-th-num">
-                  <span className="qb-num-circle">{num}</span>
-                </td>
-                <td className="qb-driver-name">{entry.driverName}</td>
-                <td className="qb-time-text">{entry.driverPhoneNumber}</td>
-                <td className="qb-time-text" style={{ color: "#334155", fontWeight: 500 }}>
-                  {entry.driverAddress ? (
-                    entry.driverAddress.length > 22 ? (
-                      <button
-                        type="button"
-                        className={`qb-address-toggle-btn ${expandedAddresses.has(key) ? "expanded" : ""}`}
-                        onClick={(e) => toggleAddress(key, e)}
-                        title={
-                          expandedAddresses.has(key)
-                            ? t("common.clickToCollapse", "Click to collapse")
-                            : `${entry.driverAddress} (${t("common.clickForFull", "Click for full address")})`
-                        }
-                      >
-                        {expandedAddresses.has(key)
-                          ? entry.driverAddress
-                          : `${entry.driverAddress.slice(0, 20)}…`}
-                      </button>
-                    ) : (
-                      entry.driverAddress
-                    )
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="qb-time-text">{joinedTime}</td>
-                <td>
-                  <span className={`qb-status-text ${statusKey}`}>{statusLabel}</span>
-                </td>
-                <td style={{ textAlign: "center" }}>
-                  {statusKey === "removed" || statusKey === "completed" ? (
-                    <span className="qb-action-dash">—</span>
-                  ) : (
-                    <div className="qb-actions-cell">
-                      <button
-                        type="button"
-                        className="qb-btn-text-override"
-                        onClick={() => onOverride(entry)}
-                      >
-                        {t("queue.override")}
-                      </button>
-                      <button
-                        type="button"
-                        className="qb-btn-text-cancel"
-                        onClick={() => onRemove(entry)}
-                      >
-                        {t("queue.cancelDriver")}
-                      </button>
-                    </div>
-                  )}
+                <td colSpan={7} className="qb-empty-row-text">
+                  {t("queue.noDrivers")}
                 </td>
               </tr>
-            ))}
+            ) : (
+              rows.map(
+                ({ entry, statusKey, statusLabel, num, joinedTime, key }) => (
+                  <tr key={key}>
+                    <td className="qb-th-num">
+                      <span className="qb-num-circle">{num}</span>
+                    </td>
+                    <td className="qb-driver-name">{entry.driverName}</td>
+                    <td className="qb-time-text">{entry.driverPhoneNumber}</td>
+                    <td
+                      className="qb-time-text"
+                      style={{ color: "#334155", fontWeight: 500 }}
+                    >
+                      {entry.driverAddress ? (
+                        entry.driverAddress.length > 22 ? (
+                          <button
+                            type="button"
+                            className={`qb-address-toggle-btn ${expandedAddresses.has(key) ? "expanded" : ""}`}
+                            onClick={(e) => toggleAddress(key, e)}
+                            title={
+                              expandedAddresses.has(key)
+                                ? t(
+                                    "common.clickToCollapse",
+                                    "Click to collapse",
+                                  )
+                                : `${entry.driverAddress} (${t("common.clickForFull", "Click for full address")})`
+                            }
+                          >
+                            {expandedAddresses.has(key)
+                              ? entry.driverAddress
+                              : `${entry.driverAddress.slice(0, 20)}…`}
+                          </button>
+                        ) : (
+                          entry.driverAddress
+                        )
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
+                      <span className="qb-time-text">
+                        {"entry.shipperName"}
+                      </span>
+                      <span className="qb-time-text">
+                        {"entry.shipperPhoneNumber"}
+                      </span>
+                    </td>
+                    <td className="qb-time-text">{joinedTime}</td>
+                    <td>
+                      <span className={`qb-status-text ${statusKey}`}>
+                        {statusLabel}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      {statusKey === "removed" || statusKey === "completed" ? (
+                        <span className="qb-action-dash">—</span>
+                      ) : (
+                        <div className="qb-actions-cell">
+                          <button
+                            type="button"
+                            className="qb-btn-text-override"
+                            onClick={() => onOverride(entry)}
+                          >
+                            {t("queue.override")}
+                          </button>
+                          <button
+                            type="button"
+                            className="qb-btn-text-cancel"
+                            onClick={() => onRemove(entry)}
+                          >
+                            {t("queue.cancelDriver")}
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ),
+              )
+            )}
           </tbody>
         </table>
       </div>
@@ -144,55 +174,77 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="qb-empty-row-text">{t("queue.noDrivers")}</td>
-              </tr>
-            ) : rows.map(({ entry, statusKey, statusLabel, num, joinedTime, key }) => (
-              <tr key={key}>
-                <td className="qb-th-num">
-                  <span className="qb-num-circle">{num}</span>
+                <td colSpan={5} className="qb-empty-row-text">
+                  {t("queue.noDrivers")}
                 </td>
-                <td className="qb-driver-name">
-                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                    <span style={{ fontWeight: 600, color: "#0f172a" }}>{entry.driverName}</span>
-                    {entry.driverAddress && (
-                      <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 400 }}>
-                        {entry.driverAddress}
+              </tr>
+            ) : (
+              rows.map(
+                ({ entry, statusKey, statusLabel, num, joinedTime, key }) => (
+                  <tr key={key}>
+                    <td className="qb-th-num">
+                      <span className="qb-num-circle">{num}</span>
+                    </td>
+                    <td className="qb-driver-name">
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px",
+                        }}
+                      >
+                        <span style={{ fontWeight: 600, color: "#0f172a" }}>
+                          {entry.driverName}
+                        </span>
+                        {entry.driverAddress && (
+                          <span
+                            style={{
+                              fontSize: "0.74rem",
+                              color: "#64748b",
+                              fontWeight: 400,
+                            }}
+                          >
+                            {entry.driverAddress}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="qb-time-text">{joinedTime}</td>
+                    <td>
+                      <span className={`qb-status-text ${statusKey}`}>
+                        {statusLabel}
                       </span>
-                    )}
-                  </div>
-                </td>
-                <td className="qb-time-text">{joinedTime}</td>
-                <td>
-                  <span className={`qb-status-text ${statusKey}`}>{statusLabel}</span>
-                </td>
-                <td className="qb-th-action">
-                  {statusKey === "removed" || statusKey === "completed" ? (
-                    <span className="qb-action-dash">—</span>
-                  ) : (
-                    <div className="qb-actions-cell">
-                      <button
-                        type="button"
-                        className="qb-btn-icon-override"
-                        onClick={() => onOverride(entry)}
-                        title={t("queue.override")}
-                        aria-label={t("queue.override")}
-                      >
-                        <ArrowUp size={17} />
-                      </button>
-                      <button
-                        type="button"
-                        className="qb-btn-icon-cancel"
-                        onClick={() => onRemove(entry)}
-                        title={t("queue.cancelDriver")}
-                        aria-label={t("queue.cancelDriver")}
-                      >
-                        <Trash2 size={17} />
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
+                    </td>
+                    <td className="qb-th-action">
+                      {statusKey === "removed" || statusKey === "completed" ? (
+                        <span className="qb-action-dash">—</span>
+                      ) : (
+                        <div className="qb-actions-cell">
+                          <button
+                            type="button"
+                            className="qb-btn-icon-override"
+                            onClick={() => onOverride(entry)}
+                            title={t("queue.override")}
+                            aria-label={t("queue.override")}
+                          >
+                            <ArrowUp size={17} />
+                          </button>
+                          <button
+                            type="button"
+                            className="qb-btn-icon-cancel"
+                            onClick={() => onRemove(entry)}
+                            title={t("queue.cancelDriver")}
+                            aria-label={t("queue.cancelDriver")}
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ),
+              )
+            )}
           </tbody>
         </table>
       </div>

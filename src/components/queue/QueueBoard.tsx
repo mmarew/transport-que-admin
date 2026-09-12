@@ -131,7 +131,7 @@ export function QueueBoard({
       for (const item of rawQueues) {
         if (!item) continue;
         const entry = normalizeQueueEntry(item);
-        const key = entry.vehicleTypeName || entry.vehicleTypeUniqueId || "Standard";
+        const key = entry.vehicleTypeName || entry.vehicleTypeUniqueId || t("queueBoard.defaultStandard");
         if (!map[key]) map[key] = [];
         map[key].push(entry);
       }
@@ -151,7 +151,7 @@ export function QueueBoard({
       return map;
     }
     return {};
-  }, [status]);
+  }, [status, t]);
 
   const allEntries: DriverQueueEntry[] = useMemo(() => {
     return Object.values(queuesMap).flat().filter(Boolean);
@@ -168,7 +168,7 @@ export function QueueBoard({
     <div className="qb-page-container">
       {/* ── Common Mobile Navigation Header ── */}
       <div className="qb-mobile-top-header">
-        <MobileHeader title="Live Queue" onBack={onBack} />
+        <MobileHeader title={t("queue.liveQueue")} onBack={onBack} />
       </div>
 
       {/* ── Top Back Button (Desktop) ── */}
@@ -187,7 +187,7 @@ export function QueueBoard({
               const isLive = socketConnected || (getSocket()?.connected ?? false) || Boolean(status);
               return (
                 <>
-                  <span className="qb-live-dot-indicator" title={isLive ? "Live" : "Connecting"} />
+                  <span className="qb-live-dot-indicator" title={isLive ? t("queue.live") : t("queue.connecting")} />
                   <h1 className="qb-title-text">{t("queue.liveQueue")}</h1>
                   <span className={`qb-live-badge ${isLive ? "live" : "connecting"}`}>
                     <span className="qb-live-badge-dot" />

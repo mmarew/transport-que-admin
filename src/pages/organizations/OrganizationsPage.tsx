@@ -31,7 +31,9 @@ export function OrganizationsPage() {
   const setSelectedOrgId = useQueueAdminStore((s) => s.setSelectedOrgId);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<"name" | "type" | "city" | "status" | "enabled">("name");
+  const [sortField, setSortField] = useState<
+    "name" | "type" | "city" | "status" | "enabled"
+  >("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -50,7 +52,10 @@ export function OrganizationsPage() {
 
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
+      if (
+        sortMenuRef.current &&
+        !sortMenuRef.current.contains(e.target as Node)
+      ) {
         setShowSortMenu(false);
       }
     };
@@ -130,7 +135,9 @@ export function OrganizationsPage() {
     return processedOrgs.slice(start, start + PAGE_SIZE);
   }, [processedOrgs, currentPage]);
 
-  const handleSort = (field: "name" | "type" | "city" | "status" | "enabled") => {
+  const handleSort = (
+    field: "name" | "type" | "city" | "status" | "enabled",
+  ) => {
     if (sortField === field) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
@@ -154,11 +161,11 @@ export function OrganizationsPage() {
   }) => {
     try {
       await createQueueOrg(formData).unwrap();
-      toast.success("Organization created successfully");
+      toast.success(t("dashboard.orgCreatedSuccess"));
       setShowCreateOrg(false);
       refetch();
     } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to create organization");
+      toast.error(err?.data?.message || t("dashboard.createOrgFailed"));
     }
   };
 
@@ -218,25 +225,30 @@ export function OrganizationsPage() {
               onClick={() => setShowSortMenu((v) => !v)}
             >
               <span>{t("dashboard.sort", "Sort")}</span>
-              <ChevronDown size={14} className={`org-sort-chevron ${showSortMenu ? "open" : ""}`} />
+              <ChevronDown
+                size={14}
+                className={`org-sort-chevron ${showSortMenu ? "open" : ""}`}
+              />
             </button>
 
             {showSortMenu && (
               <div className="org-sort-menu">
-                {(["name", "type", "city", "status", "enabled"] as const).map((field) => (
-                  <button
-                    key={field}
-                    type="button"
-                    className={`org-sort-menu-item ${sortField === field ? "active" : ""}`}
-                    onClick={() => {
-                      handleSort(field);
-                      setShowSortMenu(false);
-                    }}
-                  >
-                    <span>{SORT_LABELS[field]}</span>
-                    {sortField === field && <Check size={14} />}
-                  </button>
-                ))}
+                {(["name", "type", "city", "status", "enabled"] as const).map(
+                  (field) => (
+                    <button
+                      key={field}
+                      type="button"
+                      className={`org-sort-menu-item ${sortField === field ? "active" : ""}`}
+                      onClick={() => {
+                        handleSort(field);
+                        setShowSortMenu(false);
+                      }}
+                    >
+                      <span>{SORT_LABELS[field]}</span>
+                      {sortField === field && <Check size={14} />}
+                    </button>
+                  ),
+                )}
               </div>
             )}
           </div>
@@ -254,15 +266,26 @@ export function OrganizationsPage() {
 
         {isLoading && (
           <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
-            <div className="add-docs-spinner" style={{ width: 28, height: 28, margin: "0 auto 1rem" }} />
-            <p style={{ color: "#64748b", fontSize: "0.875rem" }}>{t("common.loading")}</p>
+            <div
+              className="add-docs-spinner"
+              style={{ width: 28, height: 28, margin: "0 auto 1rem" }}
+            />
+            <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
+              {t("common.loading")}
+            </p>
           </div>
         )}
 
         {error && (
-          <div style={{ textAlign: "center", padding: "3rem 1rem", color: "#dc2626" }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "3rem 1rem",
+              color: "#dc2626",
+            }}
+          >
             <AlertCircle size={32} style={{ margin: "0 auto 0.5rem" }} />
-            <p style={{ fontWeight: 500 }}>Failed to load organizations</p>
+            <p style={{ fontWeight: 500 }}>{t("dashboard.failedToLoadOrgs")}</p>
             <button
               type="button"
               onClick={() => refetch()}
@@ -277,19 +300,38 @@ export function OrganizationsPage() {
                 fontSize: "0.8125rem",
               }}
             >
-              Retry
+              {t("dashboard.retry")}
             </button>
           </div>
         )}
 
         {!isLoading && !error && processedOrgs.length === 0 && (
           <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
-            <Building2 size={36} color="#94a3b8" style={{ margin: "0 auto 0.75rem" }} />
-            <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#1e293b", margin: 0 }}>
+            <Building2
+              size={36}
+              color="#94a3b8"
+              style={{ margin: "0 auto 0.75rem" }}
+            />
+            <h3
+              style={{
+                fontSize: "1rem",
+                fontWeight: 600,
+                color: "#1e293b",
+                margin: 0,
+              }}
+            >
               {searchQuery ? t("dashboard.noMatching") : t("dashboard.noOrgs")}
             </h3>
-            <p style={{ color: "#64748b", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-              {searchQuery ? t("dashboard.tryDifferent") : t("dashboard.registeredAppear")}
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "0.875rem",
+                marginTop: "0.25rem",
+              }}
+            >
+              {searchQuery
+                ? t("dashboard.tryDifferent")
+                : t("dashboard.registeredAppear")}
             </p>
           </div>
         )}
@@ -301,28 +343,57 @@ export function OrganizationsPage() {
               <table className="org-table">
                 <thead>
                   <tr>
-                    <th onClick={() => handleSort("name")} style={{ cursor: "pointer" }}>
-                      <span className="org-th-sortable">{t("dashboard.orgName", "Organization")} <ChevronDown size={13} /></span>
+                    <th
+                      onClick={() => handleSort("name")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <span className="org-th-sortable">
+                        {t("dashboard.orgName", "Organization")}{" "}
+                        <ChevronDown size={13} />
+                      </span>
                     </th>
-                    <th onClick={() => handleSort("type")} style={{ cursor: "pointer" }}>
-                      <span className="org-th-sortable">{t("dashboard.type", "Type")} <ChevronDown size={13} /></span>
+                    <th
+                      onClick={() => handleSort("type")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <span className="org-th-sortable">
+                        {t("dashboard.type", "Type")} <ChevronDown size={13} />
+                      </span>
                     </th>
-                    <th onClick={() => handleSort("city")} style={{ cursor: "pointer" }}>
-                      <span className="org-th-sortable">{t("dashboard.city", "City")} <ChevronDown size={13} /></span>
+                    <th
+                      onClick={() => handleSort("city")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <span className="org-th-sortable">
+                        {t("dashboard.city", "City")} <ChevronDown size={13} />
+                      </span>
                     </th>
                     <th>{t("dashboard.status", "Status")}</th>
-                    <th onClick={() => handleSort("enabled")} style={{ cursor: "pointer" }}>
-                      <span className="org-th-sortable">{t("dashboard.enabled", "Enabled")} <ChevronDown size={13} /></span>
+                    <th
+                      onClick={() => handleSort("enabled")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <span className="org-th-sortable">
+                        {t("dashboard.enabled", "Enabled")}{" "}
+                        <ChevronDown size={13} />
+                      </span>
                     </th>
-                    <th style={{ textAlign: "left" }}>{t("common.actions", "Action")}</th>
+                    <th style={{ textAlign: "left" }}>
+                      {t("common.actions", "Action")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedOrgs.map(({ organization: org }) => {
                     const city = extractCity(org.queueOrganizationAddress);
-                    const status = String(org.approvalStatus || "pending").toLowerCase();
+                    const status = String(
+                      org.approvalStatus || "pending",
+                    ).toLowerCase();
                     const isApproved = status === "approved";
-                    const isEnabled = org.queueEnabled === 1 ? t("dashboard.yes", "Yes") : t("dashboard.no", "No");
+                    const isEnabled =
+                      org.queueEnabled === 1
+                        ? t("dashboard.yes", "Yes")
+                        : t("dashboard.no", "No");
                     const statusLabel = isApproved
                       ? t("dashboard.approved", "Approved")
                       : status === "pending"
@@ -331,8 +402,12 @@ export function OrganizationsPage() {
 
                     return (
                       <tr key={org.queueOrganizationUniqueId}>
-                        <td className="org-cell-name">{org.queueOrganizationName}</td>
-                        <td className="org-cell-type">{org.queueOrganizationType}</td>
+                        <td className="org-cell-name">
+                          {org.queueOrganizationName}
+                        </td>
+                        <td className="org-cell-type">
+                          {org.queueOrganizationType}
+                        </td>
                         <td className="org-cell-city">{city}</td>
                         <td>
                           <span className={`org-status-text ${status}`}>
@@ -345,8 +420,14 @@ export function OrganizationsPage() {
                             type="button"
                             className={`org-manage-link ${!isApproved ? "disabled" : ""}`}
                             disabled={!isApproved}
-                            onClick={() => handleManage(org.queueOrganizationUniqueId)}
-                            title={!isApproved ? "Unapproved organizations cannot be managed" : "Manage Queue"}
+                            onClick={() =>
+                              handleManage(org.queueOrganizationUniqueId)
+                            }
+                            title={
+                              !isApproved
+                                ? t("dashboard.cannotManageOrg")
+                                : t("dashboard.manageQueue")
+                            }
                           >
                             {t("dashboard.manage", "Manage")}
                           </button>
@@ -360,25 +441,35 @@ export function OrganizationsPage() {
 
             {/* Footer & Pagination */}
             <div className="org-table-footer">
-              <span>{t("dashboard.showOf", { current: paginatedOrgs.length, total: processedOrgs.length, defaultValue: `Show ${paginatedOrgs.length} of ${processedOrgs.length}` })}</span>
+              <span>
+                {t("dashboard.showOf", {
+                  current: paginatedOrgs.length,
+                  total: processedOrgs.length,
+                  defaultValue: `Show ${paginatedOrgs.length} of ${processedOrgs.length}`,
+                })}
+              </span>
               <div className="org-pagination">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    className={`org-page-btn ${currentPage === page ? "active" : ""}`}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </button>
-                ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      className={`org-page-btn ${currentPage === page ? "active" : ""}`}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ),
+                )}
                 {totalPages > 1 && (
                   <button
                     type="button"
                     className="org-page-btn"
                     disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    title="Next page"
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    title={t("common.nextPage")}
                   >
                     <ChevronRight size={15} />
                   </button>

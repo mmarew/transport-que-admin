@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import React, { type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import ellipse24 from "../../assets/Ellipse_24.svg";
 import ellipse25 from "../../assets/Ellipse_25.svg";
 import "../../styles/auth.css";
@@ -19,18 +20,19 @@ export const OverlappingCircles: React.FC<OverlappingCirclesProps> = ({
   children,
   onBack,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className={`otp-header-wrapper ${className}`}>
       {/* Background circles */}
       <div className="overlapping-circles-container">
         <img
           src={ellipse25}
-          alt="Background Circle Right"
+          alt={t("ui.bgCircleRight")}
           className="circle-right"
         />
         <img
           src={ellipse24}
-          alt="Background Circle Left"
+          alt={t("ui.bgCircleLeft")}
           className="circle-left"
         />
       </div>
@@ -42,7 +44,7 @@ export const OverlappingCircles: React.FC<OverlappingCirclesProps> = ({
             type="button"
             className="otp-back-btn"
             onClick={onBack}
-            aria-label="Go back"
+            aria-label={t("common.goBack")}
             style={{ position: "relative", zIndex: 1 }}
           >
             <ChevronLeft size={28} strokeWidth={2} />

@@ -1,4 +1,5 @@
 import { useRef, type ClipboardEvent, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { groupPhoneDigits, type AuthFieldConfig } from "../../lib/authConfig";
 import type { AuthTheme } from "./themes";export function FieldRenderer({
   field,
@@ -13,11 +14,12 @@ import type { AuthTheme } from "./themes";export function FieldRenderer({
   error?: string;
   theme: AuthTheme;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
       <label htmlFor={field.name} className={theme.label}>
         {field.label}
-        {!field.required && <span className="font-normal opacity-60"> (optional)</span>}
+        {!field.required && <span className="font-normal opacity-60"> {t("auth.optional")}</span>}
       </label>
       {field.type === "otp" ? (
         <OtpInputs
@@ -95,6 +97,7 @@ export function OtpInputs({
   onChange: (next: string) => void;
   boxClass: string;
 }) {
+  const { t } = useTranslation();
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
   const setDigitAt = (index: number, digit: string) => {
@@ -153,7 +156,7 @@ export function OtpInputs({
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={(e) => handlePaste(i, e)}
-          aria-label={`OTP digit ${i + 1}`}
+          aria-label={t("auth.otpDigit", { n: i + 1 })}
           className={boxClass}
         />
       ))}

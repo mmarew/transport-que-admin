@@ -142,7 +142,10 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
           : {}),
       }).unwrap();
 
-      toast.success(res?.message || `Driver checked in at position ${res?.data?.queueNumber ?? 1}`);
+      toast.success(
+        res?.message ||
+          t("checkinModal.checkedInAt", { position: res?.data?.queueNumber ?? 1 })
+      );
       onCheckedIn?.();
       onClose();
     } catch (err: unknown) {
@@ -161,18 +164,16 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
       >
         {/* Mobile Header */}
         <div className="qm-mobile-header">
-          <MobileHeader title="Manual Check-in" onBack={onClose} />
+          <MobileHeader title={t("checkinModal.title")} onBack={onClose} />
         </div>
 
         {/* Desktop Header */}
         <div className="qm-header qm-header--desktop">
           <div>
-            <h2 id="checkin-modal-title" className="qm-title">Manual Check-in</h2>
-            <p className="qm-subtitle">
-              Register a driver into the queue manually when they arrive at the terminal.
-            </p>
+            <h2 id="checkin-modal-title" className="qm-title">{t("checkinModal.title")}</h2>
+            <p className="qm-subtitle">{t("checkinModal.subtitle")}</p>
           </div>
-          <button type="button" className="qm-close-btn" onClick={onClose} aria-label="Close">
+          <button type="button" className="qm-close-btn" onClick={onClose} aria-label={t("common.close")}>
             <X size={20} />
           </button>
         </div>
@@ -180,15 +181,15 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
         <form onSubmit={handleSubmit(handleFormSubmit)}>
           {/* Section 1: Vehicle-Driver ID */}
           <div style={{ marginTop: "6px" }}>
-            <h3 className="qm-section-title">1. Vehicle-Driver ID</h3>
+            <h3 className="qm-section-title">{t("checkinModal.vehicleDriverId")}</h3>
             <div className="qm-field-group">
-              <label className="qm-field-label">Search or enter vehicle-driver ID</label>
+              <label className="qm-field-label">{t("checkinModal.searchOrEnterId")}</label>
               <div className="qm-input-wrap" ref={searchWrapRef}>
                 <Search size={16} className="qm-input-icon" />
                 <input
                   id="checkin-search-driver"
                   name="searchVehicleDriver"
-                  aria-label="Search or enter vehicle-driver ID"
+                  aria-label={t("checkinModal.searchOrEnterId")}
                   type="text"
                   value={searchQuery}
                   onFocus={() => setDropdownOpen(true)}
@@ -203,7 +204,7 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
                   placeholder={
                     selectedDriver
                       ? `${selectedDriver.driverName} (${selectedDriver.vehicleDriverUniqueId.slice(0, 7)})`
-                      : "Search by driver name, phone, or ID..."
+                      : t("checkinModal.searchPlaceholder")
                   }
                   className="qm-input has-icon"
                 />
@@ -218,7 +219,7 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
                           style={d.isInQueue ? { opacity: 0.6 } : {}}
                           onClick={() => {
                             if (d.isInQueue) {
-                              toast.info(`"${d.driverName}" is already waiting in the queue.`);
+                              toast.info(t("checkinModal.alreadyWaiting", { driverName: d.driverName }));
                             }
                             setValue("vehicleDriverUniqueId", d.vehicleDriverUniqueId, { shouldValidate: true });
                             setSearchQuery(d.driverPhoneNumber ? `${d.driverName} (${d.driverPhoneNumber})` : d.driverName);
@@ -229,13 +230,15 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
                             <strong>{d.driverName}</strong> {d.driverPhoneNumber ? `— ${d.driverPhoneNumber}` : ""}
                           </span>
                           <span className="dm-dropdown-item-badge" style={d.isInQueue ? { background: "#fef3c7", color: "#92400e" } : {}}>
-                            {d.isInQueue ? "Already in Queue" : d.vehicleTypeName || "Available"}
+                            {d.isInQueue
+                              ? t("checkinModal.alreadyInQueue")
+                              : d.vehicleTypeName || t("checkinModal.available")}
                           </span>
                         </div>
                       ))
                     ) : (
                       <div style={{ padding: "10px 14px", fontSize: "0.8rem", color: "#64748b" }}>
-                        No matching drivers found. You can also paste the Vehicle-Driver ID directly.
+                        {t("checkinModal.noMatchingDrivers")}
                       </div>
                     )}
                   </div>
@@ -253,7 +256,7 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
                   <User size={20} />
                 </div>
                 <div className="qm-card-info">
-                  <span className="qm-card-title">{selectedDriver.driverName || "Selected Driver"}</span>
+                  <span className="qm-card-title">{selectedDriver.driverName || t("checkinModal.selectedDriver")}</span>
                   <span className="qm-card-sub">{selectedDriver.driverPhoneNumber || "—"}</span>
                 </div>
               </div>
@@ -262,14 +265,14 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
 
           {/* Section 2: Queue Position */}
           <div style={{ marginTop: "14px" }}>
-            <h3 className="qm-section-title">2. Queue Position</h3>
+            <h3 className="qm-section-title">{t("checkinModal.queuePosition")}</h3>
             <div className="qm-field-group">
-              <label className="qm-field-label">Queue Position (Optional)</label>
+              <label className="qm-field-label">{t("checkinModal.queuePositionOptional")}</label>
               <input
                 type="number"
                 min={1}
                 {...register("queueNumber", { valueAsNumber: true })}
-                placeholder="Leave blank for Auto-assigned"
+                placeholder={t("checkinModal.leaveBlankAuto")}
                 className="qm-input"
               />
             </div>
@@ -281,10 +284,15 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
               </div>
               <div className="qm-card-info">
                 <span className="qm-card-title">
-                  {inputQueueNumber && Number(inputQueueNumber) > 0 ? `Position ${inputQueueNumber}` : "Auto-assigned"}
+                  {inputQueueNumber && Number(inputQueueNumber) > 0
+                    ? t("checkinModal.positionDisplay", { number: inputQueueNumber })
+                    : t("checkinModal.autoAssigned")}
                 </span>
                 <span className="qm-card-sub">
-                  Driver will be placed at position {estimatedPosition} in the {targetVehicleTypeName} queue.
+                  {t("checkinModal.willBePlaced", {
+                    position: estimatedPosition,
+                    vehicleType: targetVehicleTypeName,
+                  })}
                 </span>
               </div>
             </div>
@@ -302,7 +310,7 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
                   {t("checkinModal.checkingIn")}
                 </>
               ) : (
-                "Check In"
+                t("checkinModal.checkinBtn")
               )}
             </button>
           </div>

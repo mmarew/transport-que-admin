@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import "./ConstantPhoneInput.css";
 
 interface ConstantPhoneInputProps {
@@ -32,6 +33,7 @@ export function ConstantPhoneInput({
   required = false,
   optional = false,
 }: ConstantPhoneInputProps) {
+  const { t } = useTranslation();
   // Extract local 9 digits from value
   let localDigits = (value || "").replace(/\D/g, "");
   if (localDigits.startsWith("251")) localDigits = localDigits.slice(3);
@@ -56,7 +58,7 @@ export function ConstantPhoneInput({
         <label htmlFor={id} className="cpi-label">
           {label}
           {required && <span style={{ color: "#E80000", marginLeft: "2px" }}>*</span>}
-          {optional && <span className="cpi-optional">(Optional)</span>}
+          {optional && <span className="cpi-optional">{t("ui.optional")}</span>}
         </label>
       )}
       <div className={`cpi-box ${error ? "error" : ""}`}>

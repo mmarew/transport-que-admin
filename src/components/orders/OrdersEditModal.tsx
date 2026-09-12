@@ -33,7 +33,7 @@ export function OrdersEditModal({ order, onClose, onSave }: OrdersEditModalProps
             type="button"
             className="orders-modal-close"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("common.close")}
           >
             <X size={18} />
           </button>
@@ -144,7 +144,7 @@ export function OrdersEditModal({ order, onClose, onSave }: OrdersEditModalProps
             </div>
 
             <div className="orders-form-group" style={{ gridColumn: "1 / -1" }}>
-              <label className="orders-form-label">Status</label>
+              <label className="orders-form-label">{t("orders.status")}</label>
               <select
                 name="status"
                 defaultValue={order.status}

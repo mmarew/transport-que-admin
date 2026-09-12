@@ -173,7 +173,7 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
       >
         {/* Mobile Header */}
         <div className="com-mobile-header">
-          <MobileHeader title="Create Company" onBack={onClose} />
+          <MobileHeader title={t("org.createOrg")} onBack={onClose} />
         </div>
 
         {/* Desktop Header */}

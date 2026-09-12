@@ -446,7 +446,7 @@ export function CreateOrderModal({
             type="button"
             className="com-close-btn"
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label={t("common.closeModal")}
           >
             <X size={20} />
           </button>

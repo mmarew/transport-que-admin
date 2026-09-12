@@ -30,11 +30,6 @@ import DashboardLayout from "../../components/layout/DashboardLayout";
 import { normalizeOrg } from "../../utils/formatters";
 import "./QueueOrgManagePage.css";
 
-const ROLE_LABELS: Record<number, string> = {
-  11: "Queue Org Admin",
-  1: "Shipper",
-};
-
 function StatusBadge({
   status,
   enabled,
@@ -42,6 +37,7 @@ function StatusBadge({
   status: ApprovalStatus;
   enabled: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <span className="qom-status-badge">
       <span className={`qom-badge-status ${status}`}>
@@ -49,11 +45,11 @@ function StatusBadge({
       </span>
       {enabled ? (
         <span className="qom-badge-active">
-          Queue Active
+          {t("queueManage.queueActive")}
         </span>
       ) : (
         <span className="qom-badge-disabled">
-          Queue Disabled
+          {t("queueManage.queueDisabled")}
         </span>
       )}
     </span>
@@ -150,7 +146,7 @@ export function QueueOrgManagePage() {
           longitude: values.longitude || null,
         },
       }).unwrap();
-      toast.success("Organization updated");
+      toast.success(t("queueManage.orgUpdated"));
     } catch (err: unknown) {
       toast.error(parseError(err));
     }
@@ -169,7 +165,7 @@ export function QueueOrgManagePage() {
             queueEnabled: approvalStatus === "approved",
           },
         }).unwrap();
-        toast.success("Organization status updated");
+        toast.success(t("queueManage.orgStatusUpdated"));
       } catch (err: unknown) {
         toast.error(parseError(err));
       }
@@ -178,10 +174,15 @@ export function QueueOrgManagePage() {
 
   const { t } = useTranslation();
 
+  const roleLabels: Record<number, string> = {
+    11: t("queueManage.roleQueueOrgAdmin"),
+    1: t("queueManage.roleShipper"),
+  };
+
   return (
     <DashboardLayout
-      title={org?.queueOrganizationName ?? t("dashboard.manageOrg", "Manage Organization")}
-      subtitle={org ? `${org.queueOrganizationType.toUpperCase()} Terminal Management` : t("dashboard.orgDetails", "Organization details")}
+      title={org?.queueOrganizationName ?? t("queueManage.manageOrg", "Manage Organization")}
+      subtitle={org ? t("queueManage.terminalManagement", { type: org.queueOrganizationType.toUpperCase() }) : t("queueManage.orgDetailsFallback", "Organization details")}
       activeTab="organizations"
       actions={
         <div className="qom-header-actions">
@@ -203,12 +204,12 @@ export function QueueOrgManagePage() {
       {!orgId && (
         <div className="qom-card" style={{ textAlign: "center", padding: "3rem" }}>
           <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
-            No organization selected.{" "}
+            {t("queueManage.noOrgSelected")}{" "}
             <Link
               to="/dashboard"
               style={{ color: "#0B4D6D", fontWeight: 600 }}
             >
-              Go back to organizations
+              {t("queueManage.goBackToOrgs")}
             </Link>
             .
           </p>
@@ -218,7 +219,7 @@ export function QueueOrgManagePage() {
       {orgId && orgLoading && (
         <div className="qom-card" style={{ textAlign: "center", padding: "3rem", color: "#64748b" }}>
           <div className="add-docs-spinner" style={{ width: 28, height: 28, margin: "0 auto 0.75rem" }} />
-          <p style={{ margin: 0, fontSize: "0.875rem" }}>{t("common.loading", "Loading organization details...")}</p>
+          <p style={{ margin: 0, fontSize: "0.875rem" }}>{t("queueManage.loadingOrgDetails")}</p>
         </div>
       )}
 
@@ -235,7 +236,7 @@ export function QueueOrgManagePage() {
             <section className="qom-card">
               <h2 className="qom-card-title">
                 <Building2 size={18} color="#0B4D6D" />
-                <span>Organization Details</span>
+                <span>{t("queueManage.orgDetails")}</span>
               </h2>
               <form
                 onSubmit={handleSubmit(onUpdateProfile)}
@@ -243,7 +244,7 @@ export function QueueOrgManagePage() {
               >
                 <div className="qom-field">
                   <label className="qom-label">
-                    Organization Name
+                    {t("settings.orgName")}
                   </label>
                   <input
                     {...register("queueOrganizationName")}
@@ -258,7 +259,7 @@ export function QueueOrgManagePage() {
 
                 <div className="qom-field">
                   <label className="qom-label">
-                    Organization Type
+                    {t("queueManage.orgType")}
                   </label>
                   <select
                     {...register("queueOrganizationType")}
@@ -274,7 +275,7 @@ export function QueueOrgManagePage() {
 
                 <div className="qom-field">
                   <label className="qom-label">
-                    Phone Number
+                    {t("queueManage.phoneNumber")}
                   </label>
                   <input
                     {...register("queueOrganizationPhone")}
@@ -290,7 +291,7 @@ export function QueueOrgManagePage() {
 
                 <div className="qom-field">
                   <label className="qom-label">
-                    Address
+                    {t("queueManage.address")}
                   </label>
                   <input
                     {...register("queueOrganizationAddress")}
@@ -306,21 +307,21 @@ export function QueueOrgManagePage() {
                 <div className="qom-row-2">
                   <div className="qom-field">
                     <label className="qom-label">
-                      Latitude
+                      {t("orders.latitude")}
                     </label>
                     <input
                       {...register("latitude")}
-                      placeholder="e.g. 8.9806"
+                      placeholder={t("queueManage.latPlaceholder", "e.g. 8.9806")}
                       className="qom-input"
                     />
                   </div>
                   <div className="qom-field">
                     <label className="qom-label">
-                      Longitude
+                      {t("orders.longitude")}
                     </label>
                     <input
                       {...register("longitude")}
-                      placeholder="e.g. 38.7578"
+                      placeholder={t("queueManage.lngPlaceholder", "e.g. 38.7578")}
                       className="qom-input"
                     />
                   </div>
@@ -331,7 +332,7 @@ export function QueueOrgManagePage() {
                   disabled={isUpdating || !isDirty}
                   className="qom-submit-btn"
                 >
-                  {isUpdating ? "Saving..." : "Save Changes"}
+                  {isUpdating ? t("queueManage.saving") : t("settings.saveChanges")}
                 </button>
               </form>
             </section>
@@ -340,11 +341,11 @@ export function QueueOrgManagePage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <section className="qom-card">
                 <h2 className="qom-card-title">
-                  Staff & Members
+                  {t("queueManage.staffAndMembers")}
                 </h2>
                 {membersLoading && (
                   <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
-                    Loading members...
+                    {t("queueManage.loadingMembers")}
                   </p>
                 )}
                 {membersError && (
@@ -357,10 +358,10 @@ export function QueueOrgManagePage() {
                     <table className="qom-table">
                       <thead>
                         <tr>
-                          <th>Name</th>
-                          <th>Phone</th>
-                          <th>Role</th>
-                          <th>Status</th>
+                          <th>{t("queueManage.name")}</th>
+                          <th>{t("queue.phone")}</th>
+                          <th>{t("queueManage.role")}</th>
+                          <th>{t("queue.status")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -373,16 +374,16 @@ export function QueueOrgManagePage() {
                               {member.phoneNumber}
                             </td>
                             <td style={{ color: "#475569", fontSize: "0.8rem" }}>
-                              {ROLE_LABELS[member.roleId] ?? member.roleId}
+                              {roleLabels[member.roleId] ?? member.roleId}
                             </td>
                             <td>
                               {member.isActive === 1 ? (
                                 <span className="qom-badge-active">
-                                  active
+                                  {t("queueManage.active")}
                                 </span>
                               ) : (
                                 <span className="qom-badge-disabled">
-                                  inactive
+                                  {t("queueManage.inactive")}
                                 </span>
                               )}
                             </td>
@@ -394,7 +395,7 @@ export function QueueOrgManagePage() {
                               colSpan={4}
                               style={{ padding: "1.5rem", textAlign: "center", color: "#94a3b8" }}
                             >
-                              No members registered yet.
+                              {t("queueManage.noMembers")}
                             </td>
                           </tr>
                         )}
@@ -408,10 +409,10 @@ export function QueueOrgManagePage() {
                 <section className="qom-card">
                   <h2 className="qom-card-title">
                     <ShieldCheck size={18} color="#0B4D6D" />
-                    <span>Admin Approvals</span>
+                    <span>{t("queueManage.adminApprovals")}</span>
                   </h2>
                   <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 1rem" }}>
-                    Approve enables the queue and activates driver check-in.
+                    {t("queueManage.approveHelper")}
                   </p>
                   <div className="qom-approval-actions">
                     <button
@@ -419,21 +420,21 @@ export function QueueOrgManagePage() {
                       disabled={isApproving}
                       className="qom-btn-approve"
                     >
-                      Approve
+                      {t("queueManage.approve")}
                     </button>
                     <button
                       onClick={() => approve("suspended")}
                       disabled={isApproving}
                       className="qom-btn-suspend"
                     >
-                      Suspend
+                      {t("queueManage.suspend")}
                     </button>
                     <button
                       onClick={() => approve("rejected")}
                       disabled={isApproving}
                       className="qom-btn-reject"
                     >
-                      Reject
+                      {t("queueManage.reject")}
                     </button>
                   </div>
                 </section>

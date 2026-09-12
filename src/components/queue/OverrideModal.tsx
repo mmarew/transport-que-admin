@@ -43,7 +43,7 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
         (entry as any)?.queueId;
 
       if (!queueUniqueId) {
-        toast.error("Invalid queue entry identifier");
+        toast.error(t("overrideModal.invalidEntryId"));
         return;
       }
 
@@ -55,7 +55,7 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
         },
       }).unwrap();
 
-      toast.success(res?.message || `Driver position updated to ${values.queueNumber}`);
+      toast.success(res?.message || t("overrideModal.positionUpdated", { position: values.queueNumber }));
       onOverridden?.();
       onClose();
     } catch (err: unknown) {
@@ -64,7 +64,7 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
   };
 
   const vtList = vtData?.data || [];
-  const driverName = entry.driverName || "Driver";
+  const driverName = entry.driverName || t("queue.driver");
   const driverPhone = entry.driverPhoneNumber || "";
   const vehicleName = resolveVehicleName(entry.vehicleTypeUniqueId, entry.vehicleTypeName, vtList);
 
@@ -79,16 +79,16 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
       >
         {/* Mobile Header */}
         <div className="qm-mobile-header">
-          <MobileHeader title="Override Queue Position" onBack={onClose} />
+          <MobileHeader title={t("overrideModal.title")} onBack={onClose} />
         </div>
 
         {/* Desktop Header */}
         <div className="qm-header qm-header--desktop">
           <div>
-            <h2 id="override-modal-title" className="qm-title">Override Queue Position</h2>
-            <p className="qm-subtitle">Change the position of a driver in the queue.</p>
+            <h2 id="override-modal-title" className="qm-title">{t("overrideModal.title")}</h2>
+            <p className="qm-subtitle">{t("overrideModal.subtitleGeneric")}</p>
           </div>
-          <button type="button" className="qm-close-btn" onClick={onClose} aria-label="Close">
+          <button type="button" className="qm-close-btn" onClick={onClose} aria-label={t("common.close")}>
             <X size={20} />
           </button>
         </div>
@@ -108,10 +108,10 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
 
             <div className="qm-card-col">
               <div className="qm-card-line">
-                Vehicle: <strong>{vehicleName}</strong>
+                {t("overrideModal.vehicle")}: <strong>{vehicleName}</strong>
               </div>
               <div className="qm-card-line">
-                Current Position: <strong>{entry.queueNumber}</strong>
+                {t("overrideModal.currentPosition")}: <strong>{entry.queueNumber}</strong>
               </div>
             </div>
           </div>
@@ -119,7 +119,7 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
           {/* New Queue Position */}
           <div className="qm-field-group" style={{ marginTop: "10px" }}>
             <label className="qm-section-title" style={{ margin: "0 0 4px 0" }}>
-              New Queue Position
+              {t("overrideModal.newPosition")}
             </label>
             <input
               type="number"
@@ -127,22 +127,22 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
               {...register("queueNumber", { valueAsNumber: true })}
               className="qm-input"
             />
-            <p className="qm-hint-text">Enter the new position for this driver.</p>
+            <p className="qm-hint-text">{t("overrideModal.enterNewPosition")}</p>
             {errors.queueNumber && <p className="qm-error-text">{errors.queueNumber.message}</p>}
           </div>
 
           {/* Reason for Override */}
           <div className="qm-field-group" style={{ marginTop: "10px" }}>
             <label className="qm-section-title" style={{ margin: "0 0 4px 0" }}>
-              Reason for Override
+              {t("overrideModal.reasonLabel")}
             </label>
             <textarea
               {...register("reason")}
-              placeholder="Priority loading approved by terminal supervisor."
+              placeholder={t("overrideModal.supervisorPlaceholder")}
               rows={3}
               className="qm-textarea"
             />
-            <p className="qm-hint-text">Provide a clear reason for this position change.</p>
+            <p className="qm-hint-text">{t("overrideModal.provideReason")}</p>
             {errors.reason && <p className="qm-error-text">{errors.reason.message}</p>}
           </div>
 
@@ -155,10 +155,10 @@ export function OverrideModal({ entry, onOverridden, onClose }: OverrideModalPro
               {isLoading ? (
                 <>
                   <span className="add-docs-spinner" style={{ width: 14, height: 14 }} />
-                  {t("overrideModal.saving")}
+                  {t("overrideModal.updating")}
                 </>
               ) : (
-                "Override Position"
+                t("overrideModal.overrideBtn")
               )}
             </button>
           </div>

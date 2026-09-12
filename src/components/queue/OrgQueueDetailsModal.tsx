@@ -141,7 +141,7 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
             type="button"
             className="qm-close-btn"
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label={t("common.closeModal")}
           >
             <X size={18} />
           </button>
@@ -224,7 +224,7 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
                         </td>
                         <td style={{ padding: "0.65rem 0.75rem", fontWeight: 600, color: "#1e293b" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                            <span>{entry.driverName || "Driver"}</span>
+                            <span>{entry.driverName || t("reports.driverName")}</span>
                             {entry.driverAddress && (
                               <span style={{ fontSize: "0.725rem", color: "#64748b", fontWeight: 400 }}>
                                 {entry.driverAddress}
@@ -236,7 +236,7 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
                           {formatPhone(entry.driverPhoneNumber)}
                         </td>
                         <td style={{ padding: "0.65rem 0.75rem", color: "#475569" }}>
-                          {entry.vehicleTypeName || "General"}
+                          {entry.vehicleTypeName || t("orgDetails.vehicleGeneral")}
                         </td>
                         <td style={{ padding: "0.65rem 0.75rem", textAlign: "right" }}>
                           <span
@@ -273,7 +273,7 @@ export const OrgQueueDetailsModal: React.FC<OrgQueueDetailsModalProps> = ({
                         {entry.queueNumber}
                       </div>
                       <div className="od-mobile-card-content">
-                        <span className="od-mobile-driver-name">{entry.driverName || "Driver"}</span>
+                        <span className="od-mobile-driver-name">{entry.driverName || t("reports.driverName")}</span>
                         <div className="od-mobile-driver-sub">
                           <span style={{ fontFamily: "monospace" }}>{formatPhone(entry.driverPhoneNumber)}</span>
                           {entry.vehicleTypeName && (
