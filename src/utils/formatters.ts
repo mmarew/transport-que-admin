@@ -1,4 +1,9 @@
-import type { QueueOrganization, QueueOrgListItem, DriverQueueEntry } from "../types/queue";
+import type {
+  QueueOrganization,
+  QueueOrgListItem,
+  DriverQueueEntry,
+  QueueShipperRequest,
+} from "../types/queue";
 import {
   resolveJourneyStatus,
   mapJourneyStatusToQueueStatus,
@@ -325,7 +330,17 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     undefined;
 
   const shipperRequestUniqueId =
-    q.shipperRequestUniqueId || raw.shipperRequestUniqueId || null;
+    q.shipperRequestUniqueId ||
+    raw.shipperRequestUniqueId ||
+    (raw.shipperRequest && typeof raw.shipperRequest === "object"
+      ? raw.shipperRequest.shipperRequestUniqueId
+      : undefined) ||
+    null;
+
+  const shipperRequest =
+    raw.shipperRequest && typeof raw.shipperRequest === "object"
+      ? (raw.shipperRequest as QueueShipperRequest)
+      : undefined;
 
   return {
     queueUniqueId,
@@ -347,6 +362,7 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     vehicleTypeUniqueId,
     vehicleTypeName,
     shipperRequestUniqueId,
+    shipperRequest,
   };
 }
 

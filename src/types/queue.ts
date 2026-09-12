@@ -94,6 +94,32 @@ export interface QueueOrgMember {
   phoneNumber: string;
 }
 
+export interface QueueShipperRequest {
+  shipperRequestId?: number;
+  shipperRequestUniqueId?: string;
+  shipperRequestBatchUniqueId?: string | null;
+  userUniqueId?: string;
+  vehicleTypeUniqueId?: string | null;
+  vehicleTypeName?: string | null;
+  journeyStatusId?: number | null;
+  requestMode?: string | null;
+  targetCompanyUniqueId?: string | null;
+  originPlace?: string | null;
+  destinationPlace?: string | null;
+  shipperRequestCreatedAt?: string | null;
+  shippableItemName?: string | null;
+  shippableItemQtyInQuintal?: string | number | null;
+  shippingDate?: string | null;
+  deliveryDate?: string | null;
+  shippingCost?: string | number | null;
+  isPodRequired?: number | null;
+  isCompletionSeen?: number | null;
+  fullName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  queueOrganizationUniqueId?: string | null;
+}
+
 export interface DriverQueueEntry {
   queueUniqueId: string;
   queueNumber: number;
@@ -114,6 +140,7 @@ export interface DriverQueueEntry {
   vehicleTypeUniqueId: string;
   vehicleTypeName?: string;
   shipperRequestUniqueId: string | null;
+  shipperRequest?: QueueShipperRequest;
 }
 
 export interface QueueStatusPayload {

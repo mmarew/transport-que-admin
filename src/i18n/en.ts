@@ -282,6 +282,7 @@ export const en = {
     joined: "Joined",
     status: "Status",
     action: "Action",
+    shipperColumn: "Shipper Name / Phone",
     override: "Override",
     cancelDriver: "Cancel",
     completed: "Completed",

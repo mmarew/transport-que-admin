@@ -271,6 +271,7 @@ export const am = {
     joined: "የገባበት ሰዓት",
     status: "ሁኔታ",
     action: "እርምጃ",
+    shipperColumn: "የላኪ ስም / ስልክ",
     override: "ተራ ቀይር",
     cancelDriver: "ሰርዝ",
     completed: "የተጠናቀቀ",

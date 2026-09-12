@@ -5,9 +5,15 @@ import type { DriverQueueEntry, QueueStatus } from "../../types/queue";
 import { normalizeQueueEntry } from "../../utils/formatters";
 import "./QueueBoard.css";
 
+interface ShipperInfo {
+  fullName?: string;
+  phoneNumber?: string;
+}
+
 interface QueueTableProps {
   typeId: string;
   entries: DriverQueueEntry[];
+  shipperLookup?: Record<string, ShipperInfo>;
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
 }
@@ -21,8 +27,12 @@ function formatJoinedTime(dateStr: string): string {
   }
 }
 
-export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
-  console.log("🚀 ~ QueueTable ~ entries:", entries);
+export function QueueTable({
+  entries,
+  shipperLookup,
+  onOverride,
+  onRemove,
+}: QueueTableProps) {
   const { t } = useTranslation();
   const [expandedAddresses, setExpandedAddresses] = useState<Set<string>>(
     new Set(),
@@ -47,7 +57,20 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
     const num = entry.queueNumber || index + 1;
     const joinedTime = formatJoinedTime(entry.joinedAt);
     const key = entry.queueUniqueId || `${entry.queueNumber}-${index}`;
-    return { entry, statusKey, statusLabel, num, joinedTime, key };
+    const shipper = entry.shipperRequestUniqueId
+      ? shipperLookup?.[entry.shipperRequestUniqueId]
+      : undefined;
+    return {
+      entry,
+      statusKey,
+      statusLabel,
+      num,
+      joinedTime,
+      key,
+      shipperName: entry.shipperRequest?.fullName || shipper?.fullName || null,
+      shipperPhone:
+        entry.shipperRequest?.phoneNumber || shipper?.phoneNumber || null,
+    };
   });
 
   return (
@@ -61,7 +84,7 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
               <th>{t("queue.driver")}</th>
               <th>{t("queue.phone")}</th>
               <th>{t("queue.address", "Address")}</th>
-              <th>{"Shipper Name/phone"}</th>
+              <th>{t("queue.shipperColumn", "Shipper Name / Phone")}</th>
               <th>{t("queue.joined")}</th>
               <th>{t("queue.status")}</th>
               <th style={{ textAlign: "center", width: "220px" }}>
@@ -78,7 +101,16 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
               </tr>
             ) : (
               rows.map(
-                ({ entry, statusKey, statusLabel, num, joinedTime, key }) => (
+                ({
+                  entry,
+                  statusKey,
+                  statusLabel,
+                  num,
+                  joinedTime,
+                  key,
+                  shipperName,
+                  shipperPhone,
+                }) => (
                   <tr key={key}>
                     <td className="qb-th-num">
                       <span className="qb-num-circle">{num}</span>
@@ -116,11 +148,11 @@ export function QueueTable({ entries, onOverride, onRemove }: QueueTableProps) {
                       )}
                     </td>
                     <td>
+                      {shipperName && (
+                        <span className="qb-time-text">{shipperName}</span>
+                      )}
                       <span className="qb-time-text">
-                        {"entry.shipperName"}
-                      </span>
-                      <span className="qb-time-text">
-                        {"entry.shipperPhoneNumber"}
+                        {shipperPhone || "—"}
                       </span>
                     </td>
                     <td className="qb-time-text">{joinedTime}</td>
