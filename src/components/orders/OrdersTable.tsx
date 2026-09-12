@@ -78,7 +78,7 @@ export function OrdersTable({
                   <ChevronDown size={14} className={sortCol === "location" ? "active" : ""} />
                 </span>
               </th>
-              <th onClick={() => onSort("quintal")} className="th-sortable">
+              <th onClick={() => onSort("quintal")} className="th-sortable th-quintal">
                 <span className="th-content">
                   {t("orders.table.quintal", "Quintal")}
                   <ChevronDown size={14} className={sortCol === "quintal" ? "active" : ""} />
