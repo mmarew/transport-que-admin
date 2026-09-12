@@ -337,7 +337,13 @@ export const api = createApi({
           limit: number;
         };
       },
-      { queueOrganizationUniqueId: string; target?: "all" | "single"; page?: number; limit?: number }
+      {
+        queueOrganizationUniqueId: string;
+        target?: "all" | "single";
+        page?: number;
+        limit?: number;
+        journeyStatusId?: string;
+      }
     >({
       query: (params) => ({
         url: appAPIs.getShipperRequestsAPI,

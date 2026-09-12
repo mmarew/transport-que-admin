@@ -20,7 +20,8 @@ interface QueueTableProps {
   shipperLookup?: Record<string, ShipperInfo>;
   shipperByUserLookup?: Record<string, ShipperInfo>;
   shipperByDriverLookup?: Record<string, ShipperInfo>;
-  shipperRequestsByPhone?: Record<string, ShipperRequestDetail[]>;
+  shipperDetailByRequestId?: Record<string, ShipperRequestDetail>;
+  currentRequestByDriver?: Record<string, ShipperRequestDetail>;
   queueOrganizationUniqueId?: string;
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
@@ -40,7 +41,8 @@ export function QueueTable({
   shipperLookup,
   shipperByUserLookup,
   shipperByDriverLookup,
-  shipperRequestsByPhone,
+  shipperDetailByRequestId,
+  currentRequestByDriver,
   queueOrganizationUniqueId,
   onOverride,
   onRemove,
@@ -52,31 +54,42 @@ export function QueueTable({
   const [shipperModal, setShipperModal] = useState<{
     phone: string;
     name: string | null;
-    requests: ShipperRequestDetail[];
+    request: ShipperRequestDetail | null;
   } | null>(null);
-  console.log("🚀 ~ QueueTable ~ entries:", entries);
 
+  // The ONE current request for this row — never a shipper's history.
   const openShipperModal = (
     phone: string,
     name: string | null,
     entry: DriverQueueEntry,
   ) => {
-    // Only the CURRENT actve request for this driver/row — never history.
-    const TERMINAL_STATUSES = [9, 10, 11, 12, 13, 14, 15, 16, 19, 20];
-    const isActive = (r: ShipperRequestDetail) =>
-      !r.journeyStatusId || !TERMINAL_STATUSES.includes(r.journeyStatusId);
-    const history = (shipperRequestsByPhone?.[phone] || []).filter(isActive);
-    const current = history.filter(
-      (r) =>
-        r.driverRequests?.some((d) => d.userUniqueId === entry.driverUserUniqueId) ||
-        (entry.shipperRequest?.shipperRequestUniqueId &&
-          r.shipperRequestUniqueId === entry.shipperRequest.shipperRequestUniqueId),
-    );
-    setShipperModal({
-      phone,
-      name,
-      requests: current.length ? current : history,
-    });
+    const own = entry.shipperRequest;
+    let request: ShipperRequestDetail | null = null;
+    if (own?.shipperRequestUniqueId) {
+      request = {
+        shipperRequestUniqueId: own.shipperRequestUniqueId,
+        fullName: own.fullName ?? null,
+        phoneNumber: own.phoneNumber ?? undefined,
+        requestMode: own.requestMode ?? null,
+        vehicleTypeName: own.vehicleTypeName ?? null,
+        shippableItemName: own.shippableItemName ?? null,
+        shippableItemQtyInQuintal: own.shippableItemQtyInQuintal ?? null,
+        shippingCost: own.shippingCost ?? null,
+        originPlace: own.originPlace ?? null,
+        destinationPlace: own.destinationPlace ?? null,
+        shippingDate: own.shippingDate ?? null,
+        deliveryDate: own.deliveryDate ?? null,
+        shipperRequestCreatedAt: own.shipperRequestCreatedAt ?? null,
+        journeyStatusId: own.journeyStatusId ?? null,
+        driverRequests:
+          shipperDetailByRequestId?.[own.shipperRequestUniqueId]
+            ?.driverRequests || [],
+      };
+    }
+    if (!request) {
+      request = currentRequestByDriver?.[entry.driverUserUniqueId] || null;
+    }
+    setShipperModal({ phone, name, request });
   };
 
   const toggleAddress = (key: string, e: React.MouseEvent) => {
@@ -362,7 +375,7 @@ export function QueueTable({
         <ShipperRequestsModal
           phone={shipperModal.phone}
           name={shipperModal.name}
-          requests={shipperModal.requests}
+          request={shipperModal.request}
           queueOrganizationUniqueId={queueOrganizationUniqueId || ""}
           onClose={() => setShipperModal(null)}
         />

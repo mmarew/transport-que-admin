@@ -11,6 +11,7 @@ export interface ShipperRequestDriverInfo {
   userUniqueId?: string;
   fullName?: string | null;
   phoneNumber?: string | null;
+  journeyStatusId?: number | null;
 }
 
 export interface ShipperRequestDetail {
@@ -34,7 +35,7 @@ export interface ShipperRequestDetail {
 interface ShipperRequestsModalProps {
   phone: string;
   name?: string | null;
-  requests: ShipperRequestDetail[];
+  request: ShipperRequestDetail | null;
   queueOrganizationUniqueId: string;
   onClose: () => void;
 }
@@ -62,7 +63,7 @@ function formatDate(value?: string | null): string {
 export function ShipperRequestsModal({
   phone,
   name,
-  requests,
+  request,
   queueOrganizationUniqueId,
   onClose,
 }: ShipperRequestsModalProps) {
@@ -106,26 +107,31 @@ export function ShipperRequestsModal({
         </div>
 
         <div className="srm-list">
-          {requests.length === 0 ? (
+          {!request ? (
             <p className="srm-empty">
-              {t("queue.noShipperRequests", "No requests found for this shipper.")}
+              {t(
+                "queue.noShipperRequests",
+                "No requests found for this shipper.",
+              )}
             </p>
           ) : (
-            requests.map((r, i) => {
-              const cost = toNumber(r.shippingCost);
-              const quintal = toNumber(r.shippableItemQtyInQuintal);
-              const mode = (r.requestMode || "")
+            (() => {
+              const cost = toNumber(request.shippingCost);
+              const quintal = toNumber(request.shippableItemQtyInQuintal);
+              const mode = (request.requestMode || "")
                 .toLowerCase()
                 .includes("group")
                 ? t("orders.modeGroup", "Group")
                 : t("orders.modeIndividual", "Individual");
-              const statusLabel = formatJourneyStatusLabel(r.journeyStatusId);
+              const statusLabel = formatJourneyStatusLabel(
+                request.journeyStatusId,
+              );
               return (
-                <div key={r.shipperRequestUniqueId || i} className="srm-card">
+                <div className="srm-card">
                   <div className="srm-card-top">
                     <div className="srm-badges">
                       <span className="srm-mode">{mode}</span>
-                      {r.journeyStatusId ? (
+                      {request.journeyStatusId ? (
                         <span className="srm-status">{statusLabel}</span>
                       ) : null}
                     </div>
@@ -141,7 +147,8 @@ export function ShipperRequestsModal({
                         {t("orders.table.item", "Item")}
                       </span>
                       <span className="srm-value">
-                        {r.shippableItemName || t("orders.defaultGeneralCargo", "General Cargo")}
+                        {request.shippableItemName ||
+                          t("orders.defaultGeneralCargo", "General Cargo")}
                       </span>
                     </div>
                     <div className="srm-row">
@@ -155,25 +162,30 @@ export function ShipperRequestsModal({
                         {t("orders.table.vehicleType", "Vehicle Type")}
                       </span>
                       <span className="srm-value">
-                        {r.vehicleTypeName || t("orders.defaultHeavyTruck", "Heavy Truck")}
+                        {request.vehicleTypeName ||
+                          t("orders.defaultHeavyTruck", "Heavy Truck")}
                       </span>
                     </div>
                     <div className="srm-row">
                       <span className="srm-label">
                         {t("orders.shippingDate", "Shipping Date")}
                       </span>
-                      <span className="srm-value">{formatDate(r.shippingDate)}</span>
+                      <span className="srm-value">
+                        {formatDate(request.shippingDate)}
+                      </span>
                     </div>
                     <div className="srm-row">
                       <span className="srm-label">
                         {t("orders.deliveryDate", "Delivery Date")}
                       </span>
-                      <span className="srm-value">{formatDate(r.deliveryDate)}</span>
+                      <span className="srm-value">
+                        {formatDate(request.deliveryDate)}
+                      </span>
                     </div>
                     <div className="srm-row">
                       <span className="srm-label">Created</span>
                       <span className="srm-value">
-                        {formatDate(r.shipperRequestCreatedAt)}
+                        {formatDate(request.shipperRequestCreatedAt)}
                       </span>
                     </div>
                     <div className="srm-row srm-route">
@@ -182,30 +194,34 @@ export function ShipperRequestsModal({
                       </span>
                       <span className="srm-value">
                         <MapPin size={12} />
-                        {r.originPlace || ""}
+                        {request.originPlace || ""}
                         <span className="srm-arrow">→</span>
-                        {r.destinationPlace || ""}
+                        {request.destinationPlace || ""}
                       </span>
                     </div>
                   </div>
 
-                  {r.driverRequests && r.driverRequests.length > 0 && (
-                    <div className="srm-drivers">
-                      <strong>
-                        {t("orders.assignedDrivers", "Assigned Driver(s)")}:
-                      </strong>{" "}
-                      {r.driverRequests
-                        .map(
-                          (d) =>
-                            `${d.fullName || d.phoneNumber || d.userUniqueId || ""}`,
-                        )
-                        .filter(Boolean)
-                        .join(", ")}
-                    </div>
-                  )}
+                  {request.driverRequests &&
+                    request.driverRequests.length > 0 && (
+                      <div className="srm-drivers">
+                        <strong>
+                          {t("orders.assignedDrivers", "Assigned Driver(s)")}:
+                        </strong>{" "}
+                        {request.driverRequests
+                          .map(
+                            (d) =>
+                              `${d.fullName ||
+                                d.phoneNumber ||
+                                d.userUniqueId ||
+                                ""}`,
+                          )
+                          .filter(Boolean)
+                          .join(", ")}
+                      </div>
+                    )}
                 </div>
               );
-            })
+            })()
           )}
         </div>
 

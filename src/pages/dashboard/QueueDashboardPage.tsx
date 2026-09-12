@@ -436,7 +436,9 @@ export function QueueDashboardPage() {
               }}
             >
               <AlertCircle size={32} style={{ margin: "0 auto 0.5rem" }} />
-              <p style={{ fontWeight: 500 }}>{t("dashboard.failedToLoadOrgs")}</p>
+              <p style={{ fontWeight: 500 }}>
+                {t("dashboard.failedToLoadOrgs")}
+              </p>
               <button
                 type="button"
                 onClick={() => refetchOrgs()}
