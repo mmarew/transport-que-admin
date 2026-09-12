@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Package, Pencil, Trash2, Tag, Users, Gavel } from "lucide-react";
+import { ChevronDown, ChevronUp, Package, Pencil, Trash2, Tag, Gavel } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, SortColumn } from "./OrdersTypes";
 import { PAGE_SIZE, formatShortName, formatTrimmedRoute } from "./OrdersTypes";
