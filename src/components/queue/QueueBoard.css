@@ -353,6 +353,57 @@
   font-size: 0.82rem;
 }
 
+.qb-shipper-link {
+  background: #f0f7fb;
+  border: 1px solid #cfe3ef;
+  border-radius: 8px;
+  padding: 5px 8px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.qb-shipper-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.qb-shipper-name {
+  color: #034b6e;
+  font-weight: 600;
+}
+
+.qb-shipper-chev {
+  color: #0369a1;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.qb-shipper-link:hover {
+  background: #e2f1fa;
+  border-color: #9ccbe2;
+}
+
+.qb-shipper-link:hover .qb-shipper-chev {
+  transform: translateX(2px);
+}
+
+.qb-shipper-link:focus-visible {
+  outline: 2px solid #0369a1;
+  outline-offset: 1px;
+}
+
 .qb-status-text {
   font-weight: 600;
   font-size: 0.82rem;

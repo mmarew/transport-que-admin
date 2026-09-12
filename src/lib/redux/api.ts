@@ -295,6 +295,7 @@ export const api = createApi({
           shipperRequest: {
             shipperRequestUniqueId: string;
             shipperRequestBatchUniqueId: string;
+            userUniqueId: string;
             vehicleTypeUniqueId: string;
             requestMode: string;
             originPlace: string;
@@ -315,7 +316,17 @@ export const api = createApi({
             vehicleTypeName: string;
             queueOrganizationUniqueId: string;
           };
-          driverRequests: unknown[];
+          driverRequests: Array<{
+            driverRequestId?: number;
+            driverRequestUniqueId?: string;
+            userUniqueId: string;
+            journeyStatusId?: number | null;
+            fullName?: string | null;
+            phoneNumber?: string | null;
+            email?: string | null;
+            vehicleOfDriver?: unknown;
+            driverProfilePhoto?: string | null;
+          }>;
           decisions: unknown[];
           journey: Record<string, unknown>;
         }>;

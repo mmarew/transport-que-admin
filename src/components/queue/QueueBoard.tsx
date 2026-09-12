@@ -18,6 +18,7 @@ import { resolveVehicleName } from "../../utils/vehicleType";
 import { normalizeQueueEntry } from "../../utils/formatters";
 import { isDriverWaiting } from "../../utils/journeyStatus";
 import { QueueTable } from "./QueueTable";
+import type { ShipperRequestDetail } from "./ShipperRequestsModal";
 import { CheckinModal } from "./CheckinModal";
 import { CreateOrderModal } from "./CreateOrderModal";
 import { DispatchModal } from "./DispatchModal";
@@ -80,6 +81,83 @@ export function QueueBoard({
         fullName: req.fullName,
         phoneNumber: req.phoneNumber,
       };
+    }
+    return map;
+  }, [shipperRequestsData]);
+
+  // Lookup: shipper userUniqueId -> { fullName, phoneNumber }. A driver who
+  // checked in targeting a shipper phone has targetedShipperUserUUID set even
+  // before any order is dispatched, so we can display the shipper's contacts.
+  const shipperByUserMap = useMemo(() => {
+    const map: Record<string, { fullName?: string; phoneNumber?: string }> = {};
+    for (const item of shipperRequestsData?.data || []) {
+      const req = item?.shipperRequest;
+      if (!req?.userUniqueId) continue;
+      if (!map[req.userUniqueId]) {
+        map[req.userUniqueId] = {
+          fullName: req.fullName,
+          phoneNumber: req.phoneNumber,
+        };
+      }
+    }
+    return map;
+  }, [shipperRequestsData]);
+
+  // Lookup: driverUserUniqueId -> { fullName, phoneNumber } (the SHIPPER of
+  // the request that request is bound to). The driver↔shipper link lives on
+  // the shipper request's driverRequests (via JourneyDecisions/DriverRequest),
+  // not on the DriverQueue row — so we key by driver to find the shipper.
+  const shipperByDriverMap = useMemo(() => {
+    const map: Record<string, { fullName?: string; phoneNumber?: string }> = {};
+    for (const item of shipperRequestsData?.data || []) {
+      const req = item?.shipperRequest;
+      if (!req?.shipperRequestUniqueId) continue;
+      const shipper = {
+        fullName: req.fullName,
+        phoneNumber: req.phoneNumber,
+      };
+      for (const dr of item?.driverRequests || []) {
+        if (!dr?.userUniqueId || map[dr.userUniqueId]) continue;
+        map[dr.userUniqueId] = shipper;
+      }
+    }
+    return map;
+  }, [shipperRequestsData]);
+
+  // Lookup: shipper phone -> full request details, so clicking a shipper cell
+  // can show every request that phone posted (price, item, route, dates...).
+  const shipperRequestsByPhone = useMemo(() => {
+    const map: Record<string, ShipperRequestDetail[]> = {};
+    for (const item of shipperRequestsData?.data || []) {
+      const req = item?.shipperRequest;
+      if (!req?.phoneNumber) continue;
+      const list = map[req.phoneNumber] || (map[req.phoneNumber] = []);
+      if (
+        list.some((r) => r.shipperRequestUniqueId === req.shipperRequestUniqueId)
+      ) {
+        continue;
+      }
+      list.push({
+        shipperRequestUniqueId: req.shipperRequestUniqueId,
+        fullName: req.fullName ?? null,
+        phoneNumber: req.phoneNumber,
+        requestMode: req.requestMode ?? null,
+        vehicleTypeName: req.vehicleTypeName ?? null,
+        shippableItemName: req.shippableItemName ?? null,
+        shippableItemQtyInQuintal: req.shippableItemQtyInQuintal ?? null,
+        shippingCost: req.shippingCost ?? null,
+        originPlace: req.originPlace ?? null,
+        destinationPlace: req.destinationPlace ?? null,
+        shippingDate: req.shippingDate ?? null,
+        deliveryDate: req.deliveryDate ?? null,
+        shipperRequestCreatedAt: req.shipperRequestCreatedAt ?? null,
+        journeyStatusId: req.journeyStatusId ?? null,
+        driverRequests: (item?.driverRequests || []).map((d) => ({
+          userUniqueId: d.userUniqueId,
+          fullName: d.fullName ?? null,
+          phoneNumber: d.phoneNumber ?? null,
+        })),
+      });
     }
     return map;
   }, [shipperRequestsData]);
@@ -400,10 +478,14 @@ export function QueueBoard({
                     </button>
                   </div>
 
-                  <QueueTable
+<QueueTable
                     typeId={typeId}
                     entries={entries}
                     shipperLookup={shipperMap}
+                    shipperByUserLookup={shipperByUserMap}
+                    shipperByDriverLookup={shipperByDriverMap}
+                    shipperRequestsByPhone={shipperRequestsByPhone}
+                    queueOrganizationUniqueId={queueOrganizationUniqueId}
                     onOverride={setOverrideEntry}
                     onRemove={setCancelEntry}
                   />
@@ -464,10 +546,14 @@ export function QueueBoard({
             </button>
           </div>
 
-          <QueueTable
+<QueueTable
             typeId="all"
             entries={allEntries}
             shipperLookup={shipperMap}
+            shipperByUserLookup={shipperByUserMap}
+            shipperByDriverLookup={shipperByDriverMap}
+            shipperRequestsByPhone={shipperRequestsByPhone}
+            queueOrganizationUniqueId={queueOrganizationUniqueId}
             onOverride={setOverrideEntry}
             onRemove={setCancelEntry}
           />

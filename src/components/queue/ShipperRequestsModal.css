@@ -1,0 +1,155 @@
+/* ShipperRequestsModal.css — request cards inside the shipper detail modal */
+
+.srm-modal {
+  max-width: 560px;
+  padding: 20px;
+}
+
+.srm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.srm-empty {
+  color: #64748b;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
+  margin: 0;
+}
+
+.srm-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.srm-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.srm-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.srm-mode {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0369a1;
+  background: #e0f2fe;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.srm-status {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.srm-cost {
+  font-size: 20px;
+  font-weight: 800;
+  color: #034b6e;
+  white-space: nowrap;
+}
+
+.srm-cost-cur {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-left: 6px;
+}
+
+.srm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: #334155;
+}
+
+.srm-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.srm-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.srm-value {
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+.srm-route {
+  grid-column: 1 / -1;
+}
+
+.srm-route .srm-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.srm-arrow {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.srm-drivers {
+  margin-top: 12px;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 8px;
+  font-size: 12px;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+.srm-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.srm-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0b4d6d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.srm-link-btn:hover {
+  background: #034b6e;
+}

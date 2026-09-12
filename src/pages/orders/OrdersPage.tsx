@@ -113,7 +113,10 @@ export function OrdersPage() {
 
   // Sort & filter
   const processedOrders = useMemo(() => {
-    const filtered = orders.filter((o) => o.status === activeTab);
+    const phoneFilter = searchParams.get("phone") || "";
+    const filtered = orders
+      .filter((o) => o.status === activeTab)
+      .filter((o) => !phoneFilter || o.phone === phoneFilter);
     return [...filtered].sort((a, b) => {
       let valA: string | number = "";
       let valB: string | number = "";
@@ -133,7 +136,7 @@ export function OrdersPage() {
         ? String(valA).localeCompare(String(valB))
         : String(valB).localeCompare(String(valA));
     });
-  }, [orders, activeTab, sortCol, sortAsc]);
+  }, [orders, activeTab, sortCol, sortAsc, searchParams]);
 
   const totalPages = Math.max(1, Math.ceil(processedOrders.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);

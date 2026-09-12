@@ -362,6 +362,8 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     vehicleTypeUniqueId,
     vehicleTypeName,
     shipperRequestUniqueId,
+    targetedShipperUserUUID:
+      q.targetedShipperUserUUID ?? raw.targetedShipperUserUUID ?? null,
     shipperRequest,
   };
 }

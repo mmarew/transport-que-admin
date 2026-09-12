@@ -295,6 +295,10 @@ export const en = {
       loaded: "Loaded",
       removed: "Removed",
     },
+    shipperRequests: "Shipper Requests",
+    noShipperRequests: "No requests found for this shipper.",
+    viewAllOrders: "View All Orders",
+    viewShipperRequests: "View requests posted by this shipper",
   },
   orders: {
     createOrderTitle: "Create New Order",
@@ -358,6 +362,7 @@ export const en = {
     defaultDestination: "Destination",
     defaultGeneralCargo: "General Cargo",
     defaultHeavyTruck: "Heavy Truck",
+    assignedDrivers: "Assigned Driver(s)",
     status: "Status",
     defaultValuedShipper: "Valued Shipper",
     defaultOrgName: "Cement Factory",

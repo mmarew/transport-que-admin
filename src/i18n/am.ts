@@ -284,6 +284,10 @@ export const am = {
       loaded: "የተጫነ",
       removed: "የተሰረዘ",
     },
+    shipperRequests: "የላኪ ጥያቄዎች",
+    noShipperRequests: "ለዚህ ላኪ ምንም ጥያቄ አልተገኘም።",
+    viewAllOrders: "ሁሉንም ትዕዛዞች ይመልከቱ",
+    viewShipperRequests: "በዚህ ላኪ የተለጠፉ ጥያቄዎችን ይመልከቱ",
   },
   orders: {
     createOrderTitle: "አዲስ ትዕዛዝ ፍጠር",
@@ -346,6 +350,7 @@ export const am = {
     defaultDestination: "መድረሻ",
     defaultGeneralCargo: "አጠቃላይ ጭነት",
     defaultHeavyTruck: "ከባድ መኪና",
+    assignedDrivers: "የተመደቡ አሽከርካሪዎች",
     status: "ሁኔታ",
     defaultValuedShipper: "ክቡር ላኪ",
     defaultOrgName: "የሲሚንቶ ፋብሪካ",

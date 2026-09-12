@@ -140,6 +140,7 @@ export interface DriverQueueEntry {
   vehicleTypeUniqueId: string;
   vehicleTypeName?: string;
   shipperRequestUniqueId: string | null;
+  targetedShipperUserUUID?: string | null;
   shipperRequest?: QueueShipperRequest;
 }
 

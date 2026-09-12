@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { ArrowUp, Trash2 } from "lucide-react";
+import { ArrowUp, ChevronRight, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { DriverQueueEntry, QueueStatus } from "../../types/queue";
 import { normalizeQueueEntry } from "../../utils/formatters";
+import {
+  ShipperRequestsModal,
+  type ShipperRequestDetail,
+} from "./ShipperRequestsModal";
 import "./QueueBoard.css";
 
 interface ShipperInfo {
@@ -14,6 +18,10 @@ interface QueueTableProps {
   typeId: string;
   entries: DriverQueueEntry[];
   shipperLookup?: Record<string, ShipperInfo>;
+  shipperByUserLookup?: Record<string, ShipperInfo>;
+  shipperByDriverLookup?: Record<string, ShipperInfo>;
+  shipperRequestsByPhone?: Record<string, ShipperRequestDetail[]>;
+  queueOrganizationUniqueId?: string;
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
 }
@@ -30,6 +38,10 @@ function formatJoinedTime(dateStr: string): string {
 export function QueueTable({
   entries,
   shipperLookup,
+  shipperByUserLookup,
+  shipperByDriverLookup,
+  shipperRequestsByPhone,
+  queueOrganizationUniqueId,
   onOverride,
   onRemove,
 }: QueueTableProps) {
@@ -37,6 +49,35 @@ export function QueueTable({
   const [expandedAddresses, setExpandedAddresses] = useState<Set<string>>(
     new Set(),
   );
+  const [shipperModal, setShipperModal] = useState<{
+    phone: string;
+    name: string | null;
+    requests: ShipperRequestDetail[];
+  } | null>(null);
+  console.log("🚀 ~ QueueTable ~ entries:", entries);
+
+  const openShipperModal = (
+    phone: string,
+    name: string | null,
+    entry: DriverQueueEntry,
+  ) => {
+    // Only the CURRENT actve request for this driver/row — never history.
+    const TERMINAL_STATUSES = [9, 10, 11, 12, 13, 14, 15, 16, 19, 20];
+    const isActive = (r: ShipperRequestDetail) =>
+      !r.journeyStatusId || !TERMINAL_STATUSES.includes(r.journeyStatusId);
+    const history = (shipperRequestsByPhone?.[phone] || []).filter(isActive);
+    const current = history.filter(
+      (r) =>
+        r.driverRequests?.some((d) => d.userUniqueId === entry.driverUserUniqueId) ||
+        (entry.shipperRequest?.shipperRequestUniqueId &&
+          r.shipperRequestUniqueId === entry.shipperRequest.shipperRequestUniqueId),
+    );
+    setShipperModal({
+      phone,
+      name,
+      requests: current.length ? current : history,
+    });
+  };
 
   const toggleAddress = (key: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -60,6 +101,25 @@ export function QueueTable({
     const shipper = entry.shipperRequestUniqueId
       ? shipperLookup?.[entry.shipperRequestUniqueId]
       : undefined;
+    const targetedShipper = entry.targetedShipperUserUUID
+      ? shipperByUserLookup?.[entry.targetedShipperUserUUID]
+      : undefined;
+    const boundShipper = entry.driverUserUniqueId
+      ? shipperByDriverLookup?.[entry.driverUserUniqueId]
+      : undefined;
+    const shipperName =
+      entry.shipperRequest?.fullName ||
+      shipper?.fullName ||
+      targetedShipper?.fullName ||
+      boundShipper?.fullName ||
+      null;
+    const shipperPhone =
+      entry.shipperRequest?.phoneNumber ||
+      shipper?.phoneNumber ||
+      targetedShipper?.phoneNumber ||
+      boundShipper?.phoneNumber ||
+      null;
+
     return {
       entry,
       statusKey,
@@ -67,9 +127,8 @@ export function QueueTable({
       num,
       joinedTime,
       key,
-      shipperName: entry.shipperRequest?.fullName || shipper?.fullName || null,
-      shipperPhone:
-        entry.shipperRequest?.phoneNumber || shipper?.phoneNumber || null,
+      shipperName,
+      shipperPhone,
     };
   });
 
@@ -148,12 +207,31 @@ export function QueueTable({
                       )}
                     </td>
                     <td>
-                      {shipperName && (
-                        <span className="qb-time-text">{shipperName}</span>
+                      {shipperPhone ? (
+                        <button
+                          type="button"
+                          className="qb-shipper-link"
+                          onClick={() =>
+                            openShipperModal(shipperPhone, shipperName, entry)
+                          }
+                          aria-label={t(
+                            "queue.viewShipperRequests",
+                            "View requests posted by this shipper",
+                          )}
+                        >
+                          <span className="qb-shipper-text">
+                            {shipperName && (
+                              <span className="qb-time-text qb-shipper-name">
+                                {shipperName}
+                              </span>
+                            )}
+                            <span className="qb-time-text">{shipperPhone}</span>
+                          </span>
+                          <ChevronRight size={14} className="qb-shipper-chev" />
+                        </button>
+                      ) : (
+                        <span className="qb-time-text">—</span>
                       )}
-                      <span className="qb-time-text">
-                        {shipperPhone || "—"}
-                      </span>
                     </td>
                     <td className="qb-time-text">{joinedTime}</td>
                     <td>
@@ -280,6 +358,15 @@ export function QueueTable({
           </tbody>
         </table>
       </div>
+      {shipperModal && (
+        <ShipperRequestsModal
+          phone={shipperModal.phone}
+          name={shipperModal.name}
+          requests={shipperModal.requests}
+          queueOrganizationUniqueId={queueOrganizationUniqueId || ""}
+          onClose={() => setShipperModal(null)}
+        />
+      )}
     </>
   );
 }
