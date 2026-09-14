@@ -596,6 +596,20 @@
   font-weight: 700;
 }
 
+.dbm-btn-not-selected {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.45rem;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: default;
+}
+
 .dbm-spinner {
   width: 12px;
   height: 12px;
@@ -721,7 +735,8 @@
   }
 
   .dbm-btn-accept,
-  .dbm-btn-accepted {
+  .dbm-btn-accepted,
+  .dbm-btn-not-selected {
     width: 100%;
     justify-content: center;
   }

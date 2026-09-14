@@ -13,6 +13,7 @@ import {
   Tag,
   Search,
   ArrowUpDown,
+  UserCheck,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -84,6 +85,22 @@ export function DriverBidsModal({
     if (displayLimit <= 0) return filteredAndSortedDrivers;
     return filteredAndSortedDrivers.slice(0, displayLimit);
   }, [filteredAndSortedDrivers, displayLimit]);
+
+  const hasAnyAcceptedDriver = useMemo(() => {
+    return (
+      acceptedDriverIds.size > 0 ||
+      driverRequests.some(
+        (d) =>
+          d.journeyStatusId === 4 ||
+          d.journeyStatusId === 5 ||
+          d.journeyStatusId === 6 ||
+          d.journeyStatusId === 7 ||
+          d.journeyStatusId === 8 ||
+          d.journeyStatusId === 9 ||
+          d.journeyStatus === "acceptedByShipper"
+      )
+    );
+  }, [acceptedDriverIds, driverRequests]);
 
   const handleAcceptDriver = async (driver: ShipperRequestDriverInfo) => {
     const driverKey =
@@ -487,13 +504,23 @@ export function DriverBidsModal({
                           <Check size={14} strokeWidth={2.5} />
                           {t("orders.accepted", "Accepted")}
                         </span>
+                      ) : hasAnyAcceptedDriver ? (
+                        <span
+                          className="dbm-btn-not-selected"
+                          title={t(
+                            "orders.anotherDriverAccepted",
+                            "Another driver has already been accepted for this order"
+                          )}
+                        >
+                          {t("orders.notSelected", "Not Selected")}
+                        </span>
                       ) : (
                         <button
                           type="button"
                           className="dbm-btn-accept"
                           disabled={isAccepting || acceptingDriverId !== null}
                           onClick={() => handleAcceptDriver(driver)}
-                          title={t("orders.acceptDriverRequest", "Accept Driver Request")}
+                          title={t("orders.acceptOffer", "Accept Offer")}
                         >
                           {isAccepting ? (
                             <>
@@ -502,8 +529,8 @@ export function DriverBidsModal({
                             </>
                           ) : (
                             <>
-                              <Check size={14} strokeWidth={2.5} />
-                              <span>{t("orders.acceptBid", "Accept")}</span>
+                              <UserCheck size={14} />
+                              <span>{t("orders.acceptOffer", "Accept Offer")}</span>
                             </>
                           )}
                         </button>

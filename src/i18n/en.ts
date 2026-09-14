@@ -418,6 +418,9 @@ export const en = {
     defaultOrder: "Default Order",
     showingDrivers: "Showing {{shown}} of {{total}} drivers",
     showAll: "All",
+    acceptOffer: "Accept Offer",
+    anotherDriverAccepted: "Another driver has already been accepted for this order",
+    notSelected: "Not Selected",
   },
   dispatchModal: {
     title: "Dispatch Driver",

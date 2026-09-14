@@ -404,6 +404,9 @@ export const am = {
     defaultOrder: "መደበኛ ቅደም ተከተል",
     showingDrivers: "ከ{{total}} አሽከርካሪዎች {{shown}} እየታዩ ነው",
     showAll: "ሁሉም",
+    acceptOffer: "ቅናሹን ተቀበል",
+    anotherDriverAccepted: "ለዚህ ትዕዛዝ ሌላ አሽከርካሪ ተቀባይነት አግኝቷል",
+    notSelected: "አልተመረጠም",
   },
   dispatchModal: {
     title: "ለቀዳሚው አሽከርካሪ አሰማራ",
