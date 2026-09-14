@@ -16,7 +16,6 @@ import {
   api,
   useCreateQueueOrganizationMutation,
   useListQueueOrganizationsQuery,
-  useAddQueueOrgMemberMutation,
 } from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import { setupOrgSchema, type SetupOrgFormValues } from "../../schemas/queue";
@@ -58,7 +57,7 @@ export const SetupOrganization: React.FC = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { logout, auth } = useAuth();
+  const { logout } = useAuth();
   const {
     data: orgsData,
     isSuccess,
@@ -81,7 +80,6 @@ export const SetupOrganization: React.FC = () => {
   }, [isSuccess, isOrgsFetching, orgsData, navigate]);
 
   const [createOrgMutation, { isLoading: isCreating }] = useCreateQueueOrganizationMutation();
-  const [addMemberMutation] = useAddQueueOrgMemberMutation();
 
   const {
     register,
@@ -217,21 +215,6 @@ export const SetupOrganization: React.FC = () => {
           res = createErr?.data;
         } else {
           throw createErr;
-        }
-      }
-
-      const orgId = res?.data?.queueOrganizationUniqueId || res?.queueOrganizationUniqueId;
-      const userUniqueId = auth?.userData?.userUniqueId;
-
-      if (orgId && userUniqueId) {
-        try {
-          await addMemberMutation({
-            id: orgId,
-            userUniqueId,
-            roleId: auth.userData?.roleId || 11,
-          }).unwrap();
-        } catch {
-          // If already a member or insufficient permissions, proceed gracefully
         }
       }
 

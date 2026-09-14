@@ -9,6 +9,8 @@ interface DatePickerFieldProps {
   placeholder?: string;
   onChange: (val: string) => void;
   error?: string;
+  minDate?: string;
+  maxDate?: string;
 }
 
 const MONTH_NAMES_EN = [
@@ -43,12 +45,16 @@ export function DatePickerField({
   placeholder,
   onChange,
   error,
+  minDate,
+  maxDate,
 }: DatePickerFieldProps) {
   const { t, i18n } = useTranslation();
   const isAm = i18n.language === "am";
   const monthNames = isAm ? MONTH_NAMES_AM : MONTH_NAMES_EN;
   const weekdayLabels = isAm ? WEEKDAY_LABELS_AM : WEEKDAY_LABELS_EN;
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const parsed = useMemo(() => parseDate(value), [value]);
@@ -68,6 +74,56 @@ export function DatePickerField({
       setViewMonth(parsed.month);
     }
   }, [parsed?.year, parsed?.month]);
+
+  // Compute position relative to viewport so calendar is never cut off at bottom of screen
+  const computePosition = () => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const POPOVER_HEIGHT = 330;
+    const POPOVER_WIDTH = 280;
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // If bottom space is insufficient for the full popover, open upward
+    if (spaceBelow < POPOVER_HEIGHT && spaceAbove > spaceBelow) {
+      setOpenUpward(true);
+    } else {
+      setOpenUpward(false);
+    }
+
+    // If right side space is tight, align to right
+    const spaceRight = window.innerWidth - rect.left;
+    if (spaceRight < POPOVER_WIDTH && rect.right >= POPOVER_WIDTH) {
+      setAlignRight(true);
+    } else {
+      setAlignRight(false);
+    }
+  };
+
+  const handleToggle = () => {
+    if (!isOpen) {
+      computePosition();
+    }
+    setIsOpen((prev) => !prev);
+  };
+
+  // Recalculate position on resize and scroll while open
+  useEffect(() => {
+    if (!isOpen) return;
+    computePosition();
+
+    const handleUpdate = () => {
+      computePosition();
+    };
+
+    window.addEventListener("resize", handleUpdate);
+    window.addEventListener("scroll", handleUpdate, true);
+    return () => {
+      window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("scroll", handleUpdate, true);
+    };
+  }, [isOpen]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -105,10 +161,13 @@ export function DatePickerField({
     }
   };
 
-  const handleSelectDay = (day: number, isCurrentMonth: boolean) => {
-    if (!isCurrentMonth) return;
-    const formatted = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`;
-    onChange(formatted);
+  const handleSelectDay = (cell: { day: number; isCurrent: boolean; dateStr: string }) => {
+    onChange(cell.dateStr);
+    const p = parseDate(cell.dateStr);
+    if (p) {
+      setViewYear(p.year);
+      setViewMonth(p.month);
+    }
     setIsOpen(false);
   };
 
@@ -182,7 +241,7 @@ export function DatePickerField({
       <div ref={containerRef} className="date-picker-wrap" onKeyDown={handleKeyDown}>
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggle}
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           className={`date-picker-trigger ${isOpen ? "open" : ""} ${error ? "error" : ""}`}
@@ -194,7 +253,11 @@ export function DatePickerField({
         </button>
 
         {isOpen && (
-          <div className="date-picker-popover" role="dialog" aria-modal="true">
+          <div
+            className={`date-picker-popover ${openUpward ? "open-up" : ""} ${alignRight ? "align-right" : ""}`}
+            role="dialog"
+            aria-modal="true"
+          >
             {/* Header */}
             <div className="date-picker-header">
               <span className="date-picker-month-year">
@@ -234,18 +297,21 @@ export function DatePickerField({
             {/* Grid */}
             <div className="date-picker-grid">
               {calendarCells.map((cell, idx) => {
-                const isSelected = parsed && cell.isCurrent && cell.day === parsed.day && viewMonth === parsed.month && viewYear === parsed.year;
-                const isToday = cell.isCurrent && cell.day === today.day && viewMonth === today.month && viewYear === today.year;
+                const isSelected = parsed && cell.dateStr === value;
+                const isToday = cell.dateStr === `${today.year}-${pad(today.month + 1)}-${pad(today.day)}`;
+                const isDisabled =
+                  Boolean(minDate && cell.dateStr < minDate) ||
+                  Boolean(maxDate && cell.dateStr > maxDate);
 
                 return (
                   <button
                     type="button"
                     key={`${cell.dateStr}-${idx}`}
-                    onClick={() => handleSelectDay(cell.day, cell.isCurrent)}
+                    onClick={() => !isDisabled && handleSelectDay(cell)}
                     className={`date-picker-day ${
                       !cell.isCurrent ? "other-month" : ""
-                    } ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}`}
-                    disabled={!cell.isCurrent}
+                    } ${isToday ? "today" : ""} ${isSelected ? "selected" : ""} ${isDisabled ? "disabled" : ""}`}
+                    disabled={isDisabled}
                   >
                     {cell.day}
                   </button>

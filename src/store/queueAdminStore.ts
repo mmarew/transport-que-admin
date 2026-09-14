@@ -8,6 +8,20 @@ interface QueueAdminStore {
   setSocketConnected: (connected: boolean) => void;
 }
 
+// Ensure stale userCreatedOrgs from prior testing is cleaned from localStorage
+try {
+  const rawStore = localStorage.getItem("queueadmin:store");
+  if (rawStore) {
+    const parsed = JSON.parse(rawStore);
+    if (parsed?.state?.userCreatedOrgs) {
+      delete parsed.state.userCreatedOrgs;
+      localStorage.setItem("queueadmin:store", JSON.stringify(parsed));
+    }
+  }
+} catch {
+  // ignore
+}
+
 export const useQueueAdminStore = create<QueueAdminStore>()(
   persist(
     (set) => ({
@@ -18,7 +32,10 @@ export const useQueueAdminStore = create<QueueAdminStore>()(
     }),
     {
       name: "queueadmin:store",
-      partialize: (state) => ({ selectedOrgId: state.selectedOrgId }),
+      partialize: (state) => ({
+        selectedOrgId: state.selectedOrgId,
+      }),
     },
   ),
 );
+

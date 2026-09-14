@@ -4,10 +4,10 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  padding: 1.5rem 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
 }
 
 /* ── Back to Organizations Link ── */
@@ -180,7 +180,7 @@
 }
 
 .orders-table th {
-  padding: 0.75rem 0.65rem;
+  padding: 0.75rem 0.55rem;
   font-weight: 600;
   color: #475569;
   font-size: 0.8125rem;
@@ -206,15 +206,16 @@
 }
 
 .th-num {
-  width: 38px;
-  text-align: center;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  min-width: 110px;
+  text-align: left;
+  padding-left: 0.75rem;
 }
 
 .th-action {
-  text-align: center;
-  width: 120px;
+  text-align: right;
+  width: 145px;
+  min-width: 145px;
+  padding-right: 1.15rem;
 }
 
 .orders-row {
@@ -231,7 +232,7 @@
 }
 
 .orders-table td {
-  padding: 0.75rem 0.65rem;
+  padding: 0.75rem 0.55rem;
   color: #334155;
   vertical-align: middle;
   white-space: nowrap;
@@ -240,10 +241,23 @@
 .td-num {
   font-weight: 600;
   color: #64748b;
-  text-align: center;
-  width: 38px;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  text-align: left;
+  min-width: 110px;
+  padding-left: 0.75rem;
+}
+
+.orders-id-badge {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  padding: 0.15rem 0.45rem;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
 .td-shipper {
@@ -294,6 +308,10 @@
 .td-vehicletype {
   font-weight: 500;
   color: #1e293b;
+  white-space: normal;
+  min-width: 140px;
+  max-width: 220px;
+  line-height: 1.35;
 }
 
 .td-item {
@@ -550,15 +568,17 @@
 }
 
 .td-action {
-  text-align: center;
-  width: 120px;
+  text-align: right;
+  width: 145px;
+  min-width: 145px;
+  padding-right: 1.15rem;
 }
 
 .orders-actions-group {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .orders-action-btn {
@@ -571,6 +591,9 @@
   cursor: pointer;
   transition: transform 0.15s ease, opacity 0.15s ease;
   line-height: 1;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 
 .orders-action-btn:hover {
@@ -948,7 +971,7 @@
 /* ── Mobile & Responsive Styles ────────────────────────────────────────── */
 @media (max-width: 768px) {
   .orders-page-container {
-    padding: 1rem 0.75rem;
+    padding: 0;
     margin-bottom: 5.5rem;
   }
 

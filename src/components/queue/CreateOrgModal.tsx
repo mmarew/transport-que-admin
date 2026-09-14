@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import parseError from "@/utils/parseError";
 import { setupOrgSchema, type SetupOrgFormValues } from "@/schemas/queue";
 import { QUEUE_ORG_TYPES, type QueueOrgType } from "@/types/queue";
@@ -142,6 +142,7 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
 
   const onSubmit = async (values: SetupOrgFormValues) => {
     setIsPending(true);
+    console.log("[CreateOrgModal] Submitting:", values);
     try {
       await onCreate({
         queueOrganizationName: values.queueOrganizationName,
@@ -151,10 +152,12 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
         longitude: values.longitude || 38.7469,
         queueOrganizationPhone: values.queueOrganizationPhone || null,
       });
+      console.log("[CreateOrgModal] onCreate succeeded, showing success toast");
       toast.success(t("org.createdSuccess"));
       onCreated?.();
       onClose();
     } catch (err: unknown) {
+      console.error("[CreateOrgModal] onCreate error:", err);
       toast.error(parseError(err));
     } finally {
       setIsPending(false);
@@ -260,16 +263,9 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
                 }}
               />
               {isSearching && (
-                <span
-                  className="add-docs-spinner"
-                  style={{
-                    position: "absolute",
-                    right: "0.75rem",
-                    width: "14px",
-                    height: "14px",
-                    borderColor: "#e2e8f0",
-                    borderTopColor: "#0B4D6D",
-                  }}
+                <Loader2
+                  size={16}
+                  className="com-search-loading-icon com-spinner"
                 />
               )}
             </div>
@@ -278,7 +274,7 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
             )}
 
             {/* Address Suggestions Dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
+            {showSuggestions && (isSearching || suggestions.length > 0) && (
               <div
                 className="com-dropdown"
                 style={{
@@ -296,7 +292,13 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
                   marginTop: "4px",
                 }}
               >
-                {suggestions.map((place, index) => (
+                {isSearching && (
+                  <div className="com-dropdown-status">
+                    <Loader2 size={14} className="com-spinner" />
+                    <span>{t("orders.searchingLocations", "Searching locations...")}</span>
+                  </div>
+                )}
+                {!isSearching && suggestions.map((place, index) => (
                   <button
                     type="button"
                     key={`${place.label}-${index}`}

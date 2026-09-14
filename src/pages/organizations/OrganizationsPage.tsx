@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import {
   Search,
   ChevronDown,
@@ -159,14 +158,25 @@ export function OrganizationsPage() {
     longitude: number;
     queueOrganizationPhone?: string | null;
   }) => {
+    console.log("[OrganizationsPage] Creating org:", formData);
     try {
-      await createQueueOrg(formData).unwrap();
-      toast.success(t("dashboard.orgCreatedSuccess"));
-      setShowCreateOrg(false);
-      refetch();
+      const creationResult = await createQueueOrg(formData).unwrap();
+      console.log("[OrganizationsPage] Org created successfully:", creationResult);
     } catch (err: any) {
-      toast.error(err?.data?.message || t("dashboard.createOrgFailed"));
+      console.error("[OrganizationsPage] Org creation error:", err);
+      const status =
+        err?.status ||
+        err?.originalStatus ||
+        err?.response?.status;
+      if (status === 409 || Number(status) === 409) {
+        throw Object.assign(new Error(
+          `An organization named "${formData.queueOrganizationName}" already exists. Please use a different name.`
+        ), { status: 409 });
+      }
+      throw err;
     }
+    // The mutation's invalidatesTags: ["QueueOrganizations"] auto-refetches the list.
+    // No need for manual invalidateTags or refetch here.
   };
 
   return (
@@ -415,7 +425,7 @@ export function OrganizationsPage() {
                           </span>
                         </td>
                         <td>{isEnabled}</td>
-                        <td>
+                        <td className="org-td-action">
                           <button
                             type="button"
                             className={`org-manage-link ${!isApproved ? "disabled" : ""}`}
@@ -485,6 +495,9 @@ export function OrganizationsPage() {
         <CreateOrgModal
           onClose={() => setShowCreateOrg(false)}
           onCreate={handleCreateOrg}
+          onCreated={() => {
+            setShowCreateOrg(false);
+          }}
         />
       )}
     </DashboardLayout>

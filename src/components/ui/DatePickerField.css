@@ -83,10 +83,33 @@
   animation: datePickerFadeIn 0.15s ease-out;
 }
 
+.date-picker-popover.open-up {
+  top: auto;
+  bottom: calc(100% + 4px);
+  box-shadow: 0 -10px 25px -5px rgba(11, 77, 109, 0.18), 0 -8px 10px -6px rgba(0, 0, 0, 0.08);
+  animation: datePickerFadeInUp 0.15s ease-out;
+}
+
+.date-picker-popover.align-right {
+  left: auto;
+  right: 0;
+}
+
 @keyframes datePickerFadeIn {
   from {
     opacity: 0;
     transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes datePickerFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -193,6 +216,13 @@
   font-weight: 700;
 }
 
+.date-picker-day:disabled,
+.date-picker-day.disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
 /* ── Footer ── */
 .date-picker-footer {
   display: flex;
@@ -262,6 +292,10 @@
   background-color: #111827 !important;
   border-color: #2b3548 !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+}
+
+.dark .date-picker-popover.open-up {
+  box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.6) !important;
 }
 
 .dark .date-picker-month-year {

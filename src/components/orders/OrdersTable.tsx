@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Package, Pencil, Trash2, Tag, Gavel } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, SortColumn } from "./OrdersTypes";
-import { PAGE_SIZE, formatShortName, formatTrimmedRoute } from "./OrdersTypes";
+import { formatShortName, formatTrimmedRoute } from "./OrdersTypes";
 
 interface OrdersTableProps {
   orders: OrderDisplayItem[];
   sortCol: SortColumn;
   activeTab: "ongoing" | "complete";
-  currentPage: number;
+  currentPage?: number;
   onSort: (col: SortColumn) => void;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
@@ -19,26 +19,46 @@ export function OrdersTable({
   orders,
   sortCol,
   activeTab,
-  currentPage,
+  currentPage: _currentPage,
   onSort,
   onEdit,
   onDelete,
   onViewRequests,
 }: OrdersTableProps) {
   const { t } = useTranslation();
-  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
+  const [expandedLocationId, setExpandedLocationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!expandedLocationId) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest(".orders-loc-box--expanded") ||
+        target?.closest(".orders-loc-btn--trimmed")
+      ) {
+        return;
+      }
+      setExpandedLocationId(null);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setExpandedLocationId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [expandedLocationId]);
 
   const toggleLocation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setExpandedLocations((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    setExpandedLocationId((prev) => (prev === id ? null : id));
   };
 
   return (
@@ -47,7 +67,12 @@ export function OrdersTable({
         <table className="orders-table">
           <thead>
             <tr>
-              <th className="th-num">#</th>
+              <th onClick={() => onSort("id")} className="th-sortable th-num">
+                <span className="th-content">
+                  {t("orders.table.requestBatchId", "Request / Batch ID")}
+                  <ChevronDown size={14} className={sortCol === "id" ? "active" : ""} />
+                </span>
+              </th>
               <th onClick={() => onSort("shipper")} className="th-sortable">
                 <span className="th-content">
                   {t("orders.table.shipper", "Shipper")}
@@ -108,11 +133,12 @@ export function OrdersTable({
                 </td>
               </tr>
             ) : (
-              orders.map((order, idx) => {
-                const rowNum = (currentPage - 1) * PAGE_SIZE + idx + 1;
+              orders.map((order) => {
                 return (
                   <tr key={order.id} className="orders-row">
-                    <td className="td-num">{rowNum}</td>
+                    <td className="td-num" title={order.displayId}>
+                      <span className="orders-id-badge">{order.displayId}</span>
+                    </td>
                     <td className="td-shipper" title={order.shipper}>
                       <span className="orders-shipper-desktop">{order.shipper}</span>
                       <span className="orders-shipper-mobile">{formatShortName(order.shipper)}</span>
@@ -137,8 +163,8 @@ export function OrdersTable({
                     </td>
                     <td className="td-vehicletype">{order.vehicleType}</td>
                     <td className="td-item">{order.item}</td>
-                    <td className={`td-location ${expandedLocations.has(order.id) ? "td-location--expanded" : ""}`}>
-                      {expandedLocations.has(order.id) ? (
+                    <td className={`td-location ${expandedLocationId === order.id ? "td-location--expanded" : ""}`}>
+                      {expandedLocationId === order.id ? (
                         <div
                           className="orders-loc-box orders-loc-box--expanded"
                           onClick={(e) => toggleLocation(order.id, e)}
@@ -191,38 +217,15 @@ export function OrdersTable({
                           {order.cost.toLocaleString()}{" "}
                           <small className="orders-cost-cur">ETB</small>
                         </span>
-                        {order.driverRequests && order.driverRequests.length > 0 && (() => {
-                          const validOffers = order.driverRequests
-                            .map((d) => Number(d.offerCost ?? d.proposedCost ?? d.bidAmount))
-                            .filter((c) => !isNaN(c) && c > 0);
-                          if (validOffers.length > 0) {
-                            const minOffer = Math.min(...validOffers);
-                            const maxOffer = Math.max(...validOffers);
-                            const rangeStr =
-                              minOffer === maxOffer
-                                ? `${minOffer.toLocaleString()} ETB`
-                                : `${minOffer.toLocaleString()} - ${maxOffer.toLocaleString()} ETB`;
-                            return (
-                              <span
-                                className="orders-cost-bid-pill"
-                                title={`${t("orders.driverOfferCost", "Driver Offer Cost")}: ${rangeStr}`}
-                              >
-                                {t("orders.bidFrom", "Bid:")} {rangeStr}
-                              </span>
-                            );
-                          }
-                          return null;
-                        })()}
                       </div>
                     </td>
                     <td className="td-action">
                       <div className="orders-actions-group">
-                        {onViewRequests && (
+                        {onViewRequests && order.isBiddingApproved && (
                           <button
                             type="button"
                             className={`orders-btn-bids ${
-                              order.isBiddingApproved ||
-                              (order.driverRequests && order.driverRequests.length > 0)
+                              order.driverRequests && order.driverRequests.length > 0
                                 ? "orders-btn-bids--active"
                                 : ""
                             }`}

@@ -3,6 +3,14 @@ export type { ShipperRequestDriverInfo };
 
 export interface OrderDisplayItem {
   id: string;
+  shipperRequestId?: number | string | null;
+  batchId?: string | null;
+  requestIdDisplay?: string;
+  batchIdDisplay?: string | null;
+  fullRequestId?: string;
+  fullBatchId?: string | null;
+  displayId?: string;
+  fullId?: string;
   shipper: string;
   type: "Individual" | "Group";
   vehicleType: string;
@@ -10,6 +18,10 @@ export interface OrderDisplayItem {
   item: string;
   origin: string;
   destination: string;
+  originLatitude?: number | string | null;
+  originLongitude?: number | string | null;
+  destinationLatitude?: number | string | null;
+  destinationLongitude?: number | string | null;
   quintal: number;
   cost: number;
   status: "ongoing" | "complete";
@@ -17,10 +29,13 @@ export interface OrderDisplayItem {
   createdAt?: string;
   isBiddingApproved?: boolean;
   driverRequests?: ShipperRequestDriverInfo[];
+  decisions?: any[];
   queueOrganizationUniqueId?: string;
+  rawItem?: unknown;
 }
 
 export type SortColumn =
+  | "id"
   | "shipper"
   | "type"
   | "vehicleType"
@@ -39,6 +54,10 @@ export interface ShipperRequestPayloadItem {
     shippableItemName?: string;
     originPlace?: string;
     destinationPlace?: string;
+    originLatitude?: number | string | null;
+    originLongitude?: number | string | null;
+    destinationLatitude?: number | string | null;
+    destinationLongitude?: number | string | null;
     shippableItemQtyInQuintal?: string | number;
     shippingCost?: string | number;
     journeyStatusId?: number;

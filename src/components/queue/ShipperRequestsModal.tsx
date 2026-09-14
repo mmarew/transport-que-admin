@@ -17,6 +17,7 @@ import {
 import { useModalA11y } from "../../hooks/useModalA11y";
 import { formatJourneyStatusLabel } from "../../utils/journeyStatus";
 import { useAcceptDriverRequestMutation } from "../../lib/redux/api";
+import parseError from "../../utils/parseError";
 import "./DispatchModal.css";
 import "./ShipperRequestsModal.css";
 
@@ -24,6 +25,7 @@ export interface ShipperRequestDriverInfo {
   driverRequestId?: number;
   driverRequestUniqueId?: string;
   userUniqueId?: string;
+  journeyDecisionUniqueId?: string;
   fullName?: string | null;
   phoneNumber?: string | null;
   journeyStatusId?: number | null;
@@ -33,6 +35,13 @@ export interface ShipperRequestDriverInfo {
   bidAmount?: number | string | null;
   vehicleTypeName?: string | null;
   plateNumber?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  driverLatitude?: number | string | null;
+  driverLongitude?: number | string | null;
+  currentPlace?: string | null;
+  locationName?: string | null;
+  distanceKm?: number | null;
 }
 
 export interface ShipperRequestDetail {
@@ -99,9 +108,12 @@ export function ShipperRequestsModal({
   const [acceptedDriverIds, setAcceptedDriverIds] = useState<Set<string>>(new Set());
 
   const handleAcceptDriver = async (driver: ShipperRequestDriverInfo) => {
+    const rawDriver = driver as any;
     const driverKey =
       driver.userUniqueId ||
+      rawDriver.driverUserUniqueId ||
       driver.phoneNumber ||
+      rawDriver.driverPhoneNumber ||
       String(driver.driverRequestId || driver.driverRequestUniqueId || "");
     if (!driverKey) return;
 
@@ -110,10 +122,12 @@ export function ShipperRequestsModal({
       await acceptDriverMutation({
         queueOrganizationUniqueId,
         shipperRequestUniqueId: request?.shipperRequestUniqueId || "",
-        driverPhoneNumber: driver.phoneNumber || undefined,
-        driverUserUniqueId: driver.userUniqueId || undefined,
-        driverRequestId: driver.driverRequestId,
-        driverRequestUniqueId: driver.driverRequestUniqueId,
+        driverPhoneNumber: driver.phoneNumber || rawDriver.driverPhoneNumber || undefined,
+        driverUserUniqueId: driver.userUniqueId || rawDriver.driverUserUniqueId || undefined,
+        driverRequestId: driver.driverRequestId || rawDriver.driverRequestId || undefined,
+        driverRequestUniqueId: driver.driverRequestUniqueId || rawDriver.driverRequestUniqueId || undefined,
+        journeyDecisionUniqueId: driver.journeyDecisionUniqueId || rawDriver.journeyDecisionUniqueId || undefined,
+        queueUniqueId: rawDriver.queueUniqueId || rawDriver.driverQueueUniqueId || undefined,
         vehicleTypeUniqueId: request?.vehicleTypeUniqueId || undefined,
       }).unwrap();
 
@@ -123,12 +137,7 @@ export function ShipperRequestsModal({
       );
     } catch (err: any) {
       console.error("Failed to accept driver request:", err);
-      const errMsg =
-        err?.data?.message ||
-        err?.error ||
-        err?.message ||
-        t("orders.failedToAcceptDriver", "Failed to accept driver request");
-      toast.error(errMsg);
+      toast.error(parseError(err));
     } finally {
       setAcceptingDriverId(null);
     }

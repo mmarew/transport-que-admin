@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { X, Globe, Building2, Search } from "lucide-react";
+import { X, Globe, Building2, Search, Loader2 } from "lucide-react";
 import type { CreateOrderPayload } from "../../types/queue";
 import {
   useCreateQueueOrderMutation,
@@ -115,11 +115,13 @@ export function CreateOrderModal({
   const [destQuery, setDestQuery] = useState("");
   const [destResults, setDestResults] = useState<PhotonPlace[]>([]);
   const [destOpen, setDestOpen] = useState(false);
+  const [isDestLoading, setIsDestLoading] = useState(false);
   const destWrapRef = useRef<HTMLDivElement>(null);
 
   const [originQuery, setOriginQuery] = useState(origin?.description ?? "");
   const [originResults, setOriginResults] = useState<PhotonPlace[]>([]);
   const [originOpen, setOriginOpen] = useState(false);
+  const [isOriginLoading, setIsOriginLoading] = useState(false);
   const originWrapRef = useRef<HTMLDivElement>(null);
 
   const isTypingDestRef = useRef(false);
@@ -163,7 +165,7 @@ export function CreateOrderModal({
     signal?: AbortSignal,
   ): Promise<PhotonPlace[]> => {
     const q = normalizeQuery(query);
-    if (q.length < 5) return [];
+    if (q.length < 3) return [];
 
     // Return from in-memory cache if previously fetched
     if (placesCacheRef.current.has(q)) {
@@ -196,18 +198,25 @@ export function CreateOrderModal({
   };
 
   useEffect(() => {
-    if (!isTypingDestRef.current || !destOpen) return;
+    if (!isTypingDestRef.current || !destOpen) {
+      setIsDestLoading(false);
+      return;
+    }
     const q = normalizeQuery(destQuery);
-    if (q.length < 5) {
+    if (q.length < 3) {
       setDestResults([]);
+      setIsDestLoading(false);
       return;
     }
 
     // If cache already has it, set results immediately without a new request
     if (placesCacheRef.current.has(q)) {
       setDestResults(placesCacheRef.current.get(q)!);
+      setIsDestLoading(false);
       return;
     }
+
+    setIsDestLoading(true);
 
     if (destAbortRef.current) {
       destAbortRef.current.abort();
@@ -216,11 +225,17 @@ export function CreateOrderModal({
     const signal = destAbortRef.current.signal;
 
     const t = setTimeout(async () => {
-      const res = await fetchPhotonPlaces(q, signal);
-      if (!signal.aborted) {
-        setDestResults(res);
+      try {
+        const res = await fetchPhotonPlaces(q, signal);
+        if (!signal.aborted) {
+          setDestResults(res);
+        }
+      } finally {
+        if (!signal.aborted) {
+          setIsDestLoading(false);
+        }
       }
-    }, 550);
+    }, 350);
 
     return () => {
       clearTimeout(t);
@@ -231,18 +246,25 @@ export function CreateOrderModal({
   }, [destQuery, destOpen]);
 
   useEffect(() => {
-    if (!isTypingOriginRef.current || !originOpen) return;
+    if (!isTypingOriginRef.current || !originOpen) {
+      setIsOriginLoading(false);
+      return;
+    }
     const q = normalizeQuery(originQuery);
-    if (q.length < 5) {
+    if (q.length < 3) {
       setOriginResults([]);
+      setIsOriginLoading(false);
       return;
     }
 
     // If cache already has it, set results immediately without a new request
     if (placesCacheRef.current.has(q)) {
       setOriginResults(placesCacheRef.current.get(q)!);
+      setIsOriginLoading(false);
       return;
     }
+
+    setIsOriginLoading(true);
 
     if (originAbortRef.current) {
       originAbortRef.current.abort();
@@ -251,11 +273,17 @@ export function CreateOrderModal({
     const signal = originAbortRef.current.signal;
 
     const t = setTimeout(async () => {
-      const res = await fetchPhotonPlaces(q, signal);
-      if (!signal.aborted) {
-        setOriginResults(res);
+      try {
+        const res = await fetchPhotonPlaces(q, signal);
+        if (!signal.aborted) {
+          setOriginResults(res);
+        }
+      } finally {
+        if (!signal.aborted) {
+          setIsOriginLoading(false);
+        }
       }
-    }, 550);
+    }, 350);
 
     return () => {
       clearTimeout(t);
@@ -268,6 +296,7 @@ export function CreateOrderModal({
   const selectPlace = (place: PhotonPlace, isOrigin: boolean) => {
     if (isOrigin) {
       isTypingOriginRef.current = false;
+      setIsOriginLoading(false);
       setValue("originDescription", place.label, { shouldValidate: true });
       setValue("originLatitude", String(place.lat), { shouldValidate: true });
       setValue("originLongitude", String(place.lng), { shouldValidate: true });
@@ -276,6 +305,7 @@ export function CreateOrderModal({
       setOriginOpen(false);
     } else {
       isTypingDestRef.current = false;
+      setIsDestLoading(false);
       setValue("destinationDescription", place.label, { shouldValidate: true });
       setValue("destinationLatitude", String(place.lat), {
         shouldValidate: true,
@@ -660,6 +690,7 @@ export function CreateOrderModal({
                 label={t("orders.deliveryDate", "Delivery Date")}
                 value={deliveryDate}
                 placeholder={t("orders.selectDate", "Select date")}
+                minDate={shippingDate}
                 onChange={(val) =>
                   setValue("deliveryDate", val, { shouldValidate: true })
                 }
@@ -698,32 +729,59 @@ export function CreateOrderModal({
                     setOriginOpen(true);
                   }}
                   onFocus={() => {
-                    if (
-                      originQuery.trim().length >= 3 &&
-                      originResults.length > 0
-                    ) {
+                    if (originQuery.trim().length >= 3) {
                       setOriginOpen(true);
                     }
                   }}
-                  className={`com-input com-search-input ${errors.originDescription ? "com-input-error" : ""}`}
+                  className={`com-input com-search-input ${isOriginLoading ? "is-loading" : ""} ${errors.originDescription ? "com-input-error" : ""}`}
                 />
-                {originOpen && originResults.length > 0 && (
-                  <div className="com-dropdown">
-                    {originResults.map((place, idx) => (
-                      <button
-                        type="button"
-                        key={idx}
-                        className="com-dropdown-item"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          selectPlace(place, true);
-                        }}
-                      >
-                        {place.label}
-                      </button>
-                    ))}
-                  </div>
+                {isOriginLoading && (
+                  <Loader2 size={16} className="com-search-loading-icon com-spinner" />
                 )}
+                {originOpen &&
+                  (isOriginLoading ||
+                    originResults.length > 0 ||
+                    (!isOriginLoading && originQuery.trim().length >= 3)) && (
+                    <div className="com-dropdown">
+                      {isOriginLoading && (
+                        <div className="com-dropdown-status">
+                          <Loader2 size={14} className="com-spinner" />
+                          <span>
+                            {t(
+                              "orders.searchingLocations",
+                              "Searching locations...",
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {!isOriginLoading &&
+                        originResults.map((place, idx) => (
+                          <button
+                            type="button"
+                            key={idx}
+                            className="com-dropdown-item"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              selectPlace(place, true);
+                            }}
+                          >
+                            {place.label}
+                          </button>
+                        ))}
+                      {!isOriginLoading &&
+                        originResults.length === 0 &&
+                        originQuery.trim().length >= 3 && (
+                          <div className="com-dropdown-empty">
+                            <span>
+                              {t(
+                                "orders.noLocationsFound",
+                                "No locations found",
+                              )}
+                            </span>
+                          </div>
+                        )}
+                    </div>
+                  )}
               </div>
               <div style={{ minHeight: "14px" }}>
                 {errors.originDescription && (
@@ -762,32 +820,59 @@ export function CreateOrderModal({
                     setDestOpen(true);
                   }}
                   onFocus={() => {
-                    if (
-                      destQuery.trim().length >= 3 &&
-                      destResults.length > 0
-                    ) {
+                    if (destQuery.trim().length >= 3) {
                       setDestOpen(true);
                     }
                   }}
-                  className={`com-input com-search-input ${errors.destinationDescription ? "com-input-error" : ""}`}
+                  className={`com-input com-search-input ${isDestLoading ? "is-loading" : ""} ${errors.destinationDescription ? "com-input-error" : ""}`}
                 />
-                {destOpen && destResults.length > 0 && (
-                  <div className="com-dropdown">
-                    {destResults.map((place, idx) => (
-                      <button
-                        type="button"
-                        key={idx}
-                        className="com-dropdown-item"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          selectPlace(place, false);
-                        }}
-                      >
-                        {place.label}
-                      </button>
-                    ))}
-                  </div>
+                {isDestLoading && (
+                  <Loader2 size={16} className="com-search-loading-icon com-spinner" />
                 )}
+                {destOpen &&
+                  (isDestLoading ||
+                    destResults.length > 0 ||
+                    (!isDestLoading && destQuery.trim().length >= 3)) && (
+                    <div className="com-dropdown">
+                      {isDestLoading && (
+                        <div className="com-dropdown-status">
+                          <Loader2 size={14} className="com-spinner" />
+                          <span>
+                            {t(
+                              "orders.searchingLocations",
+                              "Searching locations...",
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {!isDestLoading &&
+                        destResults.map((place, idx) => (
+                          <button
+                            type="button"
+                            key={idx}
+                            className="com-dropdown-item"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              selectPlace(place, false);
+                            }}
+                          >
+                            {place.label}
+                          </button>
+                        ))}
+                      {!isDestLoading &&
+                        destResults.length === 0 &&
+                        destQuery.trim().length >= 3 && (
+                          <div className="com-dropdown-empty">
+                            <span>
+                              {t(
+                                "orders.noLocationsFound",
+                                "No locations found",
+                              )}
+                            </span>
+                          </div>
+                        )}
+                    </div>
+                  )}
               </div>
               <div style={{ minHeight: "14px" }}>
                 {errors.destinationDescription && (

@@ -264,6 +264,7 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
         driverPhoneNumber: "+251911223344",
         driverUserUniqueId: "c3d4e5f6-a1b2-7890-abcd-ef1234567890",
         vehicleTypeUniqueId: "d4e5f6a1-b2c3-7890-abcd-ef1234567890",
+        queueUniqueId: "e5f6a1b2-c3d4-7890-abcd-ef1234567890",
       };
 
       expect(acceptPayload.queueOrganizationUniqueId).toMatch(/^[0-9a-f-]{36}$/);
@@ -271,6 +272,96 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       expect(acceptPayload.driverPhoneNumber).toBe("+251911223344");
       expect(acceptPayload.driverUserUniqueId).toMatch(/^[0-9a-f-]{36}$/);
       expect(acceptPayload.vehicleTypeUniqueId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(acceptPayload.queueUniqueId).toMatch(/^[0-9a-f-]{36}$/);
+    });
+
+    it("should ensure dispatch body uses mutually exclusive modes (phone mode excludes vehicleTypeUniqueId and driverUserUniqueId)", () => {
+      const buildDispatchBody = (args: {
+        queueOrganizationUniqueId: string;
+        shipperRequestUniqueId: string;
+        driverPhoneNumber?: string;
+        driverUserUniqueId?: string;
+        vehicleTypeUniqueId?: string;
+        queueUniqueId?: string;
+      }) => {
+        const rawPhone = args.driverPhoneNumber?.trim();
+        const cleanPhone = rawPhone ? rawPhone.replace(/[\s-]/g, "") : undefined;
+        const body: Record<string, unknown> = {
+          queueOrganizationUniqueId: args.queueOrganizationUniqueId,
+          shipperRequestUniqueId: args.shipperRequestUniqueId,
+        };
+
+        if (args.queueUniqueId) {
+          body.queueUniqueId = args.queueUniqueId;
+        } else if (cleanPhone) {
+          body.driverPhoneNumber = cleanPhone;
+        } else if (args.vehicleTypeUniqueId) {
+          body.vehicleTypeUniqueId = args.vehicleTypeUniqueId;
+        }
+
+        return body;
+      };
+
+      // 1. When phone is present, vehicleTypeUniqueId & driverUserUniqueId must NOT be in dispatch body
+      const phoneDispatch = buildDispatchBody({
+        queueOrganizationUniqueId: "org-1",
+        shipperRequestUniqueId: "order-1",
+        driverPhoneNumber: "+251 911-223-344",
+        driverUserUniqueId: "driver-uuid",
+        vehicleTypeUniqueId: "vt-uuid",
+      });
+
+      expect(phoneDispatch).toEqual({
+        queueOrganizationUniqueId: "org-1",
+        shipperRequestUniqueId: "order-1",
+        driverPhoneNumber: "+251911223344",
+      });
+      expect(phoneDispatch).not.toHaveProperty("vehicleTypeUniqueId");
+      expect(phoneDispatch).not.toHaveProperty("driverUserUniqueId");
+
+      // 2. When queueUniqueId is present, it takes precedence over phone & vehicleType
+      const queueDispatch = buildDispatchBody({
+        queueOrganizationUniqueId: "org-1",
+        shipperRequestUniqueId: "order-1",
+        queueUniqueId: "queue-entry-uuid",
+        driverPhoneNumber: "+251911223344",
+        vehicleTypeUniqueId: "vt-uuid",
+      });
+
+      expect(queueDispatch).toEqual({
+        queueOrganizationUniqueId: "org-1",
+        shipperRequestUniqueId: "order-1",
+        queueUniqueId: "queue-entry-uuid",
+      });
+      expect(queueDispatch).not.toHaveProperty("driverPhoneNumber");
+      expect(queueDispatch).not.toHaveProperty("vehicleTypeUniqueId");
+
+      // 3. When only vehicleTypeUniqueId is present (FIFO mode)
+      const fifoDispatch = buildDispatchBody({
+        queueOrganizationUniqueId: "org-1",
+        shipperRequestUniqueId: "order-1",
+        vehicleTypeUniqueId: "vt-uuid",
+      });
+
+      expect(fifoDispatch).toEqual({
+        queueOrganizationUniqueId: "org-1",
+        shipperRequestUniqueId: "order-1",
+        vehicleTypeUniqueId: "vt-uuid",
+      });
+    });
+
+    it("should correctly handle alternative Ethiopian phone numbers for retry", () => {
+      const getAltPhone = (phone: string) => {
+        const clean = phone.trim().replace(/[\s-]/g, "");
+        if (clean.startsWith("+251")) return "0" + clean.slice(4);
+        if (clean.startsWith("0")) return "+251" + clean.slice(1);
+        if (clean.startsWith("251")) return "0" + clean.slice(3);
+        return null;
+      };
+
+      expect(getAltPhone("+251911223344")).toBe("0911223344");
+      expect(getAltPhone("0911223344")).toBe("+251911223344");
+      expect(getAltPhone("251911223344")).toBe("0911223344");
     });
 
     it("should correctly retain driverRequests and isBiddingApproved in mapped order items", () => {
@@ -320,6 +411,45 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       expect(orderItem.driverRequests).toHaveLength(1);
       expect(orderItem.driverRequests?.[0].fullName).toBe("Abebe Bikila");
       expect(orderItem.driverRequests?.[0].driverPhoneNumber).toBe("+251922334455");
+    });
+
+    it("should correctly resolve shipperRequestUniqueId and queueOrganizationUniqueId whether nested in shipperRequest or at root", () => {
+      const flatItem = {
+        shipperRequestUniqueId: "uuid-root-1234",
+        queueOrganizationUniqueId: "org-root-1234",
+        vehicleTypeUniqueId: "vt-root-1234",
+      };
+
+      const nestedItem = {
+        shipperRequest: {
+          shipperRequestUniqueId: "uuid-nested-5678",
+          queueOrganizationUniqueId: "org-nested-5678",
+          vehicleTypeUniqueId: "vt-nested-5678",
+        },
+      };
+
+      const resolveOrderProperties = (item: any) => {
+        const rawReq = item.shipperRequest && typeof item.shipperRequest === "object" ? item.shipperRequest : null;
+        const req = rawReq || item || {};
+
+        return {
+          id: req.shipperRequestUniqueId || item.shipperRequestUniqueId || "fallback",
+          queueOrgId: req.queueOrganizationUniqueId || item.queueOrganizationUniqueId || "",
+          vehicleTypeId: req.vehicleTypeUniqueId || item.vehicleTypeUniqueId,
+        };
+      };
+
+      expect(resolveOrderProperties(flatItem)).toEqual({
+        id: "uuid-root-1234",
+        queueOrgId: "org-root-1234",
+        vehicleTypeId: "vt-root-1234",
+      });
+
+      expect(resolveOrderProperties(nestedItem)).toEqual({
+        id: "uuid-nested-5678",
+        queueOrgId: "org-nested-5678",
+        vehicleTypeId: "vt-nested-5678",
+      });
     });
 
     it("should correctly handle driver offer cost calculation and comparison against shipper target cost", () => {

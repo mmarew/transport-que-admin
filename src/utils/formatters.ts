@@ -31,10 +31,20 @@ export function normalizeOrg(item: unknown): QueueOrganization | null {
   if (!item || typeof item !== "object") return null;
   const obj = item as Record<string, unknown>;
   if (obj.organization && typeof obj.organization === "object") {
-    return obj.organization as QueueOrganization;
+    return normalizeOrg(obj.organization);
   }
   if (typeof obj.queueOrganizationUniqueId === "string" || typeof obj.queueOrganizationId === "number") {
     return obj as unknown as QueueOrganization;
+  }
+  if (typeof obj.id === "string" || typeof obj.id === "number" || typeof obj.uuid === "string") {
+    return {
+      ...obj,
+      queueOrganizationUniqueId: String(obj.queueOrganizationUniqueId || obj.id || obj.uuid || ""),
+      queueOrganizationId: Number(obj.queueOrganizationId || (typeof obj.id === "number" ? obj.id : 0)),
+      queueOrganizationName: String(obj.queueOrganizationName || obj.name || "Organization"),
+      queueOrganizationType: (obj.queueOrganizationType || obj.type || "port") as any,
+      queueOrganizationAddress: (obj.queueOrganizationAddress || obj.address || "") as any,
+    } as unknown as QueueOrganization;
   }
   if (obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)) {
     return normalizeOrg(obj.data);
@@ -47,10 +57,13 @@ export function normalizeOrgListItem(item: unknown): QueueOrgListItem | null {
   if (!item || typeof item !== "object") return null;
   const obj = item as Record<string, unknown>;
   if (obj.organization && typeof obj.organization === "object") {
-    return {
-      organization: obj.organization as QueueOrganization,
-      creator: (obj.creator as any) || null,
-    };
+    const org = normalizeOrg(obj.organization);
+    if (org) {
+      return {
+        organization: org,
+        creator: (obj.creator as any) || null,
+      };
+    }
   }
   const org = normalizeOrg(item);
   if (org) {
@@ -367,4 +380,282 @@ export function normalizeQueueEntry(raw: any): DriverQueueEntry {
     shipperRequest,
   };
 }
+
+/** Calculate haversine distance in kilometers between two lat/lng coordinates */
+export function calculateDistanceKm(
+  lat1?: number | string | null,
+  lon1?: number | string | null,
+  lat2?: number | string | null,
+  lon2?: number | string | null
+): number | null {
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return null;
+  const nLat1 = typeof lat1 === "number" ? lat1 : parseFloat(String(lat1));
+  const nLon1 = typeof lon1 === "number" ? lon1 : parseFloat(String(lon1));
+  const nLat2 = typeof lat2 === "number" ? lat2 : parseFloat(String(lat2));
+  const nLon2 = typeof lon2 === "number" ? lon2 : parseFloat(String(lon2));
+
+  if (isNaN(nLat1) || isNaN(nLon1) || isNaN(nLat2) || isNaN(nLon2)) return null;
+  if (nLat1 === 0 && nLon1 === 0) return null;
+  if (nLat2 === 0 && nLon2 === 0) return null;
+
+  const R = 6371; // Earth radius in km
+  const dLat = ((nLat2 - nLat1) * Math.PI) / 180;
+  const dLon = ((nLon2 - nLon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((nLat1 * Math.PI) / 180) *
+      Math.cos((nLat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const dist = R * c;
+  return Math.round(dist * 10) / 10;
+}
+
+/**
+ * Robustly extracts the driver's proposed/bid/counter offer cost across
+ * all possible backend property naming conventions and nested structures.
+ */
+export function extractOfferCost(d: any, parentItem?: any): number | null {
+  if (!d && !parentItem) return null;
+
+  const parseNum = (val: unknown): number | null => {
+    if (val === undefined || val === null || val === "") return null;
+    if (typeof val === "number") return !isNaN(val) && val > 0 ? val : null;
+    if (typeof val === "string") {
+      const clean = parseFloat(val.replace(/[^0-9.]/g, ""));
+      return !isNaN(clean) && clean > 0 ? clean : null;
+    }
+    return null;
+  };
+
+  const scanDirect = (target: any): number | null => {
+    if (!target || typeof target !== "object") return null;
+
+    // 1. High-priority explicit proposed / counter / bid / offer fields
+    const directFields = [
+      target.proposedCostPerVehicle,
+      target.proposed_cost_per_vehicle,
+      target.proposedCost,
+      target.proposed_cost,
+      target.proposedTotalCost,
+      target.proposed_total_cost,
+      target.costPerVehicle,
+      target.cost_per_vehicle,
+      target.counterCost,
+      target.counter_cost,
+      target.counterOffer,
+      target.counter_offer,
+      target.counterPrice,
+      target.counter_price,
+      target.counterAmount,
+      target.offerCost,
+      target.offer_cost,
+      target.offeredCost,
+      target.offered_cost,
+      target.driverOfferCost,
+      target.driver_offer_cost,
+      target.driverProposedCost,
+      target.driver_proposed_cost,
+      target.driverCost,
+      target.driver_cost,
+      target.driverPrice,
+      target.driver_price,
+      target.driverShippingCost,
+      target.driver_shipping_cost,
+      target.shippingCost,
+      target.shipping_cost,
+      target.bidAmount,
+      target.bid_amount,
+      target.bidCost,
+      target.bid_cost,
+      target.biddingCost,
+      target.bidding_cost,
+      target.driverBidAmount,
+      target.bidPrice,
+      target.bid_price,
+      target.bid,
+      target.offer,
+      target.negotiatedCost,
+      target.negotiated_cost,
+      target.negotiatedPrice,
+      target.agreedCost,
+      target.agreed_cost,
+      target.agreedPrice,
+      target.acceptedCost,
+      target.accepted_cost,
+      target.acceptedPrice,
+      target.newCost,
+      target.new_cost,
+      target.updatedCost,
+      target.updated_cost,
+      target.tripCost,
+      target.trip_cost,
+      target.totalCost,
+      target.total_cost,
+      target.fare,
+      target.driverFare,
+      target.charge,
+      target.amount,
+      target.price,
+      target.cost,
+    ];
+
+    for (const f of directFields) {
+      const num = parseNum(f);
+      if (num != null) return num;
+    }
+
+    // 2. Dynamic key check for any key containing cost/bid/offer/counter/price/proposed
+    for (const key of Object.keys(target)) {
+      if (
+        /cost|bid|offer|counter|proposed|negotiat|agreed|price|fare|charge/i.test(key) &&
+        !/status|id|date|name|type|time|mode|photo|email|phone|plate/i.test(key)
+      ) {
+        const val = target[key];
+        if (typeof val === "number" || typeof val === "string") {
+          const num = parseNum(val);
+          if (num != null) return num;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  // 1. Direct and nested scan on d
+  if (d && typeof d === "object") {
+    const directResult = scanDirect(d);
+    if (directResult != null) return directResult;
+
+    // Check nested sub-objects on d
+    const subObjects = [
+      d.bid,
+      d.offer,
+      d.driverRequest,
+      d.companyBid,
+      d.companyBidRequest,
+      d.decision,
+      d.proposal,
+      d.carrierProposal,
+      d.vehicleOfDriver,
+      d.vehicle,
+      d.driver,
+      d.driverUser,
+      d.user,
+      d.details,
+      d.data,
+      d.pivot,
+      d.meta,
+      d.rawDriver,
+    ];
+
+    for (const sub of subObjects) {
+      if (sub && typeof sub === "object") {
+        const num = extractOfferCost(sub);
+        if (num != null) return num;
+      }
+    }
+  }
+
+  // 2. Search related collections or objects on parentItem
+  if (parentItem && typeof parentItem === "object") {
+    // Extract any matching identifiers from d
+    const identifiers = new Set<string>();
+    if (d && typeof d === "object") {
+      [
+        d.userUniqueId,
+        d.driverUserUniqueId,
+        d.userId,
+        d.driverId,
+        d.phoneNumber,
+        d.driverPhoneNumber,
+        d.driverRequestId,
+        d.driverRequestUniqueId,
+        d.vehicleDriverUniqueId,
+        d.vehicleId,
+        d.fullName,
+        d.driverName,
+      ].forEach((id) => {
+        if (id != null && String(id).trim() !== "") {
+          identifiers.add(String(id).trim().toLowerCase());
+        }
+      });
+    }
+
+    const candidateLists = [
+      parentItem.decisions,
+      parentItem.journey,
+      parentItem.bids,
+      parentItem.companyBids,
+      parentItem.driverBids,
+      parentItem.offers,
+      parentItem.proposals,
+      parentItem.carrierProposals,
+      parentItem.counterOffers,
+      parentItem.driverRequests,
+    ];
+
+    for (const list of candidateLists) {
+      if (Array.isArray(list)) {
+        for (const entry of list) {
+          if (!entry || typeof entry !== "object") continue;
+
+          let isMatch = identifiers.size === 0 || list.length === 1;
+          if (!isMatch) {
+            const entryIds = [
+              entry.userUniqueId,
+              entry.driverUserUniqueId,
+              entry.userId,
+              entry.driverId,
+              entry.phoneNumber,
+              entry.driverPhoneNumber,
+              entry.driverRequestId,
+              entry.driverRequestUniqueId,
+              entry.vehicleDriverUniqueId,
+              entry.companyUniqueId,
+              entry.fullName,
+              entry.driverName,
+            ];
+            isMatch = entryIds.some(
+              (id) => id != null && identifiers.has(String(id).trim().toLowerCase())
+            );
+          }
+
+          if (isMatch) {
+            const num = extractOfferCost(entry);
+            if (num != null) return num;
+          }
+        }
+      } else if (list && typeof list === "object") {
+        // e.g. parentItem.journey as a single object
+        const num = extractOfferCost(list);
+        if (num != null) return num;
+      }
+    }
+
+    // Check parentItem.shipperRequest for any updated driver proposed cost
+    if (parentItem.shipperRequest && typeof parentItem.shipperRequest === "object") {
+      const sr = parentItem.shipperRequest;
+      const proposedFields = [
+        sr.proposedCostPerVehicle,
+        sr.proposedCost,
+        sr.driverProposedCost,
+        sr.counterCost,
+        sr.driverCost,
+        sr.agreedCost,
+        sr.negotiatedCost,
+        sr.driverOfferCost,
+      ];
+      for (const pf of proposedFields) {
+        const num = parseNum(pf);
+        if (num != null) return num;
+      }
+    }
+  }
+
+  return null;
+}
+
+
 

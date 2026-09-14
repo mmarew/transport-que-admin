@@ -39,6 +39,28 @@ const resolveServerMsg = (data?: unknown): string | null => {
   if (typeof d.detail === "string" && d.detail.trim()) {
     return d.detail;
   }
+  if (d.details && typeof d.details === "object") {
+    if (Array.isArray(d.details) && d.details.length > 0) {
+      const first = d.details[0];
+      if (typeof first === "string") return first;
+      if (typeof first === "object" && first !== null) {
+        const f = first as Record<string, unknown>;
+        if (typeof f.message === "string" && f.message.trim()) return f.message;
+        if (typeof f.detail === "string" && f.detail.trim()) return f.detail;
+        if (typeof f.error === "string" && f.error.trim()) return f.error;
+      }
+    } else {
+      const firstVal = Object.values(d.details as Record<string, unknown>)[0];
+      if (typeof firstVal === "string") return firstVal;
+    }
+  }
+  if (d.validation && typeof d.validation === "object") {
+    const v = d.validation as Record<string, unknown>;
+    if (Array.isArray(v.keys) && v.keys.length > 0) {
+      return `Validation failed for: ${v.keys.join(", ")}`;
+    }
+    if (typeof v.message === "string") return v.message;
+  }
   if (d.errors && typeof d.errors === "object") {
     if (Array.isArray(d.errors) && d.errors.length > 0) {
       const first = d.errors[0];

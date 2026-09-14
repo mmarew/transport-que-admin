@@ -13,12 +13,12 @@ import {
   Plus,
   Check,
 } from "lucide-react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
 import {
   useListQueueOrganizationsQuery,
   useGetQueueStatusQuery,
+  useCreateQueueOrganizationMutation,
 } from "../../lib/redux/api";
-import { createQueueOrganization } from "../../services/organization.service";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import { QueueBoard } from "../../components/queue/QueueBoard";
 import { CreateOrgModal } from "../../components/queue/CreateOrgModal";
@@ -237,6 +237,8 @@ export function QueueDashboardPage() {
     setSearchParams({}, { replace: true });
   };
 
+  const [createQueueOrgMutation] = useCreateQueueOrganizationMutation();
+
   const handleCreateOrg = async (data: {
     queueOrganizationName: string;
     queueOrganizationType: QueueOrgType;
@@ -245,8 +247,32 @@ export function QueueDashboardPage() {
     longitude: number;
     queueOrganizationPhone?: string | null;
   }) => {
-    await createQueueOrganization(data);
-    refetchOrgs();
+    console.log("[QueueDashboardPage] Creating org:", data);
+    try {
+      const result = await createQueueOrgMutation({
+        queueOrganizationName: data.queueOrganizationName,
+        queueOrganizationType: data.queueOrganizationType,
+        queueOrganizationPhone: data.queueOrganizationPhone || null,
+        queueOrganizationAddress: data.queueOrganizationAddress,
+        latitude: data.latitude != null ? Number(data.latitude) : null,
+        longitude: data.longitude != null ? Number(data.longitude) : null,
+      }).unwrap();
+      console.log("[QueueDashboardPage] Org created:", result);
+    } catch (err: any) {
+      console.error("[QueueDashboardPage] Org creation error:", err);
+      const status =
+        err?.status ||
+        err?.originalStatus ||
+        err?.response?.status;
+      if (status === 409 || Number(status) === 409) {
+        throw Object.assign(new Error(
+          `An organization named "${data.queueOrganizationName}" already exists. Please use a different name.`
+        ), { status: 409 });
+      }
+      throw err;
+    }
+    // The mutation's invalidatesTags: ["QueueOrganizations"] auto-refetches the list.
+    // No need for manual invalidateTags or refetch here.
   };
 
   return (

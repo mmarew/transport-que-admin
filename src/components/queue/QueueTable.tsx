@@ -68,22 +68,37 @@ export function QueueTable({
         shipperRequestCreatedAt: own.shipperRequestCreatedAt ?? null,
         journeyStatusId: own.journeyStatusId ?? null,
         isBiddingApproved: Boolean((own as any).isBiddingApproved),
-        driverRequests: ((own as any).driverRequests || []).map((d: any) => ({
-          ...d,
-          offerCost:
-            d.offerCost ??
-            d.proposedCost ??
-            d.bidAmount ??
-            d.bidCost ??
-            d.biddingCost ??
-            d.cost ??
-            d.price ??
-            null,
-          proposedCost: d.proposedCost ?? d.offerCost ?? d.bidAmount ?? null,
-          bidAmount: d.bidAmount ?? d.proposedCost ?? d.offerCost ?? null,
-          vehicleTypeName: d.vehicleTypeName ?? d.vehicleType ?? null,
-          plateNumber: d.plateNumber ?? d.vehiclePlateNumber ?? null,
-        })),
+        driverRequests: ((own as any).driverRequests || []).map((d: any) => {
+          const ownDecisions: any[] = (own as any).decisions || (entry as any).decisions || [];
+          const matchingDecision =
+            ownDecisions.find(
+              (dec: any) =>
+                (dec.driverRequestId != null && dec.driverRequestId === d.driverRequestId) ||
+                (dec.driverRequestUniqueId && dec.driverRequestUniqueId === d.driverRequestUniqueId) ||
+                (dec.driverUserUniqueId && dec.driverUserUniqueId === d.userUniqueId)
+            ) || (ownDecisions.length === 1 ? ownDecisions[0] : null);
+
+          return {
+            ...d,
+            journeyDecisionUniqueId:
+              d.journeyDecisionUniqueId ||
+              matchingDecision?.journeyDecisionUniqueId ||
+              null,
+            offerCost:
+              d.offerCost ??
+              d.proposedCost ??
+              d.bidAmount ??
+              d.bidCost ??
+              d.biddingCost ??
+              d.cost ??
+              d.price ??
+              null,
+            proposedCost: d.proposedCost ?? d.offerCost ?? d.bidAmount ?? null,
+            bidAmount: d.bidAmount ?? d.proposedCost ?? d.offerCost ?? null,
+            vehicleTypeName: d.vehicleTypeName ?? d.vehicleType ?? null,
+            plateNumber: d.plateNumber ?? d.vehiclePlateNumber ?? null,
+          };
+        }),
       };
     }
     setShipperModal({ phone, name, request });

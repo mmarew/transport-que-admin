@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -14,27 +14,40 @@ import {
   Search,
   ArrowUpDown,
   UserCheck,
+  RefreshCw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useAcceptDriverRequestMutation } from "../../lib/redux/api";
 import { useModalA11y } from "../../hooks/useModalA11y";
-import { formatJourneyStatusLabel } from "../../utils/journeyStatus";
+import { formatJourneyStatusLabel, extractJourneyStatusId } from "../../utils/journeyStatus";
+import {
+  calculateDistanceKm,
+  lookupLocationFromCoordinates,
+  extractOfferCost,
+} from "../../utils/formatters";
+import parseError from "../../utils/parseError";
 import type { OrderDisplayItem, ShipperRequestDriverInfo } from "./OrdersTypes";
 import "./DriverBidsModal.css";
 
 interface DriverBidsModalProps {
   order: OrderDisplayItem;
   queueOrganizationUniqueId: string;
+  driverRequests?: ShipperRequestDriverInfo[];
   onClose: () => void;
   onOrderUpdated?: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export function DriverBidsModal({
   order,
   queueOrganizationUniqueId,
+  driverRequests: initialRequests,
   onClose,
   onOrderUpdated,
+  onRefresh,
+  isRefreshing = false,
 }: DriverBidsModalProps) {
   const { t } = useTranslation();
   const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
@@ -43,10 +56,21 @@ export function DriverBidsModal({
   const [acceptingDriverId, setAcceptingDriverId] = useState<string | null>(null);
   const [acceptedDriverIds, setAcceptedDriverIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"lowest-price" | "highest-price" | "name" | "default">("lowest-price");
+  const [sortBy, setSortBy] = useState<
+    "nearest" | "lowest-price" | "highest-price" | "name" | "default"
+  >("nearest");
   const [displayLimit, setDisplayLimit] = useState<number>(25);
 
-  const driverRequests: ShipperRequestDriverInfo[] = order.driverRequests || [];
+  useEffect(() => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  }, []);
+
+  const driverRequests: ShipperRequestDriverInfo[] =
+    initialRequests && initialRequests.length > 0
+      ? initialRequests
+      : order.driverRequests || [];
 
   const filteredAndSortedDrivers = useMemo(() => {
     let list = [...driverRequests];
@@ -58,28 +82,57 @@ export function DriverBidsModal({
         const phone = (d.phoneNumber || "").toLowerCase();
         const veh = (d.vehicleTypeName || "").toLowerCase();
         const plate = (d.plateNumber || "").toLowerCase();
-        return name.includes(q) || phone.includes(q) || veh.includes(q) || plate.includes(q);
+        const place = (d.currentPlace || "").toLowerCase();
+        return (
+          name.includes(q) ||
+          phone.includes(q) ||
+          veh.includes(q) ||
+          plate.includes(q) ||
+          place.includes(q)
+        );
       });
     }
 
-    if (sortBy === "lowest-price") {
+    if (sortBy === "nearest") {
       list.sort((a, b) => {
-        const priceA = Number(a.offerCost ?? a.proposedCost ?? a.bidAmount ?? order.cost);
-        const priceB = Number(b.offerCost ?? b.proposedCost ?? b.bidAmount ?? order.cost);
-        return priceA - priceB;
+        const distA =
+          a.distanceKm ??
+          calculateDistanceKm(
+            order.originLatitude,
+            order.originLongitude,
+            a.latitude,
+            a.longitude
+          ) ??
+          999999;
+        const distB =
+          b.distanceKm ??
+          calculateDistanceKm(
+            order.originLatitude,
+            order.originLongitude,
+            b.latitude,
+            b.longitude
+          ) ??
+          999999;
+        return distA - distB;
+      });
+    } else if (sortBy === "lowest-price") {
+      list.sort((a, b) => {
+        const costA = Number(a.offerCost ?? a.proposedCost ?? a.bidAmount ?? extractOfferCost(a) ?? order.cost);
+        const costB = Number(b.offerCost ?? b.proposedCost ?? b.bidAmount ?? extractOfferCost(b) ?? order.cost);
+        return costA - costB;
       });
     } else if (sortBy === "highest-price") {
       list.sort((a, b) => {
-        const priceA = Number(a.offerCost ?? a.proposedCost ?? a.bidAmount ?? order.cost);
-        const priceB = Number(b.offerCost ?? b.proposedCost ?? b.bidAmount ?? order.cost);
-        return priceB - priceA;
+        const costA = Number(a.offerCost ?? a.proposedCost ?? a.bidAmount ?? extractOfferCost(a) ?? order.cost);
+        const costB = Number(b.offerCost ?? b.proposedCost ?? b.bidAmount ?? extractOfferCost(b) ?? order.cost);
+        return costB - costA;
       });
     } else if (sortBy === "name") {
       list.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
     }
 
     return list;
-  }, [driverRequests, searchTerm, sortBy, order.cost]);
+  }, [driverRequests, searchTerm, sortBy, order.cost, order.originLatitude, order.originLongitude]);
 
   const visibleDrivers = useMemo(() => {
     if (displayLimit <= 0) return filteredAndSortedDrivers;
@@ -89,37 +142,109 @@ export function DriverBidsModal({
   const hasAnyAcceptedDriver = useMemo(() => {
     return (
       acceptedDriverIds.size > 0 ||
-      driverRequests.some(
-        (d) =>
-          d.journeyStatusId === 4 ||
-          d.journeyStatusId === 5 ||
-          d.journeyStatusId === 6 ||
-          d.journeyStatusId === 7 ||
-          d.journeyStatusId === 8 ||
-          d.journeyStatusId === 9 ||
+      driverRequests.some((d) => {
+        const sid = extractJourneyStatusId(
+          d.journeyStatusId ?? d.journeyStatus ?? (d as any).status
+        );
+        return (
+          (typeof sid === "number" && sid >= 4 && sid <= 9) ||
           d.journeyStatus === "acceptedByShipper"
-      )
+        );
+      })
     );
   }, [acceptedDriverIds, driverRequests]);
 
   const handleAcceptDriver = async (driver: ShipperRequestDriverInfo) => {
+    const rawDriver = driver as any;
     const driverKey =
       driver.userUniqueId ||
+      rawDriver.driverUserUniqueId ||
       driver.phoneNumber ||
+      rawDriver.driverPhoneNumber ||
       String(driver.driverRequestId || driver.driverRequestUniqueId || "");
     if (!driverKey) return;
 
+    const isUUID = (val?: unknown): val is string =>
+      typeof val === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+
+    // Defensively resolve actual valid UUID for the order/shipperRequest
+    const candidateReqIds = [
+      order.id,
+      (order as any).shipperRequestUniqueId,
+      (order.rawItem as any)?.shipperRequestUniqueId,
+      (order.rawItem as any)?.shipperRequest?.shipperRequestUniqueId,
+      (order.rawItem as any)?.shipper_request_unique_id,
+      rawDriver.shipperRequestUniqueId,
+      rawDriver.shipper_request_unique_id,
+      driver.driverRequestUniqueId,
+    ];
+    const resolvedShipperRequestUniqueId = candidateReqIds.find(isUUID) || order.id;
+
+    // Defensively resolve actual valid UUID for the queue organization
+    const candidateOrgIds = [
+      order.queueOrganizationUniqueId,
+      queueOrganizationUniqueId,
+      (order.rawItem as any)?.queueOrganizationUniqueId,
+      (order.rawItem as any)?.shipperRequest?.queueOrganizationUniqueId,
+      (order.rawItem as any)?.queue_organization_unique_id,
+      rawDriver.queueOrganizationUniqueId,
+    ];
+    const resolvedQueueOrgId = candidateOrgIds.find(isUUID) || order.queueOrganizationUniqueId || queueOrganizationUniqueId || "";
+
+    // Defensively resolve vehicleTypeUniqueId
+    const candidateVehicleTypeIds = [
+      order.vehicleTypeUniqueId,
+      (order.rawItem as any)?.vehicleTypeUniqueId,
+      (order.rawItem as any)?.shipperRequest?.vehicleTypeUniqueId,
+      (order.rawItem as any)?.vehicle_type_unique_id,
+      rawDriver.vehicleTypeUniqueId,
+    ];
+    const resolvedVehicleTypeId = candidateVehicleTypeIds.find(isUUID) || order.vehicleTypeUniqueId || undefined;
+
+    // Resolve journeyDecisionUniqueId from driver or order decisions
+    const orderDecisions: any[] =
+      order.decisions ||
+      (order.rawItem as any)?.decisions ||
+      [];
+    const matchingDecision =
+      orderDecisions.find(
+        (dec: any) =>
+          (dec.driverRequestId != null && dec.driverRequestId === driver.driverRequestId) ||
+          (dec.driverRequestUniqueId && dec.driverRequestUniqueId === driver.driverRequestUniqueId) ||
+          (dec.driverUserUniqueId && dec.driverUserUniqueId === driver.userUniqueId)
+      ) || (orderDecisions.length === 1 ? orderDecisions[0] : null);
+
+    const resolvedJourneyDecisionUniqueId =
+      driver.journeyDecisionUniqueId ||
+      rawDriver.journeyDecisionUniqueId ||
+      matchingDecision?.journeyDecisionUniqueId ||
+      undefined;
+
     setAcceptingDriverId(driverKey);
     try {
+      console.log("[DriverBidsModal] Accepting driver:", {
+        resolvedQueueOrgId,
+        resolvedShipperRequestUniqueId,
+        driverPhoneNumber: driver.phoneNumber || rawDriver.driverPhoneNumber,
+        driverUserUniqueId: driver.userUniqueId || rawDriver.driverUserUniqueId,
+        driverRequestId: driver.driverRequestId || rawDriver.driverRequestId,
+        driverRequestUniqueId: driver.driverRequestUniqueId || rawDriver.driverRequestUniqueId,
+        journeyDecisionUniqueId: resolvedJourneyDecisionUniqueId,
+        queueUniqueId: rawDriver.queueUniqueId || rawDriver.driverQueueUniqueId,
+        vehicleTypeUniqueId: resolvedVehicleTypeId,
+      });
+
       await acceptDriverMutation({
-        queueOrganizationUniqueId:
-          order.queueOrganizationUniqueId || queueOrganizationUniqueId,
-        shipperRequestUniqueId: order.id,
-        driverPhoneNumber: driver.phoneNumber || undefined,
-        driverUserUniqueId: driver.userUniqueId || undefined,
-        driverRequestId: driver.driverRequestId,
-        driverRequestUniqueId: driver.driverRequestUniqueId,
-        vehicleTypeUniqueId: order.vehicleTypeUniqueId || undefined,
+        queueOrganizationUniqueId: resolvedQueueOrgId,
+        shipperRequestUniqueId: resolvedShipperRequestUniqueId,
+        driverPhoneNumber: driver.phoneNumber || rawDriver.driverPhoneNumber || undefined,
+        driverUserUniqueId: driver.userUniqueId || rawDriver.driverUserUniqueId || undefined,
+        driverRequestId: driver.driverRequestId || rawDriver.driverRequestId || undefined,
+        driverRequestUniqueId: driver.driverRequestUniqueId || rawDriver.driverRequestUniqueId || undefined,
+        journeyDecisionUniqueId: resolvedJourneyDecisionUniqueId,
+        queueUniqueId: rawDriver.queueUniqueId || rawDriver.driverQueueUniqueId || undefined,
+        vehicleTypeUniqueId: resolvedVehicleTypeId,
       }).unwrap();
 
       setAcceptedDriverIds((prev) => new Set([...prev, driverKey]));
@@ -131,12 +256,8 @@ export function DriverBidsModal({
       }
     } catch (err: any) {
       console.error("Failed to accept driver request:", err);
-      const errMsg =
-        err?.data?.message ||
-        err?.error ||
-        err?.message ||
-        t("orders.failedToAcceptDriver", "Failed to accept driver request");
-      toast.error(errMsg);
+      console.error("Backend error response payload:", err?.data);
+      toast.error(parseError(err));
     } finally {
       setAcceptingDriverId(null);
     }
@@ -200,14 +321,28 @@ export function DriverBidsModal({
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            className="orders-modal-close"
-            onClick={onClose}
-            aria-label={t("common.close", "Close")}
-          >
-            <X size={18} />
-          </button>
+          <div className="dbm-header-actions">
+            {onRefresh && (
+              <button
+                type="button"
+                className="dbm-btn-refresh"
+                onClick={onRefresh}
+                title={t("common.refresh", "Refresh")}
+                disabled={isRefreshing}
+              >
+                <RefreshCw size={13} className={isRefreshing ? "dbm-spin" : ""} />
+                <span>{t("common.refresh", "Refresh")}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="orders-modal-close"
+              onClick={onClose}
+              aria-label={t("common.close", "Close")}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Order Summary Banner */}
@@ -314,6 +449,9 @@ export function DriverBidsModal({
                     onChange={(e) => setSortBy(e.target.value as any)}
                     aria-label={t("orders.sortBy", "Sort by")}
                   >
+                    <option value="nearest">
+                      {t("orders.nearestFirst", "Nearest Distance First")}
+                    </option>
                     <option value="lowest-price">
                       {t("orders.lowestPriceFirst", "Lowest Offer First")}
                     </option>
@@ -406,10 +544,56 @@ export function DriverBidsModal({
                   driver.phoneNumber ||
                   String(driver.driverRequestId || driver.driverRequestUniqueId || idx);
                 const isAccepting = acceptingDriverId === driverKey;
+
+                const statusId = extractJourneyStatusId(
+                  driver.journeyStatusId ?? driver.journeyStatus ?? (driver as any).status
+                );
+                const isDriverAccepted = statusId === 3;
+                const isShipperAccepted =
+                  typeof statusId === "number" && statusId >= 4 && statusId <= 9;
+                const isDriverRequested = statusId === 2;
+
                 const isAccepted =
                   acceptedDriverIds.has(driverKey) ||
-                  driver.journeyStatusId === 4 ||
+                  isShipperAccepted ||
                   driver.journeyStatus === "acceptedByShipper";
+
+                const directCost = extractOfferCost(driver, (order as any).rawItem || order);
+                const driverOfferVal =
+                  driver.offerCost != null && Number(driver.offerCost) > 0
+                    ? Number(driver.offerCost)
+                    : driver.proposedCost != null && Number(driver.proposedCost) > 0
+                    ? Number(driver.proposedCost)
+                    : driver.bidAmount != null && Number(driver.bidAmount) > 0
+                    ? Number(driver.bidAmount)
+                    : directCost;
+
+                const hasDriverOffer = Boolean(
+                  (driverOfferVal != null && driverOfferVal > 0) ||
+                  isDriverAccepted ||
+                  isShipperAccepted
+                );
+
+                const offerVal = Number(
+                  driverOfferVal != null && driverOfferVal > 0
+                    ? driverOfferVal
+                    : order.cost
+                );
+
+                const driverDist =
+                  driver.distanceKm ??
+                  calculateDistanceKm(
+                    order.originLatitude,
+                    order.originLongitude,
+                    driver.latitude,
+                    driver.longitude
+                  );
+
+                const driverLoc =
+                  driver.currentPlace ||
+                  (driver.latitude && driver.longitude
+                    ? lookupLocationFromCoordinates(driver.latitude, driver.longitude)
+                    : null);
 
                 return (
                   <div
@@ -425,11 +609,9 @@ export function DriverBidsModal({
                         <span className="dbm-driver-name">
                           {driver.fullName || t("orders.waitingDriver", "Driver")}
                         </span>
-                        {typeof driver.journeyStatusId === "number" && (
-                          <span
-                            className={`dbm-status-badge status-${driver.journeyStatusId}`}
-                          >
-                            {formatJourneyStatusLabel(driver.journeyStatusId)}
+                        {statusId != null && (
+                          <span className={`dbm-status-badge status-${statusId}`}>
+                            {formatJourneyStatusLabel(statusId)}
                           </span>
                         )}
                       </div>
@@ -450,52 +632,69 @@ export function DriverBidsModal({
                           {driver.vehicleTypeName || order.vehicleType}
                           {driver.plateNumber && ` • ${driver.plateNumber}`}
                         </span>
+
+                        {/* Driver Proximity & Location Tag */}
+                        {(driverLoc || driverDist != null) && (
+                          <span
+                            className="dbm-driver-location-tag"
+                            title={
+                              driverDist != null
+                                ? `${driverLoc ? driverLoc + " • " : ""}${driverDist} km from pickup`
+                                : driverLoc || ""
+                            }
+                          >
+                            <MapPin size={12} className="dbm-loc-pin" />
+                            {driverLoc && <span className="dbm-loc-name">{driverLoc}</span>}
+                            {driverDist != null && (
+                              <span className="dbm-dist-badge">
+                                {driverDist} km {t("orders.fromPickup", "from pickup")}
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     {/* Driver Offer Cost */}
                     <div className="dbm-driver-offer-col">
                       <span className="dbm-offer-tag-label">
-                        {t("orders.driverOfferCost", "Driver Offer Cost")}
+                        {hasDriverOffer
+                          ? t("orders.driverOfferCost", "Driver Offer Cost")
+                          : t("orders.targetCostLabel", "Shipper Target Cost")}
                       </span>
                       <span className="dbm-offer-amount">
-                        {Number(
-                          driver.offerCost ??
-                            driver.proposedCost ??
-                            driver.bidAmount ??
-                            order.cost
-                        ).toLocaleString()}{" "}
+                        {offerVal.toLocaleString()}{" "}
                         <small className="dbm-offer-currency">ETB</small>
                       </span>
-                      {order.cost > 0 && (() => {
-                        const offerVal = Number(
-                          driver.offerCost ??
-                            driver.proposedCost ??
-                            driver.bidAmount ??
-                            order.cost
-                        );
-                        if (offerVal === order.cost) {
-                          return (
-                            <span className="dbm-offer-target-diff dbm-offer-target-diff--match">
-                              {t("orders.matchesShipperTarget", "Matches Shipper Target")}
-                            </span>
-                          );
-                        } else if (offerVal < order.cost) {
-                          const diff = order.cost - offerVal;
-                          return (
-                            <span className="dbm-offer-target-diff dbm-offer-target-diff--below">
-                              -{diff.toLocaleString()} ETB {t("orders.belowTarget", "below target")}
-                            </span>
-                          );
-                        } else {
-                          const diff = offerVal - order.cost;
-                          return (
-                            <span className="dbm-offer-target-diff dbm-offer-target-diff--above">
-                              +{diff.toLocaleString()} ETB {t("orders.aboveTarget", "above target")}
-                            </span>
-                          );
-                        }
-                      })()}
+                      {!hasDriverOffer ? (
+                        <span className="dbm-offer-target-diff dbm-offer-target-diff--pending">
+                          {t("orders.noBidYet", "No driver bid yet")}
+                        </span>
+                      ) : (
+                        order.cost > 0 && (() => {
+                          if (offerVal === order.cost) {
+                            return (
+                              <span className="dbm-offer-target-diff dbm-offer-target-diff--match">
+                                {t("orders.matchesShipperTarget", "Matches Shipper Target")}
+                              </span>
+                            );
+                          } else if (offerVal < order.cost) {
+                            const diff = order.cost - offerVal;
+                            return (
+                              <span className="dbm-offer-target-diff dbm-offer-target-diff--below">
+                                -{diff.toLocaleString()} ETB {t("orders.belowTarget", "below target")}
+                              </span>
+                            );
+                          } else {
+                            const diff = offerVal - order.cost;
+                            return (
+                              <span className="dbm-offer-target-diff dbm-offer-target-diff--above">
+                                +{diff.toLocaleString()} ETB {t("orders.aboveTarget", "above target")}
+                              </span>
+                            );
+                          }
+                        })()
+                      )}
                     </div>
 
                     <div className="dbm-bid-actions">
@@ -513,6 +712,17 @@ export function DriverBidsModal({
                           )}
                         >
                           {t("orders.notSelected", "Not Selected")}
+                        </span>
+                      ) : isDriverRequested && !isDriverAccepted ? (
+                        <span
+                          className="dbm-btn-awaiting-driver"
+                          title={t(
+                            "orders.driverRequestedTooltip",
+                            "Driver has been requested but has not accepted yet"
+                          )}
+                        >
+                          <Clock size={13} />
+                          <span>{t("orders.awaitingDriverResponse", "Awaiting Driver")}</span>
                         </span>
                       ) : (
                         <button
