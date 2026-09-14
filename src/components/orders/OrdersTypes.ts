@@ -1,4 +1,5 @@
 import type { ShipperRequestDriverInfo } from "../queue/ShipperRequestsModal";
+import { extractJourneyStatusId } from "../../utils/journeyStatus";
 export type { ShipperRequestDriverInfo };
 
 export interface OrderDisplayItem {
@@ -25,6 +26,8 @@ export interface OrderDisplayItem {
   quintal: number;
   cost: number;
   status: "ongoing" | "complete";
+  journeyStatusId?: number;
+  journeyStatus?: string;
   phone?: string;
   createdAt?: string;
   isBiddingApproved?: boolean;
@@ -124,4 +127,170 @@ export function formatTrimmedRoute(origin?: string, destination?: string): strin
   if (orig.toLowerCase() === dest.toLowerCase()) return orig;
   return `${orig} → ${dest}`;
 }
+
+export interface ConnectedJourneyInfo {
+  isConnected: boolean;
+  statusId?: number;
+  label: string;
+  type: "completed" | "journey-started" | "in-transit" | "loaded" | "loading" | "accepted" | "none";
+}
+
+export function getConnectedJourneyStatus(order: OrderDisplayItem): ConnectedJourneyInfo {
+  const sid = extractJourneyStatusId(order.journeyStatusId ?? order.journeyStatus);
+
+  if (sid === 9 || sid === 14) {
+    return { isConnected: true, statusId: sid, label: "Completed", type: "completed" };
+  }
+  if (sid === 8) {
+    return { isConnected: true, statusId: 8, label: "Journey Started", type: "journey-started" };
+  }
+  if (sid === 7) {
+    return { isConnected: true, statusId: 7, label: "Loaded", type: "loaded" };
+  }
+  if (sid === 6) {
+    return { isConnected: true, statusId: 6, label: "Loading", type: "loading" };
+  }
+  if (sid === 5) {
+    return { isConnected: true, statusId: 5, label: "Heading to Load", type: "loading" };
+  }
+  if (sid === 4) {
+    return { isConnected: true, statusId: 4, label: "Accepted", type: "accepted" };
+  }
+  if (sid === 3) {
+    return { isConnected: true, statusId: 3, label: "Driver Accepted", type: "accepted" };
+  }
+
+  if (order.status === "complete") {
+    return {
+      isConnected: true,
+      statusId: 9,
+      label: "Completed",
+      type: "completed",
+    };
+  }
+
+  const acceptedDriver = order.driverRequests?.find((d) => {
+    const dsid = extractJourneyStatusId(d.journeyStatusId ?? d.journeyStatus ?? (d as any).status);
+    return (typeof dsid === "number" && dsid >= 3 && dsid <= 9) || d.journeyStatus === "acceptedByShipper";
+  });
+
+  if (acceptedDriver) {
+    const dsid = extractJourneyStatusId(acceptedDriver.journeyStatusId ?? acceptedDriver.journeyStatus ?? (acceptedDriver as any).status) ?? 4;
+    if (dsid === 9 || dsid === 14) {
+      return { isConnected: true, statusId: dsid, label: "Completed", type: "completed" };
+    }
+    if (dsid === 8) {
+      return { isConnected: true, statusId: dsid, label: "Journey Started", type: "journey-started" };
+    }
+    if (dsid === 7) {
+      return { isConnected: true, statusId: dsid, label: "Loaded", type: "loaded" };
+    }
+    if (dsid === 6) {
+      return { isConnected: true, statusId: dsid, label: "Loading", type: "loading" };
+    }
+    if (dsid === 5) {
+      return { isConnected: true, statusId: dsid, label: "Heading to Load", type: "loading" };
+    }
+    if (dsid === 4) {
+      return { isConnected: true, statusId: dsid, label: "Accepted", type: "accepted" };
+    }
+    if (dsid === 3) {
+      return { isConnected: true, statusId: dsid, label: "Driver Accepted", type: "accepted" };
+    }
+    return { isConnected: true, statusId: dsid, label: "Accepted", type: "accepted" };
+  }
+
+  return { isConnected: false, label: "", type: "none" };
+}
+
+export interface OrderBatchGroup {
+  batchKey: string;
+  batchId?: string | number | null;
+  isMultiVehicle: boolean;
+  totalVehicles: number;
+  orders: OrderDisplayItem[];
+  displayId: string;
+  shipper: string;
+  type: "Individual" | "Group";
+  vehicleType: string;
+  item: string;
+  origin: string;
+  destination: string;
+  totalQuintal: number;
+  totalCost: number;
+  isBiddingApproved: boolean;
+  statusSummary: ConnectedJourneyInfo;
+}
+
+export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[] {
+  const groups: OrderBatchGroup[] = [];
+  const map = new Map<string, OrderDisplayItem[]>();
+  const orderOfBatches: string[] = [];
+
+  for (const order of orders) {
+    const key =
+      order.batchId != null && String(order.batchId).trim() !== ""
+        ? `batch-${order.batchId}`
+        : `order-${order.id}`;
+
+    if (!map.has(key)) {
+      map.set(key, []);
+      orderOfBatches.push(key);
+    }
+    map.get(key)!.push(order);
+  }
+
+  for (const key of orderOfBatches) {
+    const batchOrders = map.get(key)!;
+    const first = batchOrders[0];
+    const isMultiVehicle = batchOrders.length > 1;
+    const batchId = first.batchId;
+
+    const totalQuintal = batchOrders.reduce((sum, o) => sum + (o.quintal || 0), 0);
+    const totalCost = batchOrders.reduce((sum, o) => sum + (o.cost || 0), 0);
+
+    const displayId =
+      isMultiVehicle && batchId
+        ? `#${batchId}`
+        : first.displayId || `#${first.id}`;
+
+    const allCompleted = batchOrders.every(
+      (o) => getConnectedJourneyStatus(o).type === "completed"
+    );
+
+    let statusSummary: ConnectedJourneyInfo;
+    if (allCompleted) {
+      statusSummary = { isConnected: true, statusId: 9, label: "Completed", type: "completed" };
+    } else {
+      const active = batchOrders.find((o) => getConnectedJourneyStatus(o).isConnected);
+      if (active) {
+        statusSummary = getConnectedJourneyStatus(active);
+      } else {
+        statusSummary = { isConnected: false, label: "", type: "none" };
+      }
+    }
+
+    groups.push({
+      batchKey: key,
+      batchId,
+      isMultiVehicle,
+      totalVehicles: batchOrders.length,
+      orders: batchOrders,
+      displayId,
+      shipper: first.shipper,
+      type: first.type,
+      vehicleType: first.vehicleType,
+      item: first.item,
+      origin: first.origin,
+      destination: first.destination,
+      totalQuintal,
+      totalCost,
+      isBiddingApproved: batchOrders.some((o) => o.isBiddingApproved),
+      statusSummary,
+    });
+  }
+
+  return groups;
+}
+
 

@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       const isComplete = Boolean(
         req?.isCompleted ||
         statusId === 9 ||
-        statusId === 6 ||
+        statusId === 14 ||
         String(req?.status || "").toLowerCase() === "completed" ||
         String(req?.status || "").toLowerCase() === "delivered" ||
         String(req?.requestStatus || "").toLowerCase() === "completed"

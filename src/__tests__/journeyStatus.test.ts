@@ -9,6 +9,8 @@ import {
   JOURNEY_STATUS_NAMES,
   JOURNEY_STATUS_LABELS,
 } from "../utils/journeyStatus";
+import { getConnectedJourneyStatus, groupOrdersByBatch } from "../components/orders/OrdersTypes";
+import type { OrderDisplayItem } from "../components/orders/OrdersTypes";
 
 describe("Journey Status utility", () => {
   it("provides valid status name and label lookup maps", () => {
@@ -75,4 +77,159 @@ describe("Journey Status utility", () => {
     expect(mapJourneyStatusToQueueStatus(9)).toBe("completed");
     expect(mapJourneyStatusToQueueStatus(10)).toBe("removed");
   });
+
+  it("identifies connected journey statuses accurately", () => {
+    const baseOrder: OrderDisplayItem = {
+      id: "1",
+      displayId: "#1",
+      shipper: "Test Shipper",
+      origin: "Addis Ababa",
+      destination: "Hawassa",
+      cost: 1000,
+      quintal: 50,
+      vehicleType: "ISUZU",
+      item: "cement",
+      type: "Individual" as const,
+      status: "ongoing" as const,
+    };
+
+    // Open order with no drivers
+    expect(getConnectedJourneyStatus(baseOrder)).toEqual({
+      isConnected: false,
+      label: "",
+      type: "none",
+    });
+
+    // Completed order
+    expect(getConnectedJourneyStatus({ ...baseOrder, status: "complete" })).toEqual({
+      isConnected: true,
+      statusId: 9,
+      label: "Completed",
+      type: "completed",
+    });
+
+    // In transit / Journey Started
+    expect(getConnectedJourneyStatus({ ...baseOrder, journeyStatusId: 8 })).toEqual({
+      isConnected: true,
+      statusId: 8,
+      label: "Journey Started",
+      type: "journey-started",
+    });
+
+    // Loading / Loaded
+    expect(getConnectedJourneyStatus({ ...baseOrder, journeyStatusId: 6 })).toEqual({
+      isConnected: true,
+      statusId: 6,
+      label: "Loading",
+      type: "loading",
+    });
+    expect(getConnectedJourneyStatus({ ...baseOrder, journeyStatusId: 7 })).toEqual({
+      isConnected: true,
+      statusId: 7,
+      label: "Loaded",
+      type: "loaded",
+    });
+
+    // Accepted via driverRequests list
+    expect(
+      getConnectedJourneyStatus({
+        ...baseOrder,
+        driverRequests: [
+          { driverRequestId: 101, journeyStatusId: 4 },
+        ],
+      })
+    ).toEqual({
+      isConnected: true,
+      statusId: 4,
+      label: "Accepted",
+      type: "accepted",
+    });
+  });
+
+  it("groups orders by batch correctly", () => {
+    const multiVehicleOrders: OrderDisplayItem[] = [
+      {
+        id: "req-618",
+        shipperRequestId: 618,
+        batchId: "503",
+        displayId: "#503/618",
+        shipper: "Dangote Cement",
+        origin: "Mojo",
+        destination: "Addis Ababa",
+        cost: 10000,
+        quintal: 200,
+        vehicleType: "Heavy Truck",
+        item: "Cement",
+        type: "Group",
+        status: "complete",
+      },
+      {
+        id: "req-619",
+        shipperRequestId: 619,
+        batchId: "503",
+        displayId: "#503/619",
+        shipper: "Dangote Cement",
+        origin: "Mojo",
+        destination: "Addis Ababa",
+        cost: 10000,
+        quintal: 200,
+        vehicleType: "Heavy Truck",
+        item: "Cement",
+        type: "Group",
+        status: "complete",
+      },
+      {
+        id: "req-620",
+        shipperRequestId: 620,
+        batchId: "503",
+        displayId: "#503/620",
+        shipper: "Dangote Cement",
+        origin: "Mojo",
+        destination: "Addis Ababa",
+        cost: 10000,
+        quintal: 200,
+        vehicleType: "Heavy Truck",
+        item: "Cement",
+        type: "Group",
+        status: "complete",
+      },
+      {
+        id: "req-621",
+        shipperRequestId: 621,
+        batchId: "504",
+        displayId: "#504/621",
+        shipper: "National Cement",
+        origin: "Dire Dawa",
+        destination: "Harar",
+        cost: 15000,
+        quintal: 300,
+        vehicleType: "Trailer",
+        item: "Clinker",
+        type: "Individual",
+        status: "complete",
+      },
+    ];
+
+    const groups = groupOrdersByBatch(multiVehicleOrders);
+    expect(groups).toHaveLength(2);
+
+    // First group: Batch 503 (3 trucks)
+    const batch503 = groups[0];
+    expect(batch503.isMultiVehicle).toBe(true);
+    expect(batch503.totalVehicles).toBe(3);
+    expect(batch503.displayId).toBe("#503");
+    expect(batch503.totalCost).toBe(30000);
+    expect(batch503.totalQuintal).toBe(600);
+    expect(batch503.statusSummary.type).toBe("completed");
+    expect(batch503.orders).toHaveLength(3);
+
+    // Second group: Batch 504 (single truck)
+    const batch504 = groups[1];
+    expect(batch504.isMultiVehicle).toBe(false);
+    expect(batch504.totalVehicles).toBe(1);
+    expect(batch504.displayId).toBe("#504/621");
+    expect(batch504.totalCost).toBe(15000);
+    expect(batch504.totalQuintal).toBe(300);
+  });
 });
+

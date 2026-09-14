@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -9,6 +9,11 @@ import {
   useListQueueOrganizationsQuery,
   useGetShipperRequestsQuery,
 } from "../../lib/redux/api";
+import {
+  connectSocket,
+  subscribeToQueue,
+  unsubscribeFromQueue,
+} from "../../lib/socket";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import {
   normalizeOrgList,
@@ -16,6 +21,7 @@ import {
   lookupLocationFromCoordinates,
   extractOfferCost,
 } from "../../utils/formatters";
+import { extractJourneyStatusId, getJourneyStatusName } from "../../utils/journeyStatus";
 import { OrdersTable } from "../../components/orders/OrdersTable";
 import { OrdersMobileCards } from "../../components/orders/OrdersMobileCards";
 import { OrdersPagination } from "../../components/orders/OrdersPagination";
@@ -58,14 +64,11 @@ export function OrdersPage() {
   const {
     data: backendOrdersData,
     isLoading: isLoadingOrders,
-    isFetching: isFetchingOrders,
     refetch: refetchOrders,
   } = useGetShipperRequestsQuery(
     { queueOrganizationUniqueId: activeOrg?.queueOrganizationUniqueId || "", target: "all", limit: 100 },
     {
       skip: !activeOrg?.queueOrganizationUniqueId,
-      pollingInterval: 8000,
-      refetchOnFocus: true,
       refetchOnReconnect: true,
     }
   );
@@ -81,6 +84,19 @@ export function OrdersPage() {
   const [viewingRequestsOrder, setViewingRequestsOrder] = useState<OrderDisplayItem | null>(null);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
   const [editedOrders, setEditedOrders] = useState<Record<string, OrderDisplayItem>>({});
+
+  // Live WebSocket subscription for orders (real-time updates via RTK Query tag invalidation)
+  useEffect(() => {
+    const orgId = activeOrg?.queueOrganizationUniqueId;
+    if (!orgId) return;
+
+    connectSocket();
+    subscribeToQueue(orgId);
+
+    return () => {
+      unsubscribeFromQueue(orgId);
+    };
+  }, [activeOrg?.queueOrganizationUniqueId]);
 
   // Derive orders from backend data
   const orders = useMemo<OrderDisplayItem[]>(() => {
@@ -168,12 +184,12 @@ export function OrdersPage() {
           !isNaN(Number(resolvedBatchId));
 
         let displayId = "";
-        if (hasReqId && hasBatchId) {
-          displayId = `#${resolvedShipperRequestId}/${resolvedBatchId}`;
-        } else if (hasReqId) {
-          displayId = `#${resolvedShipperRequestId}`;
+        if (hasBatchId && hasReqId) {
+          displayId = `#${resolvedBatchId}/${resolvedShipperRequestId}`;
         } else if (hasBatchId) {
           displayId = `#${resolvedBatchId}`;
+        } else if (hasReqId) {
+          displayId = `#${resolvedShipperRequestId}`;
         } else {
           displayId = `#${idx + 1}`;
         }
@@ -183,18 +199,6 @@ export function OrdersPage() {
         const batchIdDisplay = hasBatchId ? String(resolvedBatchId) : null;
         const fullRequestId = String(resolvedShipperRequestId ?? (idx + 1));
         const fullBatchId = hasBatchId ? String(resolvedBatchId) : null;
-
-        const isComplete = Boolean(
-          req.isCompleted ||
-          (item as any).isCompleted ||
-          req.journeyStatusId === 9 ||
-          req.journeyStatusId === 6 ||
-          (item as any).journeyStatusId === 9 ||
-          (item as any).journeyStatusId === 6 ||
-          String(req.status || (item as any).status || "").toLowerCase() === "completed" ||
-          String(req.status || (item as any).status || "").toLowerCase() === "delivered" ||
-          String(req.requestStatus || (item as any).requestStatus || "").toLowerCase() === "completed"
-        );
 
         const rawDecisions: any[] =
           (Array.isArray((item as any).decisions) ? (item as any).decisions : []) ||
@@ -229,6 +233,41 @@ export function OrdersPage() {
           req.originLongitude ??
           (item as any).originLongitude ??
           (activeOrg?.longitude != null ? activeOrg.longitude : null);
+
+        const rawStatusCandidate =
+          req.journeyStatusId ??
+          (item as any).journeyStatusId ??
+          (req as any).journey_status_id ??
+          (item as any).journey_status_id ??
+          (req as any).statusId ??
+          (item as any).statusId;
+
+        const acceptedDriverInRequests = rawDriverRequests.find((d: any) => {
+          const sid = extractJourneyStatusId(d.journeyStatusId ?? d.journeyStatus ?? (d as any).status);
+          return (typeof sid === "number" && sid >= 3 && sid <= 9) || d.journeyStatus === "acceptedByShipper";
+        });
+
+        const acceptedDecision = rawDecisions.find((dec: any) => {
+          const sid = extractJourneyStatusId(dec.journeyStatusId ?? dec.journeyDecisionStatus);
+          return (typeof sid === "number" && sid >= 3 && sid <= 9) || dec.journeyDecisionStatus === "accepted";
+        });
+
+        const explicitSid =
+          extractJourneyStatusId(rawStatusCandidate) ??
+          extractJourneyStatusId(acceptedDecision?.journeyStatusId ?? acceptedDecision?.journeyDecisionStatus) ??
+          extractJourneyStatusId(acceptedDriverInRequests?.journeyStatusId ?? acceptedDriverInRequests?.journeyStatus);
+
+        const isComplete = Boolean(
+          req.isCompleted ||
+          (item as any).isCompleted ||
+          explicitSid === 9 ||
+          explicitSid === 14 ||
+          String(req.status || (item as any).status || "").toLowerCase() === "completed" ||
+          String(req.status || (item as any).status || "").toLowerCase() === "delivered" ||
+          String(req.requestStatus || (item as any).requestStatus || "").toLowerCase() === "completed"
+        );
+
+        const resolvedJourneyStatusId = explicitSid ?? (isComplete ? 9 : 2);
 
         const driverRequests = rawDriverRequests.map((d: any) => {
           const dLat = d.latitude ?? d.driverLatitude ?? d.currentLatitude ?? d.lat ?? null;
@@ -367,6 +406,8 @@ export function OrdersPage() {
           quintal: quintalNum,
           cost: costNum,
           status: isComplete ? "complete" : "ongoing",
+          journeyStatusId: resolvedJourneyStatusId,
+          journeyStatus: getJourneyStatusName(resolvedJourneyStatusId),
           phone: req.phoneNumber || (item as any).phoneNumber || (req as any).shipperUser?.phoneNumber || "",
           createdAt: req.shipperRequestCreatedAt || (item as any).shipperRequestCreatedAt || "",
           isBiddingApproved,
@@ -427,7 +468,14 @@ export function OrdersPage() {
 
   const confirmDelete = () => {
     if (!deletingOrder) return;
-    setDeletedIds((prev) => new Set([...prev, deletingOrder.id]));
+    if ((deletingOrder as any)._isBatchMaster && deletingOrder.batchId) {
+      const batchIds = orders
+        .filter((o) => o.batchId === deletingOrder.batchId)
+        .map((o) => o.id);
+      setDeletedIds((prev) => new Set([...prev, ...batchIds, deletingOrder.id]));
+    } else {
+      setDeletedIds((prev) => new Set([...prev, deletingOrder.id]));
+    }
     toast.success(t("orders.orderDeletedSuccess", "Order deleted successfully"));
     setDeletingOrder(null);
   };
@@ -569,10 +617,6 @@ export function OrdersPage() {
             onOrderUpdated={() => {
               refetchOrders();
             }}
-            onRefresh={() => {
-              refetchOrders();
-            }}
-            isRefreshing={isFetchingOrders}
           />
         )}
 

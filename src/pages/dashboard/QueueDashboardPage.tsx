@@ -97,14 +97,17 @@ export function QueueDashboardPage() {
   }, [rawData]);
 
   useEffect(() => {
-    if (activeOrgId) {
-      setSearchParams({ orgId: activeOrgId }, { replace: true });
-      setSelectedOrgId(activeOrgId);
-    } else {
-      setSearchParams({}, { replace: true });
-      setSelectedOrgId("");
+    const currentParam = searchParams.get("orgId") || "";
+    const targetParam = activeOrgId || "";
+    if (currentParam !== targetParam) {
+      if (activeOrgId) {
+        setSearchParams({ orgId: activeOrgId }, { replace: true });
+      } else {
+        setSearchParams({}, { replace: true });
+      }
     }
-  }, [activeOrgId, setSearchParams, setSelectedOrgId]);
+    setSelectedOrgId(activeOrgId || "");
+  }, [activeOrgId, searchParams, setSearchParams, setSelectedOrgId]);
 
   // Subscribe to active organization room so real-time approval/updates arrive even if pending
   useEffect(() => {

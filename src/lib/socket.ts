@@ -175,9 +175,31 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     try {
       if (!msg) return;
       const parsed = typeof msg === "string" ? JSON.parse(msg) : msg;
+
+      // Extract message type
+      const messageType = (parsed as any)?.messageTypes || (parsed as any)?.message;
+
+      // If message is just a generic connection/subscription ack or lacks queue event data, do not invalidate
+      const hasMeaningfulData = Boolean(
+        (parsed as any)?.data?.queueOrganizationUniqueId ||
+        (parsed as any)?.data?.queueUniqueId ||
+        (parsed as any)?.data?.driverUserUniqueId ||
+        (parsed as any)?.data?.shipperRequestUniqueId ||
+        (parsed as any)?.data?.vehicleDriverUniqueId
+      );
+
+      const isKnownQueueEvent =
+        typeof messageType === "string" &&
+        messageType !== "success" &&
+        messageType !== "ok" &&
+        messageType !== "connected";
+
+      if (!isKnownQueueEvent && !hasMeaningfulData) {
+        return;
+      }
+
       console.info("[WebSocket] Queue event received:", parsed);
 
-      const messageType = (parsed as any)?.messageTypes || (parsed as any)?.message;
       const isOrgEvent =
         messageType === "queue_org_approved" ||
         messageType === "queue_org_updated" ||
@@ -205,7 +227,15 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
       eventName === "connect" ||
       eventName === "disconnect" ||
       eventName === "connect_error" ||
+      eventName === "reconnect" ||
+      eventName === "reconnect_attempt" ||
+      eventName === "reconnecting" ||
+      eventName === "reconnect_error" ||
+      eventName === "reconnect_failed" ||
       eventName === "queue:subscribed" ||
+      eventName === "queue:unsubscribed" ||
+      eventName === "queue:subscribe" ||
+      eventName === "queue:unsubscribe" ||
       eventName === "ping" ||
       eventName === "pong"
     ) {

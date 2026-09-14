@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -14,7 +14,6 @@ import {
   Search,
   ArrowUpDown,
   UserCheck,
-  RefreshCw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -36,8 +35,6 @@ interface DriverBidsModalProps {
   driverRequests?: ShipperRequestDriverInfo[];
   onClose: () => void;
   onOrderUpdated?: () => void;
-  onRefresh?: () => void;
-  isRefreshing?: boolean;
 }
 
 export function DriverBidsModal({
@@ -46,8 +43,6 @@ export function DriverBidsModal({
   driverRequests: initialRequests,
   onClose,
   onOrderUpdated,
-  onRefresh,
-  isRefreshing = false,
 }: DriverBidsModalProps) {
   const { t } = useTranslation();
   const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
@@ -60,12 +55,6 @@ export function DriverBidsModal({
     "nearest" | "lowest-price" | "highest-price" | "name" | "default"
   >("nearest");
   const [displayLimit, setDisplayLimit] = useState<number>(25);
-
-  useEffect(() => {
-    if (onRefresh) {
-      onRefresh();
-    }
-  }, []);
 
   const driverRequests: ShipperRequestDriverInfo[] =
     initialRequests && initialRequests.length > 0
@@ -322,18 +311,6 @@ export function DriverBidsModal({
             </div>
           </div>
           <div className="dbm-header-actions">
-            {onRefresh && (
-              <button
-                type="button"
-                className="dbm-btn-refresh"
-                onClick={onRefresh}
-                title={t("common.refresh", "Refresh")}
-                disabled={isRefreshing}
-              >
-                <RefreshCw size={13} className={isRefreshing ? "dbm-spin" : ""} />
-                <span>{t("common.refresh", "Refresh")}</span>
-              </button>
-            )}
             <button
               type="button"
               className="orders-modal-close"
