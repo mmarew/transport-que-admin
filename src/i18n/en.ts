@@ -316,6 +316,7 @@ export const en = {
     cargoItemPlaceholder: "e.g. Cement, Coffee, Fertilizer, Rebar",
     quantityQuintal: "Quantity (Quintals)",
     shippingDate: "Shipping Date",
+    shippingDatePastError: "Shipping date cannot be in the past",
     deliveryDate: "Delivery Date",
     origin: "Origin",
     originLocation: "Origin Location",

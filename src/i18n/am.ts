@@ -304,6 +304,7 @@ export const am = {
     cargoItemPlaceholder: "ለምሳሌ ሲሚንቶ፣ ቡና፣ ማዳበሪያ፣ ቆርቆሮ",
     quantityQuintal: "መጠን (በኩንታል)",
     shippingDate: "የመጫኛ ቀን",
+    shippingDatePastError: "የመጫኛ ቀን ካለፈ ቀን መሆን አይችልም",
     deliveryDate: "የማድረሻ ቀን",
     origin: "መነሻ",
     originLocation: "የመነሻ መገኛ",

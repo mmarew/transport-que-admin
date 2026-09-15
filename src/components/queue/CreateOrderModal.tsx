@@ -112,6 +112,14 @@ export function CreateOrderModal({
   const shippingDate = watch("shippingDate");
   const deliveryDate = watch("deliveryDate");
 
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
+
   const [destQuery, setDestQuery] = useState("");
   const [destResults, setDestResults] = useState<PhotonPlace[]>([]);
   const [destOpen, setDestOpen] = useState(false);
@@ -392,6 +400,16 @@ export function CreateOrderModal({
 
   const handleFormSubmit = async (values: CreateOrderFormValues) => {
     try {
+      if (values.shippingDate) {
+        const cleanDate = values.shippingDate.slice(0, 10);
+        if (cleanDate < todayStr) {
+          toast.error(
+            t("orders.shippingDatePastError", "Shipping date cannot be in the past")
+          );
+          return;
+        }
+      }
+
       const payload: CreateOrderPayload & Record<string, unknown> = {
         isBiddingApproved: Boolean(values.isBiddingApproved),
         queueOrganizationUniqueId,
@@ -681,16 +699,20 @@ export function CreateOrderModal({
                 label={t("orders.shippingDate", "Shipping Date")}
                 value={shippingDate}
                 placeholder={t("orders.selectDate", "Select date")}
-                onChange={(val) =>
-                  setValue("shippingDate", val, { shouldValidate: true })
-                }
+                minDate={todayStr}
+                onChange={(val) => {
+                  setValue("shippingDate", val, { shouldValidate: true });
+                  if (deliveryDate && val && deliveryDate < val) {
+                    setValue("deliveryDate", val, { shouldValidate: true });
+                  }
+                }}
                 error={errors.shippingDate?.message}
               />
               <DatePickerField
                 label={t("orders.deliveryDate", "Delivery Date")}
                 value={deliveryDate}
                 placeholder={t("orders.selectDate", "Select date")}
-                minDate={shippingDate}
+                minDate={shippingDate || todayStr}
                 onChange={(val) =>
                   setValue("deliveryDate", val, { shouldValidate: true })
                 }

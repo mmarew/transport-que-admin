@@ -147,9 +147,16 @@
   transition: all 0.15s ease;
 }
 
-.date-picker-nav-btn:hover {
+.date-picker-nav-btn:hover:not(:disabled) {
   background: #f0f9ff;
   border-color: #0B4D6D;
+}
+
+.date-picker-nav-btn:disabled,
+.date-picker-nav-btn.disabled {
+  opacity: 0.25 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
 }
 
 /* ── Days of Week ── */
@@ -246,8 +253,15 @@
   font-family: inherit;
 }
 
-.date-picker-action-btn:hover {
+.date-picker-action-btn:hover:not(:disabled) {
   background: #f0f9ff;
+}
+
+.date-picker-action-btn:disabled,
+.date-picker-action-btn.disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
 }
 
 .date-picker-action-btn.clear {

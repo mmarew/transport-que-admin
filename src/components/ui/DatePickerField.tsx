@@ -37,6 +37,12 @@ function parseDate(dateStr?: string): { year: number; month: number; day: number
   };
 }
 
+function normalizeDateStr(dateStr?: string): string | undefined {
+  if (!dateStr) return undefined;
+  const match = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : dateStr;
+}
+
 const pad = (n: number) => n.toString().padStart(2, "0");
 
 export function DatePickerField({
@@ -57,12 +63,27 @@ export function DatePickerField({
   const [alignRight, setAlignRight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const normalizedMinDate = useMemo(() => normalizeDateStr(minDate), [minDate]);
+  const normalizedMaxDate = useMemo(() => normalizeDateStr(maxDate), [maxDate]);
+
   const parsed = useMemo(() => parseDate(value), [value]);
 
   const today = useMemo(() => {
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
   }, []);
+
+  const todayStr = useMemo(
+    () => `${today.year}-${pad(today.month + 1)}-${pad(today.day)}`,
+    [today]
+  );
+
+  const isTodayDisabled = useMemo(() => {
+    return Boolean(
+      (normalizedMinDate && todayStr < normalizedMinDate) ||
+        (normalizedMaxDate && todayStr > normalizedMaxDate)
+    );
+  }, [normalizedMinDate, normalizedMaxDate, todayStr]);
 
   const [viewYear, setViewYear] = useState<number>(parsed?.year ?? today.year);
   const [viewMonth, setViewMonth] = useState<number>(parsed?.month ?? today.month);
@@ -143,7 +164,28 @@ export function DatePickerField({
     }
   };
 
+  const isPrevMonthDisabled = useMemo(() => {
+    if (!normalizedMinDate) return false;
+    const prevMonthLastDay = new Date(viewYear, viewMonth, 0);
+    const pYear = prevMonthLastDay.getFullYear();
+    const pMonth = prevMonthLastDay.getMonth() + 1;
+    const pDay = prevMonthLastDay.getDate();
+    const pStr = `${pYear}-${pad(pMonth)}-${pad(pDay)}`;
+    return pStr < normalizedMinDate;
+  }, [normalizedMinDate, viewYear, viewMonth]);
+
+  const isNextMonthDisabled = useMemo(() => {
+    if (!normalizedMaxDate) return false;
+    const nextMonthFirstDay = new Date(viewYear, viewMonth + 1, 1);
+    const nYear = nextMonthFirstDay.getFullYear();
+    const nMonth = nextMonthFirstDay.getMonth() + 1;
+    const nDay = nextMonthFirstDay.getDate();
+    const nStr = `${nYear}-${pad(nMonth)}-${pad(nDay)}`;
+    return nStr > normalizedMaxDate;
+  }, [normalizedMaxDate, viewYear, viewMonth]);
+
   const handlePrevMonth = () => {
+    if (isPrevMonthDisabled) return;
     if (viewMonth === 0) {
       setViewMonth(11);
       setViewYear((y) => y - 1);
@@ -153,6 +195,7 @@ export function DatePickerField({
   };
 
   const handleNextMonth = () => {
+    if (isNextMonthDisabled) return;
     if (viewMonth === 11) {
       setViewMonth(0);
       setViewYear((y) => y + 1);
@@ -172,10 +215,10 @@ export function DatePickerField({
   };
 
   const handleSelectToday = () => {
-    const formatted = `${today.year}-${pad(today.month + 1)}-${pad(today.day)}`;
+    if (isTodayDisabled) return;
     setViewYear(today.year);
     setViewMonth(today.month);
-    onChange(formatted);
+    onChange(todayStr);
     setIsOpen(false);
   };
 
@@ -267,7 +310,8 @@ export function DatePickerField({
                 <button
                   type="button"
                   onClick={handlePrevMonth}
-                  className="date-picker-nav-btn"
+                  disabled={isPrevMonthDisabled}
+                  className={`date-picker-nav-btn ${isPrevMonthDisabled ? "disabled" : ""}`}
                   title={t("orders.prevMonth", "Previous month")}
                   aria-label={t("orders.prevMonth", "Previous month")}
                 >
@@ -276,7 +320,8 @@ export function DatePickerField({
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="date-picker-nav-btn"
+                  disabled={isNextMonthDisabled}
+                  className={`date-picker-nav-btn ${isNextMonthDisabled ? "disabled" : ""}`}
                   title={t("orders.nextMonth", "Next month")}
                   aria-label={t("orders.nextMonth", "Next month")}
                 >
@@ -298,10 +343,10 @@ export function DatePickerField({
             <div className="date-picker-grid">
               {calendarCells.map((cell, idx) => {
                 const isSelected = parsed && cell.dateStr === value;
-                const isToday = cell.dateStr === `${today.year}-${pad(today.month + 1)}-${pad(today.day)}`;
+                const isToday = cell.dateStr === todayStr;
                 const isDisabled =
-                  Boolean(minDate && cell.dateStr < minDate) ||
-                  Boolean(maxDate && cell.dateStr > maxDate);
+                  Boolean(normalizedMinDate && cell.dateStr < normalizedMinDate) ||
+                  Boolean(normalizedMaxDate && cell.dateStr > normalizedMaxDate);
 
                 return (
                   <button
@@ -331,7 +376,8 @@ export function DatePickerField({
               <button
                 type="button"
                 onClick={handleSelectToday}
-                className="date-picker-action-btn"
+                disabled={isTodayDisabled}
+                className={`date-picker-action-btn ${isTodayDisabled ? "disabled" : ""}`}
               >
                 {t("common.today", "Today")}
               </button>
