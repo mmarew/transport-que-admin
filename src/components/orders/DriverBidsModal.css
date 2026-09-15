@@ -4,7 +4,7 @@
   background: #ffffff;
   border-radius: 1rem;
   width: 100%;
-  max-width: 620px;
+  max-width: 760px;
   max-height: 88vh;
   display: flex;
   flex-direction: column;
@@ -747,7 +747,7 @@
   color: #1e293b;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 780px) {
   .dbm-modal-content {
     max-width: 95vw;
     margin: auto;
