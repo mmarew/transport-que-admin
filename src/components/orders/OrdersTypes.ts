@@ -131,11 +131,20 @@ export function formatTrimmedRoute(origin?: string, destination?: string): strin
   return `${orig} → ${dest}`;
 }
 
+export type JourneyBadgeType =
+  | "completed"
+  | "journey-started"
+  | "in-transit"
+  | "loaded"
+  | "loading"
+  | "accepted"
+  | "none";
+
 export interface ConnectedJourneyInfo {
   isConnected: boolean;
   statusId?: number;
   label: string;
-  type: "completed" | "journey-started" | "in-transit" | "loaded" | "loading" | "accepted" | "none";
+  type: JourneyBadgeType;
 }
 
 export function getConnectedJourneyStatus(order: OrderDisplayItem): ConnectedJourneyInfo {
@@ -305,7 +314,7 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
     } else if (isMultiVehicle) {
       if (completedCount > 0 && activeCount > 0) {
         // Mixed in same view: group active orders by stage
-        const stageMap = new Map<number, { label: string; count: number; type: string; statusId: number }>();
+        const stageMap = new Map<number, { label: string; count: number; type: JourneyBadgeType; statusId: number }>();
 
         for (const order of activeOrders) {
           const journey = getConnectedJourneyStatus(order);
@@ -347,7 +356,7 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
         };
       } else if (activeCount > 0) {
         // Active ongoing only: group active orders by journey stage
-        const stageMap = new Map<number, { label: string; count: number; type: string; statusId: number }>();
+        const stageMap = new Map<number, { label: string; count: number; type: JourneyBadgeType; statusId: number }>();
 
         for (const order of activeOrders) {
           const journey = getConnectedJourneyStatus(order);
