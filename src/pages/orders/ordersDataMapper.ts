@@ -177,7 +177,7 @@ export function mapBackendOrdersToDisplayItems({
         extractJourneyStatusId((item as any).journeyStatus) ??
         extractJourneyStatusId(req.status) ??
         extractJourneyStatusId((item as any).status) ??
-        null;
+        undefined;
 
       const isComplete =
         resolvedJourneyStatusId === 9 ||
