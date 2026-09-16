@@ -21,6 +21,7 @@ const appAPIs = {
     // Correct backend endpoint for creating shipper requests
     createOrderAPI: "/shipperRequest/createRequest",
     getShipperRequestsAPI: "/user/getShipperRequest4allOrSingleUser",
+    getShipperRequestBatchAPI: "/shipperRequestBatch",
     getQueueStatsAPI: "/queue/statistics",
     getOrgDriversAPI: "/driver/listDriversByOrg",
     getUserProfileAPI: "/user/getProfile",

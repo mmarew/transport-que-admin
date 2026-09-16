@@ -34,6 +34,9 @@ export interface OrderDisplayItem {
   driverRequests?: ShipperRequestDriverInfo[];
   decisions?: any[];
   queueOrganizationUniqueId?: string;
+  totalVehicles?: number;
+  batchTotalCost?: number;
+  batchTotalQuintal?: number;
   rawItem?: unknown;
 }
 
@@ -208,6 +211,11 @@ export interface OrderBatchGroup {
   batchId?: string | number | null;
   isMultiVehicle: boolean;
   totalVehicles: number;
+  acceptedCount: number;
+  completedCount: number;
+  activeCount: number;
+  waitingCount: number;
+  statusStageLabel?: string;
   orders: OrderDisplayItem[];
   displayId: string;
   shipper: string;
@@ -243,28 +251,157 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
   for (const key of orderOfBatches) {
     const batchOrders = map.get(key)!;
     const first = batchOrders[0];
-    const isMultiVehicle = batchOrders.length > 1;
+    const isMultiVehicle =
+      batchOrders.length > 1 ||
+      Boolean(first.batchId != null && String(first.batchId).trim() !== "" && (first.totalVehicles || 1) > 1);
     const batchId = first.batchId;
 
-    const totalQuintal = batchOrders.reduce((sum, o) => sum + (o.quintal || 0), 0);
-    const totalCost = batchOrders.reduce((sum, o) => sum + (o.cost || 0), 0);
+    const totalVehicles = batchOrders.length;
+    const totalQuintal =
+      batchOrders.length === (first.totalVehicles || batchOrders.length) && first.batchTotalQuintal != null
+        ? first.batchTotalQuintal
+        : batchOrders.reduce((sum, o) => sum + (o.quintal || 0), 0);
+    const totalCost =
+      batchOrders.length === (first.totalVehicles || batchOrders.length) && first.batchTotalCost != null
+        ? first.batchTotalCost
+        : batchOrders.reduce((sum, o) => sum + (o.cost || 0), 0);
+
+    const completedOrders = batchOrders.filter(
+      (o) => getConnectedJourneyStatus(o).type === "completed"
+    );
+    const completedCount = completedOrders.length;
+
+    const activeOrders = batchOrders.filter(
+      (o) =>
+        getConnectedJourneyStatus(o).isConnected &&
+        getConnectedJourneyStatus(o).type !== "completed"
+    );
+    const activeCount = activeOrders.length;
+
+    const waitingOrders = batchOrders.filter(
+      (o) => !getConnectedJourneyStatus(o).isConnected
+    );
+    const waitingCount = waitingOrders.length;
+    const acceptedCount = activeCount + completedCount;
 
     const displayId =
       isMultiVehicle && batchId
         ? `#${batchId}`
         : first.displayId || `#${first.id}`;
 
-    const allCompleted = batchOrders.every(
-      (o) => getConnectedJourneyStatus(o).type === "completed"
-    );
+    const allCompleted = totalVehicles > 0 && completedCount === totalVehicles;
 
     let statusSummary: ConnectedJourneyInfo;
+    let statusStageLabel: string | undefined;
+
     if (allCompleted) {
-      statusSummary = { isConnected: true, statusId: 9, label: "Completed", type: "completed" };
+      statusSummary = {
+        isConnected: true,
+        statusId: 9,
+        label: "Completed",
+        type: "completed",
+      };
+      statusStageLabel = "Completed";
+    } else if (isMultiVehicle) {
+      if (completedCount > 0 && activeCount > 0) {
+        // Mixed in same view: group active orders by stage
+        const stageMap = new Map<number, { label: string; count: number; type: string; statusId: number }>();
+
+        for (const order of activeOrders) {
+          const journey = getConnectedJourneyStatus(order);
+          const sid = journey.statusId ?? 4;
+          const label = journey.label || "Accepted";
+          const type = journey.type || "accepted";
+
+          if (!stageMap.has(sid)) {
+            stageMap.set(sid, { label, count: 0, type, statusId: sid });
+          }
+          stageMap.get(sid)!.count++;
+        }
+
+        const sortedStages = Array.from(stageMap.values()).sort(
+          (a, b) => b.statusId - a.statusId
+        );
+        const primaryStage = sortedStages[0];
+        statusStageLabel = primaryStage.label;
+
+        const parts = sortedStages.map((s) => `${s.count} ${s.label}`);
+        if (waitingCount > 0) {
+          parts.push(`${waitingCount} Waiting`);
+        }
+
+        statusSummary = {
+          isConnected: true,
+          statusId: primaryStage.statusId,
+          label: parts.join(" · "),
+          type: primaryStage.type,
+        };
+      } else if (completedCount > 0 && activeCount === 0) {
+        // Completed only
+        statusStageLabel = "Completed";
+        statusSummary = {
+          isConnected: true,
+          statusId: 9,
+          label: "Completed",
+          type: "completed",
+        };
+      } else if (activeCount > 0) {
+        // Active ongoing only: group active orders by journey stage
+        const stageMap = new Map<number, { label: string; count: number; type: string; statusId: number }>();
+
+        for (const order of activeOrders) {
+          const journey = getConnectedJourneyStatus(order);
+          const sid = journey.statusId ?? 4;
+          const label = journey.label || "Accepted";
+          const type = journey.type || "accepted";
+
+          if (!stageMap.has(sid)) {
+            stageMap.set(sid, { label, count: 0, type, statusId: sid });
+          }
+          stageMap.get(sid)!.count++;
+        }
+
+        const sortedStages = Array.from(stageMap.values()).sort(
+          (a, b) => b.statusId - a.statusId
+        );
+
+        const primaryStage = sortedStages[0];
+        statusStageLabel = primaryStage.label;
+
+        let fullLabel = "";
+        if (sortedStages.length === 1) {
+          // All active trucks are at the exact same stage
+          const single = sortedStages[0];
+          if (waitingCount > 0) {
+            fullLabel = `${single.count}/${totalVehicles} ${single.label} · ${waitingCount} Waiting`;
+          } else {
+            fullLabel = `${single.count} ${single.label}`;
+          }
+        } else {
+          // Active trucks are at multiple stages! (e.g. 1 Heading to Load · 13 Accepted)
+          const parts = sortedStages.map((s) => `${s.count} ${s.label}`);
+          if (waitingCount > 0) {
+            parts.push(`${waitingCount} Waiting`);
+          }
+          fullLabel = parts.join(" · ");
+        }
+
+        statusSummary = {
+          isConnected: true,
+          statusId: primaryStage.statusId,
+          label: fullLabel,
+          type: primaryStage.type,
+        };
+      } else {
+        // All waiting, no driver accepted
+        statusSummary = { isConnected: false, label: "", type: "none" };
+      }
     } else {
+      // Single-truck order
       const active = batchOrders.find((o) => getConnectedJourneyStatus(o).isConnected);
       if (active) {
         statusSummary = getConnectedJourneyStatus(active);
+        statusStageLabel = statusSummary.label;
       } else {
         statusSummary = { isConnected: false, label: "", type: "none" };
       }
@@ -274,7 +411,12 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
       batchKey: key,
       batchId,
       isMultiVehicle,
-      totalVehicles: batchOrders.length,
+      totalVehicles,
+      acceptedCount,
+      completedCount,
+      activeCount,
+      waitingCount,
+      statusStageLabel,
       orders: batchOrders,
       displayId,
       shipper: first.shipper,

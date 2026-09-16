@@ -8,6 +8,7 @@ import { CreateOrderModal } from "../../components/queue/CreateOrderModal";
 import {
   useListQueueOrganizationsQuery,
   useGetShipperRequestsQuery,
+  useGetShipperRequestBatchesQuery,
 } from "../../lib/redux/api";
 import {
   connectSocket,
@@ -28,8 +29,10 @@ import { OrdersPagination } from "../../components/orders/OrdersPagination";
 import { OrdersEditModal } from "../../components/orders/OrdersEditModal";
 import { OrdersDeleteModal } from "../../components/orders/OrdersDeleteModal";
 import { DriverBidsModal } from "../../components/orders/DriverBidsModal";
+import { groupOrdersByBatch, getConnectedJourneyStatus } from "../../components/orders/OrdersTypes";
 import type {
   OrderDisplayItem,
+  OrderBatchGroup,
   ShipperRequestPayloadItem,
   SortColumn,
 } from "../../components/orders/OrdersTypes";
@@ -70,8 +73,31 @@ export function OrdersPage() {
     {
       skip: !activeOrg?.queueOrganizationUniqueId,
       refetchOnReconnect: true,
+      refetchOnFocus: true,
+      pollingInterval: 5000,
     }
   );
+
+  const {
+    data: backendBatchesData,
+    isLoading: isLoadingBatches,
+    refetch: refetchBatches,
+  } = useGetShipperRequestBatchesQuery(
+    {
+      queueOrganizationUniqueId: activeOrg?.queueOrganizationUniqueId || "",
+      requestMode: "company_target",
+      includeBids: true,
+      limit: 100,
+    },
+    {
+      skip: !activeOrg?.queueOrganizationUniqueId,
+      refetchOnReconnect: true,
+      refetchOnFocus: true,
+      pollingInterval: 5000,
+    }
+  );
+
+  const socketConnected = useQueueAdminStore((s) => s.socketConnected);
 
   // State
   const [activeTab, setActiveTab] = useState<"ongoing" | "complete">("ongoing");
@@ -419,29 +445,257 @@ export function OrdersPage() {
       });
     }
 
+    // 2. Process company target batches from /shipperRequestBatch
+    const rawBatchList = backendBatchesData?.data;
+    if (Array.isArray(rawBatchList)) {
+      const existingBatchIds = new Set(
+        baseList.map((o) => (o.batchId != null ? String(o.batchId) : "")).filter(Boolean)
+      );
+
+      for (const batch of rawBatchList) {
+        if (!batch) continue;
+        const bIdStr = batch.batchId != null ? String(batch.batchId) : "";
+        if (bIdStr && existingBatchIds.has(bIdStr)) continue;
+
+        const totalVehicles = Math.max(1, Number(batch.totalVehicles) || 1);
+        const batchTotalCost = Number(String(batch.shippingCost ?? 0).replace(/[^0-9.]/g, "")) || 0;
+        const batchTotalQuintal = Number(String(batch.shippableItemQtyInQuintal ?? 0).replace(/[^0-9.]/g, "")) || 0;
+
+        const shipperName =
+          batch.shipperName ||
+          (batch as any).fullName ||
+          batch.shipperPhone ||
+          t("orders.defaultValuedShipper");
+
+        const vehicleTypeName =
+          batch.vehicleTypeName ||
+          t("orders.defaultHeavyTruck");
+
+        const itemName =
+          batch.shippableItemName ||
+          t("orders.defaultGeneralCargo");
+
+        const originPlace =
+          batch.originPlace ||
+          t("orders.defaultTerminal");
+
+        const destPlace =
+          batch.destinationPlace ||
+          t("orders.defaultDestination");
+
+        const originLat =
+          batch.originLatitude != null
+            ? batch.originLatitude
+            : (activeOrg?.latitude != null ? activeOrg.latitude : null);
+        const originLng =
+          batch.originLongitude != null
+            ? batch.originLongitude
+            : (activeOrg?.longitude != null ? activeOrg.longitude : null);
+
+        const sid = Number(batch.journeyStatusId) || 1;
+        const isComplete =
+          sid === 9 ||
+          sid === 14 ||
+          String(batch.journeyStatusName || "").toLowerCase() === "completed" ||
+          String(batch.journeyStatusName || "").toLowerCase() === "delivered";
+
+        // Parse bids / driverRequests from batch
+        const rawBids: any[] =
+          (Array.isArray((batch as any).bids) ? (batch as any).bids : []) ||
+          (Array.isArray((batch as any).companyBids) ? (batch as any).companyBids : []) ||
+          (Array.isArray((batch as any).offers) ? (batch as any).offers : []) ||
+          (Array.isArray((batch as any).driverRequests) ? (batch as any).driverRequests : []) ||
+          [];
+
+        let driverRequests: any[] = rawBids.map((b: any, bIdx: number) => ({
+          driverRequestId: b.driverRequestId ?? b.bidId ?? bIdx + 1,
+          driverRequestUniqueId: b.driverRequestUniqueId ?? b.bidUniqueId ?? b.uniqueId ?? `bid-${batch.batchId}-${bIdx + 1}`,
+          userUniqueId: b.userUniqueId ?? b.driverUserUniqueId ?? b.companyUniqueId ?? `company-${bIdx + 1}`,
+          journeyDecisionUniqueId: b.journeyDecisionUniqueId ?? null,
+          fullName: b.fullName ?? b.companyName ?? b.driverName ?? b.name ?? (batch.targetCompanyName || `Company Bidder #${bIdx + 1}`),
+          phoneNumber: b.phoneNumber ?? b.phone ?? null,
+          journeyStatusId: b.journeyStatusId ?? (b.status === "accepted" ? 3 : 1),
+          journeyStatus: b.journeyStatus ?? b.status ?? "submitted",
+          shipperRequestUniqueId: b.shipperRequestUniqueId ?? batch.batchUniqueId,
+          offerCost: Number(b.offerCost ?? b.bidAmount ?? b.proposedCost ?? b.cost ?? batch.shippingCost) || null,
+          proposedCost: Number(b.proposedCost ?? b.bidAmount ?? b.offerCost ?? b.cost ?? batch.shippingCost) || null,
+          bidAmount: Number(b.bidAmount ?? b.proposedCost ?? b.offerCost ?? b.cost ?? batch.shippingCost) || null,
+          vehicleTypeName: b.vehicleTypeName ?? batch.vehicleTypeName ?? null,
+          plateNumber: b.plateNumber ?? null,
+          latitude: b.latitude ?? null,
+          longitude: b.longitude ?? null,
+          currentPlace: b.currentPlace ?? null,
+          distanceKm: null,
+          rawDriver: b,
+          rawItem: batch,
+        }));
+
+        if (
+          driverRequests.length === 0 &&
+          ((batch.bidSummary?.total || 0) > 0 || (batch.bidSummary?.submitted || 0) > 0)
+        ) {
+          const count = batch.bidSummary?.submitted || batch.bidSummary?.total || 1;
+          driverRequests = Array.from({ length: count }, (_, idx) => ({
+            driverRequestId: idx + 1,
+            driverRequestUniqueId: `bid-${batch.batchUniqueId}-${idx + 1}`,
+            userUniqueId: `bidder-${idx + 1}`,
+            journeyDecisionUniqueId: null,
+            fullName: batch.targetCompanyName || `Company Bidder ${idx + 1}`,
+            phoneNumber: null,
+            journeyStatusId: 1,
+            journeyStatus: "submitted",
+            shipperRequestUniqueId: batch.batchUniqueId,
+            offerCost: batchTotalCost || null,
+            proposedCost: batchTotalCost || null,
+            bidAmount: batchTotalCost || null,
+            vehicleTypeName,
+            plateNumber: null,
+            latitude: null,
+            longitude: null,
+            currentPlace: null,
+            distanceKm: null,
+            rawDriver: batch.bidSummary,
+            rawItem: batch,
+          }));
+        }
+
+        const isBiddingApproved = true;
+
+        if (totalVehicles > 1) {
+          const childCost = Math.round((batchTotalCost / totalVehicles) * 100) / 100;
+          const childQuintal = Math.round((batchTotalQuintal / totalVehicles) * 100) / 100;
+
+          for (let truckIdx = 1; truckIdx <= totalVehicles; truckIdx++) {
+            const childId = `${batch.batchUniqueId || `batch-${batch.batchId}`}-truck-${truckIdx}`;
+            // If the whole batch is complete, all are 9; otherwise slot 1 carries the current journey status,
+            // while remaining slots 2..N wait for driver assignments (sid 1)
+            const childSid = isComplete ? 9 : (truckIdx === 1 ? sid : 1);
+            const childStatus = childSid === 9 || childSid === 14 ? "complete" : "ongoing";
+
+            baseList.push({
+              id: childId,
+              shipperRequestId: truckIdx,
+              batchId: bIdStr,
+              requestIdDisplay: String(truckIdx),
+              batchIdDisplay: bIdStr,
+              fullRequestId: String(truckIdx),
+              fullBatchId: bIdStr,
+              displayId: `#${batch.batchId}/${truckIdx}`,
+              fullId: `#${batch.batchId}/${truckIdx}`,
+              shipper: shipperName,
+              type: "Group",
+              vehicleType: vehicleTypeName,
+              vehicleTypeUniqueId: batch.vehicleTypeUniqueId,
+              item: itemName,
+              origin: originPlace,
+              destination: destPlace,
+              originLatitude: originLat,
+              originLongitude: originLng,
+              destinationLatitude: batch.destinationLatitude ?? null,
+              destinationLongitude: batch.destinationLongitude ?? null,
+              quintal: childQuintal,
+              cost: childCost,
+              status: childStatus,
+              journeyStatusId: childSid,
+              journeyStatus: getJourneyStatusName(childSid),
+              phone: batch.shipperPhone || "",
+              createdAt: batch.batchCreatedAt || "",
+              isBiddingApproved,
+              driverRequests: truckIdx === 1 ? driverRequests : [],
+              decisions: [],
+              queueOrganizationUniqueId: batch.queueOrganizationUniqueId,
+              totalVehicles,
+              batchTotalCost,
+              batchTotalQuintal,
+              rawItem: batch,
+            });
+          }
+        } else {
+          const batchUniqueId = batch.batchUniqueId || `batch-${batch.batchId}`;
+          baseList.push({
+            id: batchUniqueId,
+            shipperRequestId: null,
+            batchId: bIdStr,
+            requestIdDisplay: "",
+            batchIdDisplay: bIdStr,
+            fullRequestId: "",
+            fullBatchId: bIdStr,
+            displayId: `#${batch.batchId}`,
+            fullId: `#${batch.batchId}`,
+            shipper: shipperName,
+            type: "Group",
+            vehicleType: vehicleTypeName,
+            vehicleTypeUniqueId: batch.vehicleTypeUniqueId,
+            item: itemName,
+            origin: originPlace,
+            destination: destPlace,
+            originLatitude: originLat,
+            originLongitude: originLng,
+            destinationLatitude: batch.destinationLatitude ?? null,
+            destinationLongitude: batch.destinationLongitude ?? null,
+            quintal: batchTotalQuintal,
+            cost: batchTotalCost,
+            status: isComplete ? "complete" : "ongoing",
+            journeyStatusId: sid,
+            journeyStatus: batch.journeyStatusName || getJourneyStatusName(sid),
+            phone: batch.shipperPhone || "",
+            createdAt: batch.batchCreatedAt || "",
+            isBiddingApproved,
+            driverRequests,
+            decisions: [],
+            queueOrganizationUniqueId: batch.queueOrganizationUniqueId,
+            totalVehicles: 1,
+            batchTotalCost,
+            batchTotalQuintal,
+            rawItem: batch,
+          });
+        }
+      }
+    }
+
     return baseList
       .filter((o) => !deletedIds.has(o.id))
       .map((o) => editedOrders[o.id] || o);
-  }, [backendOrdersData, deletedIds, editedOrders, t]);
+  }, [backendOrdersData, backendBatchesData, deletedIds, editedOrders, t, activeOrg]);
 
-  // Sort & filter
-  const processedOrders = useMemo(() => {
+  // 1. Filter orders strictly by activeTab:
+  // - "ongoing": only orders where journey is NOT completed
+  // - "complete": only orders where journey IS completed
+  const tabOrders = useMemo(() => {
+    if (activeTab === "complete") {
+      return orders.filter((o) => getConnectedJourneyStatus(o).type === "completed");
+    } else {
+      return orders.filter((o) => getConnectedJourneyStatus(o).type !== "completed");
+    }
+  }, [orders, activeTab]);
+
+  // 2. Group tab-specific orders by batch so multi-truck batches appear as unified groups in their respective tab
+  const allBatchGroups = useMemo(() => groupOrdersByBatch(tabOrders), [tabOrders]);
+
+  // 3. Filter batch groups by search parameters (e.g. phone)
+  const allBatches = useMemo(() => {
     const phoneFilter = searchParams.get("phone") || "";
-    const filtered = orders
-      .filter((o) => o.status === activeTab)
-      .filter((o) => !phoneFilter || o.phone === phoneFilter);
+
+    const filtered = allBatchGroups.filter((group) => {
+      if (phoneFilter && !group.orders.some((o) => o.phone === phoneFilter)) {
+        return false;
+      }
+      return true;
+    });
+
+    // Sort batch groups
     return [...filtered].sort((a, b) => {
       let valA: string | number = "";
       let valB: string | number = "";
       switch (sortCol) {
-        case "id": valA = (a.displayId || a.id).toLowerCase(); valB = (b.displayId || b.id).toLowerCase(); break;
+        case "id": valA = (a.displayId || "").toLowerCase(); valB = (b.displayId || "").toLowerCase(); break;
         case "shipper": valA = a.shipper.toLowerCase(); valB = b.shipper.toLowerCase(); break;
         case "type": valA = a.type; valB = b.type; break;
         case "vehicleType": valA = a.vehicleType.toLowerCase(); valB = b.vehicleType.toLowerCase(); break;
         case "item": valA = a.item.toLowerCase(); valB = b.item.toLowerCase(); break;
         case "location": valA = `${a.origin} ${a.destination}`.toLowerCase(); valB = `${b.origin} ${b.destination}`.toLowerCase(); break;
-        case "quintal": valA = a.quintal; valB = b.quintal; break;
-        case "cost": valA = a.cost; valB = b.cost; break;
+        case "quintal": valA = a.totalQuintal; valB = b.totalQuintal; break;
+        case "cost": valA = a.totalCost; valB = b.totalCost; break;
       }
       if (typeof valA === "number" && typeof valB === "number") {
         return sortAsc ? valA - valB : valB - valA;
@@ -450,14 +704,17 @@ export function OrdersPage() {
         ? String(valA).localeCompare(String(valB))
         : String(valB).localeCompare(String(valA));
     });
-  }, [orders, activeTab, sortCol, sortAsc, searchParams]);
+  }, [allBatchGroups, activeTab, sortCol, sortAsc, searchParams]);
 
-  const totalPages = Math.max(1, Math.ceil(processedOrders.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(allBatches.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedOrders = useMemo(() => {
+  const currentBatches = useMemo(() => {
     const start = (safeCurrentPage - 1) * PAGE_SIZE;
-    return processedOrders.slice(start, start + PAGE_SIZE);
-  }, [processedOrders, safeCurrentPage]);
+    return allBatches.slice(start, start + PAGE_SIZE);
+  }, [allBatches, safeCurrentPage]);
+  const paginatedOrders = useMemo(() => {
+    return currentBatches.flatMap((b) => b.orders);
+  }, [currentBatches]);
 
   // Handlers
   const handleSort = (col: SortColumn) => {
@@ -532,9 +789,16 @@ export function OrdersPage() {
           <div className="orders-header-left">
             <div className="orders-title-wrap">
               <h1 className="orders-title">{t("orders.pageTitle", "Orders")}</h1>
-              <span className="orders-live-badge">
-                <span className="orders-live-dot" />
-                {t("orders.liveBadge", "Live")}
+              <span
+                className={`orders-live-badge ${socketConnected ? "orders-live-badge--connected" : "orders-live-badge--syncing"}`}
+                title={
+                  socketConnected
+                    ? t("orders.socketLiveTooltip", "Real-time WebSocket connected")
+                    : t("orders.socketSyncingTooltip", "Syncing live updates (auto-refreshing)")
+                }
+              >
+                <span className={`orders-live-dot ${socketConnected ? "" : "orders-live-dot--syncing"}`} />
+                {socketConnected ? t("orders.liveBadge", "Live") : t("orders.syncingBadge", "Syncing")}
               </span>
             </div>
             <p className="orders-subtitle">{`${orgName} — ${orgCity}`}</p>
@@ -571,6 +835,7 @@ export function OrdersPage() {
 
         {/* ── Desktop Table ── */}
         <OrdersTable
+          batchGroups={currentBatches}
           orders={paginatedOrders}
           sortCol={sortCol}
           activeTab={activeTab}
@@ -583,6 +848,7 @@ export function OrdersPage() {
 
         {/* ── Mobile Cards ── */}
         <OrdersMobileCards
+          batchGroups={currentBatches}
           orders={paginatedOrders}
           activeTab={activeTab}
           onEdit={setEditingOrder}
@@ -592,8 +858,8 @@ export function OrdersPage() {
 
         {/* ── Pagination ── */}
         <OrdersPagination
-          isLoading={isLoadingOrders}
-          totalFiltered={processedOrders.length}
+          isLoading={isLoadingOrders || isLoadingBatches}
+          totalFiltered={allBatches.length}
           totalShown={paginatedOrders.length}
           currentPage={safeCurrentPage}
           totalPages={totalPages}
@@ -613,9 +879,11 @@ export function OrdersPage() {
             onClose={() => {
               setViewingRequestsOrder(null);
               refetchOrders();
+              refetchBatches();
             }}
             onOrderUpdated={() => {
               refetchOrders();
+              refetchBatches();
             }}
           />
         )}
@@ -630,7 +898,11 @@ export function OrdersPage() {
               description: activeOrg?.queueOrganizationAddress || "Cement Factory, Addis Ababa",
             }}
             onClose={() => setShowCreateModal(false)}
-            onCreated={() => { setShowCreateModal(false); refetchOrders(); }}
+            onCreated={() => {
+              setShowCreateModal(false);
+              refetchOrders();
+              refetchBatches();
+            }}
           />
         )}
 

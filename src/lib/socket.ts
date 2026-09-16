@@ -130,7 +130,7 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     (typeof window !== "undefined" ? window.location.origin : "");
 
   socket = io(socketUrl, {
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
     autoConnect: true,
     auth: {
       user: userType,
@@ -171,34 +171,14 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     useQueueAdminStore.getState().setSocketConnected(true);
   });
 
-  const handleQueuePayload = (msg: unknown) => {
+  const handleQueuePayload = (msg: unknown, eventName?: string) => {
     try {
-      if (!msg) return;
+      if (!msg && !eventName) return;
       const parsed = typeof msg === "string" ? JSON.parse(msg) : msg;
+      console.info(`[WebSocket] Event "${eventName || "queue"}" received:`, parsed);
 
       // Extract message type
-      const messageType = (parsed as any)?.messageTypes || (parsed as any)?.message;
-
-      // If message is just a generic connection/subscription ack or lacks queue event data, do not invalidate
-      const hasMeaningfulData = Boolean(
-        (parsed as any)?.data?.queueOrganizationUniqueId ||
-        (parsed as any)?.data?.queueUniqueId ||
-        (parsed as any)?.data?.driverUserUniqueId ||
-        (parsed as any)?.data?.shipperRequestUniqueId ||
-        (parsed as any)?.data?.vehicleDriverUniqueId
-      );
-
-      const isKnownQueueEvent =
-        typeof messageType === "string" &&
-        messageType !== "success" &&
-        messageType !== "ok" &&
-        messageType !== "connected";
-
-      if (!isKnownQueueEvent && !hasMeaningfulData) {
-        return;
-      }
-
-      console.info("[WebSocket] Queue event received:", parsed);
+      const messageType = (parsed as any)?.messageTypes || (parsed as any)?.message || eventName;
 
       const isOrgEvent =
         messageType === "queue_org_approved" ||
@@ -206,20 +186,27 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
         messageType === "org_approved" ||
         Boolean((parsed as any)?.data?.queueOrganizationUniqueId && (parsed as any)?.data?.approvalStatus);
 
-      queueEventHandlers.forEach((handler) => {
-        try {
-          handler(parsed as any);
-        } catch (err) {
-          console.error("Error in queue event listener:", err);
-        }
-      });
+      if (parsed && typeof parsed === "object") {
+        queueEventHandlers.forEach((handler) => {
+          try {
+            handler(parsed as any);
+          } catch (err) {
+            console.error("Error in queue event listener:", err);
+          }
+        });
+      }
 
       // Synchronize live WebSocket updates directly into RTK Query cache
       debouncedInvalidate(isOrgEvent);
     } catch {
-      // ignore parse errors
+      // Even if parse fails, invalidate to ensure cache stays in sync
+      debouncedInvalidate(false);
     }
   };
+
+  socket.on("queue", (msg: unknown) => {
+    handleQueuePayload(msg, "queue");
+  });
 
   // Catch-all event listener for live events (deduplicated)
   socket.onAny((eventName: string, ...args: unknown[]) => {
@@ -237,12 +224,12 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
       eventName === "queue:subscribe" ||
       eventName === "queue:unsubscribe" ||
       eventName === "ping" ||
-      eventName === "pong"
+      eventName === "pong" ||
+      eventName === "queue"
     ) {
       return;
     }
-    console.info(`[WebSocket] Event "${eventName}":`, args[0]);
-    handleQueuePayload(args[0]);
+    handleQueuePayload(args[0], eventName);
   });
 
   return socket;

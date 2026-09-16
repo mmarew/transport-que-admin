@@ -530,6 +530,81 @@ export const api = createApi({
       }),
       providesTags: ["ShipperRequests"],
     }),
+
+    // --- Shipper Request Batches (e.g. company_target batches) ---
+    getShipperRequestBatches: builder.query<
+      {
+        message: string;
+        data: Array<{
+          batchId: number;
+          batchUniqueId: string;
+          shipperUserUniqueId?: string;
+          vehicleTypeUniqueId?: string;
+          totalVehicles: number;
+          requestMode: string;
+          targetCompanyUniqueId?: string | null;
+          queueOrganizationUniqueId: string;
+          originLatitude?: string | number | null;
+          originLongitude?: string | number | null;
+          originPlace?: string | null;
+          destinationLatitude?: string | number | null;
+          destinationLongitude?: string | number | null;
+          destinationPlace?: string | null;
+          shippableItemName?: string | null;
+          shippableItemQtyInQuintal?: string | number | null;
+          shippingDate?: string | null;
+          deliveryDate?: string | null;
+          shippingCost?: string | number | null;
+          isPodRequired?: number | boolean;
+          journeyStatusId?: number;
+          batchCreatedAt?: string | null;
+          batchUpdatedAt?: string | null;
+          batchDeletedAt?: string | null;
+          batchCreatedBy?: string | null;
+          batchCreatedByRoleId?: number | null;
+          shipperName?: string | null;
+          shipperPhone?: string | null;
+          vehicleTypeName?: string | null;
+          journeyStatusName?: string | null;
+          targetCompanyName?: string | null;
+          bidSummary?: {
+            total?: number;
+            submitted?: number;
+            accepted?: number;
+            rejected?: number;
+            cancelledByCompany?: number;
+            expired?: number;
+            joinedCompanyCount?: number;
+          } | null;
+          bids?: Array<any>;
+          acceptedOffer?: any;
+        }>;
+        pagination?: {
+          currentPage: number;
+          limit: number;
+          totalItems: number;
+          totalPages: number;
+        };
+      },
+      {
+        queueOrganizationUniqueId: string;
+        requestMode?: string;
+        includeBids?: boolean;
+        page?: number;
+        limit?: number;
+      }
+    >({
+      query: (params) => ({
+        url: appAPIs.getShipperRequestBatchAPI,
+        params: {
+          requestMode: "company_target",
+          includeBids: true,
+          limit: 100,
+          ...params,
+        },
+      }),
+      providesTags: ["ShipperRequests"],
+    }),
   }),
 });
 
@@ -555,4 +630,5 @@ export const {
   useListVehicleTypesQuery,
   useListVehicleDriversQuery,
   useGetShipperRequestsQuery,
+  useGetShipperRequestBatchesQuery,
 } = api;

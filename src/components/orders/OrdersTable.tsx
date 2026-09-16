@@ -7,9 +7,10 @@ import {
   Trash2,
   Tag,
   Gavel,
+  Clock,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { OrderDisplayItem, SortColumn } from "./OrdersTypes";
+import type { OrderDisplayItem, OrderBatchGroup, SortColumn } from "./OrdersTypes";
 import {
   formatShortName,
   formatTrimmedRoute,
@@ -18,7 +19,8 @@ import {
 } from "./OrdersTypes";
 
 interface OrdersTableProps {
-  orders: OrderDisplayItem[];
+  orders?: OrderDisplayItem[];
+  batchGroups?: OrderBatchGroup[];
   sortCol: SortColumn;
   activeTab: "ongoing" | "complete";
   currentPage?: number;
@@ -42,7 +44,8 @@ function renderVehicleType(vehicleType: string) {
 }
 
 export function OrdersTable({
-  orders,
+  orders = [],
+  batchGroups: passedBatchGroups,
   sortCol,
   activeTab,
   currentPage: _currentPage,
@@ -55,7 +58,10 @@ export function OrdersTable({
   const [expandedLocationId, setExpandedLocationId] = useState<string | null>(null);
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
 
-  const batchGroups = useMemo(() => groupOrdersByBatch(orders), [orders]);
+  const batchGroups = useMemo(
+    () => passedBatchGroups || groupOrdersByBatch(orders),
+    [passedBatchGroups, orders]
+  );
 
   const toggleBatch = (batchKey: string) => {
     setExpandedBatches((prev) => {
@@ -466,27 +472,63 @@ export function OrdersTable({
                         <div className="orders-actions-group">
                           {(() => {
                             if (group.statusSummary.isConnected) {
+                              const acceptedOrder =
+                                group.orders.find((o) => getConnectedJourneyStatus(o).isConnected) ||
+                                group.orders[0];
+                              const isPartial = group.statusSummary.label.includes(" · ");
                               return (
                                 <button
                                   type="button"
-                                  className={`orders-btn-status orders-btn-status--${group.statusSummary.type}`}
+                                  className={`orders-btn-status orders-btn-status--${group.statusSummary.type} ${
+                                    isPartial ? "orders-btn-status--partial" : ""
+                                  }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onViewRequests?.(group.orders[0]);
+                                    onViewRequests?.(acceptedOrder);
                                   }}
                                   title={group.statusSummary.label}
                                   aria-label={group.statusSummary.label}
                                 >
-                                  <span>{group.statusSummary.label}</span>
+                                  {isPartial ? (
+                                    <>
+                                      {group.statusSummary.label.split(" · ").map((part, idx) => (
+                                        <Fragment key={idx}>
+                                          {idx > 0 && <span className="orders-status-divider">·</span>}
+                                          <span
+                                            className={
+                                              part.includes("Waiting")
+                                                ? "orders-status-waiting-part"
+                                                : "orders-status-active-part"
+                                            }
+                                          >
+                                            {part}
+                                          </span>
+                                        </Fragment>
+                                      ))}
+                                    </>
+                                  ) : (
+                                    <span>{group.statusSummary.label}</span>
+                                  )}
                                 </button>
                               );
                             }
 
                             if (onViewRequests && group.isBiddingApproved) {
-                              const totalBids = group.orders.reduce(
-                                (sum, o) => sum + (o.driverRequests?.length || 0),
-                                0
-                              );
+                              const uniqueBidIds = new Set<string | number>();
+                              let totalBids = 0;
+                              for (const o of group.orders) {
+                                for (const r of (o.driverRequests || [])) {
+                                  const rId = r.driverRequestUniqueId || r.driverRequestId || r.userUniqueId;
+                                  if (rId) {
+                                    if (!uniqueBidIds.has(rId)) {
+                                      uniqueBidIds.add(rId);
+                                      totalBids++;
+                                    }
+                                  } else {
+                                    totalBids++;
+                                  }
+                                }
+                              }
                               return (
                                 <button
                                   type="button"
@@ -612,34 +654,43 @@ export function OrdersTable({
                                   >
                                     <span>{journey.label}</span>
                                   </button>
+                                ) : onViewRequests &&
+                                  childOrder.isBiddingApproved &&
+                                  (childOrder.driverRequests?.length || 0) > 0 ? (
+                                  <button
+                                    type="button"
+                                    className="orders-btn-bids orders-btn-bids--active"
+                                    onClick={() => onViewRequests(childOrder)}
+                                    title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+                                    aria-label={t(
+                                      "orders.driverBidsTitle",
+                                      "Driver Bids & Proposals"
+                                    )}
+                                  >
+                                    <Gavel size={13} />
+                                    <span>{t("orders.bids", "Bids")}</span>
+                                    <span className="orders-bids-count">
+                                      {childOrder.driverRequests?.length}
+                                    </span>
+                                  </button>
                                 ) : (
-                                  onViewRequests &&
-                                  childOrder.isBiddingApproved && (
-                                    <button
-                                      type="button"
-                                      className={`orders-btn-bids ${
-                                        childOrder.driverRequests &&
-                                        childOrder.driverRequests.length > 0
-                                          ? "orders-btn-bids--active"
-                                          : ""
-                                      }`}
-                                      onClick={() => onViewRequests(childOrder)}
-                                      title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
-                                      aria-label={t(
-                                        "orders.driverBidsTitle",
-                                        "Driver Bids & Proposals"
-                                      )}
-                                    >
-                                      <Gavel size={13} />
-                                      <span>{t("orders.bids", "Bids")}</span>
-                                      {childOrder.driverRequests &&
-                                        childOrder.driverRequests.length > 0 && (
-                                          <span className="orders-bids-count">
-                                            {childOrder.driverRequests.length}
-                                          </span>
-                                        )}
-                                    </button>
-                                  )
+                                  <button
+                                    type="button"
+                                    className="orders-badge-waiting"
+                                    onClick={() => {
+                                      if (onViewRequests && childOrder.isBiddingApproved) {
+                                        onViewRequests(childOrder);
+                                      }
+                                    }}
+                                    title={
+                                      childOrder.isBiddingApproved
+                                        ? t("orders.waitingForBidsTooltip", "Waiting for driver proposals. Click to check bids.")
+                                        : t("orders.waitingForDriver", "Waiting for Driver")
+                                    }
+                                  >
+                                    <Clock size={11} />
+                                    <span>{t("orders.waiting", "Waiting")}</span>
+                                  </button>
                                 )}
                                 <button
                                   type="button"
