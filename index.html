@@ -3,9 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>queadmin-frontend</title>
+
+    <title>Queue Admin — Dispatch Queue Management Console</title>
+
+    <!-- Primary SEO -->
+    <meta
+      name="description"
+      content="Queue Admin is the dispatch-queue management console for fleet operators: manage driver queues, shipper requests, trips, vehicle types, and real-time dispatch operations."
+    />
+    <meta
+      name="keywords"
+      content="queue admin, dispatch queue management, fleet management, driver queue, shipper requests, transport dispatch, logistics admin, real-time dispatch, Dynamics Route"
+    />
+    <meta name="author" content="Dynamics Route" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="googlebot" content="index, follow" />
+    <link rel="canonical" href="https://queue.dynamicsroute.tech/" />
+
+    <!-- Browser / PWA -->
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="application-name" content="Queue Admin" />
+    <meta name="apple-mobile-web-app-title" content="Queue Admin" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Queue Admin" />
+    <meta property="og:title" content="Queue Admin — Dispatch Queue Management Console" />
+    <meta
+      property="og:description"
+      content="Manage driver queues, shipper requests, trips, and real-time dispatch operations from one console."
+    />
+    <meta property="og:url" content="https://queue.dynamicsroute.tech/" />
+    <meta property="og:image" content="https://queue.dynamicsroute.tech/favicon.svg" />
+    <meta property="og:image:alt" content="Queue Admin logo" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Queue Admin — Dispatch Queue Management Console" />
+    <meta
+      name="twitter:description"
+      content="Manage driver queues, shipper requests, trips, and real-time dispatch operations from one console."
+    />
+    <meta name="twitter:image" content="https://queue.dynamicsroute.tech/favicon.svg" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Queue Admin",
+        "url": "https://queue.dynamicsroute.tech/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "Dispatch-queue management console for managing driver queues, shipper requests, trips, and real-time dispatch operations.",
+        "publisher": {
+          "@type": "Organization",
+          "name": "Dynamics Route",
+          "url": "https://dynamicsroute.tech/"
+        }
+      }
+    </script>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
