@@ -15,7 +15,15 @@ import SidebarItem from "./SidebarItem";
 import { useAuth } from "../../context/AuthContext";
 import { disconnectSocket } from "../../lib/socket";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
-import { useGetShipperRequestsQuery } from "../../lib/redux/api";
+import {
+  useGetShipperRequestsQuery,
+  useGetShipperRequestBatchesQuery,
+} from "../../lib/redux/api";
+import { mapBackendOrdersToDisplayItems } from "../../pages/orders/ordersDataMapper";
+import { groupOrdersByBatch, getConnectedJourneyStatus } from "../orders/OrdersTypes";
+
+const EMPTY_DELETED_IDS = new Set<string>();
+const EMPTY_EDITED_ORDERS = {};
 
 export type QueueSidebarTab =
   | "dashboard"
@@ -31,18 +39,7 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
-interface ShipperRequestResponseRaw {
-  shipperRequest?: {
-    journeyStatusId?: number;
-    isCompleted?: boolean;
-    status?: string;
-    requestStatus?: string;
-  };
-  journeyStatusId?: number;
-  isCompleted?: boolean;
-  status?: string;
-  requestStatus?: string;
-}
+
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
@@ -81,23 +78,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { skip: !effectiveOrgId }
   );
 
+  const { data: batchesData } = useGetShipperRequestBatchesQuery(
+    {
+      queueOrganizationUniqueId: effectiveOrgId,
+      requestMode: "company_target",
+      includeBids: true,
+      limit: 100,
+    },
+    { skip: !effectiveOrgId }
+  );
+
   const remainingOrdersCount = useMemo(() => {
-    const list = ordersData?.data as unknown as ShipperRequestResponseRaw[] | undefined;
-    if (!Array.isArray(list)) return 0;
-    return list.filter((item) => {
-      const req = item?.shipperRequest || item;
-      const statusId = req?.journeyStatusId;
-      const isComplete = Boolean(
-        req?.isCompleted ||
-        statusId === 9 ||
-        statusId === 14 ||
-        String(req?.status || "").toLowerCase() === "completed" ||
-        String(req?.status || "").toLowerCase() === "delivered" ||
-        String(req?.requestStatus || "").toLowerCase() === "completed"
-      );
-      return !isComplete;
-    }).length;
-  }, [ordersData]);
+    if (!ordersData && !batchesData) return 0;
+    const orders = mapBackendOrdersToDisplayItems({
+      ordersData,
+      batchesData,
+      deletedIds: EMPTY_DELETED_IDS,
+      editedOrders: EMPTY_EDITED_ORDERS,
+      activeOrg: null,
+      targetOrgId: effectiveOrgId,
+      t,
+    });
+    const ongoingOrders = orders.filter(
+      (o) => getConnectedJourneyStatus(o).type !== "completed"
+    );
+    return groupOrdersByBatch(ongoingOrders).length;
+  }, [ordersData, batchesData, effectiveOrgId, t]);
 
   const handleLogout = () => {
     disconnectSocket();

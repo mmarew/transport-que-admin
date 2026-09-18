@@ -309,8 +309,10 @@
   transition: all 0.15s ease;
 }
 
-.org-page-btn:hover:not(:disabled) {
-  background: #f1f5f9;
+.org-page-btn:hover:not(.active):not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: var(--primary, #0B4D6D);
 }
 
 .org-page-btn.active {
@@ -318,6 +320,13 @@
   border-color: var(--primary, #0B4D6D);
   color: #ffffff;
   font-weight: 600;
+  box-shadow: 0 1px 2px rgba(11, 77, 109, 0.2);
+}
+
+.org-page-btn.active:hover {
+  background: #083b54;
+  border-color: #083b54;
+  color: #ffffff;
 }
 
 .org-page-btn:disabled {

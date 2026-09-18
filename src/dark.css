@@ -303,17 +303,31 @@ html.dark,
   color: #94a3b8 !important;
 }
 
+.dark .orders-page-btn,
 .dark .org-page-btn {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
   color: #e2e8f0 !important;
 }
 
-.dark .org-page-btn:hover:not(:disabled) {
+.dark .orders-page-btn:hover:not(.active):not(:disabled),
+.dark .org-page-btn:hover:not(.active):not(:disabled) {
   background-color: #1f2937 !important;
+  border-color: #4b5563 !important;
+  color: #60a5fa !important;
 }
 
+.dark .orders-page-btn.active,
 .dark .org-page-btn.active {
   background-color: #0B4D6D !important;
   border-color: #0B4D6D !important;
+  color: #ffffff !important;
+}
+
+.dark .orders-page-btn.active:hover,
+.dark .org-page-btn.active:hover {
+  background-color: #0e628b !important;
+  border-color: #0e628b !important;
   color: #ffffff !important;
 }
 
