@@ -45,13 +45,7 @@ const debouncedInvalidate = (isOrgEvent = false) => {
 
 function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
   const storedAuth = getStoredAuth();
-  const token =
-    storedAuth?.token ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("jwt") ||
-    localStorage.getItem("authToken") ||
-    localStorage.getItem("access_token") ||
-    "";
+  const token = storedAuth?.token || "";
 
   const userData = (storedAuth?.userData || {}) as Record<string, unknown>;
 

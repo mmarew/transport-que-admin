@@ -223,21 +223,9 @@ export const SetupOrganization: React.FC = () => {
 
       // Fetch fresh organizations list into cache
       try {
-        await dispatch(
-          api.endpoints.listQueueOrganizations.initiate(undefined, {
-            subscribe: false,
-            forceRefetch: true,
-          })
-        );
-      } catch {
-        // Proceed even if direct fetch threw; tag invalidation handles background sync
-      }
-
-      // Safely call refetchOrgs if query was started
-      try {
         await refetchOrgs?.();
       } catch {
-        // Safely ignore if query has not been started yet
+        // Proceed even if refetch threw; tag invalidation handles background sync
       }
 
       toast.success(
