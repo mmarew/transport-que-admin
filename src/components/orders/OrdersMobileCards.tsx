@@ -175,30 +175,49 @@ export function OrdersMobileCards({
                         );
                       }
 
-                      if (onViewRequests && order.isBiddingApproved) {
+                      if (
+                        onViewRequests &&
+                        order.isBiddingApproved &&
+                        order.driverRequests &&
+                        order.driverRequests.length > 0
+                      ) {
                         return (
                           <button
                             type="button"
-                            className={`orders-m-btn-requests ${
-                              order.driverRequests && order.driverRequests.length > 0
-                                ? "orders-m-btn-requests--active"
-                                : ""
-                            }`}
+                            className="orders-m-btn-requests orders-m-btn-requests--active"
                             onClick={() => onViewRequests(order)}
                             title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
                           >
                             <Gavel size={12} />
                             <span>
-                              {t("orders.bids", "Bids")}
-                              {order.driverRequests && order.driverRequests.length > 0
-                                ? ` (${order.driverRequests.length})`
-                                : ""}
+                              {t("orders.bids", "Bids")} ({order.driverRequests.length})
                             </span>
                           </button>
                         );
                       }
 
-                      return null;
+                      return (
+                        <button
+                          type="button"
+                          className="orders-m-badge-waiting orders-badge-waiting"
+                          onClick={() => {
+                            if (onViewRequests && order.isBiddingApproved) {
+                              onViewRequests(order);
+                            }
+                          }}
+                          title={
+                            order.isBiddingApproved
+                              ? t(
+                                  "orders.waitingForBidsTooltip",
+                                  "Waiting for driver proposals. Click to check bids."
+                                )
+                              : t("orders.waitingForDriver", "Waiting for Driver")
+                          }
+                        >
+                          <Clock size={11} />
+                          <span>{t("orders.waiting", "Waiting")}</span>
+                        </button>
+                      );
                     })()}
                     <button
                       type="button"
@@ -315,7 +334,7 @@ export function OrdersMobileCards({
                 </div>
 
                 <div className="orders-m-actions">
-                  {group.statusSummary.isConnected && (
+                  {group.statusSummary.isConnected ? (
                     <span
                       className={`orders-m-btn-status orders-m-btn-status--${group.statusSummary.type} ${
                         group.statusSummary.label.includes(" · ")
@@ -345,7 +364,50 @@ export function OrdersMobileCards({
                         <span>{group.statusSummary.label}</span>
                       )}
                     </span>
-                  )}
+                  ) : (() => {
+                    const uniqueBidIds = new Set<string | number>();
+                    let totalBids = 0;
+                    for (const o of group.orders) {
+                      for (const r of (o.driverRequests || [])) {
+                        const rId = r.driverRequestUniqueId || r.driverRequestId || r.userUniqueId;
+                        if (rId) {
+                          if (!uniqueBidIds.has(rId)) {
+                            uniqueBidIds.add(rId);
+                            totalBids++;
+                          }
+                        } else {
+                          totalBids++;
+                        }
+                      }
+                    }
+                    if (totalBids > 0) {
+                      return (
+                        <button
+                          type="button"
+                          className="orders-m-btn-requests orders-m-btn-requests--active"
+                          onClick={() => onViewRequests?.(group.orders[0])}
+                          title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+                        >
+                          <Gavel size={12} />
+                          <span>
+                            {t("orders.bids", "Bids")} ({totalBids})
+                          </span>
+                        </button>
+                      );
+                    }
+                    return (
+                      <span className="orders-m-badge-waiting orders-badge-waiting">
+                        <Clock size={11} />
+                        <span>
+                          {group.totalVehicles > 1
+                            ? t("orders.batchWaitingPart", "{{waiting}} Waiting", {
+                                waiting: group.totalVehicles,
+                              })
+                            : t("orders.waiting", "Waiting")}
+                        </span>
+                      </span>
+                    );
+                  })()}
                   <button
                     type="button"
                     className="orders-m-btn-expand-trucks"

@@ -715,5 +715,43 @@ describe("Journey Status utility", () => {
     expect(completeBatches[0].orders).toHaveLength(1);
     expect(completeBatches[0].orders[0].id).toBe("req-557-1");
   });
+
+  it("handles multi-truck batches with 0 accepted drivers and 0 bids as waiting", () => {
+    const baseOrder: OrderDisplayItem = {
+      id: "1",
+      displayId: "#1",
+      shipper: "Test Shipper",
+      origin: "Dessie",
+      destination: "Kombolcha",
+      cost: 1000,
+      quintal: 67.33,
+      vehicleType: "Container Truck",
+      item: "coffee",
+      type: "Group" as const,
+      status: "ongoing" as const,
+    };
+
+    const batchOrders: OrderDisplayItem[] = Array.from({ length: 3 }, (_, i) => ({
+      ...baseOrder,
+      id: `req-558-${i + 1}`,
+      shipperRequestId: 5580 + i,
+      batchId: "558",
+      status: "ongoing",
+      isBiddingApproved: true,
+      totalVehicles: 3,
+      driverRequests: [],
+    }));
+
+    const batches = groupOrdersByBatch(batchOrders);
+    expect(batches).toHaveLength(1);
+    expect(batches[0].batchId).toBe("558");
+    expect(batches[0].isMultiVehicle).toBe(true);
+    expect(batches[0].totalVehicles).toBe(3);
+    expect(batches[0].acceptedCount).toBe(0);
+    expect(batches[0].waitingCount).toBe(3);
+    expect(batches[0].statusSummary.isConnected).toBe(false);
+    expect(batches[0].isBiddingApproved).toBe(true);
+  });
 });
+
 

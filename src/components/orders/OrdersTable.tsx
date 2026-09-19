@@ -288,31 +288,59 @@ export function OrdersTable({
                               );
                             }
 
-                            if (onViewRequests && order.isBiddingApproved) {
+                            if (
+                              onViewRequests &&
+                              order.isBiddingApproved &&
+                              order.driverRequests &&
+                              order.driverRequests.length > 0
+                            ) {
                               return (
                                 <button
                                   type="button"
-                                  className={`orders-btn-bids ${
-                                    order.driverRequests && order.driverRequests.length > 0
-                                      ? "orders-btn-bids--active"
-                                      : ""
-                                  }`}
+                                  className="orders-btn-bids orders-btn-bids--active"
                                   onClick={() => onViewRequests(order)}
                                   title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
                                   aria-label={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
                                 >
                                   <Gavel size={13} />
                                   <span>{t("orders.bids", "Bids")}</span>
-                                  {order.driverRequests && order.driverRequests.length > 0 && (
-                                    <span className="orders-bids-count">
-                                      {order.driverRequests.length}
-                                    </span>
-                                  )}
+                                  <span className="orders-bids-count">
+                                    {order.driverRequests.length}
+                                  </span>
                                 </button>
                               );
                             }
 
-                            return null;
+                            return (
+                              <button
+                                type="button"
+                                className="orders-badge-waiting"
+                                onClick={() => {
+                                  if (onViewRequests && order.isBiddingApproved) {
+                                    onViewRequests(order);
+                                  }
+                                }}
+                                title={
+                                  order.isBiddingApproved
+                                    ? t(
+                                        "orders.waitingForBidsTooltip",
+                                        "Waiting for driver proposals. Click to check bids."
+                                      )
+                                    : t("orders.waitingForDriver", "Waiting for Driver")
+                                }
+                                aria-label={
+                                  order.isBiddingApproved
+                                    ? t(
+                                        "orders.waitingForBidsTooltip",
+                                        "Waiting for driver proposals. Click to check bids."
+                                      )
+                                    : t("orders.waitingForDriver", "Waiting for Driver")
+                                }
+                              >
+                                <Clock size={11} />
+                                <span>{t("orders.waiting", "Waiting")}</span>
+                              </button>
+                            );
                           })()}
                           <button
                             type="button"
@@ -529,32 +557,75 @@ export function OrdersTable({
                                   }
                                 }
                               }
+
+                              if (totalBids > 0) {
+                                return (
+                                  <button
+                                    type="button"
+                                    className="orders-btn-bids orders-btn-bids--active"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onViewRequests(group.orders[0]);
+                                    }}
+                                    title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+                                    aria-label={t(
+                                      "orders.driverBidsTitle",
+                                      "Driver Bids & Proposals"
+                                    )}
+                                  >
+                                    <Gavel size={13} />
+                                    <span>{t("orders.bids", "Bids")}</span>
+                                    <span className="orders-bids-count">{totalBids}</span>
+                                  </button>
+                                );
+                              }
+
                               return (
                                 <button
                                   type="button"
-                                  className={`orders-btn-bids ${
-                                    totalBids > 0 ? "orders-btn-bids--active" : ""
-                                  }`}
+                                  className="orders-badge-waiting"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onViewRequests(group.orders[0]);
                                   }}
-                                  title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+                                  title={t(
+                                    "orders.waitingForBidsTooltip",
+                                    "Waiting for driver proposals. Click to check bids."
+                                  )}
                                   aria-label={t(
-                                    "orders.driverBidsTitle",
-                                    "Driver Bids & Proposals"
+                                    "orders.waitingForBidsTooltip",
+                                    "Waiting for driver proposals. Click to check bids."
                                   )}
                                 >
-                                  <Gavel size={13} />
-                                  <span>{t("orders.bids", "Bids")}</span>
-                                  {totalBids > 0 && (
-                                    <span className="orders-bids-count">{totalBids}</span>
-                                  )}
+                                  <Clock size={11} />
+                                  <span>
+                                    {group.totalVehicles > 1
+                                      ? t("orders.batchWaitingPart", "{{waiting}} Waiting", {
+                                          waiting: group.totalVehicles,
+                                        })
+                                      : t("orders.waiting", "Waiting")}
+                                  </span>
                                 </button>
                               );
                             }
 
-                            return null;
+                            return (
+                              <button
+                                type="button"
+                                className="orders-badge-waiting"
+                                title={t("orders.waitingForDriver", "Waiting for Driver")}
+                                aria-label={t("orders.waitingForDriver", "Waiting for Driver")}
+                              >
+                                <Clock size={11} />
+                                <span>
+                                  {group.totalVehicles > 1
+                                    ? t("orders.batchWaitingPart", "{{waiting}} Waiting", {
+                                        waiting: group.totalVehicles,
+                                      })
+                                    : t("orders.waiting", "Waiting")}
+                                </span>
+                              </button>
+                            );
                           })()}
                           <button
                             type="button"
