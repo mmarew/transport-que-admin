@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { api } from "./api";
 import authReducer from "./slices/authSlice";
 import queueReducer from "./slices/queueSlice";
+console.log("🚀 ~  api.reducer:", api.reducer);
 
 export const store = configureStore({
   reducer: {

@@ -9,7 +9,6 @@ import heroImg from "../../assets/Frame.png";
 import LanguageSelector from "../ui/LanguageSelector";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import { useAuth } from "../../context/AuthContext";
-import { disconnectSocket } from "../../lib/socket";
 import { hasOrganizationData } from "../../services/organization.service";
 import { useAppDispatch } from "../../lib/redux/hooks";
 import {
@@ -58,6 +57,19 @@ export const SetupOrganization: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  // useListQueueOrganizationsQuery() — fetches all queue organizations the
+  // logged-in user is part of (cache lives in state.api). Called with NO args,
+  // so every caller shares the same cache entry. Result fields:
+  //   data:            last successful response (PaginatedResponse<QueueOrgListItem>),
+  //                    undefined until the first success (orgs are in data.data).
+  //   isSuccess:       true once the first fetch succeeded; drives the auto-redirect
+  //                    effect below (has-orgs → go to dashboard).
+  //   isOrgsLoading:   true ONLY on the very first load (no cache yet) → page spinner.
+  //   isOrgsFetching:  true on ANY in-flight request (first load + background
+  //                    refetches after reconnect/refetch calls). While refreshing,
+  //                    we must NOT redirect so we don't bounce the user away mid-update.
+  //   refetchOrgs:     manual "refresh" function (returns a Promise); called after a
+  //                    successful org create to make the list fresh before navigating.
   const {
     data: orgsData,
     isSuccess,
@@ -67,7 +79,6 @@ export const SetupOrganization: React.FC = () => {
   } = useListQueueOrganizationsQuery();
 
   const handleLogout = () => {
-    disconnectSocket();
     logout();
     navigate("/login", { replace: true });
   };
