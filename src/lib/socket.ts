@@ -19,28 +19,31 @@ const activeSubscriptions = new Map<
 let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
 const debouncedInvalidate = (isOrgEvent = false) => {
   if (invalidateTimer) clearTimeout(invalidateTimer);
-  invalidateTimer = setTimeout(async () => {
-    try {
-      const [{ store }, { api }] = await Promise.all([
-        import("./redux/store"),
-        import("./redux/api"),
-      ]);
-      store.dispatch(
-        api.util.invalidateTags([
-          { type: "QueueStatus" },
-          { type: "DriverQueue" },
-          { type: "ShipperRequests" },
-          { type: "QueueOrganizations" },
-          "QueueStatus",
-          "DriverQueue",
-          "ShipperRequests",
-          "QueueOrganizations",
-        ])
-      );
-    } catch (err) {
-      console.error("[WebSocket] Failed to invalidate RTK Query tags:", err);
-    }
-  }, isOrgEvent ? 30 : 150);
+  invalidateTimer = setTimeout(
+    async () => {
+      try {
+        const [{ store }, { api }] = await Promise.all([
+          import("./redux/store"),
+          import("./redux/api"),
+        ]);
+        store.dispatch(
+          api.util.invalidateTags([
+            { type: "QueueStatus" },
+            { type: "DriverQueue" },
+            { type: "ShipperRequests" },
+            { type: "QueueOrganizations" },
+            "QueueStatus",
+            "DriverQueue",
+            "ShipperRequests",
+            "QueueOrganizations",
+          ]),
+        );
+      } catch (err) {
+        console.error("[WebSocket] Failed to invalidate RTK Query tags:", err);
+      }
+    },
+    isOrgEvent ? 30 : 150,
+  );
 };
 
 function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
@@ -64,7 +67,8 @@ function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
       const parts = cleanToken.split(".");
       if (parts.length === 3) {
         const payload = JSON.parse(atob(parts[1]));
-        if (!phoneNumber) phoneNumber = payload.phoneNumber || payload.phone || "";
+        if (!phoneNumber)
+          phoneNumber = payload.phoneNumber || payload.phone || "";
         if (!roleId) roleId = payload.roleId;
       }
     } catch {
@@ -73,13 +77,20 @@ function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
   }
 
   const userType = roleId === 3 || roleId === 6 ? "admin" : "queueOrgAdmin";
-  const formattedToken = token ? (token.startsWith("Bearer ") ? token : `Bearer ${token}`) : "";
+  const formattedToken = token
+    ? token.startsWith("Bearer ")
+      ? token
+      : `Bearer ${token}`
+    : "";
   const rawToken = token ? token.replace(/^Bearer\s+/i, "") : "";
 
   return { token: formattedToken, rawToken, phoneNumber, userType };
 }
 
-function emitSubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string; queueDate?: string }) {
+function emitSubscribe(
+  sock: Socket,
+  sub: { queueOrganizationUniqueId: string; queueDate?: string },
+) {
   const payload = {
     queueOrganizationUniqueId: sub.queueOrganizationUniqueId,
     queueDate: sub.queueDate,
@@ -87,7 +98,10 @@ function emitSubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string; q
   sock.emit("queue:subscribe", payload);
 }
 
-function emitUnsubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string; queueDate?: string }) {
+function emitUnsubscribe(
+  sock: Socket,
+  sub: { queueOrganizationUniqueId: string; queueDate?: string },
+) {
   const payload = {
     queueOrganizationUniqueId: sub.queueOrganizationUniqueId,
     queueDate: sub.queueDate,
@@ -95,7 +109,9 @@ function emitUnsubscribe(sock: Socket, sub: { queueOrganizationUniqueId: string;
   sock.emit("queue:unsubscribe", payload);
 }
 
-export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | null {
+export function connectSocket(
+  user?: Pick<AuthUser, "phoneNumber">,
+): Socket | null {
   const { token, rawToken, phoneNumber, userType } = extractCredentials(user);
 
   if (socket) {
@@ -143,7 +159,6 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
   });
 
   socket.on("connect", () => {
-    console.info("[WebSocket] Connected successfully (ID:", socket?.id, ")");
     useQueueAdminStore.getState().setSocketConnected(true);
     activeSubscriptions.forEach((sub) => {
       if (socket) emitSubscribe(socket, sub);
@@ -160,8 +175,7 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     useQueueAdminStore.getState().setSocketConnected(false);
   });
 
-  socket.on("queue:subscribed", (ack) => {
-    console.info("[WebSocket] Room subscribed ack:", ack);
+  socket.on("queue:subscribed", (_ack) => {
     useQueueAdminStore.getState().setSocketConnected(true);
   });
 
@@ -169,16 +183,19 @@ export function connectSocket(user?: Pick<AuthUser, "phoneNumber">): Socket | nu
     try {
       if (!msg && !eventName) return;
       const parsed = typeof msg === "string" ? JSON.parse(msg) : msg;
-      console.info(`[WebSocket] Event "${eventName || "queue"}" received:`, parsed);
 
       // Extract message type
-      const messageType = (parsed as any)?.messageTypes || (parsed as any)?.message || eventName;
+      const messageType =
+        (parsed as any)?.messageTypes || (parsed as any)?.message || eventName;
 
       const isOrgEvent =
         messageType === "queue_org_approved" ||
         messageType === "queue_org_updated" ||
         messageType === "org_approved" ||
-        Boolean((parsed as any)?.data?.queueOrganizationUniqueId && (parsed as any)?.data?.approvalStatus);
+        Boolean(
+          (parsed as any)?.data?.queueOrganizationUniqueId &&
+          (parsed as any)?.data?.approvalStatus,
+        );
 
       if (parsed && typeof parsed === "object") {
         queueEventHandlers.forEach((handler) => {
@@ -243,14 +260,21 @@ export function disconnectSocket(): void {
   }
 }
 
-export function subscribeToQueue(queueOrganizationUniqueId: string, queueDate?: string): void {
+export function subscribeToQueue(
+  queueOrganizationUniqueId: string,
+  queueDate?: string,
+): void {
   if (!queueOrganizationUniqueId) return;
   const key = `${queueOrganizationUniqueId}_${queueDate || ""}`;
   const existing = activeSubscriptions.get(key);
   if (existing) {
     existing.refCount += 1;
   } else {
-    activeSubscriptions.set(key, { queueOrganizationUniqueId, queueDate, refCount: 1 });
+    activeSubscriptions.set(key, {
+      queueOrganizationUniqueId,
+      queueDate,
+      refCount: 1,
+    });
   }
 
   if (!socket) {
@@ -264,7 +288,10 @@ export function subscribeToQueue(queueOrganizationUniqueId: string, queueDate?: 
   }
 }
 
-export function unsubscribeFromQueue(queueOrganizationUniqueId: string, queueDate?: string): void {
+export function unsubscribeFromQueue(
+  queueOrganizationUniqueId: string,
+  queueDate?: string,
+): void {
   if (!queueOrganizationUniqueId) return;
   const key = `${queueOrganizationUniqueId}_${queueDate || ""}`;
   const existing = activeSubscriptions.get(key);

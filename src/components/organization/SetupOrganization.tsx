@@ -49,7 +49,9 @@ function formatPhotonLabel(feature: any): string {
     p.state,
     p.country,
   ].filter(Boolean);
-  return parts.length > 0 ? Array.from(new Set(parts)).join(", ") : p.name || p.street || "Location";
+  return parts.length > 0
+    ? Array.from(new Set(parts)).join(", ")
+    : p.name || p.street || "Location";
 }
 
 export const SetupOrganization: React.FC = () => {
@@ -61,7 +63,9 @@ export const SetupOrganization: React.FC = () => {
   // logged-in user is part of (cache lives in state.api). Called with NO args,
   // so every caller shares the same cache entry. Result fields:
   //   data:            last successful response (PaginatedResponse<QueueOrgListItem>),
-  //                    undefined until the first success (orgs are in data.data).
+  //                    undefined until the first success. Shape confirmed from backend:
+  //                    { message, data: QueueOrgListItem[], pagination } — the orgs
+  //                    themselves live in data.data (each item is { organization, creator }).
   //   isSuccess:       true once the first fetch succeeded; drives the auto-redirect
   //                    effect below (has-orgs → go to dashboard).
   //   isOrgsLoading:   true ONLY on the very first load (no cache yet) → page spinner.
@@ -90,7 +94,8 @@ export const SetupOrganization: React.FC = () => {
     }
   }, [isSuccess, isOrgsFetching, orgsData, navigate]);
 
-  const [createOrgMutation, { isLoading: isCreating }] = useCreateQueueOrganizationMutation();
+  const [createOrgMutation, { isLoading: isCreating }] =
+    useCreateQueueOrganizationMutation();
 
   const {
     register,
@@ -129,7 +134,7 @@ export const SetupOrganization: React.FC = () => {
     setIsSearching(true);
     try {
       const res = await fetch(
-        `${PHOTON_API_URL}?q=${encodeURIComponent(query.trim())}&lat=9.0320&lon=38.7469&lang=en&limit=10`
+        `${PHOTON_API_URL}?q=${encodeURIComponent(query.trim())}&lat=9.0320&lon=38.7469&lang=en&limit=10`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -242,7 +247,7 @@ export const SetupOrganization: React.FC = () => {
       toast.success(
         alreadyExisted
           ? "Organization linked successfully! Opening dashboard."
-          : "Organization created! Pending admin approval."
+          : "Organization created! Pending admin approval.",
       );
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
@@ -251,11 +256,21 @@ export const SetupOrganization: React.FC = () => {
     }
   };
 
-  const { ref: formAddressRef, ...addressRest } = register("queueOrganizationAddress");
+  const { ref: formAddressRef, ...addressRest } = register(
+    "queueOrganizationAddress",
+  );
 
   if (isOrgsLoading || (isOrgsFetching && hasOrganizationData(orgsData))) {
     return (
-      <div className="login-container" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+      <div
+        className="login-container"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+        }}
+      >
         <div className="add-docs-spinner" style={{ width: 36, height: 36 }} />
       </div>
     );
@@ -275,7 +290,10 @@ export const SetupOrganization: React.FC = () => {
       <div className="login-form-panel">
         {/* Mobile hero */}
         <div className="login-mobile-hero">
-          <div className="login-mobile-title-row" style={{ position: "relative" }}>
+          <div
+            className="login-mobile-title-row"
+            style={{ position: "relative" }}
+          >
             <span className="login-app-title">{t("auth.loginTitle")}</span>
             <button
               type="button"
@@ -291,14 +309,20 @@ export const SetupOrganization: React.FC = () => {
           <div className="login-mobile-lang-row">
             <LanguageSelector />
           </div>
-          <div className="login-mobile-hero-text" style={{ paddingBottom: "1.5rem" }}>
+          <div
+            className="login-mobile-hero-text"
+            style={{ paddingBottom: "1.5rem" }}
+          >
             <h1>{t("org.setupTitle")}</h1>
             <p>{t("org.setupSubtitle")}</p>
           </div>
         </div>
 
         <div className="login-card animate-scale-up">
-          <div className="login-header login-header--desktop" style={{ position: "relative" }}>
+          <div
+            className="login-header login-header--desktop"
+            style={{ position: "relative" }}
+          >
             <h1>{t("org.setupTitle")}</h1>
             <p>{t("org.setupSubtitle")}</p>
             <button
@@ -312,13 +336,19 @@ export const SetupOrganization: React.FC = () => {
             </button>
           </div>
 
-          <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <form
+            className="login-form"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+          >
             {/* Organization Name */}
             <div className="form-group form-group-mb">
               <label htmlFor="org-name">
                 {t("org.nameLabel")} <span style={{ color: "#E80000" }}>*</span>
               </label>
-              <div className={`input-wrapper${errors.queueOrganizationName ? " input-wrapper--error" : ""}`}>
+              <div
+                className={`input-wrapper${errors.queueOrganizationName ? " input-wrapper--error" : ""}`}
+              >
                 <input
                   id="org-name"
                   type="text"
@@ -332,7 +362,9 @@ export const SetupOrganization: React.FC = () => {
                 />
               </div>
               {errors.queueOrganizationName && (
-                <p className="setup-org-field-error">{errors.queueOrganizationName.message}</p>
+                <p className="setup-org-field-error">
+                  {errors.queueOrganizationName.message}
+                </p>
               )}
             </div>
 
@@ -341,7 +373,9 @@ export const SetupOrganization: React.FC = () => {
               <label htmlFor="org-type">
                 {t("org.typeLabel")} <span style={{ color: "#E80000" }}>*</span>
               </label>
-              <div className={`input-wrapper setup-org-select-wrapper${errors.queueOrganizationType ? " input-wrapper--error" : ""}`}>
+              <div
+                className={`input-wrapper setup-org-select-wrapper${errors.queueOrganizationType ? " input-wrapper--error" : ""}`}
+              >
                 <select
                   id="org-type"
                   className="setup-org-select"
@@ -350,14 +384,18 @@ export const SetupOrganization: React.FC = () => {
                   <option value="">{t("org.selectType")}...</option>
                   {QUEUE_ORG_TYPES.map((typeKey) => (
                     <option key={typeKey} value={typeKey}>
-                      {t(`org.types.${typeKey}`, { defaultValue: ORG_TYPE_LABELS[typeKey] })}
+                      {t(`org.types.${typeKey}`, {
+                        defaultValue: ORG_TYPE_LABELS[typeKey],
+                      })}
                     </option>
                   ))}
                 </select>
                 <ChevronDown size={16} className="setup-org-select-icon" />
               </div>
               {errors.queueOrganizationType && (
-                <p className="setup-org-field-error">{errors.queueOrganizationType.message}</p>
+                <p className="setup-org-field-error">
+                  {errors.queueOrganizationType.message}
+                </p>
               )}
             </div>
 
@@ -367,7 +405,11 @@ export const SetupOrganization: React.FC = () => {
                 id="org-phone"
                 label={t("org.phoneLabel")}
                 value={watch("queueOrganizationPhone") || ""}
-                onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
+                onChange={(val) =>
+                  setValue("queueOrganizationPhone", val, {
+                    shouldValidate: true,
+                  })
+                }
                 placeholder="9-XX-XX-XX-XX"
                 required={false}
                 optional={true}
@@ -378,9 +420,12 @@ export const SetupOrganization: React.FC = () => {
             {/* Address */}
             <div className="form-group setup-org-address-group">
               <label htmlFor="org-address">
-                {t("org.addressLabel")} <span style={{ color: "#E80000" }}>*</span>
+                {t("org.addressLabel")}{" "}
+                <span style={{ color: "#E80000" }}>*</span>
               </label>
-              <div className={`input-wrapper${errors.queueOrganizationAddress ? " input-wrapper--error" : ""}`}>
+              <div
+                className={`input-wrapper${errors.queueOrganizationAddress ? " input-wrapper--error" : ""}`}
+              >
                 <input
                   id="org-address"
                   type="text"
@@ -404,12 +449,17 @@ export const SetupOrganization: React.FC = () => {
                 {isSearching && <span className="setup-org-address-spinner" />}
               </div>
               {errors.queueOrganizationAddress && (
-                <p className="setup-org-field-error">{errors.queueOrganizationAddress.message}</p>
+                <p className="setup-org-field-error">
+                  {errors.queueOrganizationAddress.message}
+                </p>
               )}
 
               {/* Suggestions Dropdown */}
               {showSuggestions && suggestions.length > 0 && (
-                <div ref={suggestionsBoxRef} className="setup-org-suggestions-dropdown">
+                <div
+                  ref={suggestionsBoxRef}
+                  className="setup-org-suggestions-dropdown"
+                >
                   {suggestions.map((place, index) => (
                     <button
                       type="button"
@@ -417,15 +467,25 @@ export const SetupOrganization: React.FC = () => {
                       className="setup-org-suggestion-item"
                       onClick={() => handleSelectSuggestion(place)}
                     >
-                      <span className="setup-org-suggestion-name">{place.label}</span>
-                      {place.city && <span className="setup-org-suggestion-details">{place.city}</span>}
+                      <span className="setup-org-suggestion-name">
+                        {place.label}
+                      </span>
+                      {place.city && (
+                        <span className="setup-org-suggestion-details">
+                          {place.city}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <button type="submit" className="login-btn" disabled={isSubmitting || isCreating}>
+            <button
+              type="submit"
+              className="login-btn"
+              disabled={isSubmitting || isCreating}
+            >
               {isSubmitting || isCreating ? (
                 <span className="btn-inner-flex">
                   <span className="add-docs-spinner" />
@@ -435,7 +495,6 @@ export const SetupOrganization: React.FC = () => {
                 t("org.createOrg")
               )}
             </button>
-
           </form>
         </div>
       </div>
