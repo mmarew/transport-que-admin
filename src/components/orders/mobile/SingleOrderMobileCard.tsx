@@ -1,8 +1,5 @@
 import { useTranslation } from "react-i18next";
 import {
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
   Package,
   Pencil,
   Trash2,
@@ -11,9 +8,9 @@ import {
   Gavel,
   Clock,
 } from "lucide-react";
-import { extractCity } from "@/utils/formatters";
 import type { OrderDisplayItem } from "../OrdersTypes";
 import { getConnectedJourneyStatus } from "../OrdersTypes";
+import { OrderMobileRoute } from "./OrderMobileRoute";
 
 export interface SingleOrderMobileCardProps {
   order: OrderDisplayItem;
@@ -70,43 +67,12 @@ export function SingleOrderMobileCard({
       </div>
 
       {/* Row 2: Location Route */}
-      {isLocationExpanded ? (
-        <div
-          className="orders-m-route orders-m-route--expanded"
-          onClick={onToggleLocation}
-          title={t("orders.clickToCollapse", "Click to collapse")}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="orders-m-loc-row">
-            <span className="orders-loc-dot orders-loc-dot--origin" />
-            <span className="orders-m-loc-text">
-              <strong>{t("orders.from", "From")}:</strong> {order.origin}
-            </span>
-          </div>
-          <div className="orders-m-loc-row">
-            <span className="orders-loc-dot orders-loc-dot--dest" />
-            <span className="orders-m-loc-text">
-              <strong>{t("orders.to", "To")}:</strong> {order.destination}
-            </span>
-          </div>
-          <span className="orders-loc-collapse-hint">
-            <ChevronUp size={11} /> {t("orders.collapse", "Collapse")}
-          </span>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="orders-m-route orders-m-route--trimmed"
-          onClick={onToggleLocation}
-          title={t("orders.clickForFullLocation", "Click to view full location")}
-        >
-          <span className="orders-m-city">{extractCity(order.origin)}</span>
-          <ArrowRight size={12} className="orders-m-arrow" />
-          <span className="orders-m-city">{extractCity(order.destination)}</span>
-          <ChevronDown size={11} className="orders-m-loc-chevron" />
-        </button>
-      )}
+      <OrderMobileRoute
+        origin={order.origin}
+        destination={order.destination}
+        isExpanded={isLocationExpanded}
+        onToggle={onToggleLocation}
+      />
 
       {/* Row 3: Meta tags + Actions */}
       <div className="orders-m-footer">

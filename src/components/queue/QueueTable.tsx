@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { ArrowUp, ChevronRight, Trash2 } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import type { DriverQueueEntry, QueueStatus } from "../../types/queue";
 import { normalizeQueueEntry } from "../../utils/formatters";
 import {
   ShipperRequestsModal,
   type ShipperRequestDetail,
 } from "./ShipperRequestsModal";
+import { buildShipperRequestDetail } from "./table/buildShipperRequestDetail";
+import { QueueDesktopTable } from "./table/QueueDesktopTable";
+import { QueueMobileTable } from "./table/QueueMobileTable";
+import type { QueueRowItem } from "./table/types";
 import "./QueueBoard.css";
 
 interface QueueTableProps {
@@ -32,7 +34,6 @@ export function QueueTable({
   onOverride,
   onRemove,
 }: QueueTableProps) {
-  const { t } = useTranslation();
   const [expandedAddresses, setExpandedAddresses] = useState<Set<string>>(
     new Set(),
   );
@@ -42,65 +43,12 @@ export function QueueTable({
     request: ShipperRequestDetail | null;
   } | null>(null);
 
-  // The ONE current request for this row — from /api/queue/status only.
   const openShipperModal = (
     phone: string,
     name: string | null,
     entry: DriverQueueEntry,
   ) => {
-    const own = entry.shipperRequest;
-    let request: ShipperRequestDetail | null = null;
-    if (own?.shipperRequestUniqueId) {
-      request = {
-        shipperRequestUniqueId: own.shipperRequestUniqueId,
-        fullName: own.fullName ?? null,
-        phoneNumber: own.phoneNumber ?? undefined,
-        requestMode: own.requestMode ?? null,
-        vehicleTypeName: own.vehicleTypeName ?? null,
-        vehicleTypeUniqueId: (own as any).vehicleTypeUniqueId || null,
-        shippableItemName: own.shippableItemName ?? null,
-        shippableItemQtyInQuintal: own.shippableItemQtyInQuintal ?? null,
-        shippingCost: own.shippingCost ?? null,
-        originPlace: own.originPlace ?? null,
-        destinationPlace: own.destinationPlace ?? null,
-        shippingDate: own.shippingDate ?? null,
-        deliveryDate: own.deliveryDate ?? null,
-        shipperRequestCreatedAt: own.shipperRequestCreatedAt ?? null,
-        journeyStatusId: own.journeyStatusId ?? null,
-        isBiddingApproved: Boolean((own as any).isBiddingApproved),
-        driverRequests: ((own as any).driverRequests || []).map((d: any) => {
-          const ownDecisions: any[] = (own as any).decisions || (entry as any).decisions || [];
-          const matchingDecision =
-            ownDecisions.find(
-              (dec: any) =>
-                (dec.driverRequestId != null && dec.driverRequestId === d.driverRequestId) ||
-                (dec.driverRequestUniqueId && dec.driverRequestUniqueId === d.driverRequestUniqueId) ||
-                (dec.driverUserUniqueId && dec.driverUserUniqueId === d.userUniqueId)
-            ) || (ownDecisions.length === 1 ? ownDecisions[0] : null);
-
-          return {
-            ...d,
-            journeyDecisionUniqueId:
-              d.journeyDecisionUniqueId ||
-              matchingDecision?.journeyDecisionUniqueId ||
-              null,
-            offerCost:
-              d.offerCost ??
-              d.proposedCost ??
-              d.bidAmount ??
-              d.bidCost ??
-              d.biddingCost ??
-              d.cost ??
-              d.price ??
-              null,
-            proposedCost: d.proposedCost ?? d.offerCost ?? d.bidAmount ?? null,
-            bidAmount: d.bidAmount ?? d.proposedCost ?? d.offerCost ?? null,
-            vehicleTypeName: d.vehicleTypeName ?? d.vehicleType ?? null,
-            plateNumber: d.plateNumber ?? d.vehiclePlateNumber ?? null,
-          };
-        }),
-      };
-    }
+    const request = buildShipperRequestDetail(entry);
     setShipperModal({ phone, name, request });
   };
 
@@ -114,7 +62,7 @@ export function QueueTable({
     });
   };
 
-  const rows = (entries || []).map((rawEntry, index) => {
+  const rows: QueueRowItem[] = (entries || []).map((rawEntry, index) => {
     const entry = normalizeQueueEntry(rawEntry);
     const statusKey = (entry.status || "waiting") as QueueStatus;
     const statusLabel =
@@ -140,230 +88,19 @@ export function QueueTable({
 
   return (
     <>
-      {/* ── Desktop Table: 7 columns with phone + address + text action buttons ── */}
-      <div className="qb-table-responsive qb-table--desktop">
-        <table className="qb-table-grid">
-          <thead>
-            <tr>
-              <th className="qb-th-num">{t("queue.positions", "Positions")}</th>
-              <th>{t("queue.driver")}</th>
-              <th>{t("queue.phone")}</th>
-              <th>{t("queue.address", "Address")}</th>
-              <th>{t("queue.shipperColumn", "Shipper Name / Phone")}</th>
-              <th>{t("queue.joined")}</th>
-              <th>{t("queue.status")}</th>
-              <th style={{ textAlign: "center", width: "220px" }}>
-                {t("queue.action")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="qb-empty-row-text">
-                  {t("queue.noDrivers")}
-                </td>
-              </tr>
-            ) : (
-              rows.map(
-                ({
-                  entry,
-                  statusKey,
-                  statusLabel,
-                  num,
-                  joinedTime,
-                  key,
-                  shipperName,
-                  shipperPhone,
-                }) => (
-                  <tr key={key}>
-                    <td className="qb-th-num">
-                      <span className="qb-num-circle">{num}</span>
-                    </td>
-                    <td className="qb-driver-name">{entry.driverName}</td>
-                    <td className="qb-time-text">{entry.driverPhoneNumber}</td>
-                    <td
-                      className="qb-time-text"
-                      style={{ color: "#334155", fontWeight: 500 }}
-                    >
-                      {entry.driverAddress ? (
-                        entry.driverAddress.length > 22 ? (
-                          <button
-                            type="button"
-                            className={`qb-address-toggle-btn ${expandedAddresses.has(key) ? "expanded" : ""}`}
-                            onClick={(e) => toggleAddress(key, e)}
-                            title={
-                              expandedAddresses.has(key)
-                                ? t(
-                                    "common.clickToCollapse",
-                                    "Click to collapse",
-                                  )
-                                : `${entry.driverAddress} (${t("common.clickForFull", "Click for full address")})`
-                            }
-                          >
-                            {expandedAddresses.has(key)
-                              ? entry.driverAddress
-                              : `${entry.driverAddress.slice(0, 20)}…`}
-                          </button>
-                        ) : (
-                          entry.driverAddress
-                        )
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>
-                      {shipperPhone ? (
-                        <button
-                          type="button"
-                          className="qb-shipper-link"
-                          onClick={() =>
-                            openShipperModal(shipperPhone, shipperName, entry)
-                          }
-                          aria-label={t(
-                            "queue.viewShipperRequests",
-                            "View requests posted by this shipper",
-                          )}
-                        >
-                          <span className="qb-shipper-text">
-                            {shipperName && (
-                              <span className="qb-time-text qb-shipper-name">
-                                {shipperName}
-                              </span>
-                            )}
-                            <span className="qb-time-text">{shipperPhone}</span>
-                          </span>
-                          <ChevronRight size={14} className="qb-shipper-chev" />
-                        </button>
-                      ) : (
-                        <span className="qb-time-text">—</span>
-                      )}
-                    </td>
-                    <td className="qb-time-text">{joinedTime}</td>
-                    <td>
-                      <span className={`qb-status-text ${statusKey}`}>
-                        {statusLabel}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      {statusKey === "removed" || statusKey === "completed" ? (
-                        <span className="qb-action-dash">—</span>
-                      ) : (
-                        <div className="qb-actions-cell">
-                          <button
-                            type="button"
-                            className="qb-btn-text-override"
-                            onClick={() => onOverride(entry)}
-                          >
-                            {t("queue.override")}
-                          </button>
-                          <button
-                            type="button"
-                            className="qb-btn-text-cancel"
-                            onClick={() => onRemove(entry)}
-                          >
-                            {t("queue.cancelDriver")}
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ),
-              )
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Mobile Table: 5 columns (no phone) + icon-only action buttons ── */}
-      <div className="qb-table-responsive qb-table--mobile">
-        <table className="qb-table-grid qb-table-grid--mobile">
-          <thead>
-            <tr>
-              <th className="qb-th-num">{t("queue.positions", "Positions")}</th>
-              <th>{t("queue.driver")}</th>
-              <th>{t("queue.joined")}</th>
-              <th>{t("queue.status")}</th>
-              <th className="qb-th-action">{t("queue.action")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="qb-empty-row-text">
-                  {t("queue.noDrivers")}
-                </td>
-              </tr>
-            ) : (
-              rows.map(
-                ({ entry, statusKey, statusLabel, num, joinedTime, key }) => (
-                  <tr key={key}>
-                    <td className="qb-th-num">
-                      <span className="qb-num-circle">{num}</span>
-                    </td>
-                    <td className="qb-driver-name">
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "2px",
-                        }}
-                      >
-                        <span style={{ fontWeight: 600, color: "#0f172a" }}>
-                          {entry.driverName}
-                        </span>
-                        {entry.driverAddress && (
-                          <span
-                            style={{
-                              fontSize: "0.74rem",
-                              color: "#64748b",
-                              fontWeight: 400,
-                            }}
-                          >
-                            {entry.driverAddress}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="qb-time-text">{joinedTime}</td>
-                    <td>
-                      <span className={`qb-status-text ${statusKey}`}>
-                        {statusLabel}
-                      </span>
-                    </td>
-                    <td className="qb-th-action">
-                      {statusKey === "removed" || statusKey === "completed" ? (
-                        <span className="qb-action-dash">—</span>
-                      ) : (
-                        <div className="qb-actions-cell">
-                          <button
-                            type="button"
-                            className="qb-btn-icon-override"
-                            onClick={() => onOverride(entry)}
-                            title={t("queue.override")}
-                            aria-label={t("queue.override")}
-                          >
-                            <ArrowUp size={17} />
-                          </button>
-                          <button
-                            type="button"
-                            className="qb-btn-icon-cancel"
-                            onClick={() => onRemove(entry)}
-                            title={t("queue.cancelDriver")}
-                            aria-label={t("queue.cancelDriver")}
-                          >
-                            <Trash2 size={17} />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ),
-              )
-            )}
-          </tbody>
-        </table>
-      </div>
+      <QueueDesktopTable
+        rows={rows}
+        expandedAddresses={expandedAddresses}
+        onToggleAddress={toggleAddress}
+        onOpenShipper={openShipperModal}
+        onOverride={onOverride}
+        onRemove={onRemove}
+      />
+      <QueueMobileTable
+        rows={rows}
+        onOverride={onOverride}
+        onRemove={onRemove}
+      />
       {shipperModal && (
         <ShipperRequestsModal
           phone={shipperModal.phone}

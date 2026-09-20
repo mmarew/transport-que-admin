@@ -1,18 +1,9 @@
-import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  Package,
-  Truck,
-  Tag,
-  Gavel,
-  Clock,
-} from "lucide-react";
-import { extractCity } from "@/utils/formatters";
+import { ChevronDown, ChevronUp, Package, Truck, Tag } from "lucide-react";
 import type { OrderBatchGroup, OrderDisplayItem } from "../OrdersTypes";
 import { BatchSubCard } from "./BatchSubCard";
+import { OrderMobileRoute } from "./OrderMobileRoute";
+import { BatchMobileStatus } from "./BatchMobileStatus";
 
 export interface BatchOrderMobileCardProps {
   group: OrderBatchGroup;
@@ -80,43 +71,12 @@ export function BatchOrderMobileCard({
       </div>
 
       {/* Row 2: Location Route */}
-      {isLocationExpanded ? (
-        <div
-          className="orders-m-route orders-m-route--expanded"
-          onClick={onToggleLocation}
-          title={t("orders.clickToCollapse", "Click to collapse")}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="orders-m-loc-row">
-            <span className="orders-loc-dot orders-loc-dot--origin" />
-            <span className="orders-m-loc-text">
-              <strong>{t("orders.from", "From")}:</strong> {group.origin}
-            </span>
-          </div>
-          <div className="orders-m-loc-row">
-            <span className="orders-loc-dot orders-loc-dot--dest" />
-            <span className="orders-m-loc-text">
-              <strong>{t("orders.to", "To")}:</strong> {group.destination}
-            </span>
-          </div>
-          <span className="orders-loc-collapse-hint">
-            <ChevronUp size={11} /> {t("orders.collapse", "Collapse")}
-          </span>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="orders-m-route orders-m-route--trimmed"
-          onClick={onToggleLocation}
-          title={t("orders.clickForFullLocation", "Click to view full location")}
-        >
-          <span className="orders-m-city">{extractCity(group.origin)}</span>
-          <ArrowRight size={12} className="orders-m-arrow" />
-          <span className="orders-m-city">{extractCity(group.destination)}</span>
-          <ChevronDown size={11} className="orders-m-loc-chevron" />
-        </button>
-      )}
+      <OrderMobileRoute
+        origin={group.origin}
+        destination={group.destination}
+        isExpanded={isLocationExpanded}
+        onToggle={onToggleLocation}
+      />
 
       {/* Row 3: Meta tags + View Trucks action */}
       <div className="orders-m-footer">
@@ -137,85 +97,7 @@ export function BatchOrderMobileCard({
         </div>
 
         <div className="orders-m-actions">
-          {group.statusSummary.isConnected ? (
-            <span
-              className={`orders-m-btn-status orders-m-btn-status--${group.statusSummary.type} ${
-                group.statusSummary.label.includes(" · ")
-                  ? "orders-m-btn-status--partial"
-                  : ""
-              }`}
-              title={group.statusSummary.label}
-            >
-              {group.statusSummary.label.includes(" · ") ? (
-                <>
-                  {group.statusSummary.label.split(" · ").map((part, idx) => (
-                    <Fragment key={idx}>
-                      {idx > 0 && (
-                        <span className="orders-status-divider">·</span>
-                      )}
-                      <span
-                        className={
-                          part.includes("Waiting")
-                            ? "orders-status-waiting-part"
-                            : "orders-status-active-part"
-                        }
-                      >
-                        {part}
-                      </span>
-                    </Fragment>
-                  ))}
-                </>
-              ) : (
-                <span>{group.statusSummary.label}</span>
-              )}
-            </span>
-          ) : (() => {
-            const uniqueBidIds = new Set<string | number>();
-            let totalBids = 0;
-            for (const o of group.orders) {
-              for (const r of o.driverRequests || []) {
-                const rId =
-                  r.driverRequestUniqueId ||
-                  r.driverRequestId ||
-                  r.userUniqueId;
-                if (rId) {
-                  if (!uniqueBidIds.has(rId)) {
-                    uniqueBidIds.add(rId);
-                    totalBids++;
-                  }
-                } else {
-                  totalBids++;
-                }
-              }
-            }
-            if (totalBids > 0) {
-              return (
-                <button
-                  type="button"
-                  className="orders-m-btn-requests orders-m-btn-requests--active"
-                  onClick={() => onViewRequests?.(group.orders[0])}
-                  title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
-                >
-                  <Gavel size={12} />
-                  <span>
-                    {t("orders.bids", "Bids")} ({totalBids})
-                  </span>
-                </button>
-              );
-            }
-            return (
-              <span className="orders-m-badge-waiting orders-badge-waiting">
-                <Clock size={11} />
-                <span>
-                  {group.totalVehicles > 1
-                    ? t("orders.batchWaitingPart", "{{waiting}} Waiting", {
-                        waiting: group.totalVehicles,
-                      })
-                    : t("orders.waiting", "Waiting")}
-                </span>
-              </span>
-            );
-          })()}
+          <BatchMobileStatus group={group} onViewRequests={onViewRequests} />
           <button
             type="button"
             className="orders-m-btn-expand-trucks"

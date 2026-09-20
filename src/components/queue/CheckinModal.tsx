@@ -1,32 +1,26 @@
-import { useState, useMemo, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { X, Search, User } from "lucide-react";
-import {
-  useManualCheckinMutation,
-  useGetQueueStatusQuery,
-  useListVehicleTypesQuery,
-} from "../../lib/redux/api";
+import { useManualCheckinMutation } from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import { checkinSchema, type CheckinFormValues } from "../../schemas/queue";
-import { resolveVehicleName } from "../../utils/vehicleType";
-import { normalizeQueueEntry } from "../../utils/formatters";
-import { useModalA11y } from "../../hooks/useModalA11y";
-import MobileHeader from "../common/MobileHeader";
+import { Modal } from "../ui/Modal";
+import { useCheckinData } from "./checkin/useCheckinData";
+import { CheckinDriverSearch } from "./checkin/CheckinDriverSearch";
+import { CheckinPositionSection } from "./checkin/CheckinPositionSection";
+import type { CheckinModalProps, CheckinDriverItem } from "./checkin/types";
 import "./QueueModals.css";
 
-interface CheckinModalProps {
-  queueOrganizationUniqueId: string;
-  onCheckedIn?: () => void;
-  onClose: () => void;
-}
-
-export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }: CheckinModalProps) {
+export function CheckinModal({
+  queueOrganizationUniqueId,
+  onCheckedIn,
+  onClose,
+}: CheckinModalProps) {
   const { t } = useTranslation();
-  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
+  const [searchQuery, setSearchQuery] = useState("");
+
   const {
     register,
     handleSubmit,
@@ -40,97 +34,43 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
   const selectedVehicleDriverUniqueId = watch("vehicleDriverUniqueId");
   const inputQueueNumber = watch("queueNumber");
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const searchWrapRef = useRef<HTMLDivElement>(null);
+  const [checkinMutation, { isLoading: isCheckingIn }] =
+    useManualCheckinMutation();
 
-  const [checkinMutation, { isLoading: isCheckingIn }] = useManualCheckinMutation();
-
-  const { data: queueStatusData } = useGetQueueStatusQuery(
-    { queueOrganizationUniqueId },
-    { skip: !queueOrganizationUniqueId }
+  const handleInitialDriver = useCallback(
+    (id: string) => {
+      setValue("vehicleDriverUniqueId", id, { shouldValidate: true });
+    },
+    [setValue],
   );
 
-  // Derive unique drivers from queue status entries — no dedicated driver endpoint needed
-  const driversList = useMemo(() => {
-    if (!queueStatusData?.data?.queues) return [];
-    const seen = new Set<string>();
-    const result: { vehicleDriverUniqueId: string; vehicleTypeUniqueId: string; driverName: string; driverPhoneNumber: string; vehicleTypeName: string; isInQueue?: boolean }[] = [];
-    Object.values(queueStatusData.data.queues).flat().forEach((rawEntry) => {
-      const entry = normalizeQueueEntry(rawEntry);
-      if (entry.vehicleDriverUniqueId && !seen.has(entry.vehicleDriverUniqueId)) {
-        seen.add(entry.vehicleDriverUniqueId);
-        result.push({
-          vehicleDriverUniqueId: entry.vehicleDriverUniqueId,
-          vehicleTypeUniqueId: entry.vehicleTypeUniqueId || "",
-          driverName: entry.driverName || "",
-          driverPhoneNumber: entry.driverPhoneNumber || "",
-          vehicleTypeName: entry.vehicleTypeName || "",
-        });
-      }
+  const {
+    filteredDrivers,
+    selectedDriver,
+    estimatedPosition,
+    targetVehicleTypeName,
+  } = useCheckinData({
+    queueOrganizationUniqueId,
+    searchQuery,
+    selectedVehicleDriverUniqueId,
+    inputQueueNumber,
+    onInitialDriverSelect: handleInitialDriver,
+  });
+
+  const handleSelectDriver = (d: CheckinDriverItem) => {
+    setValue("vehicleDriverUniqueId", d.vehicleDriverUniqueId, {
+      shouldValidate: true,
     });
-    return result;
-  }, [queueStatusData]);
-
-  // Filter registered drivers based on search input
-  const filteredDrivers = useMemo(() => {
-    if (!searchQuery.trim()) return driversList;
-    const q = searchQuery.toLowerCase().trim();
-    return driversList.filter(
-      (d) =>
-        d.driverName?.toLowerCase().includes(q) ||
-        d.driverPhoneNumber?.includes(q) ||
-        d.vehicleDriverUniqueId?.toLowerCase().includes(q) ||
-        d.vehicleTypeName?.toLowerCase().includes(q)
+    setSearchQuery(
+      d.driverPhoneNumber
+        ? `${d.driverName} (${d.driverPhoneNumber})`
+        : d.driverName,
     );
-  }, [driversList, searchQuery]);
+  };
 
-  // Find currently selected driver
-  const selectedDriver = useMemo(() => {
-    if (!selectedVehicleDriverUniqueId) {
-      return driversList[0] || null;
-    }
-    return driversList.find((d) => d.vehicleDriverUniqueId === selectedVehicleDriverUniqueId) || null;
-  }, [selectedVehicleDriverUniqueId, driversList]);
-
-  // Set initial driver if available
-  useEffect(() => {
-    if (driversList.length > 0 && !selectedVehicleDriverUniqueId) {
-      setValue("vehicleDriverUniqueId", driversList[0].vehicleDriverUniqueId, { shouldValidate: true });
-    }
-  }, [driversList, selectedVehicleDriverUniqueId, setValue]);
-
-  // Close search dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchWrapRef.current && !searchWrapRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Calculate estimated next queue position
-  const estimatedPosition = useMemo(() => {
-    if (inputQueueNumber && Number(inputQueueNumber) > 0) {
-      return Number(inputQueueNumber);
-    }
-    if (queueStatusData?.data?.queues) {
-      const allQueues = Object.values(queueStatusData.data.queues);
-      const totalWaiting = allQueues.flat().length;
-      return totalWaiting + 1;
-    }
-    return 1;
-  }, [inputQueueNumber, queueStatusData]);
-
-  const { data: vtData } = useListVehicleTypesQuery();
-  const vtList = vtData?.data || [];
-  const targetVehicleTypeName = resolveVehicleName(
-    selectedDriver?.vehicleTypeUniqueId,
-    selectedDriver?.vehicleTypeName,
-    vtList
-  );
+  const handleDirectIdEnter = (id: string) => {
+    setValue("vehicleDriverUniqueId", id, { shouldValidate: true });
+  };
 
   const handleFormSubmit = async (values: CheckinFormValues) => {
     try {
@@ -144,7 +84,9 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
 
       toast.success(
         res?.message ||
-          t("checkinModal.checkedInAt", { position: res?.data?.queueNumber ?? 1 })
+          t("checkinModal.checkedInAt", {
+            position: res?.data?.queueNumber ?? 1,
+          }),
       );
       onCheckedIn?.();
       onClose();
@@ -153,171 +95,58 @@ export function CheckinModal({ queueOrganizationUniqueId, onCheckedIn, onClose }
     }
   };
 
-  return createPortal(
-    <div className="qm-overlay">
-      <div
-        className="qm-modal"
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="checkin-modal-title"
-      >
-        {/* Mobile Header */}
-        <div className="qm-mobile-header">
-          <MobileHeader title={t("checkinModal.title")} onBack={onClose} />
-        </div>
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      variant="qm"
+      title={t("checkinModal.title")}
+      subtitle={t("checkinModal.subtitle")}
+      mobileHeaderTitle={t("checkinModal.title")}
+    >
+      <form onSubmit={handleSubmit(handleFormSubmit)}>
+        <CheckinDriverSearch
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filteredDrivers={filteredDrivers}
+          selectedDriver={selectedDriver}
+          selectedVehicleDriverUniqueId={selectedVehicleDriverUniqueId}
+          onSelectDriver={handleSelectDriver}
+          onDirectIdEnter={handleDirectIdEnter}
+          error={errors.vehicleDriverUniqueId?.message}
+        />
 
-        {/* Desktop Header */}
-        <div className="qm-header qm-header--desktop">
-          <div>
-            <h2 id="checkin-modal-title" className="qm-title">{t("checkinModal.title")}</h2>
-            <p className="qm-subtitle">{t("checkinModal.subtitle")}</p>
-          </div>
-          <button type="button" className="qm-close-btn" onClick={onClose} aria-label={t("common.close")}>
-            <X size={20} />
+        <CheckinPositionSection
+          register={register}
+          inputQueueNumber={inputQueueNumber}
+          estimatedPosition={estimatedPosition}
+          targetVehicleTypeName={targetVehicleTypeName}
+        />
+
+        <div className="qm-footer">
+          <button type="button" onClick={onClose} className="qm-btn-cancel">
+            {t("common.cancel")}
+          </button>
+          <button
+            type="submit"
+            disabled={isCheckingIn}
+            className="qm-btn-primary"
+          >
+            {isCheckingIn ? (
+              <>
+                <span
+                  className="add-docs-spinner"
+                  style={{ width: 14, height: 14 }}
+                />
+                {t("checkinModal.checkingIn")}
+              </>
+            ) : (
+              t("checkinModal.checkinBtn")
+            )}
           </button>
         </div>
-
-        <form onSubmit={handleSubmit(handleFormSubmit)}>
-          {/* Section 1: Vehicle-Driver ID */}
-          <div style={{ marginTop: "6px" }}>
-            <h3 className="qm-section-title">{t("checkinModal.vehicleDriverId")}</h3>
-            <div className="qm-field-group">
-              <label className="qm-field-label">{t("checkinModal.searchOrEnterId")}</label>
-              <div className="qm-input-wrap" ref={searchWrapRef}>
-                <Search size={16} className="qm-input-icon" />
-                <input
-                  id="checkin-search-driver"
-                  name="searchVehicleDriver"
-                  aria-label={t("checkinModal.searchOrEnterId")}
-                  type="text"
-                  value={searchQuery}
-                  onFocus={() => setDropdownOpen(true)}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSearchQuery(val);
-                    setDropdownOpen(true);
-                    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim())) {
-                      setValue("vehicleDriverUniqueId", val.trim(), { shouldValidate: true });
-                    }
-                  }}
-                  placeholder={
-                    selectedDriver
-                      ? `${selectedDriver.driverName} (${selectedDriver.vehicleDriverUniqueId.slice(0, 7)})`
-                      : t("checkinModal.searchPlaceholder")
-                  }
-                  className="qm-input has-icon"
-                />
-
-                {dropdownOpen && (
-                  <div className="dm-dropdown-menu" style={{ maxHeight: "180px", overflowY: "auto" }}>
-                    {filteredDrivers.length > 0 ? (
-                      filteredDrivers.map((d) => (
-                        <div
-                          key={d.vehicleDriverUniqueId}
-                          className={`dm-dropdown-item ${selectedVehicleDriverUniqueId === d.vehicleDriverUniqueId ? "selected" : ""}`}
-                          style={d.isInQueue ? { opacity: 0.6 } : {}}
-                          onClick={() => {
-                            if (d.isInQueue) {
-                              toast.info(t("checkinModal.alreadyWaiting", { driverName: d.driverName }));
-                            }
-                            setValue("vehicleDriverUniqueId", d.vehicleDriverUniqueId, { shouldValidate: true });
-                            setSearchQuery(d.driverPhoneNumber ? `${d.driverName} (${d.driverPhoneNumber})` : d.driverName);
-                            setDropdownOpen(false);
-                          }}
-                        >
-                          <span className="dm-dropdown-item-text">
-                            <strong>{d.driverName}</strong> {d.driverPhoneNumber ? `— ${d.driverPhoneNumber}` : ""}
-                          </span>
-                          <span className="dm-dropdown-item-badge" style={d.isInQueue ? { background: "#fef3c7", color: "#92400e" } : {}}>
-                            {d.isInQueue
-                              ? t("checkinModal.alreadyInQueue")
-                              : d.vehicleTypeName || t("checkinModal.available")}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ padding: "10px 14px", fontSize: "0.8rem", color: "#64748b" }}>
-                        {t("checkinModal.noMatchingDrivers")}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              {errors.vehicleDriverUniqueId && (
-                <p className="qm-error-text">{errors.vehicleDriverUniqueId.message}</p>
-              )}
-            </div>
-
-            {/* Selected Driver Preview Card */}
-            {selectedDriver && (
-              <div className="qm-card" style={{ marginTop: "6px" }}>
-                <div className="qm-icon-circle">
-                  <User size={20} />
-                </div>
-                <div className="qm-card-info">
-                  <span className="qm-card-title">{selectedDriver.driverName || t("checkinModal.selectedDriver")}</span>
-                  <span className="qm-card-sub">{selectedDriver.driverPhoneNumber || "—"}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Section 2: Queue Position */}
-          <div style={{ marginTop: "14px" }}>
-            <h3 className="qm-section-title">{t("checkinModal.queuePosition")}</h3>
-            <div className="qm-field-group">
-              <label className="qm-field-label">{t("checkinModal.queuePositionOptional")}</label>
-              <input
-                type="number"
-                min={1}
-                {...register("queueNumber", { valueAsNumber: true })}
-                placeholder={t("checkinModal.leaveBlankAuto")}
-                className="qm-input"
-              />
-            </div>
-
-            {/* Position Preview Card */}
-            <div className="qm-card" style={{ marginTop: "6px" }}>
-              <div className="qm-icon-circle" style={{ background: "#e0f2fe", color: "#034b6e" }}>
-                {estimatedPosition}
-              </div>
-              <div className="qm-card-info">
-                <span className="qm-card-title">
-                  {inputQueueNumber && Number(inputQueueNumber) > 0
-                    ? t("checkinModal.positionDisplay", { number: inputQueueNumber })
-                    : t("checkinModal.autoAssigned")}
-                </span>
-                <span className="qm-card-sub">
-                  {t("checkinModal.willBePlaced", {
-                    position: estimatedPosition,
-                    vehicleType: targetVehicleTypeName,
-                  })}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Actions */}
-          <div className="qm-footer">
-            <button type="button" onClick={onClose} className="qm-btn-cancel">
-              {t("common.cancel")}
-            </button>
-            <button type="submit" disabled={isCheckingIn} className="qm-btn-primary">
-              {isCheckingIn ? (
-                <>
-                  <span className="add-docs-spinner" style={{ width: 14, height: 14 }} />
-                  {t("checkinModal.checkingIn")}
-                </>
-              ) : (
-                t("checkinModal.checkinBtn")
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
+      </form>
+    </Modal>
   );
 }
 

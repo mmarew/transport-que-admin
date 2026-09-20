@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ChevronDown, Check, ChevronRight } from "lucide-react";
 import type { QueueOrgListItem, QueueOrganization } from "@/types/queue";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import { OrgReportRow } from "./OrgReportRow";
 
 const PAGE_SIZE = 5;
@@ -23,18 +24,11 @@ export function OrgReportsList({ orgList, onViewDetails }: OrgReportsListProps) 
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
-      if (
-        sortMenuRef.current &&
-        !sortMenuRef.current.contains(e.target as Node)
-      ) {
-        setShowSortDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, []);
+  useClickOutside(
+    sortMenuRef,
+    () => setShowSortDropdown(false),
+    showSortDropdown,
+  );
 
   const filteredOrgs = useMemo(() => {
     let list = [...orgList];

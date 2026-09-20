@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Check, Phone, Truck, MapPin, Clock, UserCheck } from "lucide-react";
+import { Phone, Truck, MapPin } from "lucide-react";
 import {
   formatJourneyStatusLabel,
   extractJourneyStatusId,
@@ -11,6 +11,7 @@ import {
 } from "@/utils/formatters";
 import type { OrderDisplayItem, ShipperRequestDriverInfo } from "../OrdersTypes";
 import { BidOfferComparison } from "./BidOfferComparison";
+import { BidActionButtons } from "./BidActionButtons";
 
 export interface BidRowProps {
   driver: ShipperRequestDriverInfo;
@@ -154,55 +155,16 @@ export function BidRow({
         hasDriverOffer={hasDriverOffer}
       />
 
-      <div className="dbm-bid-actions">
-        {isAccepted ? (
-          <span className="dbm-btn-accepted">
-            <Check size={14} strokeWidth={2.5} />
-            {t("orders.accepted", "Accepted")}
-          </span>
-        ) : hasAnyAcceptedDriver ? (
-          <span
-            className="dbm-btn-not-selected"
-            title={t(
-              "orders.anotherDriverAccepted",
-              "Another driver has already been accepted for this order",
-            )}
-          >
-            {t("orders.notSelected", "Not Selected")}
-          </span>
-        ) : isDriverRequested && !isDriverAccepted ? (
-          <span
-            className="dbm-btn-awaiting-driver"
-            title={t(
-              "orders.driverRequestedTooltip",
-              "Driver has been requested but has not accepted yet",
-            )}
-          >
-            <Clock size={13} />
-            <span>{t("orders.awaitingDriverResponse", "Awaiting Driver")}</span>
-          </span>
-        ) : (
-          <button
-            type="button"
-            className="dbm-btn-accept"
-            disabled={isAccepting || isAnyAccepting}
-            onClick={() => onAccept(driver)}
-            title={t("orders.acceptOffer", "Accept Offer")}
-          >
-            {isAccepting ? (
-              <>
-                <span className="dbm-spinner" />
-                <span>{t("orders.accepting", "Accepting...")}</span>
-              </>
-            ) : (
-              <>
-                <UserCheck size={14} />
-                <span>{t("orders.acceptOffer", "Accept Offer")}</span>
-              </>
-            )}
-          </button>
-        )}
-      </div>
+      <BidActionButtons
+        driver={driver}
+        isAccepted={isAccepted}
+        hasAnyAcceptedDriver={hasAnyAcceptedDriver}
+        isDriverRequested={isDriverRequested}
+        isDriverAccepted={isDriverAccepted}
+        isAccepting={isAccepting}
+        isAnyAccepting={isAnyAccepting}
+        onAccept={onAccept}
+      />
     </div>
   );
 }
