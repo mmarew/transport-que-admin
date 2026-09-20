@@ -1,17 +1,16 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { X, Loader2 } from "lucide-react";
 import parseError from "@/utils/parseError";
 import { setupOrgSchema, type SetupOrgFormValues } from "@/schemas/queue";
 import { QUEUE_ORG_TYPES, type QueueOrgType } from "@/types/queue";
 import { ConstantPhoneInput } from "../ui/ConstantPhoneInput";
 import { CustomSelect } from "../ui/CustomSelect";
-import { useModalA11y } from "@/hooks/useModalA11y";
-import MobileHeader from "../common/MobileHeader";
+import { Modal } from "../ui/Modal";
+import { LocationAutocomplete } from "../ui/LocationAutocomplete";
+import type { PhotonPlace } from "@/hooks/usePhotonSearch";
 import "./CreateOrderModal.css";
 
 interface CreateOrgModalProps {
@@ -27,8 +26,6 @@ interface CreateOrgModalProps {
   }) => Promise<void>;
 }
 
-const PHOTON_URL = "https://photon.komoot.io/api/";
-
 const ORG_TYPE_LABELS: Record<QueueOrgType, string> = {
   customs: "Customs",
   factory: "Factory",
@@ -37,29 +34,8 @@ const ORG_TYPE_LABELS: Record<QueueOrgType, string> = {
   other: "Other",
 };
 
-interface PhotonPlace {
-  label: string;
-  lat: number;
-  lng: number;
-  city?: string;
-}
-
-function formatPhotonLabel(feature: any): string {
-  const p = feature.properties || {};
-  const parts = [
-    p.name,
-    p.street,
-    p.district || p.county,
-    p.city || p.town || p.village,
-    p.state,
-    p.country,
-  ].filter(Boolean);
-  return parts.length > 0 ? Array.from(new Set(parts)).join(", ") : p.name || p.street || "Location";
-}
-
 export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalProps) {
   const { t } = useTranslation();
-  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
   const {
     register,
     handleSubmit,
@@ -79,70 +55,16 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
   });
 
   const [isPending, setIsPending] = useState(false);
-  const [suggestions, setSuggestions] = useState<PhotonPlace[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const addressValue = watch("queueOrganizationAddress");
-
-  const searchAddress = useCallback(async (query: string) => {
-    if (!query || query.trim().length < 2) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const url = `${PHOTON_URL}?q=${encodeURIComponent(query.trim())}&limit=5&bbox=33.0,3.4,48.0,15.0`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Search failed");
-      const json = await res.json();
-      const features = json.features || [];
-      const places: PhotonPlace[] = features.map((f: any) => ({
-        label: formatPhotonLabel(f),
-        lat: f.geometry?.coordinates?.[1] || 0,
-        lng: f.geometry?.coordinates?.[0] || 0,
-        city: f.properties?.city || f.properties?.name,
-      }));
-      setSuggestions(places);
-      setShowSuggestions(places.length > 0);
-    } catch {
-      setSuggestions([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
-
-  const handleAddressInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setValue("queueOrganizationAddress", val, { shouldValidate: true });
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => searchAddress(val), 350);
-  };
 
   const handleSelectFeature = (place: PhotonPlace) => {
     setValue("queueOrganizationAddress", place.label, { shouldValidate: true });
     setValue("latitude", place.lat, { shouldValidate: true });
     setValue("longitude", place.lng, { shouldValidate: true });
-    setShowSuggestions(false);
-    setSuggestions([]);
   };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const onSubmit = async (values: SetupOrgFormValues) => {
     setIsPending(true);
-    console.log("[CreateOrgModal] Submitting:", values);
     try {
       await onCreate({
         queueOrganizationName: values.queueOrganizationName,
@@ -152,7 +74,6 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
         longitude: values.longitude || 38.7469,
         queueOrganizationPhone: values.queueOrganizationPhone || null,
       });
-      console.log("[CreateOrgModal] onCreate succeeded, showing success toast");
       toast.success(t("org.createdSuccess"));
       onCreated?.();
       onClose();
@@ -164,184 +85,100 @@ export function CreateOrgModal({ onClose, onCreated, onCreate }: CreateOrgModalP
     }
   };
 
-  return createPortal(
-    <div className="com-overlay">
-      <div
-        className="com-modal"
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-org-modal-title"
-        style={{ maxWidth: "520px" }}
-      >
-        {/* Mobile Header */}
-        <div className="com-mobile-header">
-          <MobileHeader title={t("org.createOrg")} onBack={onClose} />
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      title={t("org.setupTitle")}
+      subtitle={t("org.setupSubtitle")}
+      mobileHeaderTitle={t("org.createOrg")}
+      variant="com"
+      style={{ maxWidth: "520px" }}
+    >
+      <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
+        {/* Organization Name */}
+        <div className="com-field-group">
+          <label className="com-label" htmlFor="create-org-name">
+            {t("org.nameLabel")} <span style={{ color: "#E80000" }}>*</span>
+          </label>
+          <input
+            id="create-org-name"
+            {...register("queueOrganizationName")}
+            placeholder="e.g. Addis Freight Terminal"
+            className="com-input"
+          />
+          {errors.queueOrganizationName && (
+            <p className="com-error-text">{errors.queueOrganizationName.message}</p>
+          )}
         </div>
 
-        {/* Desktop Header */}
-        <div className="com-header com-header--desktop">
-          <div>
-            <h2 id="create-org-modal-title" className="com-title">{t("org.setupTitle")}</h2>
-            <p className="com-subtitle">{t("org.setupSubtitle")}</p>
-          </div>
-          <button type="button" className="com-close-btn" onClick={onClose} aria-label="Close">
-            <X size={20} />
+        {/* Organization Type */}
+        <div className="com-field-group">
+          <label className="com-label" htmlFor="create-org-type">
+            {t("org.typeLabel")} <span style={{ color: "#E80000" }}>*</span>
+          </label>
+          <CustomSelect
+            id="create-org-type"
+            value={watch("queueOrganizationType") || ""}
+            onChange={(val) => setValue("queueOrganizationType", val as QueueOrgType, { shouldValidate: true })}
+            placeholder={`${t("org.selectType")}...`}
+            error={!!errors.queueOrganizationType}
+            options={[
+              { value: "", label: `${t("org.selectType")}...` },
+              ...QUEUE_ORG_TYPES.map((typeKey) => ({
+                value: typeKey,
+                label: t(`org.types.${typeKey}`, { defaultValue: ORG_TYPE_LABELS[typeKey] }),
+              })),
+            ]}
+          />
+          {errors.queueOrganizationType && (
+            <p className="com-error-text">{errors.queueOrganizationType.message}</p>
+          )}
+        </div>
+
+        {/* Contact Phone */}
+        <ConstantPhoneInput
+          id="modal-org-phone"
+          label={t("org.phoneLabel")}
+          value={watch("queueOrganizationPhone") || ""}
+          onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
+          placeholder="9-XX-XX-XX-XX"
+          required={false}
+          optional={true}
+          error={errors.queueOrganizationPhone?.message}
+        />
+
+        {/* Address with LocationAutocomplete */}
+        <LocationAutocomplete
+          id="create-org-address-search"
+          label={t("org.addressLabel")}
+          placeholder={t("org.searchAddressPlaceholder")}
+          value={addressValue ?? ""}
+          onChange={(val) => setValue("queueOrganizationAddress", val, { shouldValidate: true })}
+          onSelectPlace={handleSelectFeature}
+          error={errors.queueOrganizationAddress?.message}
+          required
+          variant="com"
+        />
+
+        <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="com-btn-cancel"
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="com-btn-submit"
+          >
+            {isPending ? t("org.creating") : t("org.createOrg")}
           </button>
         </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
-          {/* Organization Name */}
-          <div className="com-field-group">
-            <label className="com-label" htmlFor="create-org-name">
-              {t("org.nameLabel")} <span style={{ color: "#E80000" }}>*</span>
-            </label>
-            <input
-              id="create-org-name"
-              {...register("queueOrganizationName")}
-              placeholder="e.g. Addis Freight Terminal"
-              className="com-input"
-            />
-            {errors.queueOrganizationName && (
-              <p className="com-error-text">{errors.queueOrganizationName.message}</p>
-            )}
-          </div>
-
-          {/* Organization Type */}
-          <div className="com-field-group">
-            <label className="com-label" htmlFor="create-org-type">
-              {t("org.typeLabel")} <span style={{ color: "#E80000" }}>*</span>
-            </label>
-            <CustomSelect
-              id="create-org-type"
-              value={watch("queueOrganizationType") || ""}
-              onChange={(val) => setValue("queueOrganizationType", val as QueueOrgType, { shouldValidate: true })}
-              placeholder={`${t("org.selectType")}...`}
-              error={!!errors.queueOrganizationType}
-              options={[
-                { value: "", label: `${t("org.selectType")}...` },
-                ...QUEUE_ORG_TYPES.map((typeKey) => ({
-                  value: typeKey,
-                  label: t(`org.types.${typeKey}`, { defaultValue: ORG_TYPE_LABELS[typeKey] }),
-                })),
-              ]}
-            />
-            {errors.queueOrganizationType && (
-              <p className="com-error-text">{errors.queueOrganizationType.message}</p>
-            )}
-          </div>
-
-          {/* Contact Phone */}
-          <ConstantPhoneInput
-            id="modal-org-phone"
-            label={t("org.phoneLabel")}
-            value={watch("queueOrganizationPhone") || ""}
-            onChange={(val) => setValue("queueOrganizationPhone", val, { shouldValidate: true })}
-            placeholder="9-XX-XX-XX-XX"
-            required={false}
-            optional={true}
-            error={errors.queueOrganizationPhone?.message}
-          />
-
-          {/* Address */}
-          <div className="com-field-group" ref={dropdownRef}>
-            <label className="com-label" htmlFor="create-org-address-search">
-              {t("org.addressLabel")} <span style={{ color: "#E80000" }}>*</span>
-            </label>
-            <div className="com-input-wrap">
-              <input
-                id="create-org-address-search"
-                name="orgAddressSearch"
-                value={addressValue ?? ""}
-                onChange={handleAddressInput}
-                placeholder={t("org.searchAddressPlaceholder")}
-                aria-label={t("org.searchAddressPlaceholder")}
-                className="com-input"
-                autoComplete="off"
-                onFocus={() => {
-                  if (suggestions.length > 0) setShowSuggestions(true);
-                }}
-              />
-              {isSearching && (
-                <Loader2
-                  size={16}
-                  className="com-search-loading-icon com-spinner"
-                />
-              )}
-            </div>
-            {errors.queueOrganizationAddress && (
-              <p className="com-error-text">{errors.queueOrganizationAddress.message}</p>
-            )}
-
-            {/* Address Suggestions Dropdown */}
-            {showSuggestions && (isSearching || suggestions.length > 0) && (
-              <div
-                className="com-dropdown"
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  zIndex: 50,
-                  maxHeight: "200px",
-                  overflowY: "auto",
-                  marginTop: "4px",
-                }}
-              >
-                {isSearching && (
-                  <div className="com-dropdown-status">
-                    <Loader2 size={14} className="com-spinner" />
-                    <span>{t("orders.searchingLocations", "Searching locations...")}</span>
-                  </div>
-                )}
-                {!isSearching && suggestions.map((place, index) => (
-                  <button
-                    type="button"
-                    key={`${place.label}-${index}`}
-                    className="com-dropdown-item"
-                    onClick={() => handleSelectFeature(place)}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "8px 12px",
-                      fontSize: "0.85rem",
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div style={{ fontWeight: 500, color: "#1e293b" }}>{place.label}</div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              className="com-btn-cancel"
-            >
-              {t("common.cancel")}
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="com-btn-submit"
-            >
-              {isPending ? t("org.creating") : t("org.createOrg")}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
+      </form>
+    </Modal>
   );
 }
 

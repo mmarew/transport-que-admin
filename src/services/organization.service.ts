@@ -13,6 +13,7 @@ export interface UpdateQueueOrgBody {
   queueOrganizationAddress?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  checkinRadiusKm?: number | null;
 }
 
 export interface QueueOrgResponse {

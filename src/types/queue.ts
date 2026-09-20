@@ -58,6 +58,7 @@ export interface QueueOrganization {
   queueOrganizationAddress: string | null;
   latitude: string | null;
   longitude: string | null;
+  checkinRadiusKm?: number | null;
   approvalStatus: ApprovalStatus;
   approvalReason: string | null;
   queueEnabled: number;
@@ -232,13 +233,26 @@ export type QueueEventMessageType =
   | "queue_position_changed"
   | "queue_order_offered"
   | "queue_order_rejected"
+  | "queue_refusal_moved_to_back"
   | "queue_order_assigned"
+  | "queue_order_cancelled"
+  | "queue_position_reserved"
   | "queue_removed"
   | "queue_org_approved"
-  | "queue_org_updated";
+  | "queue_org_updated"
+  | "queue_org_deleted"
+  | "queue_member_added";
 
 export interface QueueEventPayload {
   message: string;
   messageTypes: QueueEventMessageType;
   data?: Record<string, unknown>;
+}
+
+export interface QueueEntryHistoryItem {
+  historyUniqueId: string;
+  columnName: string;
+  oldValue: string;
+  performedBy: string;
+  performedAt: string;
 }

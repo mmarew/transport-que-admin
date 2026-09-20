@@ -184,14 +184,23 @@ export function connectSocket(
       if (!msg && !eventName) return;
       const parsed = typeof msg === "string" ? JSON.parse(msg) : msg;
 
-      // Extract message type
-      const messageType =
-        (parsed as any)?.messageTypes || (parsed as any)?.message || eventName;
+      // Extract message type (supports both string and { message, details } object from backend)
+      const rawType = (parsed as any)?.messageTypes;
+      const typeStr =
+        typeof rawType === "string"
+          ? rawType
+          : typeof rawType === "object" && rawType !== null
+            ? (rawType.type || rawType.message || "")
+            : "";
+      const messageType = typeStr || (parsed as any)?.message || eventName;
 
       const isOrgEvent =
         messageType === "queue_org_approved" ||
         messageType === "queue_org_updated" ||
+        messageType === "queue_org_deleted" ||
+        messageType === "queue_member_added" ||
         messageType === "org_approved" ||
+        messageType === "Queue organization approved" ||
         Boolean(
           (parsed as any)?.data?.queueOrganizationUniqueId &&
           (parsed as any)?.data?.approvalStatus,

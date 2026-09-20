@@ -83,6 +83,7 @@ export interface CreateQueueOrgArgs {
   queueOrganizationAddress: string;
   latitude?: number | null;
   longitude?: number | null;
+  checkinRadiusKm?: number | null;
 }
 
 export type CreateQueueOrgResponse = ApiData<{
@@ -114,7 +115,9 @@ export type QueueStatusTagKey =
 
 export interface ManualCheckinArgs {
   queueOrganizationUniqueId: string;
-  vehicleDriverUniqueId: string;
+  vehicleDriverUniqueId?: string;
+  driverPhoneNumber?: string;
+  shipperPhoneNumber?: string;
   queueNumber?: number;
 }
 
@@ -124,7 +127,9 @@ export type ManualCheckinResponse = ApiData<
 
 export interface DispatchQueueArgs {
   queueOrganizationUniqueId: string;
-  vehicleTypeUniqueId: string;
+  vehicleTypeUniqueId?: string;
+  queueUniqueId?: string;
+  driverPhoneNumber?: string;
   shipperRequestUniqueId?: string;
 }
 
@@ -132,8 +137,19 @@ export type DispatchQueueResponse = ApiData<{
   queueUniqueId: string;
   queueNumber: number;
   driverUserUniqueId: string;
+  journeyDecisionUniqueId?: string;
   status: string;
 }>;
+
+export type GetEntryHistoryResponse = ApiData<
+  Array<{
+    historyUniqueId: string;
+    columnName: string;
+    oldValue: string;
+    performedBy: string;
+    performedAt: string;
+  }>
+>;
 
 export interface AcceptDriverRequestArgs {
   queueOrganizationUniqueId: string;

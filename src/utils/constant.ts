@@ -28,6 +28,7 @@ const appAPIs = {
     dispatchQueueAPI: "/queue/dispatch",
     removeEntryAPI: "/queue/entry/:queueUniqueId",
     overrideEntryAPI: "/queue/entry/:queueUniqueId/override",
+    getEntryHistoryAPI: "/queue/entry/:queueUniqueId/history",
     vechicleDriverList: "/vehicleDriver/list",
     listVehicleDriversAPI: "/vehicleDriver/list",
     listDriverVehiclesAPI: "/vehicleDriver/org/:queueOrganizationUniqueId",

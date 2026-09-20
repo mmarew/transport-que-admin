@@ -13,6 +13,7 @@ import type {
   OverrideEntryArgs,
   OverrideEntryResponse,
   RemoveEntryResponse,
+  GetEntryHistoryResponse,
 } from "./types";
 
 function isUUID(value?: unknown): value is string {
@@ -29,6 +30,7 @@ export const {
   useAcceptDriverRequestMutation,
   useOverrideEntryMutation,
   useRemoveEntryMutation,
+  useGetEntryHistoryQuery,
 } = api.injectEndpoints({
   endpoints: (builder) => ({
     getQueueStatus: builder.query<QueueStatusResponse, GetQueueStatusArgs>({
@@ -244,6 +246,13 @@ export const {
         method: "DELETE",
       }),
       invalidatesTags: ["QueueStatus", "DriverQueue"],
+    }),
+
+    getEntryHistory: builder.query<GetEntryHistoryResponse, string>({
+      query: (queueUniqueId) => ({
+        url: appAPIs.getEntryHistoryAPI.replace(":queueUniqueId", queueUniqueId),
+      }),
+      providesTags: (_, __, queueUniqueId) => [{ type: "DriverQueue", id: `${queueUniqueId}-history` }],
     }),
   }),
 });

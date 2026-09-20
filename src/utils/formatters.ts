@@ -3,6 +3,7 @@ import type {
   QueueOrgListItem,
   DriverQueueEntry,
   QueueShipperRequest,
+  QueueStatusPayload,
 } from "../types/queue";
 import {
   resolveJourneyStatus,
@@ -657,5 +658,78 @@ export function extractOfferCost(d: any, parentItem?: any): number | null {
   return null;
 }
 
+/**
+ * Normalizes a queue status payload into a Record of vehicleTypeName -> DriverQueueEntry[]
+ */
+export function normalizeQueuesMap(
+  status: QueueStatusPayload | unknown,
+  defaultKey: string = "Standard"
+): Record<string, DriverQueueEntry[]> {
+  if (!status) return {};
+  const rawPayload: any =
+    (status as any)?.data !== undefined ? (status as any).data : status;
+  const rawQueues =
+    rawPayload?.queues || rawPayload?.data || rawPayload?.list || rawPayload;
+  if (!rawQueues) return {};
 
+  if (Array.isArray(rawQueues)) {
+    const map: Record<string, DriverQueueEntry[]> = {};
+    for (const item of rawQueues) {
+      if (!item) continue;
+      const entry = normalizeQueueEntry(item);
+      const key =
+        entry.vehicleTypeName ||
+        entry.vehicleTypeUniqueId ||
+        defaultKey;
+      if (!map[key]) map[key] = [];
+      map[key].push(entry);
+    }
+    return map;
+  }
 
+  if (typeof rawQueues === "object" && rawQueues !== null) {
+    const map: Record<string, DriverQueueEntry[]> = {};
+    for (const [k, v] of Object.entries(rawQueues)) {
+      if (
+        k === "message" ||
+        k === "status" ||
+        k === "success" ||
+        k === "pagination"
+      )
+        continue;
+      if (Array.isArray(v)) {
+        map[k] = v.map(normalizeQueueEntry);
+      } else if (v && typeof v === "object") {
+        map[k] = [normalizeQueueEntry(v)];
+      }
+    }
+    return map;
+  }
+  return {};
+}
+
+/** Safely extracts driver name from arbitrary entry shapes */
+export function extractDriverName(e?: any): string {
+  if (!e) return "";
+  return (
+    e.driverName ||
+    e.fullName ||
+    e.driverFullName ||
+    e.name ||
+    e.driverUser?.fullName ||
+    ""
+  );
+}
+
+/** Safely extracts driver phone from arbitrary entry shapes */
+export function extractDriverPhone(e?: any): string {
+  if (!e) return "";
+  return (
+    e.driverPhoneNumber ||
+    e.phoneNumber ||
+    e.driverPhone ||
+    e.phone ||
+    e.driverUser?.phoneNumber ||
+    ""
+  );
+}
