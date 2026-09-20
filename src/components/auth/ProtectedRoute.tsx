@@ -13,10 +13,17 @@ interface ProtectedRouteProps {
   requireOrg?: boolean;
 }
 
-export function ProtectedRoute({ children, requireOrg = true }: ProtectedRouteProps) {
+export function ProtectedRoute({
+  children,
+  requireOrg = true,
+}: ProtectedRouteProps) {
   const { auth } = useAuth();
   const location = useLocation();
-
+  // Not logged in → go to login
+  if (!auth?.token) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  //if there is auth get list of orgs that the user has
   const {
     data: orgsData,
     isLoading: orgsLoading,
@@ -26,11 +33,6 @@ export function ProtectedRoute({ children, requireOrg = true }: ProtectedRoutePr
   } = useListQueueOrganizationsQuery(undefined, {
     skip: !auth?.token || !requireOrg,
   });
-
-  // Not logged in → go to login
-  if (!auth?.token) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
 
   // Already on /setup-org or requireOrg=false → no need to check
   if (!requireOrg) {
@@ -46,8 +48,8 @@ export function ProtectedRoute({ children, requireOrg = true }: ProtectedRoutePr
   const hasOrg = orgsSuccess
     ? hasOrganizationData(orgsData)
     : orgsError
-    ? true // On error, allow through — don't block user indefinitely
-    : false;
+      ? true // On error, allow through — don't block user indefinitely
+      : false;
 
   // No org found → must set one up first
   if (!hasOrg) {
