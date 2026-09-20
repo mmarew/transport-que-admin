@@ -733,3 +733,25 @@ export function extractDriverPhone(e?: any): string {
     ""
   );
 }
+
+/** Safely parse a numeric string or number */
+export function toNumber(value?: string | number | null): number {
+  const n = Number(String(value ?? "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Formats a date string into MMM D, YYYY */
+export function formatDate(value?: string | null): string {
+  if (!value) return "—";
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return value;
+  }
+}
