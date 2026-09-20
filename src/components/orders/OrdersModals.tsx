@@ -44,6 +44,20 @@ export function OrdersModals({
   onCloseDelete,
   onConfirmDelete,
 }: OrdersModalsProps) {
+  const origin = React.useMemo(() => {
+    return {
+      latitude: activeOrg?.latitude != null ? Number(activeOrg.latitude) : null,
+      longitude:
+        activeOrg?.longitude != null ? Number(activeOrg.longitude) : null,
+      description:
+        activeOrg?.queueOrganizationAddress || "Cement Factory, Addis Ababa",
+    };
+  }, [
+    activeOrg?.latitude,
+    activeOrg?.longitude,
+    activeOrg?.queueOrganizationAddress,
+  ]);
+
   return (
     <>
       {/* ── Driver Bids & Requests Modal ── */}
@@ -68,15 +82,7 @@ export function OrdersModals({
       {showCreateModal && (
         <CreateOrderModal
           queueOrganizationUniqueId={activeOrg?.queueOrganizationUniqueId || ""}
-          origin={{
-            latitude:
-              activeOrg?.latitude != null ? Number(activeOrg.latitude) : null,
-            longitude:
-              activeOrg?.longitude != null ? Number(activeOrg.longitude) : null,
-            description:
-              activeOrg?.queueOrganizationAddress ||
-              "Cement Factory, Addis Ababa",
-          }}
+          origin={origin}
           onClose={onCloseCreate}
           onCreated={() => {
             onCloseCreate();

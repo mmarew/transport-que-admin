@@ -85,10 +85,19 @@ export function OrdersPage() {
     }
   );
 
-  const refetchAll = () => {
+  const refetchAll = React.useCallback(() => {
     refetchOrders();
     refetchBatches();
-  };
+  }, [refetchOrders, refetchBatches]);
+
+  const handleCloseCreate = React.useCallback(() => setShowCreateModal(false), []);
+  const handleOrderCreated = React.useCallback(() => {
+    setShowCreateModal(false);
+    refetchAll();
+  }, [refetchAll]);
+  const handleCloseViewing = React.useCallback(() => setViewingRequestsOrder(null), []);
+  const handleCloseEdit = React.useCallback(() => setEditingOrder(null), []);
+  const handleCloseDelete = React.useCallback(() => setDeletingOrder(null), []);
 
   // Local CRUD overrides
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
@@ -278,16 +287,16 @@ export function OrdersPage() {
         <OrdersModals
           currentViewingOrder={currentViewingOrder}
           activeOrg={activeOrg}
-          onCloseViewing={() => setViewingRequestsOrder(null)}
+          onCloseViewing={handleCloseViewing}
           onRefresh={refetchAll}
           showCreateModal={showCreateModal}
-          onCloseCreate={() => setShowCreateModal(false)}
-          onOrderCreated={refetchAll}
+          onCloseCreate={handleCloseCreate}
+          onOrderCreated={handleOrderCreated}
           editingOrder={editingOrder}
-          onCloseEdit={() => setEditingOrder(null)}
+          onCloseEdit={handleCloseEdit}
           onSaveEdit={handleSaveEdit}
           deletingOrder={deletingOrder}
-          onCloseDelete={() => setDeletingOrder(null)}
+          onCloseDelete={handleCloseDelete}
           onConfirmDelete={confirmDelete}
         />
       </div>
