@@ -159,7 +159,12 @@ export interface QueueStatusResponse {
 export interface PaginatedResponse<T> {
   message: string;
   data: T[];
-  meta: { page: number; limit: number; total: number; totalPages: number };
+  pagination: {
+    currentPage: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
 }
 
 export type RequestMode = "individual_target" | "company_target";

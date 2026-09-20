@@ -13,7 +13,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SidebarItem from "./SidebarItem";
 import { useAuth } from "../../context/AuthContext";
-import { disconnectSocket } from "../../lib/socket";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import {
   useGetShipperRequestsQuery,
@@ -106,7 +105,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [ordersData, batchesData, effectiveOrgId, t]);
 
   const handleLogout = () => {
-    disconnectSocket();
     logout();
     navigate("/login", { replace: true });
   };

@@ -21,13 +21,13 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import MobileHeader from "../../components/common/MobileHeader";
 import { useListQueueOrganizationsQuery } from "../../lib/redux/api";
-import { logout } from "../../lib/redux/slices/authSlice";
 import { setAppLanguage, getAppLanguage } from "../../i18n";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import type { RootState } from "../../lib/redux/store";
 import type { QueueOrgListItem } from "../../types/queue";
@@ -43,8 +43,8 @@ const readBool = (key: string, fallback: boolean): boolean => {
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { darkMode, setDarkMode } = useTheme();
+  const { logout } = useAuth();
 
   const authData = useSelector((state: RootState) => state.auth.auth);
   const user = authData?.userData;
@@ -172,7 +172,7 @@ export function SettingsPage() {
   };
 
   const handleLogout = () => {
-    dispatch(logout());
+    logout();
     navigate("/login");
     toast.success(t("common.logout"));
   };
