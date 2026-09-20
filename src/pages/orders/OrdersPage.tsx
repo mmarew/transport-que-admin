@@ -1,34 +1,23 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ArrowLeft, Plus } from "lucide-react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
-import { CreateOrderModal } from "../../components/queue/CreateOrderModal";
 import {
   useListQueueOrganizationsQuery,
   useGetShipperRequestsQuery,
   useGetShipperRequestBatchesQuery,
 } from "../../lib/redux/api";
-import {
-  connectSocket,
-  subscribeToQueue,
-  unsubscribeFromQueue,
-} from "../../lib/socket";
+import { useQueueSocket } from "../../hooks/useQueueSocket";
+import { useOrdersView } from "../../hooks/useOrdersView";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import { normalizeOrgList, extractCity } from "../../utils/formatters";
 import { OrdersTable } from "../../components/orders/OrdersTable";
 import { OrdersMobileCards } from "../../components/orders/OrdersMobileCards";
 import { OrdersPagination } from "../../components/orders/OrdersPagination";
-import { OrdersEditModal } from "../../components/orders/OrdersEditModal";
-import { OrdersDeleteModal } from "../../components/orders/OrdersDeleteModal";
-import { DriverBidsModal } from "../../components/orders/DriverBidsModal";
-import { groupOrdersByBatch, getConnectedJourneyStatus } from "../../components/orders/OrdersTypes";
-import type {
-  OrderDisplayItem,
-  SortColumn,
-} from "../../components/orders/OrdersTypes";
-import { PAGE_SIZE } from "../../components/orders/OrdersTypes";
+import { OrdersModals } from "../../components/orders/OrdersModals";
+import type { OrderDisplayItem } from "../../components/orders/OrdersTypes";
 import { mapBackendOrdersToDisplayItems } from "./ordersDataMapper";
 import "./OrdersPage.css";
 
@@ -55,13 +44,20 @@ export function OrdersPage() {
     );
   }, [orgList, targetOrgId]);
 
-  // Backend data
+  // Live WebSocket subscription for orders
+  const { socketConnected } = useQueueSocket(activeOrg?.queueOrganizationUniqueId || "");
+
+  // Backend queries
   const {
     data: backendOrdersData,
     isLoading: isLoadingOrders,
     refetch: refetchOrders,
   } = useGetShipperRequestsQuery(
-    { queueOrganizationUniqueId: activeOrg?.queueOrganizationUniqueId || "", target: "all", limit: 100 },
+    {
+      queueOrganizationUniqueId: activeOrg?.queueOrganizationUniqueId || "",
+      target: "all",
+      limit: 100,
+    },
     {
       skip: !activeOrg?.queueOrganizationUniqueId,
       refetchOnReconnect: true,
@@ -89,35 +85,22 @@ export function OrdersPage() {
     }
   );
 
-  const socketConnected = useQueueAdminStore((s) => s.socketConnected);
+  const refetchAll = () => {
+    refetchOrders();
+    refetchBatches();
+  };
 
-  // State
-  const [activeTab, setActiveTab] = useState<"ongoing" | "complete">("ongoing");
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [sortCol, setSortCol] = useState<SortColumn>("shipper");
-  const [sortAsc, setSortAsc] = useState<boolean>(true);
+  // Local CRUD overrides
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
+  const [editedOrders, setEditedOrders] = useState<Record<string, OrderDisplayItem>>({});
+
+  // Modals state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OrderDisplayItem | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderDisplayItem | null>(null);
   const [viewingRequestsOrder, setViewingRequestsOrder] = useState<OrderDisplayItem | null>(null);
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
-  const [editedOrders, setEditedOrders] = useState<Record<string, OrderDisplayItem>>({});
 
-  // Live WebSocket subscription for orders (real-time updates via RTK Query tag invalidation)
-  useEffect(() => {
-    const orgId = activeOrg?.queueOrganizationUniqueId;
-    if (!orgId) return;
-
-    connectSocket();
-    subscribeToQueue(orgId);
-
-    return () => {
-      unsubscribeFromQueue(orgId);
-    };
-  }, [activeOrg?.queueOrganizationUniqueId]);
-
-  // Derive orders from backend data
-  // Derive orders from backend data (mapped via modular data mapper)
+  // Derive orders from backend data via data mapper
   const orders = useMemo<OrderDisplayItem[]>(
     () =>
       mapBackendOrdersToDisplayItems({
@@ -132,71 +115,22 @@ export function OrdersPage() {
     [backendOrdersData, backendBatchesData, deletedIds, editedOrders, activeOrg, targetOrgId, t]
   );
 
-  // 1. Filter orders strictly by activeTab:
-  // - "ongoing": only orders where journey is NOT completed
-  // - "complete": only orders where journey IS completed
-  const tabOrders = useMemo(() => {
-    if (activeTab === "complete") {
-      return orders.filter((o) => getConnectedJourneyStatus(o).type === "completed");
-    } else {
-      return orders.filter((o) => getConnectedJourneyStatus(o).type !== "completed");
-    }
-  }, [orders, activeTab]);
-
-  // 2. Group tab-specific orders by batch so multi-truck batches appear as unified groups in their respective tab
-  const allBatchGroups = useMemo(() => groupOrdersByBatch(tabOrders), [tabOrders]);
-
-  // 3. Filter batch groups by search parameters (e.g. phone)
-  const allBatches = useMemo(() => {
-    const phoneFilter = searchParams.get("phone") || "";
-
-    const filtered = allBatchGroups.filter((group) => {
-      if (phoneFilter && !group.orders.some((o) => o.phone === phoneFilter)) {
-        return false;
-      }
-      return true;
-    });
-
-    // Sort batch groups
-    return [...filtered].sort((a, b) => {
-      let valA: string | number = "";
-      let valB: string | number = "";
-      switch (sortCol) {
-        case "id": valA = (a.displayId || "").toLowerCase(); valB = (b.displayId || "").toLowerCase(); break;
-        case "shipper": valA = a.shipper.toLowerCase(); valB = b.shipper.toLowerCase(); break;
-        case "type": valA = a.type; valB = b.type; break;
-        case "vehicleType": valA = a.vehicleType.toLowerCase(); valB = b.vehicleType.toLowerCase(); break;
-        case "item": valA = a.item.toLowerCase(); valB = b.item.toLowerCase(); break;
-        case "location": valA = `${a.origin} ${a.destination}`.toLowerCase(); valB = `${b.origin} ${b.destination}`.toLowerCase(); break;
-        case "quintal": valA = a.totalQuintal; valB = b.totalQuintal; break;
-        case "cost": valA = a.totalCost; valB = b.totalCost; break;
-      }
-      if (typeof valA === "number" && typeof valB === "number") {
-        return sortAsc ? valA - valB : valB - valA;
-      }
-      return sortAsc
-        ? String(valA).localeCompare(String(valB))
-        : String(valB).localeCompare(String(valA));
-    });
-  }, [allBatchGroups, activeTab, sortCol, sortAsc, searchParams]);
-
-  const totalPages = Math.max(1, Math.ceil(allBatches.length / PAGE_SIZE));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const currentBatches = useMemo(() => {
-    const start = (safeCurrentPage - 1) * PAGE_SIZE;
-    return allBatches.slice(start, start + PAGE_SIZE);
-  }, [allBatches, safeCurrentPage]);
-  const paginatedOrders = useMemo(() => {
-    return currentBatches.flatMap((b) => b.orders);
-  }, [currentBatches]);
+  // Extracted orders view pipeline (tabs, filters, sorts, pagination)
+  const phoneFilter = searchParams.get("phone") || "";
+  const {
+    activeTab,
+    setActiveTab,
+    safeCurrentPage,
+    setCurrentPage,
+    sortCol,
+    handleSort,
+    allBatches,
+    currentBatches,
+    paginatedOrders,
+    totalPages,
+  } = useOrdersView({ orders, phoneFilter });
 
   // Handlers
-  const handleSort = (col: SortColumn) => {
-    setCurrentPage(1);
-    if (sortCol === col) setSortAsc((prev) => !prev);
-    else { setSortCol(col); setSortAsc(true); }
-  };
-
   const confirmDelete = () => {
     if (!deletingOrder) return;
     if ((deletingOrder as any)._isBatchMaster && deletingOrder.batchId) {
@@ -294,14 +228,14 @@ export function OrdersPage() {
           <button
             type="button"
             className={`orders-tab-pill ${activeTab === "ongoing" ? "active" : ""}`}
-            onClick={() => { setActiveTab("ongoing"); setCurrentPage(1); }}
+            onClick={() => setActiveTab("ongoing")}
           >
             {t("orders.ongoingTab", "Ongoing")}
           </button>
           <button
             type="button"
             className={`orders-tab-pill ${activeTab === "complete" ? "active" : ""}`}
-            onClick={() => { setActiveTab("complete"); setCurrentPage(1); }}
+            onClick={() => setActiveTab("complete")}
           >
             {t("orders.completeTab", "Complete")}
           </button>
@@ -340,64 +274,25 @@ export function OrdersPage() {
           onPageChange={setCurrentPage}
         />
 
-        {/* ── Driver Bids & Requests Modal ── */}
-        {currentViewingOrder && (
-          <DriverBidsModal
-            order={currentViewingOrder}
-            driverRequests={currentViewingOrder.driverRequests || []}
-            queueOrganizationUniqueId={
-              activeOrg?.queueOrganizationUniqueId ||
-              currentViewingOrder.queueOrganizationUniqueId ||
-              ""
-            }
-            onClose={() => {
-              setViewingRequestsOrder(null);
-              refetchOrders();
-              refetchBatches();
-            }}
-            onOrderUpdated={() => {
-              refetchOrders();
-              refetchBatches();
-            }}
-          />
-        )}
-
-        {/* ── Create Modal ── */}
-        {showCreateModal && (
-          <CreateOrderModal
-            queueOrganizationUniqueId={activeOrg?.queueOrganizationUniqueId || ""}
-            origin={{
-              latitude: activeOrg?.latitude != null ? Number(activeOrg.latitude) : null,
-              longitude: activeOrg?.longitude != null ? Number(activeOrg.longitude) : null,
-              description: activeOrg?.queueOrganizationAddress || "Cement Factory, Addis Ababa",
-            }}
-            onClose={() => setShowCreateModal(false)}
-            onCreated={() => {
-              setShowCreateModal(false);
-              refetchOrders();
-              refetchBatches();
-            }}
-          />
-        )}
-
-        {/* ── Edit Modal ── */}
-        {editingOrder && (
-          <OrdersEditModal
-            order={editingOrder}
-            onClose={() => setEditingOrder(null)}
-            onSave={handleSaveEdit}
-          />
-        )}
-
-        {/* ── Delete Modal ── */}
-        {deletingOrder && (
-          <OrdersDeleteModal
-            order={deletingOrder}
-            onClose={() => setDeletingOrder(null)}
-            onConfirm={confirmDelete}
-          />
-        )}
+        {/* ── All Modals Orchestration ── */}
+        <OrdersModals
+          currentViewingOrder={currentViewingOrder}
+          activeOrg={activeOrg}
+          onCloseViewing={() => setViewingRequestsOrder(null)}
+          onRefresh={refetchAll}
+          showCreateModal={showCreateModal}
+          onCloseCreate={() => setShowCreateModal(false)}
+          onOrderCreated={refetchAll}
+          editingOrder={editingOrder}
+          onCloseEdit={() => setEditingOrder(null)}
+          onSaveEdit={handleSaveEdit}
+          deletingOrder={deletingOrder}
+          onCloseDelete={() => setDeletingOrder(null)}
+          onConfirmDelete={confirmDelete}
+        />
       </div>
     </DashboardLayout>
   );
 }
+
+export default OrdersPage;
