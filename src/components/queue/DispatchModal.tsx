@@ -1,10 +1,8 @@
-import { useState, useMemo, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { X, Truck, User, ChevronDown } from "lucide-react";
 import {
   useDispatchQueueMutation,
   useGetShipperRequestsQuery,
@@ -15,11 +13,13 @@ import parseError from "../../utils/parseError";
 import { dispatchSchema, type DispatchFormValues } from "../../schemas/queue";
 import { resolveVehicleName } from "../../utils/vehicleType";
 import { isDriverWaiting } from "../../utils/journeyStatus";
-import { useModalA11y } from "../../hooks/useModalA11y";
-import MobileHeader from "../common/MobileHeader";
+import { Modal } from "../ui/Modal";
+import { DispatchTopCards } from "./dispatch/DispatchTopCards";
+import { OrderSelectDropdown } from "./dispatch/OrderSelectDropdown";
+import { DispatchOrderSummary } from "./dispatch/DispatchOrderSummary";
 import "./DispatchModal.css";
 
-interface DispatchModalProps {
+export interface DispatchModalProps {
   queueOrganizationUniqueId: string;
   vehicleTypeId: string;
   vehicleTypeName?: string;
@@ -32,21 +32,6 @@ interface DispatchModalProps {
 const isUuid = (str?: string) =>
   Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str));
 
-function formatDateDisplay(dateStr?: string): string {
-  if (!dateStr) return "—";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
 export function DispatchModal({
   queueOrganizationUniqueId,
   vehicleTypeId,
@@ -57,7 +42,7 @@ export function DispatchModal({
   onClose,
 }: DispatchModalProps) {
   const { t } = useTranslation();
-  const modalRef = useModalA11y<HTMLDivElement>({ isOpen: true, onClose });
+
   const {
     handleSubmit,
     setValue,
@@ -70,21 +55,6 @@ export function DispatchModal({
   });
 
   const selectedOrderUniqueId = watch("shipperRequestUniqueId");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownWrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownWrapRef.current &&
-        !dropdownWrapRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const { data: vehicleTypesData } = useListVehicleTypesQuery();
   const vehicleTypesList = vehicleTypesData?.data || [];
@@ -119,7 +89,6 @@ export function DispatchModal({
     }
 
     if (queueStatusData?.data?.queues) {
-      // 1. Search specific matching queue
       for (const [key, entries] of Object.entries(queueStatusData.data.queues)) {
         const isMatch =
           key === resolvedVehicleTypeId ||
@@ -139,7 +108,6 @@ export function DispatchModal({
         }
       }
 
-      // 2. Search all queues for any waiting driver
       const allEntries = Object.values(queueStatusData.data.queues).flat();
       const waiting =
         allEntries.find((e: any) => isDriverWaiting(e?.status, e?.journeyStatusId)) ||
@@ -248,186 +216,62 @@ export function DispatchModal({
     }
   };
 
-  return createPortal(
-    <div className="dm-overlay">
-      <div
-        className="dm-modal"
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dispatch-modal-title"
-      >
-        {/* Mobile Header */}
-        <div className="dm-mobile-header">
-          <MobileHeader title={t("dispatchModal.title")} onBack={onClose} />
-        </div>
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      variant="dm"
+      title={t("dispatchModal.title")}
+      subtitle={t("dispatchModal.subtitle", { typeName: typeDisplay })}
+    >
+      <form onSubmit={handleSubmit(handleFormSubmit)}>
+        {/* Top 2 Cards: Vehicle Type & Front Waiting Driver */}
+        <DispatchTopCards
+          typeDisplay={typeDisplay}
+          frontDriver={frontDriver}
+        />
 
-        {/* Desktop Header */}
-        <div className="dm-header dm-header--desktop">
-          <div>
-            <h2 id="dispatch-modal-title" className="dm-title">{t("dispatchModal.title")}</h2>
-            <p className="dm-subtitle">{t("dispatchModal.subtitle", { typeName: typeDisplay })}</p>
-          </div>
-          <button type="button" className="dm-close-btn" onClick={onClose} aria-label={t("common.close")}>
-            <X size={20} />
+        {/* Select Order Section (Custom Dropdown) */}
+        <OrderSelectDropdown
+          availableOrders={availableOrders}
+          selectedOrderUniqueId={selectedOrderUniqueId}
+          selectedOrderLabel={selectedOrderLabel}
+          onSelectOrder={(id) => setValue("shipperRequestUniqueId", id)}
+        />
+
+        {/* Order Summary Card */}
+        {activeOrderObj && (
+          <DispatchOrderSummary
+            order={activeOrderObj}
+            typeDisplay={typeDisplay}
+          />
+        )}
+
+        {/* Footer Actions */}
+        <div className="dm-footer">
+          <button type="button" onClick={onClose} className="dm-btn-cancel">
+            {t("common.cancel")}
+          </button>
+          <button
+            type="submit"
+            disabled={isDispatching}
+            className="dm-btn-dispatch"
+          >
+            {isDispatching ? (
+              <>
+                <span
+                  className="add-docs-spinner"
+                  style={{ width: 14, height: 14 }}
+                />
+                {t("dispatchModal.dispatching")}
+              </>
+            ) : (
+              t("dispatchModal.dispatchBtn")
+            )}
           </button>
         </div>
-
-        <form onSubmit={handleSubmit(handleFormSubmit)}>
-          {/* Top 2 Cards: Vehicle Type & Front Waiting Driver */}
-          <div className="dm-top-grid">
-            <div className="dm-top-group">
-              <span className="dm-top-label">{t("dispatchModal.vehicleType")}</span>
-              <div className="dm-top-card">
-                <div className="dm-icon-circle">
-                  <Truck size={20} />
-                </div>
-                <div className="dm-top-card-info">
-                  <span className="dm-top-card-title">{typeDisplay}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="dm-top-group">
-              <span className="dm-top-label">{t("dispatchModal.frontWaitingDriver")}</span>
-              <div className="dm-top-card">
-                <div className="dm-icon-circle">
-                  <User size={20} />
-                </div>
-                <div className="dm-top-card-info">
-                  <span className="dm-top-card-title">{frontDriver.name}</span>
-                  {frontDriver.phone ? (
-                    <span className="dm-top-card-sub">{frontDriver.phone}</span>
-                  ) : (
-                    <span className="dm-top-card-sub" style={{ color: "#166534", fontWeight: 500 }}>
-                      {t("dispatchModal.frontPosition")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Select Order Section (Custom Dropdown) */}
-          <div style={{ marginTop: "14px" }}>
-            <h3 className="dm-section-heading">{t("dispatchModal.selectOrder")}</h3>
-            <div className="dm-field-group">
-              <label className="dm-field-label">{t("dispatchModal.order")}</label>
-              <div className="dm-select-wrap" ref={dropdownWrapRef}>
-                <button
-                  type="button"
-                  className={`dm-dropdown-trigger ${dropdownOpen ? "open" : ""}`}
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                >
-                  <span className="dm-dropdown-text">{selectedOrderLabel}</span>
-                  <ChevronDown size={18} className={`dm-select-chevron ${dropdownOpen ? "open" : ""}`} />
-                </button>
-
-                {dropdownOpen && (
-                  <div className="dm-dropdown-menu">
-                    <div
-                      className={`dm-dropdown-item ${!selectedOrderUniqueId ? "selected" : ""}`}
-                      onClick={() => {
-                        setValue("shipperRequestUniqueId", "");
-                        setDropdownOpen(false);
-                      }}
-                    >
-                      <span className="dm-dropdown-item-text">{t("dispatchModal.directDispatch")}</span>
-                    </div>
-                    {availableOrders.map(({ shipperRequest }) => {
-                      const isSel = selectedOrderUniqueId === shipperRequest.shipperRequestUniqueId;
-                      return (
-                        <div
-                          key={shipperRequest.shipperRequestUniqueId}
-                          className={`dm-dropdown-item ${isSel ? "selected" : ""}`}
-                          onClick={() => {
-                            setValue("shipperRequestUniqueId", shipperRequest.shipperRequestUniqueId);
-                            setDropdownOpen(false);
-                          }}
-                        >
-                          <span className="dm-dropdown-item-text">
-                            <strong>{shipperRequest.shippableItemName}</strong> — {shipperRequest.originPlace || t("orders.defaultTerminal")} → {shipperRequest.destinationPlace}
-                          </span>
-                          <span className="dm-dropdown-item-badge">
-                            {Number(shipperRequest.shippableItemQtyInQuintal)} Qtl
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Order Summary Card */}
-          {activeOrderObj && (
-            <div className="dm-summary-card">
-              <h4 className="dm-summary-title">{t("dispatchModal.orderSummary")}</h4>
-              <div className="dm-summary-grid">
-                <div className="dm-summary-item">
-                  <span className="dm-summary-label">{t("orders.table.item")}</span>
-                  <span className="dm-summary-val">{activeOrderObj.shippableItemName || t("dispatchModal.generalCargo")}</span>
-                </div>
-                <div className="dm-summary-item">
-                  <span className="dm-summary-label">{t("orders.destination")}</span>
-                  <span className="dm-summary-val">{activeOrderObj.destinationPlace || "—"}</span>
-                </div>
-
-                <div className="dm-summary-item">
-                  <span className="dm-summary-label">{t("orders.quantityQuintal")}</span>
-                  <span className="dm-summary-val">
-                    {activeOrderObj.shippableItemQtyInQuintal ? `${Number(activeOrderObj.shippableItemQtyInQuintal)} quintal` : "—"}
-                  </span>
-                </div>
-                <div className="dm-summary-item">
-                  <span className="dm-summary-label">{t("orders.numberOfVehicles")}</span>
-                  <span className="dm-summary-val">1 {typeDisplay}</span>
-                </div>
-
-                <div className="dm-summary-item">
-                  <span className="dm-summary-label">{t("orders.shippingCost")}</span>
-                  <span className="dm-summary-val">
-                    {activeOrderObj.shippingCost ? `${Number(activeOrderObj.shippingCost).toLocaleString()} ETB` : "—"}
-                  </span>
-                </div>
-                <div className="dm-summary-item">
-                  <span className="dm-summary-label">{t("orders.shippingDate")}</span>
-                  <span className="dm-summary-val">{formatDateDisplay(activeOrderObj.shippingDate)}</span>
-                </div>
-
-                <div className="dm-summary-item">
-                  <span className="dm-summary-label">{t("orders.origin")}</span>
-                  <span className="dm-summary-val">{activeOrderObj.originPlace || t("reports.terminalLocation")}</span>
-                </div>
-                <div className="dm-summary-item">
-                  <span className="dm-summary-label">{t("orders.deliveryDate")}</span>
-                  <span className="dm-summary-val">{formatDateDisplay(activeOrderObj.deliveryDate)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Footer Actions */}
-          <div className="dm-footer">
-            <button type="button" onClick={onClose} className="dm-btn-cancel">
-              {t("common.cancel")}
-            </button>
-            <button type="submit" disabled={isDispatching} className="dm-btn-dispatch">
-              {isDispatching ? (
-                <>
-                  <span className="add-docs-spinner" style={{ width: 14, height: 14 }} />
-                  {t("dispatchModal.dispatching")}
-                </>
-              ) : (
-                t("dispatchModal.dispatchBtn")
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
+      </form>
+    </Modal>
   );
 }
 
