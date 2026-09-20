@@ -30,7 +30,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   useEffect(() => {
     const handleStorage = () => {
-      setIsCollapsed(localStorage.getItem("queue_sidebar_collapsed") === "true");
+      setIsCollapsed(
+        localStorage.getItem("queue_sidebar_collapsed") === "true",
+      );
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
@@ -38,11 +40,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const userName = auth?.userData?.fullName || t("layout.defaultUserName");
   const userAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    userName
+    userName,
   )}&background=0B4D6D&color=ffffff&bold=true`;
 
   return (
-    <div className={`dashboard-container ${isCollapsed ? "sidebar-collapsed" : ""}`}>
+    <div
+      className={`dashboard-container ${isCollapsed ? "sidebar-collapsed" : ""}`}
+    >
       <Sidebar
         activeTab={activeTab}
         isCollapsed={isCollapsed}
