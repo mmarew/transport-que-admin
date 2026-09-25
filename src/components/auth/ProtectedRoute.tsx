@@ -20,7 +20,7 @@ export function ProtectedRoute({
   const { auth } = useAuth();
   const location = useLocation();
   // Not logged in → go to login
-  if (!auth?.token) {
+  if (!auth?.userData) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   //if there is auth get list of orgs that the user has
@@ -31,7 +31,7 @@ export function ProtectedRoute({
     isSuccess: orgsSuccess,
     isError: orgsError,
   } = useListQueueOrganizationsQuery(undefined, {
-    skip: !auth?.token || !requireOrg,
+    skip: !auth?.userData || !requireOrg,
   });
 
   // Already on /setup-org or requireOrg=false → no need to check

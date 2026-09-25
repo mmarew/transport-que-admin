@@ -4,7 +4,6 @@ import type {
   FetchArgs,
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
-import { getToken } from "@/lib/auth";
 import { logout } from "@/lib/redux/slices/authSlice";
 
 function getBaseUrl(): string {
@@ -30,9 +29,9 @@ function getBaseUrl(): string {
 //   - baseUrl:      prefix for every request. We compute it from
 //                   VITE_API_BASE_URL / VITE_API_URL (default "/api") so the
 //                   same app works against dev/prod backends without rebuild.
-//   - prepareHeaders: a hook RTK calls right before each fetch. It receives the
-//                   Headers object for the request; we add `Authorization:
-//                   Bearer <token>`. Return the headers or RTK drops them.
+//   - credentials:  "include" so the httpOnly session cookie is sent with every
+//                   request. The cookie (not a JS-hosted Bearer token) is what
+//                   authorizes each call, so no prepareHeaders auth is needed.
 //
 // COMMON OPTIONS (when you need them):
 //   - fetchFn:       swap native fetch for axios/fetch with special behavior.
@@ -41,20 +40,11 @@ function getBaseUrl(): string {
 //   - timeout/validateStatus: request timeout & custom response validity.
 //
 // Saving `prepareHeaders` + base URL inside fetchBaseQuery once means every
-// endpoint in this api automatically gets the correct prefix and auth header —
+// endpoint in this api automatically gets the correct prefix and credentials —
 // query/mutation definitions (see *_endpoints.ts) only specify url + method.
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: getBaseUrl(),
-  prepareHeaders: (headers) => {
-    const token = getToken();
-    if (token) {
-      const cleanToken = token.startsWith("Bearer ")
-        ? token
-        : `Bearer ${token}`;
-      headers.set("Authorization", cleanToken);
-    }
-    return headers;
-  },
+  credentials: "include",
 });
 
 // WHY baseQueryWithReauth
@@ -64,13 +54,13 @@ const rawBaseQuery = fetchBaseQuery({
 // header (prepareHeaders above). baseQueryWithReauth is a thin, central wrapper
 // around that raw query that runs on EVERY single API call.
 //
-// Its one job: catch a 401 "Unauthorized" response. When the token is invalid
-// or expired, ANY endpoint can start returning 401. Instead of writing
+// Its one job: catch a 401 "Unauthorized" response. When the session cookie is
+// invalid or expired, ANY endpoint can start returning 401. Instead of writing
 // "handle expired session" logic in every hook/mutation/toast, we detect it in
-// exactly one place and dispatch logout() — which clears the auth slice (token
-// + user), so the app drops the user to the login screen everywhere at once.
-// This is the canonical RTK Query "reauth" pattern (retry-after-refresh uses
-// the same slot; we have no refresh-token flow, so for us "reauth" === logout).
+// exactly one place and dispatch logout() — which clears the auth slice (stored
+// user + cookie), so the app drops the user to the login screen everywhere at
+// once. This is the canonical RTK Query "reauth" pattern (retry-after-refresh
+// uses the same slot; we have no refresh-token flow, so for us "reauth" === logout).
 const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
   unknown,
@@ -86,7 +76,7 @@ const baseQueryWithReauth: BaseQueryFn<
 export const api = createApi({
   reducerPath: "api",
   refetchOnFocus: false,
-  refetchOnReconnect: true,
+  refetchOnReconnect: false,
   keepUnusedDataFor: 300,
   baseQuery: baseQueryWithReauth,
   tagTypes: [
@@ -113,8 +103,9 @@ export const api = createApi({
   // RTK Query even when everything is injected later.
   //
   // INJECTED ENDPOINTS BY MODULE (src/lib/redux/api/*_endpoints.ts):
-  //   authEndpoints.ts   — requestLoginOtp (mutation), verifyOtp (mutation,
-  //                        persists auth via storeAuth), registerUser (mutation)
+//   authEndpoints.ts   — requestLoginOtp (mutation), verifyOtp (mutation,
+//                        persists non-secret userData via storeAuth),
+//                        registerUser (mutation)
   //   queueOrganizationEndpoints.ts —
   //       listQueueOrganizations (query), getQueueOrganization (query),
   //       updateQueueOrganization (mutation), approveQueueOrganization (mutation),

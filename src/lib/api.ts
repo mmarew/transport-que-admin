@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import { clearAuth, getToken } from "./auth";
+import { clearAuth } from "./auth";
 
 function getBaseUrl(): string {
   const raw =
@@ -13,18 +13,11 @@ function getBaseUrl(): string {
 
 export const API_BASE_URL = getBaseUrl();
 
-/** Shared axios instance — all services import this */
+/** Shared axios instance — all services import this.
+ * Auth is carried by the httpOnly session cookie; `withCredentials` sends it. */
 export const api = axios.create({
   baseURL: API_BASE_URL,
-});
-
-// Attach JWT token to every request
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true,
 });
 
 // Handle 401 globally — clear auth and redirect to login

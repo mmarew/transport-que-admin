@@ -87,9 +87,9 @@ export function useOtpVerification({
 
       try {
         const response = await verifyOtp(phoneNumber, otpValue);
-        const { token, userData } = response.data;
+        const { userData } = response.data;
 
-        setAuth({ token, userData });
+        setAuth({ userData });
 
         toast.success(t("common.success"));
 
