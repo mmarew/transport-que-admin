@@ -5,14 +5,7 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 import { logout } from "@/lib/redux/slices/authSlice";
-
-function getBaseUrl(): string {
-  const raw =
-    import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "/api";
-  if (!raw) return "/api";
-  const trimmed = raw.replace(/\/+$/, "");
-  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
-}
+import { getBaseUrl } from "@/utils/baseUrl";
 
 // WHAT IS fetchBaseQuery?
 // ------------------------

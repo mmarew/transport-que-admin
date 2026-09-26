@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 docs/Dynamics_Transport_Feasibility_Study_Ethiopia.docx
 .env
+.env.*
+!.env.example
