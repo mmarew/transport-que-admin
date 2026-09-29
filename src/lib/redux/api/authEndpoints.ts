@@ -25,7 +25,7 @@ export const {
       async onQueryStarted(_args, { queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          storeAuth({ token: data.token, userData: data.userData });
+          storeAuth({ userData: data.userData });
         } catch {
           // Ignore failed OTP verification; the error is surfaced by the caller.
         }

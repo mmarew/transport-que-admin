@@ -56,7 +56,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           localStorage.setItem("queue_sidebar_collapsed", String(next));
         }}
       />
-
+      {/* it containes 2 things these are header and main */}
       <div className="main-content-wrapper">
         {/* ── Topbar ── */}
         <header className="mc-topbar">

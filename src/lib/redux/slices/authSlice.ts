@@ -7,8 +7,8 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  auth: null,
-  hydrated: false,
+  auth: getStoredAuth(),
+  hydrated: true,
 };
 
 const authSlice = createSlice({

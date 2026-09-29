@@ -38,5 +38,6 @@ const appAPIs = {
     addVehicleToDriverAPI: "/vehicleDriver",
     deleteVehicleDriverAPI: "/vehicleDriver/:id",
     acceptDriverOfferAPI: "/shipper/acceptDriverOffer",
+    logoutAPI: "/user/logout",
 }
 export default appAPIs

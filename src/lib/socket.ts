@@ -16,6 +16,21 @@ const activeSubscriptions = new Map<
   { queueOrganizationUniqueId: string; queueDate?: string; refCount: number }
 >();
 
+// A 401 on the WS handshake means the session cookie is gone. Dispatch the
+// redux logout so every authed page unmounts instead of the app continuing
+// to fire doomed requests. Imported dynamically to avoid module cycles.
+async function clearSessionOnUnauthorizedSocket() {
+  try {
+    const [{ store }, { logout }] = await Promise.all([
+      import("./redux/store"),
+      import("./redux/slices/authSlice"),
+    ]);
+    store.dispatch(logout());
+  } catch (err) {
+    console.error("[WebSocket] Failed to clear session:", err);
+  }
+}
+
 let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
 const debouncedInvalidate = (isOrgEvent = false) => {
   if (invalidateTimer) clearTimeout(invalidateTimer);
@@ -48,43 +63,21 @@ const debouncedInvalidate = (isOrgEvent = false) => {
 
 function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
   const storedAuth = getStoredAuth();
-  const token = storedAuth?.token || "";
 
   const userData = (storedAuth?.userData || {}) as Record<string, unknown>;
 
-  let phoneNumber =
+  const phoneNumber =
     user?.phoneNumber ||
     (userData?.phoneNumber as string) ||
     (userData?.phone as string) ||
     (userData?.driverPhoneNumber as string) ||
     "";
 
-  let roleId = userData?.roleId as number | undefined;
-
-  if (token && (!phoneNumber || !roleId)) {
-    try {
-      const cleanToken = token.replace(/^Bearer\s+/i, "");
-      const parts = cleanToken.split(".");
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1]));
-        if (!phoneNumber)
-          phoneNumber = payload.phoneNumber || payload.phone || "";
-        if (!roleId) roleId = payload.roleId;
-      }
-    } catch {
-      // ignore
-    }
-  }
+  const roleId = userData?.roleId as number | undefined;
 
   const userType = roleId === 3 || roleId === 6 ? "admin" : "queueOrgAdmin";
-  const formattedToken = token
-    ? token.startsWith("Bearer ")
-      ? token
-      : `Bearer ${token}`
-    : "";
-  const rawToken = token ? token.replace(/^Bearer\s+/i, "") : "";
 
-  return { token: formattedToken, rawToken, phoneNumber, userType };
+  return { phoneNumber, userType };
 }
 
 function emitSubscribe(
@@ -112,16 +105,12 @@ function emitUnsubscribe(
 export function connectSocket(
   user?: Pick<AuthUser, "phoneNumber">,
 ): Socket | null {
-  const { token, rawToken, phoneNumber, userType } = extractCredentials(user);
+  const { phoneNumber, userType } = extractCredentials(user);
 
   if (socket) {
     socket.auth = {
       user: userType,
       phoneNumber: phoneNumber || "",
-      token: token,
-      rawToken: rawToken,
-      authorization: token,
-      Authorization: token,
     };
     if (socket.connected) {
       useQueueAdminStore.getState().setSocketConnected(true);
@@ -142,17 +131,13 @@ export function connectSocket(
   socket = io(socketUrl, {
     transports: ["websocket", "polling"],
     autoConnect: true,
+    withCredentials: true,
     auth: {
       user: userType,
       phoneNumber: phoneNumber || "",
-      token: token,
-      rawToken: rawToken,
-      authorization: token,
-      Authorization: token,
     },
-    extraHeaders: token ? { Authorization: token } : undefined,
     reconnection: true,
-    reconnectionAttempts: Infinity,
+    reconnectionAttempts: 5,
     reconnectionDelay: 1500,
     reconnectionDelayMax: 5000,
     timeout: 20000,
@@ -173,6 +158,13 @@ export function connectSocket(
   socket.on("connect_error", (err) => {
     console.warn("[WebSocket] Connection error:", err.message, err);
     useQueueAdminStore.getState().setSocketConnected(false);
+    // Session cookie invalid/expired: stop retrying and end the session.
+    // An endless reconnect loop just hammers the backend and risks rate limits.
+    const msg = `${err?.message || ""}`.toLowerCase();
+    if (msg.includes("unauthorized") || msg.includes("token")) {
+      disconnectSocket();
+      void clearSessionOnUnauthorizedSocket();
+    }
   });
 
   socket.on("queue:subscribed", (_ack) => {

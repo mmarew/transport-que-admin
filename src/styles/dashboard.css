@@ -6,7 +6,7 @@
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
-  background-color: #F4F2FF;
+  background-color: #f4f2ff;
   transition: grid-template-columns 0.2s ease;
   width: 100%;
 }
@@ -17,7 +17,7 @@
 
 /* ─── Sidebar ────────────────────────────────────────────────────────── */
 .sidebar {
-  background-color: #0B4D6D;
+  background-color: #0b4d6d;
   color: #cce3f0;
   padding: 1.75rem 1.25rem;
   display: flex;
@@ -27,7 +27,9 @@
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  transition: width 0.2s ease, padding 0.2s ease;
+  transition:
+    width 0.2s ease,
+    padding 0.2s ease;
   z-index: 40;
 }
 
@@ -62,19 +64,21 @@
   border-radius: 6px;
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  color: #0B4D6D;
+  color: #0b4d6d;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   flex-shrink: 0;
 }
 
 .sidebar-toggle-btn:hover {
   background: #f1f5f9;
-  color: #002B44;
+  color: #002b44;
 }
 
 /* Collapsed Sidebar */
@@ -185,7 +189,7 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background-color: #F4F2FF;
+  background-color: #f4f2ff;
 }
 
 .mc-topbar {
@@ -218,12 +222,14 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .mc-icon-btn:hover {
   background: #f1f5f9;
-  color: #0B4D6D;
+  color: #0b4d6d;
 }
 
 .notification-dot {
@@ -249,11 +255,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .mc-avatar-btn:hover {
-  border-color: #0B4D6D;
+  border-color: #0b4d6d;
   transform: scale(1.04);
 }
 
@@ -360,7 +368,7 @@
   }
 
   .mobile-nav-item.active {
-    color: #0B4D6D;
+    color: #0b4d6d;
     font-weight: 700;
   }
 }

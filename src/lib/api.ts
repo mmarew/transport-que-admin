@@ -1,30 +1,14 @@
 import axios, { AxiosError } from "axios";
-import { clearAuth, getToken } from "./auth";
-
-function getBaseUrl(): string {
-  const raw =
-    import.meta.env.VITE_API_BASE_URL ||
-    import.meta.env.VITE_API_URL ||
-    "/api";
-  if (!raw) return "/api";
-  const trimmed = raw.replace(/\/+$/, "");
-  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
-}
+import { clearAuth } from "./auth";
+import { getBaseUrl } from "@/utils/baseUrl";
 
 export const API_BASE_URL = getBaseUrl();
 
-/** Shared axios instance — all services import this */
+/** Shared axios instance — all services import this.
+ * Auth is carried by the httpOnly session cookie; `withCredentials` sends it. */
 export const api = axios.create({
   baseURL: API_BASE_URL,
-});
-
-// Attach JWT token to every request
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true,
 });
 
 // Handle 401 globally — clear auth and redirect to login
