@@ -129,7 +129,7 @@ export function connectSocket(
     (typeof window !== "undefined" ? window.location.origin : "");
 
   socket = io(socketUrl, {
-    transports: ["websocket", "polling"],
+    transports: ["polling", "websocket"],
     autoConnect: true,
     withCredentials: true,
     auth: {
