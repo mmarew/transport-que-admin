@@ -17,6 +17,7 @@ export interface QueueVehicleTypeCardProps {
   }) => void;
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
+  onHistory: (entry: DriverQueueEntry) => void;
 }
 
 export function QueueVehicleTypeCard({
@@ -27,6 +28,7 @@ export function QueueVehicleTypeCard({
   onDispatch,
   onOverride,
   onRemove,
+  onHistory,
 }: QueueVehicleTypeCardProps) {
   const waitingCount = entries.filter((e) =>
     isDriverWaiting(e?.status, e?.journeyStatusId),
@@ -57,6 +59,7 @@ export function QueueVehicleTypeCard({
         queueOrganizationUniqueId={queueOrganizationUniqueId}
         onOverride={onOverride}
         onRemove={onRemove}
+        onHistory={onHistory}
       />
     </QueueCard>
   );

@@ -1,4 +1,4 @@
-import { ArrowUp, Trash2 } from "lucide-react";
+import { ArrowUp, History, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { DriverQueueEntry } from "../../../types/queue";
 import type { QueueRowItem } from "./types";
@@ -7,12 +7,14 @@ interface QueueMobileTableProps {
   rows: QueueRowItem[];
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
+  onHistory: (entry: DriverQueueEntry) => void;
 }
 
 export function QueueMobileTable({
   rows,
   onOverride,
   onRemove,
+  onHistory,
 }: QueueMobileTableProps) {
   const { t } = useTranslation();
 
@@ -94,6 +96,15 @@ export function QueueMobileTable({
                           aria-label={t("queue.cancelDriver")}
                         >
                           <Trash2 size={17} />
+                        </button>
+                        <button
+                          type="button"
+                          className="qb-btn-icon-override"
+                          onClick={() => onHistory(entry)}
+                          title={t("queue.viewHistory")}
+                          aria-label={t("queue.viewHistory")}
+                        >
+                          <History size={17} />
                         </button>
                       </div>
                     )}

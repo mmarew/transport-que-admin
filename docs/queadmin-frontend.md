@@ -1,14 +1,18 @@
 # QueueAdmin Frontend — API Reference & Build Guide
 
-Frontend specification for the **Queue Admin (role 11) dashboard**.
-Stack: **React + TypeScript + Vite + Tailwind CSS v4 + axios + socket.io-client +
-react-router-dom**.
+Frontend specification for the **queue staff dashboard** — Queue Org Admin
+(role 11) and Queue Dispatcher (role 12), plus Admin (3) / SuperAdmin (6).
+Stack: **React + TypeScript + Vite + RTK Query + hand-written CSS +
+socket.io-client + react-router-dom**.
+
+> There is **no Tailwind** in this project. Styling is 23 co-located `.css`
+> files plus design tokens in `src/index.css`.
 
 This document is the single source of truth for the frontend team. It contains:
 
 1. [Environment & wiring](#1-environment--wiring)
 2. [Module standards (use these)](#2-module-standards--conventions)
-3. [Auth workflow (REST + JWT)](#3-auth-workflow)
+3. [Auth workflow (REST + session cookie)](#3-auth-workflow)
 4. [REST API reference — payloads & responses](#4-rest-api-reference)
 5. [Socket.io real-time contract](#5-socketio-realtime-contract)
 6. [TypeScript types](#6-typescript-types)
@@ -24,17 +28,22 @@ All paths are relative to the backend base URL. Example:
 ## 1. Environment & wiring
 
 ```env
-# .env  (frontend)
-VITE_API_URL=https://api.example.com
-VITE_SOCKET_URL=https://api.example.com   # same origin; io() connects to /socket.io
-VITE_LOGIN_ROLE_ID=11                      # queueOrgAdmin
+# .env  (frontend) — VITE_API_BASE_URL / VITE_WEBSOCKET_URL are canonical.
+# The older VITE_API_URL / VITE_SOCKET_URL names are still read as fallbacks.
+VITE_API_BASE_URL=https://api.example.com
+VITE_WEBSOCKET_URL=https://api.example.com   # same origin; io() connects to /socket.io
 ```
 
-- **REST** → axios instance (`src/lib/api.ts`), base URL from `VITE_API_URL`.
-- **Socket** → `io(VITE_SOCKET_URL, { auth: {...} })`.
-- Token sent as `Authorization: Bearer <token>` (axios interceptor).
+- **REST** → RTK Query `fetchBaseQuery` (`src/lib/redux/api/base.ts`), base URL
+  from `VITE_API_BASE_URL` via `src/utils/baseUrl.ts`. A legacy axios instance
+  survives in `src/lib/api.ts` and is used by `src/services/auth.service.ts`.
+- **Socket** → `io(VITE_WEBSOCKET_URL, { auth: {...} })`.
+- **Auth is an httpOnly cookie.** The client never stores or sends a JWT and
+  never sets an `Authorization` header. Every request is sent with
+  `credentials: "include"`, and the backend sets the cookie at
+  `POST /user/verifyUserByOTP`.
 - Dev proxy: Vite forwards `/api` and `/socket.io` to `http://localhost:3000`
-  (backend). So in dev, `VITE_API_URL`/`VITE_SOCKET_URL` default to `/`.
+  (backend). So in dev the base URL defaults to `/api`.
 
 ## 2. Module standards & conventions
 
@@ -42,27 +51,33 @@ Fixed module set — use these for all new work so the codebase stays consistent
 
 | Concern | Module | Where to put code |
 |---|---|---|
-| Server state / caching | **TanStack Query** (`@tanstack/react-query`) | `useQuery`/`useMutation` in components; query keys `["queue-status", orgId]`, `["queue-orgs"]` |
-| Client state | **Zustand** (`zustand`) with `persist` middleware | `src/store/` — e.g. `queueAdminStore.ts` (selected org, socket connected) |
+| Server state / caching | **RTK Query** (`@reduxjs/toolkit/query/react`) | `src/lib/redux/api/*_endpoints.ts`; tags for invalidation, `useXQuery`/`useXMutation` hooks |
+| Client state | **React Context** (`src/context/AuthContext.tsx`, `src/contexts/ThemeContext.tsx`) | Zustand survives in `src/store/queueAdminStore.ts` but is barely used |
 | Forms + validation | **React Hook Form** + **Zod** (`@hookform/resolvers/zod`) | `useForm({ resolver: zodResolver(schema) })`; schemas in `src/schemas/` |
 | Toasts | **sonner** (`sonner`) | `toast.success/error(...)`; `<Toaster />` mounted in `main.tsx` |
 | Dates | **date-fns** | format `joinedAt`, `performedAt`, etc. |
-| Auth persistence | **localStorage** | `src/lib/auth.ts` (key `queueadmin:auth`) + `src/context/AuthContext.tsx` |
+| Auth persistence | **localStorage** (non-secret user profile only) | `src/lib/auth.ts` (key `queueadmin:auth`) + `src/context/AuthContext.tsx` |
 | Realtime | **socket.io-client** | `src/lib/socket.ts` (singleton + queue room helpers) |
 
 Conventions:
-- All API calls go through typed functions in `src/lib/api.ts` (never call axios
-  directly from components).
-- Query keys are stable strings; mutations invalidate the affected query key.
+- All API calls go through RTK Query endpoints in `src/lib/redux/api/` (never call
+  `fetch`/axios directly from components).
+- Tags drive cache invalidation; mutations declare `invalidatesTags`.
 - No polling: socket `queue` events → `invalidateQueries(["queue-status"])`.
-- Route guards: `ProtectedRoute` (token) wraps `RoleGuard` (role 11 / 3 / 6).
+- Route guards: `ProtectedRoute` (auth present) wraps `RoleGuard` (roles 11 / 12 / 3 / 6).
 
 ---
 
 ## 2. Auth workflow
 
-Two-step: **request OTP** → **verify OTP → get JWT**. Then the JWT is used for
-REST (Bearer header) and socket handshake.
+Two-step: **request OTP** → **verify OTP → session cookie**. The backend sets an
+httpOnly cookie on verification; the client keeps no token. That cookie
+authorizes both REST requests and the socket handshake.
+
+**The console sends no `roleId` on login or verification** — the backend
+resolves the account's own role from `UserRole`. That is what lets a role 12
+dispatcher sign in here. (Registration is the exception: it *creates* a role 11
+account, so it does send `roleId`.)
 
 ### 2.1 Request OTP (login)
 
@@ -70,9 +85,12 @@ REST (Bearer header) and socket handshake.
 
 Request:
 ```json
-{ "phoneNumber": "+251912345678", "roleId": 11 }
+{ "phoneNumber": "+251912345678" }
 ```
-(`email` is an alternative to `phoneNumber`; `roleId` is required.)
+(`email` is an alternative to `phoneNumber`. `roleId` is **optional** — the
+service resolves the account's own role from `UserRole`. When it is supplied it
+is still validated against the known role list, so a client cannot assert a role
+it was never granted.)
 
 Response `200` — OTP is sent by SMS, **never returned**:
 ```json
@@ -102,7 +120,7 @@ Response `200` — OTP is sent by SMS, **never returned**:
 
 Request:
 ```json
-{ "phoneNumber": "+251912345678", "roleId": 11, "OTP": "101010" }
+{ "phoneNumber": "+251912345678", "OTP": "101010" }
 ```
 
 Response `200`:
@@ -124,28 +142,31 @@ Response `200`:
 }
 ```
 
-The JWT carries `{ userUniqueId, fullName, phoneNumber, email, roleId, isPhoneVerified, isEmailVerified }`.
+The session cookie carries a JWT with `{ userUniqueId, fullName, phoneNumber,
+email, roleId, isPhoneVerified, isEmailVerified }`. The console stores only the
+non-secret `userData` in localStorage — never the token.
 
 **Frontend behavior:**
-1. Store `token` + `userData` in localStorage (`queueadmin:auth`).
-2. Configure axios default header:
-   `Authorization: Bearer <token>`.
-3. On `401`/`403` → clear storage, redirect to `/login`.
+1. Store **`userData` only** in localStorage (`queueadmin:auth`). No token.
+2. Send every request with `credentials: "include"` so the cookie travels.
+3. On **`401` only** → clear auth and redirect to `/login`. A **`403` is an
+   inline "not permitted" error and must NOT log the user out.**
 4. Establish the socket connection (below).
 
 ### 2.3 Register a QueueOrgAdmin account
 
 Queues do not create users. A Super Admin / Admin creates the account
 (`POST /api/admin/createUserByAdminOrSuperAdmin`) and assigns the user to the
-queue org (`POST /api/queueOrganization/:id/members/:userUniqueId` with
-`roleId: 11`). See [§3.2](#32-queue-organization-endpoints).
+queue org (`POST /api/queueOrganization/:id/members` with `userUniqueId` and `roleId` —
+11 or 12 — in the **body**). See [§3.2](#32-queue-organization-endpoints).
 
 ---
 
 ## 3. REST API reference
 
-All endpoints require `Authorization: Bearer <token>`.
-Roles: **QA** = QueueOrgAdmin (11), **A** = Admin/SuperAdmin, **CA** = CompanyAdmin.
+All endpoints require the httpOnly session cookie (sent via `credentials: "include"`).
+Roles: **QA** = QueueOrgAdmin (11), **QD** = QueueDispatcher (12), **A** =
+Admin/SuperAdmin, **CA** = CompanyAdmin.
 
 ### 3.1 Auth
 
@@ -248,7 +269,9 @@ Response:
 ```json
 { "roleId": 11, "isActive": true }
 ```
-`roleId`: `11` (QueueOrgAdmin) or `1` (shipper).
+`roleId`: `11` (QueueOrgAdmin) or `12` (QueueDispatcher) — the only two values
+the backend accepts (`Validations/QueueOrganization.schema.js`). A shipper is
+role 1 and cannot be a queue org member.
 Response `201`:
 ```json
 { "message": "success", "data": { "queueOrganizationUniqueId": "uuid", "userUniqueId": "uuid", "roleId": 11 } }
@@ -451,17 +474,28 @@ offered to the next front driver.
 ```ts
 import { io } from "socket.io-client";
 
-const socket = io(VITE_SOCKET_URL, {
+const socket = io(VITE_WEBSOCKET_URL, {
+  // Top-level, NOT inside `auth`: this is what makes the browser send the
+  // httpOnly session cookie. Putting it in `auth` silently does nothing.
+  withCredentials: true,
   auth: {
-    user: "queueOrgAdmin",       // must be a valid user type (queueOrgAdmin | driver | shipper | admin …)
+    // MUST be "queueOrgAdmin" for BOTH role 11 and role 12. Sockets are keyed
+    // `${userType}:${phone}` and every queue fan-out looks members up under the
+    // queueOrgAdmin key while selecting `roleId IN (11, 12)`
+    // (Utils/QueueSocket.js). A "queueDispatcher" identity registers under a key
+    // nobody reads from and receives no events.
+    user: "queueOrgAdmin",
     phoneNumber: "+251912345678",
-    token: `Bearer ${token}`,
   },
 });
 ```
 
-Invalid/missing `token`, `phoneNumber`, or `user` → server rejects with
-`UNAUTHORIZED` / `BAD_REQUEST`.
+The session cookie is named `token` and authenticates the handshake, so nothing
+is sent in `auth`. `phoneNumber` is still required — it is the socket-room key,
+not a credential.
+
+Rejection (`Utils/WSPusher.js`): missing/unverifiable token → `UNAUTHORIZED`;
+phone number not 9–15 digits, or `user` outside the allowed set → `BAD_REQUEST`.
 
 ### 4.2 Events
 
@@ -654,9 +688,10 @@ Assign:     POST /api/queue/dispatch  { queueOrganizationUniqueId, vehicleTypeUn
 ```
 src/
   lib/
-    api.ts                 axios instance + interceptor (Bearer, 401 handling); typed API fns
+    api.ts                 legacy axios instance (used by src/services/ only)
+    redux/api/             RTK Query base + injected endpoints (credentials: "include")
     socket.ts              socket singleton (connect, subscribe, event registry)
-    auth.ts                localStorage token storage (key queueadmin:auth)
+    auth.ts                localStorage userData only (key queueadmin:auth) — no token
   store/
     queueAdminStore.ts     zustand + persist: selectedOrgId, socketConnected
   context/
@@ -675,7 +710,7 @@ src/
       fields.tsx           dynamic field renderer (text/tel/email + 6-box OTP)
       themes.ts            per-design class maps
       ProtectedRoute.tsx   redirect to /login if no token
-      RoleGuard.tsx        allow roleId 11 / 3 / 6
+      RoleGuard.tsx        allow roleId 11 / 12 / 3 / 6
     queue/
       QueueBoard.tsx       react-query status query + socket subscribe/invalidate
       QueueTable.tsx       grouped-by-type table (queueNumber, driver, status, actions)

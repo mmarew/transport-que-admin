@@ -31,6 +31,9 @@ const ORG_TYPE_LABELS: Record<QueueOrgType, string> = {
   factory: "Factory",
   cement: "Cement",
   depot: "Depot",
+  mine: "Mine",
+  farm: "Farm",
+  port: "Port",
   other: "Other",
 };
 

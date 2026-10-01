@@ -37,8 +37,86 @@ export const en = {
     orders: "Orders",
     organizations: "Organizations",
     reports: "Reports",
+    security: "Security",
     settings: "Settings",
     signOut: "Sign Out",
+  },
+  security: {
+    title: "Security Compliance",
+    subtitle:
+      "Measure website security against the INSA Secure Website Management Standard",
+    tabs: {
+      overview: "Overview",
+      requirements: "Focus Areas",
+      vulnerabilities: "Vulnerabilities",
+      testing: "Security Testing",
+    },
+    kpi: {
+      score: "Compliance Score",
+      passed: "Passed",
+      failed: "Failed",
+      untested: "Untested",
+      tests: "Security tests",
+      needAttention: "Need attention",
+      remaining: "Remaining to test",
+      ofTotal: "{{passed}} of {{total}} tests passed",
+    },
+    level: {
+      must: "MUST",
+      should: "SHOULD",
+      may: "MAY",
+      mustShort: "mandatory",
+    },
+    overview: {
+      purposeTitle: "Purpose",
+      purposeText:
+        "The standard assists government and key private organizations in integrating security features into their website design, implementation, hosting, operation, and management based on the services they provide, and provides applicable requirements to prevent the most common security threats to websites.",
+      scopeTitle: "Scope",
+      scopeText:
+        "This standard is applicable to Ethiopian federal and regional government and key private organizations of the country.",
+      principlesTitle: "Principles",
+      principlesSubtitle:
+        "Guiding principles for website design, implementation, hosting, operation and management",
+      focusAreas: "Focus areas",
+      requirements: "Requirements",
+      securityTests: "Security tests",
+    },
+    principles: {
+      mission: "Mission-oriented",
+      simplicity: "Simplicity",
+      accessibility: "Accessibility",
+      risk: "Risk-based",
+      integrate: "Integrate security",
+    },
+    focusAreas: {
+      title: "Focus Area Requirements",
+      subtitle:
+        "Minimum security requirements per website lifecycle focus area",
+      requirementGathering: "Requirement Gathering and Analysis",
+      design: "Design",
+      implementation: "Implementation",
+      hosting: "Hosting",
+      operationManagement: "Operation and Management",
+    },
+    vulnerabilities: {
+      title: "Common Vulnerabilities & Threats",
+      subtitle:
+        "Annex A — vulnerabilities that must be considered during design, implementation, hosting, operation and management",
+      no: "No",
+      vulnerability: "Vulnerability",
+      threats: "Possible threats",
+    },
+    checklist: {
+      title: "Minimum Security Testing",
+      subtitle: "Annex B — record the result of each security test deployment",
+      search: "Search tests...",
+      reset: "Reset all",
+      pass: "Pass",
+      fail: "Fail",
+      untested: "Untested",
+      filterAll: "All",
+      noResults: "No tests match your filters.",
+    },
   },
   reports: {
     title: "Reports",
@@ -104,6 +182,13 @@ export const en = {
   },
   settings: {
     title: "Settings",
+    notAvailableNotice:
+      "Profile editing, notifications and two-factor authentication are not connected to the server yet, so those controls are read-only. Dark mode, language and sign-out work normally.",
+    notAvailableYet: "Not available yet",
+    profileUpdateUnavailable:
+      "There is no profile-update endpoint yet, so these details cannot be saved.",
+    deleteRequiresAdmin:
+      "Account deletion requires primary system administrator authorization.",
     subtitle:
       "Manage your terminal profile, operational preferences, and security.",
     role: "Queue Administrator",
@@ -258,6 +343,9 @@ export const en = {
       factory: "Factory",
       cement: "Cement",
       depot: "Depot",
+      mine: "Mine",
+      farm: "Farm",
+      port: "Port",
       other: "Other",
     },
   },
@@ -285,6 +373,7 @@ export const en = {
     shipperColumn: "Shipper Name / Phone",
     override: "Override",
     cancelDriver: "Cancel",
+    viewHistory: "History",
     completed: "Completed",
     dispatched: "Dispatched",
     noQueues: "No active queues found for this terminal.",
@@ -519,6 +608,15 @@ export const en = {
     supervisorPlaceholder: "Priority loading approved by terminal supervisor.",
     provideReason: "Provide a clear reason for this position change.",
   },
+  historyModal: {
+    title: "Entry History",
+    subtitle: "Every recorded change to this queue entry.",
+    position: "Position",
+    loading: "Loading history...",
+    empty: "No changes have been recorded for this entry.",
+    changedBy: "Changed by",
+    previousValue: "Previous value",
+  },
   cancelModal: {
     title: "Cancel Driver from Queue",
     subtitle:
@@ -547,7 +645,27 @@ export const en = {
     orgUpdated: "Organization updated",
     orgStatusUpdated: "Organization status updated",
     roleQueueOrgAdmin: "Queue Org Admin",
+    roleQueueDispatcher: "Queue Dispatcher",
     roleShipper: "Shipper",
+    addMember: "Add member",
+    addMemberHelper:
+      "Membership grants queue access. Deactivating a member revokes their access immediately.",
+    memberUserUniqueId: "User ID (UUID)",
+    memberRole: "Member role",
+    add: "Add",
+    deactivate: "Deactivate",
+    reactivate: "Reactivate",
+    remove: "Remove",
+    memberAdded: "Member added.",
+    memberDeactivated: "Member deactivated. Their queue access has been revoked.",
+    memberReactivated: "Member reactivated.",
+    memberRemoved: "Member removed.",
+    confirmRemoveMember:
+      "Remove this member from the organization? They lose queue access immediately and the membership is soft-deleted.",
+    confirmDeactivateMember:
+      "Deactivate this member? They lose queue access immediately, and the record is kept so it can be reactivated.",
+    onlyQueueOrgAdminCanManage:
+      "Only a Queue Org Admin can manage members.",
     manageOrg: "Manage Organization",
     terminalManagement: "{{type}} Terminal Management",
     orgDetailsFallback: "Organization details",

@@ -12,6 +12,7 @@ import type {
   QueueOrganization,
   QueueOrgMember,
 } from "../../types/queue";
+import { QUEUE_ORG_ADMIN_ROLE } from "../../types/queue";
 import { QueueBoard } from "../../components/queue/QueueBoard";
 import {
   useGetQueueOrganizationQuery,
@@ -19,6 +20,10 @@ import {
   useListQueueOrgMembersQuery,
   useUpdateQueueOrganizationMutation,
   useApproveQueueOrganizationMutation,
+  useAddQueueOrgMemberMutation,
+  useDeactivateQueueOrgMemberMutation,
+  useReactivateQueueOrgMemberMutation,
+  useDeleteQueueOrgMemberMutation,
 } from "../../lib/redux/api";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { normalizeOrg } from "../../utils/formatters";
@@ -44,7 +49,7 @@ export function QueueOrgManagePage() {
 
   const { t } = useTranslation();
   const { auth } = useAuth();
-  const isAdmin = auth?.userData?.roleId === 11;
+  const isAdmin = auth?.userData?.roleId === QUEUE_ORG_ADMIN_ROLE;
 
   const {
     data: orgData,
@@ -89,6 +94,68 @@ export function QueueOrgManagePage() {
     useUpdateQueueOrganizationMutation();
   const [approveOrgMutation, { isLoading: isApproving }] =
     useApproveQueueOrganizationMutation();
+
+  const [addMemberMutation, { isLoading: isAddingMember }] =
+    useAddQueueOrgMemberMutation();
+  const [deactivateMemberMutation, { isLoading: isDeactivatingMember }] =
+    useDeactivateQueueOrgMemberMutation();
+  const [reactivateMemberMutation, { isLoading: isReactivatingMember }] =
+    useReactivateQueueOrgMemberMutation();
+  const [deleteMemberMutation, { isLoading: isDeletingMember }] =
+    useDeleteQueueOrgMemberMutation();
+
+  const isMutatingMember =
+    isAddingMember || isDeactivatingMember || isReactivatingMember || isDeletingMember;
+
+  // Membership IS the permission, so a lifecycle change takes effect on the
+  // member's next request rather than at some cache/refresh boundary. The
+  // toasts say so explicitly to stop admins reading success as "still active".
+  const onAddMember = async (values: {
+    userUniqueId: string;
+    roleId: number;
+  }) => {
+    try {
+      await addMemberMutation({
+        id: orgId,
+        userUniqueId: values.userUniqueId,
+        roleId: values.roleId,
+      }).unwrap();
+      toast.success(t("queueManage.memberAdded"));
+    } catch (err: unknown) {
+      // Keep the original error as the cause so the RTK Query rejection still
+      // carries the status code that base.ts inspects.
+      throw new Error(parseError(err), { cause: err });
+    }
+  };
+
+  const onDeactivateMember = async (membershipId: string) => {
+    if (!window.confirm(t("queueManage.confirmDeactivateMember"))) return;
+    try {
+      await deactivateMemberMutation({ id: orgId, membershipId }).unwrap();
+      toast.success(t("queueManage.memberDeactivated"));
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
+
+  const onReactivateMember = async (membershipId: string) => {
+    try {
+      await reactivateMemberMutation({ id: orgId, membershipId }).unwrap();
+      toast.success(t("queueManage.memberReactivated"));
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
+
+  const onRemoveMember = async (membershipId: string) => {
+    if (!window.confirm(t("queueManage.confirmRemoveMember"))) return;
+    try {
+      await deleteMemberMutation({ id: orgId, membershipId }).unwrap();
+      toast.success(t("queueManage.memberRemoved"));
+    } catch (err: unknown) {
+      toast.error(parseError(err));
+    }
+  };
 
   const onUpdateProfile = async (values: QueueOrgProfileFormValues) => {
     try {
@@ -227,6 +294,12 @@ export function QueueOrgManagePage() {
                 members={members}
                 isLoading={membersLoading}
                 error={membersError}
+                canManage={isAdmin}
+                isMutating={isMutatingMember}
+                onAdd={onAddMember}
+                onDeactivate={onDeactivateMember}
+                onReactivate={onReactivateMember}
+                onRemove={onRemoveMember}
               />
 
               {isAdmin && (

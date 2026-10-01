@@ -46,6 +46,7 @@ export function CheckinModal({
 
   const {
     filteredDrivers,
+    isSearchingDirectory,
     selectedDriver,
     estimatedPosition,
     targetVehicleTypeName,
@@ -114,6 +115,7 @@ export function CheckinModal({
           onSelectDriver={handleSelectDriver}
           onDirectIdEnter={handleDirectIdEnter}
           error={errors.vehicleDriverUniqueId?.message}
+          isSearchingDirectory={isSearchingDirectory}
         />
 
         <CheckinPositionSection

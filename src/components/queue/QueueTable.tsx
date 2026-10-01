@@ -17,6 +17,7 @@ interface QueueTableProps {
   queueOrganizationUniqueId?: string;
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
+  onHistory: (entry: DriverQueueEntry) => void;
 }
 
 function formatJoinedTime(dateStr: string): string {
@@ -33,6 +34,7 @@ export function QueueTable({
   queueOrganizationUniqueId,
   onOverride,
   onRemove,
+  onHistory,
 }: QueueTableProps) {
   const [expandedAddresses, setExpandedAddresses] = useState<Set<string>>(
     new Set(),
@@ -95,11 +97,13 @@ export function QueueTable({
         onOpenShipper={openShipperModal}
         onOverride={onOverride}
         onRemove={onRemove}
+        onHistory={onHistory}
       />
       <QueueMobileTable
         rows={rows}
         onOverride={onOverride}
         onRemove={onRemove}
+        onHistory={onHistory}
       />
       {shipperModal && (
         <ShipperRequestsModal

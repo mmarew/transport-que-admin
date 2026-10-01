@@ -4,6 +4,7 @@ import { CreateOrderModal } from "./CreateOrderModal";
 import { DispatchModal } from "./DispatchModal";
 import { OverrideModal } from "./OverrideModal";
 import { ConfirmCancel } from "./ConfirmCancel";
+import { EntryHistoryModal } from "./EntryHistoryModal";
 
 export interface QueueBoardModalsProps {
   queueOrganizationUniqueId: string;
@@ -27,6 +28,8 @@ export interface QueueBoardModalsProps {
   onCloseOverride: () => void;
   cancelEntry: DriverQueueEntry | null;
   onCloseCancel: () => void;
+  historyEntry: DriverQueueEntry | null;
+  onCloseHistory: () => void;
 }
 
 export function QueueBoardModals({
@@ -42,6 +45,8 @@ export function QueueBoardModals({
   onCloseOverride,
   cancelEntry,
   onCloseCancel,
+  historyEntry,
+  onCloseHistory,
 }: QueueBoardModalsProps) {
   return (
     <>
@@ -78,6 +83,12 @@ export function QueueBoardModals({
         <ConfirmCancel
           entry={cancelEntry}
           onClose={onCloseCancel}
+        />
+      )}
+      {historyEntry && (
+        <EntryHistoryModal
+          entry={historyEntry}
+          onClose={onCloseHistory}
         />
       )}
     </>

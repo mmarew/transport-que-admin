@@ -4,6 +4,7 @@ import {
   Radio,
   Layers,
   BarChart2,
+  ShieldCheck,
   Settings,
   LogOut,
   ChevronLeft,
@@ -30,6 +31,7 @@ export type QueueSidebarTab =
   | "orders"
   | "organizations"
   | "reports"
+  | "security"
   | "settings";
 
 interface SidebarProps {
@@ -121,11 +123,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isReportsActive =
     activeTab === "reports" || currentPath.startsWith("/reports");
 
+  const isSecurityActive =
+    activeTab === "security" || currentPath.startsWith("/security");
+
   const isSettingsActive =
     activeTab === "settings" || currentPath.startsWith("/settings");
 
   const isDashboardActive =
-    !isLiveQueueActive && !isOrdersActive && !isReportsActive && !isSettingsActive;
+    !isLiveQueueActive &&
+    !isOrdersActive &&
+    !isReportsActive &&
+    !isSecurityActive &&
+    !isSettingsActive;
 
   const handleNavigateDashboard = () => {
     setSelectedOrgId("");
@@ -200,6 +209,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             active={isReportsActive}
             onClick={() => navigate("/reports")}
           />
+          <SidebarItem
+            icon={<ShieldCheck size={19} />}
+            label={t("nav.security", "Security")}
+            active={isSecurityActive}
+            onClick={() => navigate("/security")}
+          />
         </nav>
 
         {/* Desktop Bottom Actions: Settings & Sign out */}
@@ -247,6 +262,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </>
         )}
+        <button
+          className={`mobile-nav-item ${isSecurityActive ? "active" : ""}`}
+          onClick={() => navigate("/security")}
+        >
+          <ShieldCheck size={20} />
+          <span>{t("nav.security", "Security")}</span>
+        </button>
         <button
           className={`mobile-nav-item ${isSettingsActive ? "active" : ""}`}
           onClick={() => navigate("/settings")}

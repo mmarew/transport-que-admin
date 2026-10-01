@@ -13,6 +13,12 @@ export interface DesktopPreferencesProps {
   onToggle2FA: (val: boolean) => void;
   onToggleDarkMode: (val: boolean) => void;
   onLanguageChange: (lang: "en" | "am") => void;
+  /**
+   * Controls with no backend endpoint behind them. There is no profile-update
+   * route and no notification-preference table, so these are shown read-only
+   * rather than pretending to persist. See settings.notAvailableNotice.
+   */
+  disabledReason?: string;
 }
 
 /**
@@ -30,6 +36,7 @@ export function DesktopPreferences({
   onToggle2FA,
   onToggleDarkMode,
   onLanguageChange,
+  disabledReason,
 }: DesktopPreferencesProps) {
   const { t } = useTranslation();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
@@ -52,13 +59,20 @@ export function DesktopPreferences({
         {/* Push Notifications */}
         <div className="sdt-pref-row">
           <div>
-            <div className="sdt-pref-label">{t("settings.pushNotif")}</div>
+            <div className="sdt-pref-label">
+              {t("settings.pushNotif")}
+              {disabledReason && (
+                <span className="sdt-pref-badge">{t("settings.notAvailableYet")}</span>
+              )}
+            </div>
             <div className="sdt-pref-desc">{t("settings.pushNotifDesc")}</div>
           </div>
           <label className="sdt-toggle">
             <input
               type="checkbox"
               checked={pushNotif}
+              disabled={Boolean(disabledReason)}
+              title={disabledReason}
               onChange={(e) => onTogglePush(e.target.checked)}
             />
             <span className="sdt-toggle-slider" />
@@ -68,13 +82,20 @@ export function DesktopPreferences({
         {/* Email Notifications */}
         <div className="sdt-pref-row">
           <div>
-            <div className="sdt-pref-label">{t("settings.emailNotif")}</div>
+            <div className="sdt-pref-label">
+              {t("settings.emailNotif")}
+              {disabledReason && (
+                <span className="sdt-pref-badge">{t("settings.notAvailableYet")}</span>
+              )}
+            </div>
             <div className="sdt-pref-desc">{t("settings.emailNotifDesc")}</div>
           </div>
           <label className="sdt-toggle">
             <input
               type="checkbox"
               checked={emailNotif}
+              disabled={Boolean(disabledReason)}
+              title={disabledReason}
               onChange={(e) => onToggleEmail(e.target.checked)}
             />
             <span className="sdt-toggle-slider" />
@@ -84,13 +105,20 @@ export function DesktopPreferences({
         {/* Two-Factor Auth */}
         <div className="sdt-pref-row">
           <div>
-            <div className="sdt-pref-label">{t("settings.twoFactor")}</div>
+            <div className="sdt-pref-label">
+              {t("settings.twoFactor")}
+              {disabledReason && (
+                <span className="sdt-pref-badge">{t("settings.notAvailableYet")}</span>
+              )}
+            </div>
             <div className="sdt-pref-desc">{t("settings.twoFactorDesc")}</div>
           </div>
           <label className="sdt-toggle">
             <input
               type="checkbox"
               checked={twoFactor}
+              disabled={Boolean(disabledReason)}
+              title={disabledReason}
               onChange={(e) => onToggle2FA(e.target.checked)}
             />
             <span className="sdt-toggle-slider" />

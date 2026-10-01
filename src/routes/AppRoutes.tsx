@@ -35,6 +35,11 @@ const SettingsPage = lazy(() =>
 const OrdersPage = lazy(() =>
   import("../pages/orders/OrdersPage").then((m) => ({ default: m.OrdersPage })),
 );
+const SecurityPage = lazy(() =>
+  import("../pages/security/SecurityPage").then((m) => ({
+    default: m.SecurityPage,
+  })),
+);
 
 // ── Minimal full-page loading fallback ───────────────────────────────────────
 function PageLoader() {
@@ -125,6 +130,18 @@ export function AppRoutes() {
             <ProtectedRoute>
               <RoleGuard>
                 <OrdersPage />
+              </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Security Compliance (INSA Standard) */}
+        <Route
+          path="/security"
+          element={
+            <ProtectedRoute>
+              <RoleGuard>
+                <SecurityPage />
               </RoleGuard>
             </ProtectedRoute>
           }

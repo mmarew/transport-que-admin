@@ -57,6 +57,7 @@ export function QueueBoard({
   } | null>(null);
   const [overrideEntry, setOverrideEntry] = useState<DriverQueueEntry | null>(null);
   const [cancelEntry, setCancelEntry] = useState<DriverQueueEntry | null>(null);
+  const [historyEntry, setHistoryEntry] = useState<DriverQueueEntry | null>(null);
   const [viewMode, setViewMode] = useState<"byType" | "all">("byType");
 
   useEffect(() => {
@@ -191,6 +192,7 @@ export function QueueBoard({
                   onDispatch={setDispatchForType}
                   onOverride={setOverrideEntry}
                   onRemove={setCancelEntry}
+                  onHistory={setHistoryEntry}
                 />
               );
             })
@@ -207,6 +209,7 @@ export function QueueBoard({
           onDispatch={setDispatchForType}
           onOverride={setOverrideEntry}
           onRemove={setCancelEntry}
+          onHistory={setHistoryEntry}
         />
       )}
 
@@ -224,6 +227,8 @@ export function QueueBoard({
         onCloseOverride={() => setOverrideEntry(null)}
         cancelEntry={cancelEntry}
         onCloseCancel={() => setCancelEntry(null)}
+        historyEntry={historyEntry}
+        onCloseHistory={() => setHistoryEntry(null)}
       />
     </div>
   );

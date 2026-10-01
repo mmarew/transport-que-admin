@@ -260,9 +260,67 @@
 
 .qom-btn-approve:disabled,
 .qom-btn-suspend:disabled,
-.qom-btn-reject:disabled {
+.qom-btn-reject:disabled,
+.qom-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Generic member-lifecycle buttons (B1) */
+.qom-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #0B4D6D;
+  color: #ffffff;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.qom-btn-ghost {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.qom-btn-danger {
+  background: #e11d48;
+}
+
+.qom-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* .qom-input is width:100% for stacked forms; inside an action row it has to
+   share horizontal space instead of forcing the row to wrap. */
+.qom-row-actions .qom-input {
+  width: auto;
+  flex: 1 1 180px;
+  min-width: 160px;
+}
+
+.qom-member-form {
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.qom-subcard-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.2rem;
+}
+
+.qom-hint {
+  font-size: 0.775rem;
+  color: #64748b;
+  margin: 0 0 0.6rem;
 }
 
 /* Dark Mode */
@@ -300,4 +358,22 @@
 .dark .qom-table td {
   border-color: #334155;
   color: #cbd5e1;
+}
+
+.dark .qom-btn-ghost {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.dark .qom-subcard-title {
+  color: #f1f5f9;
+}
+
+.dark .qom-hint {
+  color: #94a3b8;
+}
+
+.dark .qom-member-form {
+  border-color: #334155;
 }

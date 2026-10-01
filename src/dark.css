@@ -1155,3 +1155,279 @@ html.dark,
   color: #cbd5e1 !important;
 }
 
+
+/* ── Security Compliance Page ── */
+.dark .sec-container {
+  background-color: transparent !important;
+}
+
+.dark .sec-kpi-card,
+.dark .sec-focus-card,
+.dark .sec-tabs {
+  background-color: #111827 !important;
+  border: 1px solid #1f2937 !important;
+}
+
+.dark .sec-card-title,
+.dark .sec-kpi-val,
+.dark .sec-accordion-title,
+.dark .sec-test-group-title,
+.dark .sec-overview-section h3,
+.dark .sec-principle-name,
+.dark .sec-td-vuln {
+  color: #f8fafc !important;
+}
+
+.dark .sec-card-title {
+  color: #38bdf8 !important;
+}
+
+.dark .sec-kpi-val.green { color: #4ade80 !important; }
+.dark .sec-kpi-val.orange { color: #fb923c !important; }
+.dark .sec-kpi-val.red { color: #f87171 !important; }
+
+.dark .sec-card-subtitle,
+.dark .sec-kpi-label,
+.dark .sec-kpi-sub,
+.dark .sec-overview-section p,
+.dark .sec-principle-text,
+.dark .sec-objective,
+.dark .sec-threat-list li,
+.dark .sec-subitem-list li,
+.dark .sec-empty,
+.dark .sec-mobile-subtitle {
+  color: #94a3b8 !important;
+}
+
+.dark .sec-kpi-sub.green { color: #4ade80 !important; }
+.dark .sec-kpi-sub.red { color: #f87171 !important; }
+
+.dark .sec-kpi-icon.blue { background-color: #0c2d42 !important; color: #38bdf8 !important; }
+.dark .sec-kpi-icon.green { background-color: #14351f !important; color: #4ade80 !important; }
+.dark .sec-kpi-icon.red { background-color: #3b1616 !important; color: #f87171 !important; }
+.dark .sec-kpi-icon.gray { background-color: #1f2937 !important; color: #94a3b8 !important; }
+
+.dark .sec-tab {
+  color: #94a3b8 !important;
+}
+
+.dark .sec-tab:hover {
+  background-color: #1f2937 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .sec-tab.active {
+  background-color: #0B4D6D !important;
+  color: #ffffff !important;
+}
+
+.dark .sec-overview-stat {
+  background-color: #0d1424 !important;
+  border-color: #1f2937 !important;
+}
+
+.dark .sec-overview-stat-val {
+  color: #38bdf8 !important;
+}
+
+.dark .sec-overview-stat-label {
+  color: #94a3b8 !important;
+}
+
+.dark .sec-accordion-item {
+  border-color: #1f2937 !important;
+}
+
+.dark .sec-accordion-item.open {
+  border-color: #0e628b !important;
+}
+
+.dark .sec-accordion-header {
+  background-color: #0d1424 !important;
+}
+
+.dark .sec-accordion-header:hover {
+  background-color: #1a2234 !important;
+}
+
+.dark .sec-accordion-section {
+  background-color: #0c2d42 !important;
+  color: #38bdf8 !important;
+}
+
+.dark .sec-accordion-count {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .sec-accordion-body {
+  background-color: #111827 !important;
+  border-top-color: #1f2937 !important;
+}
+
+.dark .sec-objective {
+  background-color: #0d1424 !important;
+  border-left-color: #38bdf8 !important;
+}
+
+.dark .sec-requirement-item {
+  border-color: #1f2937 !important;
+}
+
+.dark .sec-requirement-item:hover {
+  border-color: #374151 !important;
+}
+
+.dark .sec-requirement-text {
+  color: #e2e8f0 !important;
+}
+
+.dark .sec-requirement-id {
+  color: #64748b !important;
+}
+
+.dark .sec-level-chip--must {
+  background-color: #3b1616 !important;
+  color: #f87171 !important;
+}
+
+.dark .sec-level-chip--should {
+  background-color: #3a2410 !important;
+  color: #fb923c !important;
+}
+
+.dark .sec-level-chip--may {
+  background-color: #0c2d42 !important;
+  color: #38bdf8 !important;
+}
+
+.dark .sec-table thead th {
+  color: #94a3b8 !important;
+  border-bottom-color: #1f2937 !important;
+}
+
+.dark .sec-table tbody td {
+  border-bottom-color: #1f2937 !important;
+}
+
+.dark .sec-table tbody tr:hover {
+  background-color: #1a2234 !important;
+}
+
+.dark .sec-td-no {
+  color: #64748b !important;
+}
+
+.dark .sec-reset-btn {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .sec-reset-btn:hover {
+  background-color: #3b1616 !important;
+  border-color: #7f1d1d !important;
+  color: #f87171 !important;
+}
+
+.dark .sec-search-wrap {
+  background-color: #121c2d !important;
+  border: 1px solid #23334d !important;
+}
+
+.dark .sec-search-wrap:focus-within {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+}
+
+.dark .sec-search-input {
+  color: #e2e8f0 !important;
+}
+
+.dark .sec-filter-pill {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .sec-filter-pill:hover {
+  border-color: #4b5563 !important;
+}
+
+.dark .sec-filter-pill.active {
+  background-color: #0B4D6D !important;
+  border-color: #0B4D6D !important;
+  color: #ffffff !important;
+}
+
+.dark .sec-test-item {
+  border-color: #1f2937 !important;
+}
+
+.dark .sec-test-item:hover {
+  border-color: #374151 !important;
+  background-color: #1a2234 !important;
+}
+
+.dark .sec-test-item.pass {
+  border-color: #14532d !important;
+  background-color: #0e2417 !important;
+}
+
+.dark .sec-test-item.fail {
+  border-color: #7f1d1d !important;
+  background-color: #2a1212 !important;
+}
+
+.dark .sec-test-text {
+  color: #e2e8f0 !important;
+}
+
+.dark .sec-test-no {
+  color: #64748b !important;
+}
+
+.dark .sec-test-btn {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .sec-test-btn.pass:hover {
+  border-color: #4ade80 !important;
+  color: #4ade80 !important;
+}
+
+.dark .sec-test-btn.fail:hover {
+  border-color: #f87171 !important;
+  color: #f87171 !important;
+}
+
+.dark .sec-test-btn.pass.active {
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.dark .sec-test-btn.fail.active {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.dark .sec-group-progress {
+  background-color: #1f2937 !important;
+}
+
+.dark .sec-group-progress-fill {
+  background-color: #38bdf8 !important;
+}
+
+.dark .sec-meta-pass { color: #4ade80 !important; }
+.dark .sec-meta-fail { color: #f87171 !important; }
+.dark .sec-meta-sep { color: #374151 !important; }
+
+.dark .sec-principle-dot {
+  background-color: #38bdf8 !important;
+}

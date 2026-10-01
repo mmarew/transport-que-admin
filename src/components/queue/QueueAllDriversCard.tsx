@@ -20,6 +20,7 @@ export interface QueueAllDriversCardProps {
   }) => void;
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
+  onHistory: (entry: DriverQueueEntry) => void;
 }
 
 export function QueueAllDriversCard({
@@ -29,6 +30,7 @@ export function QueueAllDriversCard({
   onDispatch,
   onOverride,
   onRemove,
+  onHistory,
 }: QueueAllDriversCardProps) {
   const { t } = useTranslation();
 
@@ -75,6 +77,7 @@ export function QueueAllDriversCard({
         queueOrganizationUniqueId={queueOrganizationUniqueId}
         onOverride={onOverride}
         onRemove={onRemove}
+        onHistory={onHistory}
       />
     </QueueCard>
   );

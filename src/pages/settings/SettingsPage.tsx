@@ -22,12 +22,6 @@ import { DeleteAccountModal } from "../../components/settings/DeleteAccountModal
 import { MobileSettingsView } from "../../components/settings/MobileSettingsView";
 import "./SettingsPage.css";
 
-const readBool = (key: string, fallback: boolean): boolean => {
-  const raw = localStorage.getItem(key);
-  if (raw === null) return fallback;
-  return raw === "true";
-};
-
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -103,21 +97,25 @@ export function SettingsPage() {
     }
   }, [displayName, displayPhone, displayEmail, displayAddress, isEditing]);
 
-  // Toggles (persisted)
-  const [pushNotif, setPushNotif] = useState(() =>
-    readBool("app_push_notification", true),
-  );
-  const [emailNotif, setEmailNotif] = useState(() =>
-    readBool("app_email_notification", true),
-  );
-  const [twoFactor, setTwoFactor] = useState(() => readBool("app_2fa", false));
+  /**
+   * Push / email / 2FA have no backend endpoint and no notification-preference
+   * table, so they are display-only. They are NOT persisted to localStorage:
+   * a flag that only ever lives in one browser tab looks like a setting while
+   * changing nothing anywhere else. The controls are disabled instead, and the
+   * values below are only the local starting display.
+   */
+  const [pushNotif] = useState(true);
+  const [emailNotif] = useState(true);
+  const [twoFactor] = useState(false);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMobileProfile, setShowMobileProfile] = useState(false);
 
+  // There is no PUT/PATCH profile endpoint, so saving is refused rather than
+  // acknowledged. Reporting success here was the worst of the no-ops: the user
+  // believed their phone and email had been updated and had not.
   const handleSaveProfile = () => {
-    setIsEditing(false);
-    toast.success(t("common.success"));
+    toast.info(t("settings.profileUpdateUnavailable"));
   };
 
   const handleCancelEdit = () => {
@@ -130,29 +128,14 @@ export function SettingsPage() {
     });
   };
 
-  const handleTogglePush = (val: boolean) => {
-    setPushNotif(val);
-    localStorage.setItem("app_push_notification", String(val));
-    toast.success(
-      val ? "Push notifications enabled" : "Push notifications disabled",
-    );
-  };
+  // Each of these is disabled in the UI. The handlers remain only so a
+  // programmatic call cannot silently fake a change.
+  const notAvailableReason = t("settings.notAvailableNotice");
+  const unavailable = () => toast.info(notAvailableReason);
 
-  const handleToggleEmail = (val: boolean) => {
-    setEmailNotif(val);
-    localStorage.setItem("app_email_notification", String(val));
-    toast.success(val ? "Email alerts enabled" : "Email alerts disabled");
-  };
-
-  const handleToggle2FA = (val: boolean) => {
-    setTwoFactor(val);
-    localStorage.setItem("app_2fa", String(val));
-    toast.info(
-      val
-        ? "Two-factor authentication enabled"
-        : "Two-factor authentication disabled",
-    );
-  };
+  const handleTogglePush = (_val: boolean) => unavailable();
+  const handleToggleEmail = (_val: boolean) => unavailable();
+  const handleToggle2FA = (_val: boolean) => unavailable();
 
   const handleToggleDarkMode = (val: boolean) => {
     setDarkMode(val);
@@ -174,11 +157,11 @@ export function SettingsPage() {
     toast.success(t("common.logout"));
   };
 
+  // Honest about not being implemented, which D3 credits as the right call —
+  // kept, but routed through i18n like everything else.
   const handleDeleteConfirm = () => {
     setShowDeleteModal(false);
-    toast.error(
-      "Account deletion requires primary system administrator authorization.",
-    );
+    toast.error(t("settings.deleteRequiresAdmin"));
   };
 
   const currentLang = (i18n.language || getAppLanguage() || "en") as
@@ -192,6 +175,10 @@ export function SettingsPage() {
       activeTab="settings"
     >
       <div className="settings-container">
+        <p className="settings-notice" role="status">
+          {t("settings.notAvailableNotice")}
+        </p>
+
         {/* Mobile Settings View (<= 768px) */}
         <MobileSettingsView
           showMobileProfile={showMobileProfile}
@@ -228,6 +215,7 @@ export function SettingsPage() {
               onStartEdit={() => setIsEditing(true)}
               onCancelEdit={handleCancelEdit}
               onSaveEdit={handleSaveProfile}
+              saveDisabledReason={notAvailableReason}
             />
 
             <DesktopPreferences
@@ -241,6 +229,7 @@ export function SettingsPage() {
               onToggle2FA={handleToggle2FA}
               onToggleDarkMode={handleToggleDarkMode}
               onLanguageChange={handleLanguageChange}
+              disabledReason={notAvailableReason}
             />
 
             <DangerZone

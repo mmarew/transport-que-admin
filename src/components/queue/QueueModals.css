@@ -655,3 +655,64 @@
   }
 }
 
+
+/* Entry history (B2) */
+.qm-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.qm-history-item {
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #034b6e;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  background: #f8fafc;
+}
+
+.qm-history-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.qm-history-head strong {
+  font-size: 0.825rem;
+  color: #0f172a;
+}
+
+.qm-history-head time {
+  font-size: 0.72rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.qm-history-body,
+.qm-history-old {
+  font-size: 0.75rem;
+  color: #475569;
+  margin-top: 0.2rem;
+}
+
+.dark .qm-history-item {
+  background: #1e293b;
+  border-color: #334155;
+  border-left-color: #0ea5e9;
+}
+
+.dark .qm-history-head strong {
+  color: #f1f5f9;
+}
+
+.dark .qm-history-body,
+.dark .qm-history-old,
+.dark .qm-history-head time {
+  color: #94a3b8;
+}

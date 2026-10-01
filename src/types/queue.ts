@@ -1,8 +1,15 @@
+// Mirrors the MySQL ENUM on QueueOrganization.queueOrganizationType and
+// DOMAIN.QUEUE_ORGANIZATION_TYPES in the backend. mine/farm/port were added so
+// those sites stop collapsing into "other", where nothing type-specific can
+// attach to them.
 export const QUEUE_ORG_TYPES = [
   "customs",
   "factory",
   "cement",
   "depot",
+  "mine",
+  "farm",
+  "port",
   "other",
 ] as const;
 export type QueueOrgType = (typeof QUEUE_ORG_TYPES)[number];
@@ -25,6 +32,7 @@ export const QUEUE_STATUSES = [
 export type QueueStatus = (typeof QUEUE_STATUSES)[number];
 
 export const QUEUE_ORG_ADMIN_ROLE = 11;
+export const QUEUE_DISPATCHER_ROLE = 12;
 
 export interface AuthUser {
   userId: number;
@@ -255,4 +263,35 @@ export interface QueueEntryHistoryItem {
   oldValue: string;
   performedBy: string;
   performedAt: string;
+}
+
+/**
+ * A real DriverBid row — GET /api/queue/bidding/order/:shipperRequestUniqueId/bids
+ *
+ * This is the authoritative list of who actually bid on an order, ordered
+ * cheapest-first by the backend. The console previously rebuilt an equivalent
+ * list from the shipper-request payload instead, which silently disagreed with
+ * the board whenever the two drifted.
+ */
+export interface DriverBid {
+  driverBidUniqueId: string;
+  driverBidId: number;
+  shipperRequestUniqueId: string;
+  shipperRequestBatchUniqueId?: string | null;
+  driverUserUniqueId: string;
+  driverRequestUniqueId?: string | null;
+  bidAmount: number | string;
+  bidNotes?: string | null;
+  /** pending | selected | not_selected | withdrawn | expired */
+  bidStatus: string;
+  driverBidCreatedAt: string;
+  fullName?: string | null;
+  phoneNumber?: string | null;
+}
+
+export interface DriverBidPagination {
+  currentPage: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
 }

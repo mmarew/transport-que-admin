@@ -7,7 +7,8 @@ export interface PhotonPlace {
   city?: string;
 }
 
-const PHOTON_URL = "https://photon.komoot.io/api/";
+const PHOTON_URL =
+  import.meta.env.VITE_PHOTON_URL || "https://photon.komoot.io/api/";
 
 export function formatPhotonLabel(feature: any): string {
   const p = feature.properties || {};
@@ -19,7 +20,9 @@ export function formatPhotonLabel(feature: any): string {
     p.state,
     p.country,
   ].filter(Boolean);
-  return parts.length > 0 ? Array.from(new Set(parts)).join(", ") : p.name || p.street || "Location";
+  return parts.length > 0
+    ? Array.from(new Set(parts)).join(", ")
+    : p.name || p.street || "Location";
 }
 
 export function usePhotonSearch(debounceMs: number = 350) {

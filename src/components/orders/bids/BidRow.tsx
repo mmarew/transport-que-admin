@@ -21,6 +21,7 @@ export interface BidRowProps {
   isAccepting: boolean;
   isAnyAccepting: boolean;
   onAccept: (driver: ShipperRequestDriverInfo) => void;
+  acceptDisabledReason?: string;
 }
 
 function getDriverInitials(name?: string | null): string {
@@ -44,6 +45,7 @@ export function BidRow({
   isAccepting,
   isAnyAccepting,
   onAccept,
+  acceptDisabledReason,
 }: BidRowProps) {
   const { t } = useTranslation();
 
@@ -164,6 +166,7 @@ export function BidRow({
         isAccepting={isAccepting}
         isAnyAccepting={isAnyAccepting}
         onAccept={onAccept}
+        acceptDisabledReason={acceptDisabledReason}
       />
     </div>
   );
