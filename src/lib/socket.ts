@@ -77,6 +77,14 @@ function extractCredentials(user?: Pick<AuthUser, "phoneNumber">) {
 
   const roleId = userData?.roleId as number | undefined;
 
+  // DO NOT map role 12 to its own socket identity.
+  //
+  // Sockets are keyed `${userType}:${phone}` (Utils/WSPusher.js), and every
+  // queue fan-out looks members up under the "queueOrgAdmin" key while selecting
+  // `roleId IN (11, 12)` (Utils/QueueSocket.js — emitBidEventToQueueOrg,
+  // notifyQueueOrgAdmins). A dispatcher that announced "queueDispatcher" would
+  // register under a key nobody reads from and would silently receive no queue
+  // events. Queue staff of both roles share one socket identity by design.
   const userType = roleId === 3 || roleId === 6 ? "admin" : "queueOrgAdmin";
 
   return { phoneNumber, userType };

@@ -15,6 +15,7 @@ interface QueueDesktopTableProps {
   ) => void;
   onOverride: (entry: DriverQueueEntry) => void;
   onRemove: (entry: DriverQueueEntry) => void;
+  onHistory: (entry: DriverQueueEntry) => void;
 }
 
 export function QueueDesktopTable({
@@ -24,6 +25,7 @@ export function QueueDesktopTable({
   onOpenShipper,
   onOverride,
   onRemove,
+  onHistory,
 }: QueueDesktopTableProps) {
   const { t } = useTranslation();
 
@@ -150,6 +152,13 @@ export function QueueDesktopTable({
                           onClick={() => onRemove(entry)}
                         >
                           {t("queue.cancelDriver")}
+                        </button>
+                        <button
+                          type="button"
+                          className="qb-btn-text-override"
+                          onClick={() => onHistory(entry)}
+                        >
+                          {t("queue.viewHistory")}
                         </button>
                       </div>
                     )}

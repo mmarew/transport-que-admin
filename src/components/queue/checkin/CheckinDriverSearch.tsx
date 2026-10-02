@@ -14,6 +14,7 @@ interface CheckinDriverSearchProps {
   onSelectDriver: (driver: CheckinDriverItem) => void;
   onDirectIdEnter: (id: string) => void;
   error?: string;
+  isSearchingDirectory?: boolean;
 }
 
 export function CheckinDriverSearch({
@@ -25,6 +26,7 @@ export function CheckinDriverSearch({
   onSelectDriver,
   onDirectIdEnter,
   error,
+  isSearchingDirectory,
 }: CheckinDriverSearchProps) {
   const { t } = useTranslation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -65,6 +67,7 @@ export function CheckinDriverSearch({
                 ? `${selectedDriver.driverName} (${selectedDriver.vehicleDriverUniqueId.slice(0, 7)})`
                 : t("checkinModal.searchPlaceholder")
             }
+            list={filteredDrivers.length > 0 ? "checkin-driver-options" : undefined}
             className="qm-input has-icon"
           />
 
@@ -73,7 +76,17 @@ export function CheckinDriverSearch({
               className="dm-dropdown-menu"
               style={{ maxHeight: "180px", overflowY: "auto" }}
             >
-              {filteredDrivers.length > 0 ? (
+              {isSearchingDirectory ? (
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    fontSize: "0.8rem",
+                    color: "#64748b",
+                  }}
+                >
+                  {t("checkinModal.searchingDirectory", "Searching drivers…")}
+                </div>
+              ) : filteredDrivers.length > 0 ? (
                 filteredDrivers.map((d) => (
                   <div
                     key={d.vehicleDriverUniqueId}

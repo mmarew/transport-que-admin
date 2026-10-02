@@ -11,6 +11,12 @@ interface BidActionButtonsProps {
   isAccepting: boolean;
   isAnyAccepting: boolean;
   onAccept: (driver: ShipperRequestDriverInfo) => void;
+  /**
+   * When set, the Accept button is disabled and explains why. Used when the
+   * rows on screen are a reconstruction rather than the real bidding board —
+   * accepting from those could attach the decision to the wrong driver.
+   */
+  acceptDisabledReason?: string;
 }
 
 export function BidActionButtons({
@@ -22,6 +28,7 @@ export function BidActionButtons({
   isAccepting,
   isAnyAccepting,
   onAccept,
+  acceptDisabledReason,
 }: BidActionButtonsProps) {
   const { t } = useTranslation();
 
@@ -57,9 +64,12 @@ export function BidActionButtons({
         <button
           type="button"
           className="dbm-btn-accept"
-          disabled={isAccepting || isAnyAccepting}
+          disabled={isAccepting || isAnyAccepting || !!acceptDisabledReason}
           onClick={() => onAccept(driver)}
-          title={t("orders.acceptOffer", "Accept Offer")}
+          title={
+            acceptDisabledReason ||
+            t("orders.acceptOffer", "Accept Offer")
+          }
         >
           {isAccepting ? (
             <>

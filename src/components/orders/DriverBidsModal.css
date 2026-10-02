@@ -861,3 +861,66 @@
     justify-content: center;
   }
 }
+
+/* Bidding board toggle (C1/C2) + bids fetch state */
+.dbm-board-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dbm-btn--primary,
+.dbm-btn--secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.45rem;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.dbm-btn--primary {
+  background-color: #0B4D6D;
+  color: #ffffff;
+  border: none;
+}
+
+.dbm-btn--primary:hover:not(:disabled) {
+  background-color: #083c55;
+}
+
+.dbm-btn--secondary {
+  background-color: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.dbm-btn--secondary:hover:not(:disabled) {
+  background-color: #f1f5f9;
+}
+
+.dbm-btn--primary:disabled,
+.dbm-btn--secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dbm-board-toggle-hint,
+.dbm-loading-note,
+.dbm-error-note {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.dbm-error-note {
+  color: #e11d48;
+  margin: 0 0 0.6rem;
+}
+
+.dbm-loading-note {
+  margin: 0 0 0.6rem;
+}

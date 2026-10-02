@@ -12,6 +12,8 @@ import type {
   QueueOrgListArgs,
   QueueOrgListResponse,
   QueueOrgMemberListResponse,
+  QueueOrgMemberLifecycleArgs,
+  QueueOrgMemberLifecycleResponse,
   QueueOrgUniqueIdResponse,
   UpdateQueueOrgArgs,
 } from "./types";
@@ -25,6 +27,9 @@ export const {
   useCreateQueueOrganizationMutation,
   useListQueueOrgMembersQuery,
   useAddQueueOrgMemberMutation,
+  useDeactivateQueueOrgMemberMutation,
+  useReactivateQueueOrgMemberMutation,
+  useDeleteQueueOrgMemberMutation,
 } = api.injectEndpoints({
   endpoints: (builder) => ({
     listQueueOrganizations: builder.query<PaginatedResponse<QueueOrgListItem>, QueueOrgListArgs>({
@@ -77,10 +82,57 @@ export const {
     }),
 
     addQueueOrgMember: builder.mutation<AddQueueOrgMemberResponse, AddQueueOrgMemberArgs>({
-      query: ({ id, userUniqueId, ...body }) => ({
-        url: appAPIs.addQueueOrgMemberAPI.replace(":id", id).replace(":userUniqueId", userUniqueId),
+      // userUniqueId travels in the BODY, not the path. The backend route is
+      // POST /queueOrganization/:queueOrganizationUniqueId/members with
+      // userUniqueId required by Validations/QueueOrganization.schema.js.
+      query: ({ id, ...body }) => ({
+        url: appAPIs.addQueueOrgMemberAPI.replace(":id", id),
         method: "POST",
         body,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: "QueueOrgMembers", id }, "QueueOrganizations"],
+    }),
+
+    // ── Member lifecycle ────────────────────────────────────────────────
+    // Membership IS the permission: VerifyToken.verifyIfUserIsQueueOrgAdmin
+    // requires an active QueueOrganizationMembership row (roleId 11/12,
+    // isActive = 1, not soft-deleted). Deactivating a member therefore revokes
+    // their queue access on the very next request.
+    deactivateQueueOrgMember: builder.mutation<
+      QueueOrgMemberLifecycleResponse,
+      QueueOrgMemberLifecycleArgs
+    >({
+      query: ({ id, membershipId }) => ({
+        url: appAPIs.deactivateQueueOrgMemberAPI
+          .replace(":id", id)
+          .replace(":membershipId", membershipId),
+        method: "PATCH",
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: "QueueOrgMembers", id }, "QueueOrganizations"],
+    }),
+
+    reactivateQueueOrgMember: builder.mutation<
+      QueueOrgMemberLifecycleResponse,
+      QueueOrgMemberLifecycleArgs
+    >({
+      query: ({ id, membershipId }) => ({
+        url: appAPIs.reactivateQueueOrgMemberAPI
+          .replace(":id", id)
+          .replace(":membershipId", membershipId),
+        method: "PATCH",
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: "QueueOrgMembers", id }, "QueueOrganizations"],
+    }),
+
+    deleteQueueOrgMember: builder.mutation<
+      QueueOrgMemberLifecycleResponse,
+      QueueOrgMemberLifecycleArgs
+    >({
+      query: ({ id, membershipId }) => ({
+        url: appAPIs.deleteQueueOrgMemberAPI
+          .replace(":id", id)
+          .replace(":membershipId", membershipId),
+        method: "DELETE",
       }),
       invalidatesTags: (_, __, { id }) => [{ type: "QueueOrgMembers", id }, "QueueOrganizations"],
     }),

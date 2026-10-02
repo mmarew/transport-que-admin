@@ -4,13 +4,22 @@ import { toast } from "sonner";
 import { useAcceptDriverRequestMutation } from "@/lib/redux/api";
 import parseError from "@/utils/parseError";
 import type { OrderDisplayItem, ShipperRequestDriverInfo } from "../OrdersTypes";
+import { asRecord, findUUIDIn } from "./orderIdLookup";
 
-const isUUID = (val?: unknown): val is string =>
-  typeof val === "string" &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    val.trim(),
-  );
-
+/**
+ * Accept one bid for an order.
+ *
+ * The bid rows this modal renders come from GET /api/queue/bidding/order/:id/bids,
+ * so every id needed to accept is already on the row — see mapDriverBidToRow.
+ * Nothing is inferred here.
+ *
+ * This previously scraped six candidate values off the order and the row,
+ * cross-matched them against order.decisions, and fell back to
+ * "if there is exactly one decision, it must belong to this driver". Under a
+ * concurrent bid that resolves to the wrong driver with no error surfaced, and
+ * it silently accepted an unrelated decision when the ids were absent. A bid
+ * that cannot be identified now fails loudly instead of guessing.
+ */
 export function useAcceptDriverBid(
   order: OrderDisplayItem,
   queueOrganizationUniqueId: string,
@@ -24,107 +33,65 @@ export function useAcceptDriverBid(
   );
 
   const handleAcceptDriver = async (driver: ShipperRequestDriverInfo) => {
-    const rawDriver = driver as any;
+    const rawDriver = asRecord(driver);
+
+    // The order id has to be a real UUID — the endpoint is keyed on it.
+    const shipperRequestUniqueId = findUUIDIn(
+      "shipperRequestUniqueId",
+      order,
+      order.rawItem,
+      asRecord(order.rawItem).shipperRequest,
+      rawDriver,
+    );
+
+    const driverRequestUniqueId = findUUIDIn(
+      "driverRequestUniqueId",
+      driver,
+      rawDriver,
+    );
+
+    if (!shipperRequestUniqueId || !driverRequestUniqueId) {
+      toast.error(
+        t(
+          "orders.bidCannotBeAccepted",
+          "This bid cannot be accepted: it is missing the order or driver request id. Reload the bids and try again.",
+        ),
+      );
+      return;
+    }
+
+    const journeyDecisionUniqueId = findUUIDIn(
+      "journeyDecisionUniqueId",
+      driver,
+      rawDriver,
+    );
+
     const driverKey =
       driver.userUniqueId ||
-      rawDriver.driverUserUniqueId ||
+      (typeof rawDriver.driverUserUniqueId === "string"
+        ? rawDriver.driverUserUniqueId
+        : undefined) ||
       driver.phoneNumber ||
-      rawDriver.driverPhoneNumber ||
-      String(driver.driverRequestId || driver.driverRequestUniqueId || "");
-    if (!driverKey) return;
-
-    const candidateReqIds = [
-      order.id,
-      (order as any).shipperRequestUniqueId,
-      (order.rawItem as any)?.shipperRequestUniqueId,
-      (order.rawItem as any)?.shipperRequest?.shipperRequestUniqueId,
-      (order.rawItem as any)?.shipper_request_unique_id,
-      rawDriver.shipperRequestUniqueId,
-      rawDriver.shipper_request_unique_id,
-      driver.driverRequestUniqueId,
-    ];
-    const resolvedShipperRequestUniqueId =
-      candidateReqIds.find(isUUID) || order.id;
-
-    const candidateOrgIds = [
-      order.queueOrganizationUniqueId,
-      queueOrganizationUniqueId,
-      (order.rawItem as any)?.queueOrganizationUniqueId,
-      (order.rawItem as any)?.shipperRequest?.queueOrganizationUniqueId,
-      (order.rawItem as any)?.queue_organization_unique_id,
-      rawDriver.queueOrganizationUniqueId,
-    ];
-    const resolvedQueueOrgId =
-      candidateOrgIds.find(isUUID) ||
-      order.queueOrganizationUniqueId ||
-      queueOrganizationUniqueId ||
-      "";
-
-    const candidateVehicleTypeIds = [
-      order.vehicleTypeUniqueId,
-      (order.rawItem as any)?.vehicleTypeUniqueId,
-      (order.rawItem as any)?.shipperRequest?.vehicleTypeUniqueId,
-      (order.rawItem as any)?.vehicle_type_unique_id,
-      rawDriver.vehicleTypeUniqueId,
-    ];
-    const resolvedVehicleTypeId =
-      candidateVehicleTypeIds.find(isUUID) ||
-      order.vehicleTypeUniqueId ||
-      undefined;
-
-    const orderDecisions: any[] =
-      order.decisions || (order.rawItem as any)?.decisions || [];
-    const matchingDecision =
-      orderDecisions.find(
-        (dec: any) =>
-          (dec.driverRequestId != null &&
-            dec.driverRequestId === driver.driverRequestId) ||
-          (dec.driverRequestUniqueId &&
-            dec.driverRequestUniqueId === driver.driverRequestUniqueId) ||
-          (dec.driverUserUniqueId &&
-            dec.driverUserUniqueId === driver.userUniqueId),
-      ) || (orderDecisions.length === 1 ? orderDecisions[0] : null);
-
-    const resolvedJourneyDecisionUniqueId =
-      driver.journeyDecisionUniqueId ||
-      rawDriver.journeyDecisionUniqueId ||
-      matchingDecision?.journeyDecisionUniqueId ||
-      undefined;
+      driver.driverBidUniqueId ||
+      String(driver.driverRequestId || driverRequestUniqueId);
 
     setAcceptingDriverId(driverKey);
     try {
       await acceptDriverMutation({
-        queueOrganizationUniqueId: resolvedQueueOrgId,
-        shipperRequestUniqueId: resolvedShipperRequestUniqueId,
-        driverPhoneNumber:
-          driver.phoneNumber || rawDriver.driverPhoneNumber || undefined,
-        driverUserUniqueId:
-          driver.userUniqueId || rawDriver.driverUserUniqueId || undefined,
-        driverRequestId:
-          driver.driverRequestId || rawDriver.driverRequestId || undefined,
-        driverRequestUniqueId:
-          driver.driverRequestUniqueId ||
-          rawDriver.driverRequestUniqueId ||
-          undefined,
-        journeyDecisionUniqueId: resolvedJourneyDecisionUniqueId,
-        queueUniqueId:
-          rawDriver.queueUniqueId ||
-          rawDriver.driverQueueUniqueId ||
-          undefined,
-        vehicleTypeUniqueId: resolvedVehicleTypeId,
+        queueOrganizationUniqueId,
+        shipperRequestUniqueId,
+        driverUserUniqueId: driver.userUniqueId,
+        driverRequestId: driver.driverRequestId,
+        driverRequestUniqueId,
+        journeyDecisionUniqueId,
       }).unwrap();
 
       setAcceptedDriverIds((prev) => new Set([...prev, driverKey]));
       toast.success(
-        t(
-          "orders.driverRequestAccepted",
-          "Driver request accepted successfully",
-        ),
+        t("orders.driverRequestAccepted", "Driver request accepted successfully"),
       );
-      if (onOrderUpdated) {
-        onOrderUpdated();
-      }
-    } catch (err: any) {
+      onOrderUpdated?.();
+    } catch (err: unknown) {
       toast.error(parseError(err));
     } finally {
       setAcceptingDriverId(null);

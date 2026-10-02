@@ -16,6 +16,8 @@ export interface DesktopProfileSectionProps {
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSaveEdit: () => void;
+  /** No profile-update endpoint exists yet; see settings.notAvailableNotice. */
+  saveDisabledReason?: string;
 }
 
 /**
@@ -29,6 +31,7 @@ export function DesktopProfileSection({
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
+  saveDisabledReason,
 }: DesktopProfileSectionProps) {
   const { t } = useTranslation();
 
@@ -124,6 +127,8 @@ export function DesktopProfileSection({
               type="button"
               className="sdt-btn-save"
               onClick={onSaveEdit}
+              disabled={Boolean(saveDisabledReason)}
+              title={saveDisabledReason}
             >
               {t("settings.saveChanges")}
             </button>

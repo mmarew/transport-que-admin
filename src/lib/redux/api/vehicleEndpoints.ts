@@ -53,10 +53,40 @@ export const { useListVehicleTypesQuery, useListVehicleDriversQuery } = api.inje
       providesTags: ["VehicleTypes"],
     }),
 
-    listVehicleDrivers: builder.query<VehicleDriverListResponse, VehicleDriverListArgs>({
-      // No working driver-list endpoint exists on the backend.
-      // CheckinModal derives driver data from queueStatus directly.
-      queryFn: async () => ({ data: { message: "success", data: [] } }),
+    /**
+     * Driver directory for manual check-in — GET /api/queue/driverDirectory.
+     *
+     * This used to be a stub that unconditionally returned [], so CheckinModal
+     * could only ever offer drivers already present in the current queue
+     * payload and staff could not manually add anyone who had never queued at
+     * this location. The backend endpoint now exists and returns active
+     * driver/vehicle assignments scoped to the caller's queue org.
+     *
+     * Restricted to queue org staff (role 11/12) with an active membership.
+     */
+    listVehicleDrivers: builder.query<
+      VehicleDriverListResponse,
+      VehicleDriverListArgs
+    >({
+      query: ({
+        queueOrganizationUniqueId,
+        phone,
+        name,
+        vehicleTypeUniqueId,
+        page = 1,
+        limit = 20,
+      }) => ({
+        url: appAPIs.driverDirectoryAPI,
+        params: {
+          queueOrganizationUniqueId,
+          ...(phone ? { phone } : {}),
+          ...(name ? { name } : {}),
+          ...(vehicleTypeUniqueId ? { vehicleTypeUniqueId } : {}),
+          page,
+          limit,
+        },
+      }),
+      providesTags: ["DriverDirectory"],
     }),
   }),
 });

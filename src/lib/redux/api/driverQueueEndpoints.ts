@@ -7,13 +7,16 @@ import type {
   DispatchQueueArgs,
   DispatchQueueResponse,
   GetQueueStatusArgs,
-  GetShipperRequestsResponse,
   ManualCheckinArgs,
   ManualCheckinResponse,
   OverrideEntryArgs,
   OverrideEntryResponse,
   RemoveEntryResponse,
   GetEntryHistoryResponse,
+  GetBidsForOrderArgs,
+  GetBidsForOrderResponse,
+  ApproveBiddingArgs,
+  ApproveBiddingResponse,
 } from "./types";
 
 function isUUID(value?: unknown): value is string {
@@ -31,6 +34,8 @@ export const {
   useOverrideEntryMutation,
   useRemoveEntryMutation,
   useGetEntryHistoryQuery,
+  useGetBidsForOrderQuery,
+  useApproveBiddingMutation,
 } = api.injectEndpoints({
   endpoints: (builder) => ({
     getQueueStatus: builder.query<QueueStatusResponse, GetQueueStatusArgs>({
@@ -63,172 +68,94 @@ export const {
       ],
     }),
 
+    /**
+     * Accepting a driver bid.
+     *
+     * The ids must be supplied exactly as the backend issued them. The previous
+     * version tried to reconstruct them: when an id was missing it pulled 100
+     * shipper requests and fuzzy-matched on driverRequestId / userUniqueId /
+     * phoneNumber, then fell back to "if there is exactly one driverRequest,
+     * it must be the right one", and finally to POST /queue/dispatch. That is
+     * unsound under a concurrent bid — the race resolves to a different driver
+     * with no error — and it cost 100 rows per accept. A missing id is now a
+     * hard, visible failure instead of a silent wrong-driver write.
+     */
     acceptDriverRequest: builder.mutation<AcceptDriverRequestResponse, AcceptDriverRequestArgs>({
       queryFn: async (args, _queryApi, _extraOptions, baseQuery) => {
-        try {
-          const cleanShipperReqId = isUUID(args.shipperRequestUniqueId)
-            ? args.shipperRequestUniqueId.trim()
-            : undefined;
-          let cleanDriverReqId = isUUID(args.driverRequestUniqueId)
-            ? args.driverRequestUniqueId.trim()
-            : undefined;
-          let cleanDecisionId = isUUID(args.journeyDecisionUniqueId)
-            ? args.journeyDecisionUniqueId.trim()
-            : undefined;
+        const shipperRequestUniqueId = isUUID(args.shipperRequestUniqueId)
+          ? args.shipperRequestUniqueId.trim()
+          : undefined;
+        const driverRequestUniqueId = isUUID(args.driverRequestUniqueId)
+          ? args.driverRequestUniqueId.trim()
+          : undefined;
+        const journeyDecisionUniqueId = isUUID(args.journeyDecisionUniqueId)
+          ? args.journeyDecisionUniqueId.trim()
+          : undefined;
 
-          // If journeyDecisionUniqueId or driverRequestUniqueId is missing, resolve from shipper requests query
-          if ((!cleanDecisionId || !cleanDriverReqId) && cleanShipperReqId) {
-            try {
-              const fetchRes = await baseQuery({
-                url: appAPIs.getShipperRequestsAPI,
-                params: { target: "all", limit: 100 },
-              });
-              const payload = fetchRes.data as GetShipperRequestsResponse | undefined;
-              const items = payload?.data;
-              if (Array.isArray(items)) {
-                const targetItem = items.find(
-                  (it) =>
-                    it.shipperRequest?.shipperRequestUniqueId === cleanShipperReqId ||
-                    it.shipperRequestUniqueId === cleanShipperReqId
-                );
-                if (targetItem) {
-                  const decisions = Array.isArray(targetItem.decisions)
-                    ? targetItem.decisions
-                    : [];
-                  const driverRequests = Array.isArray(targetItem.driverRequests)
-                    ? targetItem.driverRequests
-                    : [];
-
-                  if (!cleanDriverReqId) {
-                    const matchedDriver =
-                      driverRequests.find(
-                        (d) =>
-                          (args.driverRequestId != null &&
-                            d.driverRequestId === args.driverRequestId) ||
-                          (args.driverUserUniqueId &&
-                            d.userUniqueId === args.driverUserUniqueId) ||
-                          (args.driverPhoneNumber &&
-                            d.phoneNumber === args.driverPhoneNumber)
-                      ) || (driverRequests.length === 1 ? driverRequests[0] : undefined);
-
-                    if (matchedDriver && isUUID(matchedDriver.driverRequestUniqueId)) {
-                      cleanDriverReqId = matchedDriver.driverRequestUniqueId;
-                    }
-                  }
-
-                  if (!cleanDecisionId) {
-                    const matchedDecision =
-                      decisions.find(
-                        (dec) =>
-                          (args.driverRequestId != null &&
-                            dec.driverRequestId === args.driverRequestId) ||
-                          (cleanDriverReqId &&
-                            dec.driverRequestUniqueId === cleanDriverReqId) ||
-                          (args.driverUserUniqueId &&
-                            dec.driverUserUniqueId === args.driverUserUniqueId)
-                      ) || (decisions.length === 1 ? decisions[0] : undefined);
-
-                    if (matchedDecision && isUUID(matchedDecision.journeyDecisionUniqueId)) {
-                      cleanDecisionId = matchedDecision.journeyDecisionUniqueId;
-                    }
-                  }
-                }
-              }
-            } catch (resolveErr) {
-              console.warn("[acceptDriverRequest] Failed to resolve missing IDs:", resolveErr);
-            }
-          }
-
-          // Primary: PUT /api/shipper/acceptDriverOffer
-          const finalDecisionId = cleanDecisionId || cleanDriverReqId;
-          const finalDriverReqId = cleanDriverReqId || cleanDecisionId;
-
-          if (cleanShipperReqId && finalDriverReqId && finalDecisionId) {
-            const acceptOfferBody = {
-              shipperRequestUniqueId: cleanShipperReqId,
-              driverRequestUniqueId: finalDriverReqId,
-              journeyDecisionUniqueId: finalDecisionId,
-            };
-            console.log("[acceptDriverRequest] Calling PUT", appAPIs.acceptDriverOfferAPI, acceptOfferBody);
-
-            const offerRes = await baseQuery({
-              url: appAPIs.acceptDriverOfferAPI,
-              method: "PUT",
-              body: acceptOfferBody,
-            });
-
-            if (!offerRes.error) {
-              return {
-                data: (offerRes.data as AcceptDriverRequestResponse) || {
-                  message: "Driver offer accepted successfully",
-                },
-              };
-            }
-
-            console.error("[acceptDriverRequest] PUT /api/shipper/acceptDriverOffer error:", offerRes.error);
-            return { error: offerRes.error };
-          }
-
-          // If driver identifiers were provided but could not be resolved to valid UUIDs
-          if (
-            args.driverRequestId ||
-            args.driverRequestUniqueId ||
-            args.journeyDecisionUniqueId ||
-            args.driverUserUniqueId
-          ) {
-            return {
-              error: {
-                status: "CUSTOM_ERROR",
-                error:
-                  "Missing required offer IDs (shipperRequestUniqueId, driverRequestUniqueId, journeyDecisionUniqueId) to accept offer.",
-              },
-            };
-          }
-
-          // Fallback only for direct queue dispatch (no driver bid)
-          const rawPhone = args.driverPhoneNumber?.trim();
-          const cleanPhone = rawPhone ? rawPhone.replace(/[\s-]/g, "") : undefined;
-          const cleanVehicleTypeId = isUUID(args.vehicleTypeUniqueId)
-            ? args.vehicleTypeUniqueId.trim()
-            : undefined;
-          const cleanQueueUniqueId = isUUID(args.queueUniqueId)
-            ? args.queueUniqueId.trim()
-            : undefined;
-
-          const dispatchBody: Record<string, unknown> = {
-            queueOrganizationUniqueId: args.queueOrganizationUniqueId,
+        if (!shipperRequestUniqueId || !driverRequestUniqueId) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error:
+                "Cannot accept this bid: the order and driver request ids are missing. " +
+                "Reload the bids for this order and try again.",
+            },
           };
-          if (cleanShipperReqId) dispatchBody.shipperRequestUniqueId = cleanShipperReqId;
-          if (cleanQueueUniqueId) dispatchBody.queueUniqueId = cleanQueueUniqueId;
-          else if (cleanPhone) dispatchBody.driverPhoneNumber = cleanPhone;
-          else if (cleanVehicleTypeId) dispatchBody.vehicleTypeUniqueId = cleanVehicleTypeId;
-
-          const res = await baseQuery({
-            url: appAPIs.dispatchQueueAPI,
-            method: "POST",
-            body: dispatchBody,
-          });
-
-          if (!res.error) {
-            return {
-              data: (res.data as AcceptDriverRequestResponse) || {
-                message: "Driver request accepted",
-              },
-            };
-          }
-
-          return { error: res.error };
-        } catch (err: unknown) {
-          const message =
-            err instanceof Error ? err.message : "Failed to accept driver request";
-          return { error: { status: "CUSTOM_ERROR", error: message } };
         }
+
+        const res = await baseQuery({
+          url: appAPIs.acceptDriverOfferAPI,
+          method: "PUT",
+          body: {
+            shipperRequestUniqueId,
+            driverRequestUniqueId,
+            ...(journeyDecisionUniqueId ? { journeyDecisionUniqueId } : {}),
+          },
+        });
+
+        if (res.error) return { error: res.error };
+        return {
+          data: (res.data as AcceptDriverRequestResponse) || {
+            message: "Driver offer accepted successfully",
+          },
+        };
       },
-      invalidatesTags: (_, __, { queueOrganizationUniqueId }) => [
+      invalidatesTags: (_, __, { queueOrganizationUniqueId, shipperRequestUniqueId }) => [
         { type: "QueueStatus", id: `${queueOrganizationUniqueId}|today` },
         { type: "DriverQueue", id: queueOrganizationUniqueId },
+        { type: "DriverBids", id: shipperRequestUniqueId as string },
         "ShipperRequests",
       ],
+    }),
+
+    /**
+     * The authoritative bid list for one order. Ordered cheapest-first by the
+     * backend, scoped to the shipper owner / SuperAdmin / active QueueOrgAdmin.
+     */
+    getBidsForOrder: builder.query<GetBidsForOrderResponse, GetBidsForOrderArgs>({
+      query: ({ shipperRequestUniqueId, page = 1, limit = 100 }) => ({
+        url: appAPIs.getBidsForOrderAPI.replace(
+          ":shipperRequestUniqueId",
+          shipperRequestUniqueId,
+        ),
+        params: { page, limit },
+      }),
+      providesTags: (_r, _e, { shipperRequestUniqueId }) => [
+        { type: "DriverBids", id: shipperRequestUniqueId },
+      ],
+    }),
+
+    /**
+     * Open or close the bidding board. The gate is per-order, not per-batch, so
+     * orders inside one batch can diverge between FIFO and auction.
+     */
+    approveBidding: builder.mutation<ApproveBiddingResponse, ApproveBiddingArgs>({
+      query: ({ shipperRequestUniqueIds, approved }) => ({
+        url: appAPIs.approveBiddingAPI,
+        method: "POST",
+        body: { shipperRequestUniqueIds, approved },
+      }),
+      invalidatesTags: ["ShipperRequests"],
     }),
 
     overrideEntry: builder.mutation<OverrideEntryResponse, OverrideEntryArgs>({

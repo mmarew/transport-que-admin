@@ -16,6 +16,12 @@ export interface ShipperRequestDriverInfo {
   driverRequestUniqueId?: string;
   userUniqueId?: string;
   journeyDecisionUniqueId?: string;
+  /** Present when the row came from the real bidding board
+   *  (GET /api/queue/bidding/order/:id/bids) rather than the shipper payload. */
+  driverBidUniqueId?: string;
+  driverBidId?: number;
+  shipperRequestUniqueId?: string;
+  bidStatus?: string;
   fullName?: string | null;
   phoneNumber?: string | null;
   journeyStatusId?: number | null;

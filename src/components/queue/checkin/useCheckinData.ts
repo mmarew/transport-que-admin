@@ -2,6 +2,7 @@ import { useMemo, useEffect } from "react";
 import {
   useGetQueueStatusQuery,
   useListVehicleTypesQuery,
+  useListVehicleDriversQuery,
 } from "../../../lib/redux/api";
 import { normalizeQueueEntry } from "../../../utils/formatters";
 import { resolveVehicleName } from "../../../utils/vehicleType";
@@ -27,7 +28,10 @@ export function useCheckinData({
     { skip: !queueOrganizationUniqueId },
   );
 
-  const driversList = useMemo(() => {
+  // Drivers already in today's queue — derived from the live payload. Kept as
+  // the fallback so manual check-in still works if the directory is
+  // unreachable, and as the source of the `isInQueue` flag below.
+  const queueDrivers = useMemo(() => {
     if (!queueStatusData?.data?.queues) return [];
     const seen = new Set<string>();
     const result: CheckinDriverItem[] = [];
@@ -46,15 +50,74 @@ export function useCheckinData({
             driverName: entry.driverName || "",
             driverPhoneNumber: entry.driverPhoneNumber || "",
             vehicleTypeName: entry.vehicleTypeName || "",
+            isInQueue: true,
           });
         }
       });
     return result;
   }, [queueStatusData]);
 
+  const { data: vtData } = useListVehicleTypesQuery();
+  // Stable identity: `vtData?.data || []` allocates a new array on every render,
+  // which invalidates the directory memo below on every render.
+  const vtList = useMemo(() => vtData?.data || [], [vtData?.data]);
+
+  // The directory needs a search term, so only query once the operator has
+  // typed something. Before that the picker shows the queue itself.
+  const searchTerm = searchQuery.trim();
+  const { data: directoryData, isFetching: isSearchingDirectory } =
+    useListVehicleDriversQuery(
+      {
+        queueOrganizationUniqueId,
+        phone: /^[\d\s+-]+$/.test(searchTerm) ? searchTerm : undefined,
+        name: /^[\d\s+-]+$/.test(searchTerm) ? undefined : searchTerm,
+      },
+      {
+        skip: !queueOrganizationUniqueId || searchTerm.length < 2,
+      },
+    );
+
+  const directoryDrivers: CheckinDriverItem[] = useMemo(() => {
+    const rows = directoryData?.data;
+    if (!Array.isArray(rows)) return [];
+    return rows.map((row) => ({
+      vehicleDriverUniqueId: row.vehicleDriverUniqueId,
+      vehicleTypeUniqueId: row.vehicleTypeUniqueId || "",
+      driverName: row.fullName || "",
+      driverPhoneNumber: row.phoneNumber || "",
+      // The directory returns vehicleTypeUniqueId only; resolve the display
+      // name against the real vehicle-type list rather than leaking the id.
+      vehicleTypeName: resolveVehicleName(row.vehicleTypeUniqueId, undefined, vtList),
+      isInQueue: false,
+    }));
+  }, [directoryData, vtList]);
+
+  /**
+   * Directory results win once a search has run, because they are the only
+   * source that includes drivers who have never queued here. Queue entries are
+   * merged in so an operator still sees who is already waiting, and so
+   * `isInQueue` is accurate for directory hits.
+   */
+  const driversList = useMemo(() => {
+    const inQueueIds = new Set(
+      queueDrivers.map((d) => d.vehicleDriverUniqueId),
+    );
+    const merged = [
+      ...queueDrivers,
+      ...directoryDrivers.filter(
+        (d) => !inQueueIds.has(d.vehicleDriverUniqueId),
+      ),
+    ];
+    return merged;
+  }, [queueDrivers, directoryDrivers]);
+
+  // The directory already filtered server-side, so re-filtering client-side
+  // would only discard rows the backend legitimately returned (a partial name
+  // match, for instance). Keep the local filter only for the queue fallback.
   const filteredDrivers = useMemo(() => {
-    if (!searchQuery.trim()) return driversList;
-    const q = searchQuery.toLowerCase().trim();
+    if (!searchTerm) return driversList;
+    if (directoryDrivers.length > 0) return driversList;
+    const q = searchTerm.toLowerCase();
     return driversList.filter(
       (d) =>
         d.driverName?.toLowerCase().includes(q) ||
@@ -62,7 +125,7 @@ export function useCheckinData({
         d.vehicleDriverUniqueId?.toLowerCase().includes(q) ||
         d.vehicleTypeName?.toLowerCase().includes(q),
     );
-  }, [driversList, searchQuery]);
+  }, [driversList, searchTerm, directoryDrivers.length]);
 
   const selectedDriver = useMemo(() => {
     if (!selectedVehicleDriverUniqueId) {
@@ -97,8 +160,6 @@ export function useCheckinData({
     return 1;
   }, [inputQueueNumber, queueStatusData]);
 
-  const { data: vtData } = useListVehicleTypesQuery();
-  const vtList = vtData?.data || [];
   const targetVehicleTypeName = resolveVehicleName(
     selectedDriver?.vehicleTypeUniqueId,
     selectedDriver?.vehicleTypeName,
@@ -108,6 +169,7 @@ export function useCheckinData({
   return {
     driversList,
     filteredDrivers,
+    isSearchingDirectory,
     selectedDriver,
     estimatedPosition,
     targetVehicleTypeName,

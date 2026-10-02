@@ -1,5 +1,7 @@
 import type { StoredAuth } from "@/lib/auth";
 import type {
+  DriverBid,
+  DriverBidPagination,
   DriverQueueEntry,
   QueueOrgMember,
   QueueOrgType,
@@ -104,6 +106,13 @@ export type AddQueueOrgMemberArgs = {
 };
 
 export type AddQueueOrgMemberResponse = ApiData<QueueOrgMember>;
+
+export type QueueOrgMemberLifecycleArgs = {
+  id: string;
+  membershipId: string;
+};
+
+export type QueueOrgMemberLifecycleResponse = ApiData<null>;
 
 export type GetQueueStatusArgs = {
   queueOrganizationUniqueId: string;
@@ -327,14 +336,56 @@ export interface GetShipperRequestBatchesResponse {
 
 export type VehicleTypeListResponse = ApiData<VehicleType[]>;
 
+/**
+ * One row from GET /api/queue/driverDirectory — an active driver/vehicle
+ * assignment, i.e. a candidate for manual check-in.
+ */
 export interface VehicleDriverListItem {
   vehicleDriverUniqueId: string;
+  driverUserUniqueId: string;
+  vehicleUniqueId: string;
   vehicleTypeUniqueId: string;
-  driverName: string;
-  driverPhoneNumber: string;
-  vehicleTypeName: string;
+  licensePlate: string;
+  color: string;
+  fullName: string;
+  phoneNumber: string;
 }
 
-export type VehicleDriverListResponse = ApiData<VehicleDriverListItem[]>;
+export type VehicleDriverListResponse = ApiData<VehicleDriverListItem[]> & {
+  pagination?: PaginationMeta;
+};
 
-export type VehicleDriverListArgs = { queueOrganizationUniqueId: string } | void;
+/**
+ * The directory needs at least one search term — the backend refuses an
+ * unscoped query rather than paging the whole driver table.
+ */
+export type VehicleDriverListArgs = {
+  queueOrganizationUniqueId: string;
+  phone?: string;
+  name?: string;
+  vehicleTypeUniqueId?: string;
+  page?: number;
+  limit?: number;
+};
+export type GetBidsForOrderArgs = {
+  shipperRequestUniqueId: string;
+  page?: number;
+  limit?: number;
+};
+
+export type GetBidsForOrderResponse = ApiData<DriverBid[]> & {
+  pagination?: DriverBidPagination;
+};
+
+export type ApproveBiddingArgs = {
+  shipperRequestUniqueIds: string[];
+  /** TRUE opens the board, FALSE hides it again. */
+  approved: boolean;
+};
+
+export type ApproveBiddingResponse = ApiData<{
+  shipperRequestUniqueIds: string[];
+  isBiddingApproved: boolean;
+  count: number;
+  waitingMatched: number;
+}>;

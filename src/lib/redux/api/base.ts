@@ -77,6 +77,8 @@ export const api = createApi({
     "QueueOrgMembers",
     "QueueStatus",
     "DriverQueue",
+    "DriverBids",
+    "DriverDirectory",
     "Auth",
     "VehicleTypes",
     "ShipperRequests",
@@ -113,7 +115,6 @@ export const api = createApi({
   //       getShipperRequestBatches (query)
   //   vehicleEndpoints.ts —
   //       listVehicleTypes (query, falls back to DEFAULT_VEHICLE_TYPES),
-  //       listVehicleDrivers (query, returns [] — no backend endpoint yet)
   //
   // Each module's hooks come back through the same barrel export (./index.ts),
   // so components keep importing from "@lib/redux/api" unchanged.
