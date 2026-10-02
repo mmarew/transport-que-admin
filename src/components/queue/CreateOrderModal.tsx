@@ -7,6 +7,7 @@ import {
   useCreateQueueOrderMutation,
   useListVehicleTypesQuery,
 } from "../../lib/redux/api";
+import type { CreateOrderPayload } from "../../types/queue";
 import parseError from "../../utils/parseError";
 import {
   createOrderSchema,
