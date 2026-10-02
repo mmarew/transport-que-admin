@@ -228,6 +228,7 @@ export interface OrderBatchGroup {
   orders: OrderDisplayItem[];
   displayId: string;
   shipper: string;
+  phone?: string;
   type: "Individual" | "Group";
   vehicleType: string;
   item: string;
@@ -429,6 +430,7 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
       orders: batchOrders,
       displayId,
       shipper: first.shipper,
+      phone: first.phone || "",
       type: first.type,
       vehicleType: first.vehicleType,
       item: first.item,
@@ -443,5 +445,22 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
 
   return groups;
 }
+
+export function getVehicleNoun(vehicleType?: string, count = 1): string {
+  const isBus = /bus/i.test(vehicleType || "");
+  const noun = isBus ? (count === 1 ? "Bus" : "Buses") : (count === 1 ? "Truck" : "Trucks");
+  return `${count} ${noun}`;
+}
+
+export function formatWeight(weight?: number): string {
+  if (weight == null || isNaN(weight)) return "0 ton";
+  return `${weight.toLocaleString()} ton`;
+}
+
+export function formatCost(cost?: number): string {
+  if (cost == null || isNaN(cost)) return "0 ETB";
+  return `${cost.toLocaleString()} ETB`;
+}
+
 
 

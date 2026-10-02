@@ -314,7 +314,7 @@ export const en = {
     shippingCost: "Fixed Shipping Cost (ETB)",
     cargoItem: "Shippable Cargo Item",
     cargoItemPlaceholder: "e.g. Cement, Coffee, Fertilizer, Rebar",
-    quantityQuintal: "Quantity (Quintals)",
+    quantityQuintal: "Quantity (Quintals) per vehicle",
     shippingDate: "Shipping Date",
     shippingDatePastError: "Shipping date cannot be in the past",
     deliveryDate: "Delivery Date",

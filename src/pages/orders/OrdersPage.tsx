@@ -13,8 +13,7 @@ import { useQueueSocket } from "../../hooks/useQueueSocket";
 import { useOrdersView } from "../../hooks/useOrdersView";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import { normalizeOrgList, extractCity } from "../../utils/formatters";
-import { OrdersTable } from "../../components/orders/OrdersTable";
-import { OrdersMobileCards } from "../../components/orders/OrdersMobileCards";
+import { OrdersCardsList } from "../../components/orders/OrdersCardsList";
 import { OrdersPagination } from "../../components/orders/OrdersPagination";
 import { OrdersModals } from "../../components/orders/OrdersModals";
 import type { OrderDisplayItem } from "../../components/orders/OrdersTypes";
@@ -45,45 +44,49 @@ export function OrdersPage() {
   }, [orgList, targetOrgId]);
 
   // Live WebSocket subscription for orders
-  const { socketConnected } = useQueueSocket(activeOrg?.queueOrganizationUniqueId || "");
+  const { socketConnected, isLive } = useQueueSocket(activeOrg?.queueOrganizationUniqueId || "");
+  const live = isLive || socketConnected;
+
+  // Stable query arguments
+  const orgUniqueId = activeOrg?.queueOrganizationUniqueId || "";
+
+  const shipperRequestsArgs = useMemo(
+    () => ({
+      queueOrganizationUniqueId: orgUniqueId,
+      target: "all" as const,
+      limit: 100,
+    }),
+    [orgUniqueId]
+  );
+
+  const shipperBatchesArgs = useMemo(
+    () => ({
+      queueOrganizationUniqueId: orgUniqueId,
+      requestMode: "company_target" as const,
+      includeBids: true,
+      limit: 100,
+    }),
+    [orgUniqueId]
+  );
 
   // Backend queries
   const {
     data: backendOrdersData,
     isLoading: isLoadingOrders,
     refetch: refetchOrders,
-  } = useGetShipperRequestsQuery(
-    {
-      queueOrganizationUniqueId: activeOrg?.queueOrganizationUniqueId || "",
-      target: "all",
-      limit: 100,
-    },
-    {
-      skip: !activeOrg?.queueOrganizationUniqueId,
-      refetchOnReconnect: true,
-      refetchOnFocus: true,
-      pollingInterval: 5000,
-    }
-  );
+  } = useGetShipperRequestsQuery(shipperRequestsArgs, {
+    skip: !orgUniqueId,
+    refetchOnReconnect: true,
+  });
 
   const {
     data: backendBatchesData,
     isLoading: isLoadingBatches,
     refetch: refetchBatches,
-  } = useGetShipperRequestBatchesQuery(
-    {
-      queueOrganizationUniqueId: activeOrg?.queueOrganizationUniqueId || "",
-      requestMode: "company_target",
-      includeBids: true,
-      limit: 100,
-    },
-    {
-      skip: !activeOrg?.queueOrganizationUniqueId,
-      refetchOnReconnect: true,
-      refetchOnFocus: true,
-      pollingInterval: 5000,
-    }
-  );
+  } = useGetShipperRequestBatchesQuery(shipperBatchesArgs, {
+    skip: !orgUniqueId,
+    refetchOnReconnect: true,
+  });
 
   const refetchAll = React.useCallback(() => {
     refetchOrders();
@@ -131,8 +134,6 @@ export function OrdersPage() {
     setActiveTab,
     safeCurrentPage,
     setCurrentPage,
-    sortCol,
-    handleSort,
     allBatches,
     currentBatches,
     paginatedOrders,
@@ -207,15 +208,15 @@ export function OrdersPage() {
             <div className="orders-title-wrap">
               <h1 className="orders-title">{t("orders.pageTitle", "Orders")}</h1>
               <span
-                className={`orders-live-badge ${socketConnected ? "orders-live-badge--connected" : "orders-live-badge--syncing"}`}
+                className={`orders-live-badge ${live ? "orders-live-badge--connected" : "orders-live-badge--syncing"}`}
                 title={
-                  socketConnected
+                  live
                     ? t("orders.socketLiveTooltip", "Real-time WebSocket connected")
                     : t("orders.socketSyncingTooltip", "Syncing live updates (auto-refreshing)")
                 }
               >
-                <span className={`orders-live-dot ${socketConnected ? "" : "orders-live-dot--syncing"}`} />
-                {socketConnected ? t("orders.liveBadge", "Live") : t("orders.syncingBadge", "Syncing")}
+                <span className={`orders-live-dot ${live ? "" : "orders-live-dot--syncing"}`} />
+                {live ? t("orders.liveBadge", "Live") : t("orders.syncingBadge", "Syncing")}
               </span>
             </div>
             <p className="orders-subtitle">{`${orgName} — ${orgCity}`}</p>
@@ -250,21 +251,8 @@ export function OrdersPage() {
           </button>
         </div>
 
-        {/* ── Desktop Table ── */}
-        <OrdersTable
-          batchGroups={currentBatches}
-          orders={paginatedOrders}
-          sortCol={sortCol}
-          activeTab={activeTab}
-          currentPage={safeCurrentPage}
-          onSort={handleSort}
-          onEdit={setEditingOrder}
-          onDelete={setDeletingOrder}
-          onViewRequests={setViewingRequestsOrder}
-        />
-
-        {/* ── Mobile Cards ── */}
-        <OrdersMobileCards
+        {/* ── Orders Cards List (Card Design from mockup) ── */}
+        <OrdersCardsList
           batchGroups={currentBatches}
           orders={paginatedOrders}
           activeTab={activeTab}

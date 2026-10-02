@@ -41,23 +41,25 @@ const debouncedInvalidate = (isOrgEvent = false) => {
           import("./redux/store"),
           import("./redux/api"),
         ]);
-        store.dispatch(
-          api.util.invalidateTags([
-            { type: "QueueStatus" },
-            { type: "DriverQueue" },
-            { type: "ShipperRequests" },
-            { type: "QueueOrganizations" },
-            "QueueStatus",
-            "DriverQueue",
-            "ShipperRequests",
-            "QueueOrganizations",
-          ]),
-        );
+        const tagsToInvalidate = isOrgEvent
+          ? [
+              { type: "QueueOrganizations" as const },
+              "QueueOrganizations" as const,
+            ]
+          : [
+              { type: "QueueStatus" as const },
+              { type: "DriverQueue" as const },
+              { type: "ShipperRequests" as const },
+              "QueueStatus" as const,
+              "DriverQueue" as const,
+              "ShipperRequests" as const,
+            ];
+        store.dispatch(api.util.invalidateTags(tagsToInvalidate));
       } catch (err) {
         console.error("[WebSocket] Failed to invalidate RTK Query tags:", err);
       }
     },
-    isOrgEvent ? 30 : 150,
+    isOrgEvent ? 100 : 250,
   );
 };
 
@@ -129,7 +131,7 @@ export function connectSocket(
     (typeof window !== "undefined" ? window.location.origin : "");
 
   socket = io(socketUrl, {
-    transports: ["polling", "websocket"],
+    transports: ["websocket", "polling"],
     autoConnect: true,
     withCredentials: true,
     auth: {
@@ -185,6 +187,17 @@ export function connectSocket(
             ? (rawType.type || rawType.message || "")
             : "";
       const messageType = typeStr || (parsed as any)?.message || eventName;
+
+      // Ignore acknowledgment messages and heartbeats from triggering cache invalidation
+      const lowerType = String(messageType || "").toLowerCase();
+      if (
+        lowerType.includes("subscribed") ||
+        lowerType.includes("unsubscribed") ||
+        lowerType === "ping" ||
+        lowerType === "pong"
+      ) {
+        return;
+      }
 
       const isOrgEvent =
         messageType === "queue_org_approved" ||

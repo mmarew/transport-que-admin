@@ -110,11 +110,11 @@ export function DriverBidsModal({
         </div>
       </div>
 
-      {/* Order Summary Banner */}
-      <OrderSummaryCard order={order} />
-
-      {/* Bids List Section */}
+      {/* Bids List Section with Order Summary */}
       <div className="dbm-body">
+        {/* Order Summary Banner */}
+        <OrderSummaryCard order={order} />
+
         <div className="dbm-section-header">
           <h4 className="dbm-section-title">
             {t("orders.driverRequests", "Driver Requests & Proposals")}

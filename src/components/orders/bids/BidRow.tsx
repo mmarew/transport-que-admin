@@ -94,77 +94,83 @@ export function BidRow({
     <div
       className={`dbm-bid-item ${isAccepted ? "dbm-bid-item--accepted" : ""}`}
     >
-      <div className="dbm-driver-avatar">
-        {getDriverInitials(driver.fullName)}
-      </div>
-
-      <div className="dbm-driver-details">
-        <div className="dbm-driver-header">
-          <span className="dbm-driver-name">
-            {driver.fullName || t("orders.waitingDriver", "Driver")}
-          </span>
-          {statusId != null && (
-            <span className={`dbm-status-badge status-${statusId}`}>
-              {formatJourneyStatusLabel(statusId)}
-            </span>
-          )}
+      <div className="dbm-driver-main-info">
+        <div className="dbm-driver-avatar">
+          {getDriverInitials(driver.fullName)}
         </div>
 
-        <div className="dbm-driver-meta">
-          {driver.phoneNumber && (
-            <a
-              href={`tel:${driver.phoneNumber}`}
-              className="dbm-driver-phone"
-              title={driver.phoneNumber}
-            >
-              <Phone size={12} />
-              {driver.phoneNumber}
-            </a>
-          )}
-          <span className="dbm-driver-veh">
-            <Truck size={12} />
-            {driver.vehicleTypeName || order.vehicleType}
-            {driver.plateNumber && ` • ${driver.plateNumber}`}
-          </span>
-
-          {(driverLoc || driverDist != null) && (
+        <div className="dbm-driver-details">
+          <div className="dbm-driver-header">
             <span
-              className="dbm-driver-location-tag"
-              title={
-                driverDist != null
-                  ? `${driverLoc ? driverLoc + " • " : ""}${driverDist} km from pickup`
-                  : driverLoc || ""
-              }
+              className="dbm-driver-name"
+              title={driver.fullName || t("orders.waitingDriver", "Driver")}
             >
-              <MapPin size={12} className="dbm-loc-pin" />
-              {driverLoc && <span className="dbm-loc-name">{driverLoc}</span>}
-              {driverDist != null && (
-                <span className="dbm-dist-badge">
-                  {driverDist} km {t("orders.fromPickup", "from pickup")}
-                </span>
-              )}
+              {driver.fullName || t("orders.waitingDriver", "Driver")}
             </span>
-          )}
+            {statusId != null && (
+              <span className={`dbm-status-badge status-${statusId}`}>
+                {formatJourneyStatusLabel(statusId)}
+              </span>
+            )}
+          </div>
+
+          <div className="dbm-driver-meta">
+            {driver.phoneNumber && (
+              <a
+                href={`tel:${driver.phoneNumber}`}
+                className="dbm-driver-phone"
+                title={driver.phoneNumber}
+              >
+                <Phone size={12} />
+                {driver.phoneNumber}
+              </a>
+            )}
+            <span className="dbm-driver-veh">
+              <Truck size={12} />
+              {driver.vehicleTypeName || order.vehicleType}
+              {driver.plateNumber && ` • ${driver.plateNumber}`}
+            </span>
+
+            {(driverLoc || driverDist != null) && (
+              <span
+                className="dbm-driver-location-tag"
+                title={
+                  driverDist != null
+                    ? `${driverLoc ? driverLoc + " • " : ""}${driverDist} km from pickup`
+                    : driverLoc || ""
+                }
+              >
+                <MapPin size={12} className="dbm-loc-pin" />
+                {driverLoc && <span className="dbm-loc-name">{driverLoc}</span>}
+                {driverDist != null && (
+                  <span className="dbm-dist-badge">
+                    {driverDist} km {t("orders.fromPickup", "from pickup")}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Driver Offer Cost and Comparison */}
-      <BidOfferComparison
-        offerVal={offerVal}
-        orderCost={order.cost}
-        hasDriverOffer={hasDriverOffer}
-      />
+      {/* Driver Offer and Actions */}
+      <div className="dbm-bid-right-group">
+        <BidOfferComparison
+          offerVal={offerVal}
+          hasDriverOffer={hasDriverOffer}
+        />
 
-      <BidActionButtons
-        driver={driver}
-        isAccepted={isAccepted}
-        hasAnyAcceptedDriver={hasAnyAcceptedDriver}
-        isDriverRequested={isDriverRequested}
-        isDriverAccepted={isDriverAccepted}
-        isAccepting={isAccepting}
-        isAnyAccepting={isAnyAccepting}
-        onAccept={onAccept}
-      />
+        <BidActionButtons
+          driver={driver}
+          isAccepted={isAccepted}
+          hasAnyAcceptedDriver={hasAnyAcceptedDriver}
+          isDriverRequested={isDriverRequested}
+          isDriverAccepted={isDriverAccepted}
+          isAccepting={isAccepting}
+          isAnyAccepting={isAnyAccepting}
+          onAccept={onAccept}
+        />
+      </div>
     </div>
   );
 }

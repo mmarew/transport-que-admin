@@ -302,7 +302,7 @@ export const am = {
     shippingCost: "የማጓጓዣ ዋጋ (በብር)",
     cargoItem: "የጭነቱ አይነት",
     cargoItemPlaceholder: "ለምሳሌ ሲሚንቶ፣ ቡና፣ ማዳበሪያ፣ ቆርቆሮ",
-    quantityQuintal: "መጠን (በኩንታል)",
+    quantityQuintal: "መጠን (በኩንታል) ለተሽከርካሪ",
     shippingDate: "የመጫኛ ቀን",
     shippingDatePastError: "የመጫኛ ቀን ካለፈ ቀን መሆን አይችልም",
     deliveryDate: "የማድረሻ ቀን",
