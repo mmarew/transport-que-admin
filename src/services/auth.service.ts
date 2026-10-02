@@ -16,6 +16,7 @@ import {
 export const requestLoginOtp = (phoneNumber: string) =>
   api.post<LoginResponse>("/user/loginUser", {
     phoneNumber,
+    roleId: QUEUE_ORG_ADMIN_ROLE,
     statusId: 1,
   });
 
@@ -23,6 +24,7 @@ export const requestLoginOtp = (phoneNumber: string) =>
 export const verifyOtp = (phoneNumber: string, OTP: string) =>
   api.post<VerifyOtpResponse>("/user/verifyUserByOTP", {
     phoneNumber,
+    roleId: QUEUE_ORG_ADMIN_ROLE,
     OTP: Number(OTP),
   });
 
