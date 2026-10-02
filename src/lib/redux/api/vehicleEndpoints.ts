@@ -1,5 +1,5 @@
 import appAPIs from "@/utils/constant";
-import { DEFAULT_VEHICLE_TYPES } from "@/utils/vehicleType";
+import { DEFAULT_VEHICLE_TYPES, registerDynamicVehicleTypes } from "@/utils/vehicleType";
 import type { VehicleType } from "@/types/queue";
 import { api } from "./base";
 import type {
@@ -19,6 +19,7 @@ export const { useListVehicleTypesQuery, useListVehicleDriversQuery } = api.inje
           });
           if (result.error) {
             // Backend endpoint not found or error, safely return standard default vehicle types
+            registerDynamicVehicleTypes(DEFAULT_VEHICLE_TYPES as unknown as VehicleType[]);
             return {
               data: {
                 message: "success",
@@ -32,6 +33,7 @@ export const { useListVehicleTypesQuery, useListVehicleDriversQuery } = api.inje
             : Array.isArray(payload)
               ? payload
               : (DEFAULT_VEHICLE_TYPES as unknown as VehicleType[]);
+          registerDynamicVehicleTypes(list);
           return {
             data: {
               message: payload?.message || "success",
@@ -39,6 +41,7 @@ export const { useListVehicleTypesQuery, useListVehicleDriversQuery } = api.inje
             },
           };
         } catch {
+          registerDynamicVehicleTypes(DEFAULT_VEHICLE_TYPES as unknown as VehicleType[]);
           return {
             data: {
               message: "success",

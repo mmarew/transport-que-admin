@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { QUEUE_ORG_TYPES } from "../types/queue";
+import { getVehicleCapacity } from "../utils/vehicleType";
 
 export const uuidSchema = z.string().uuid({ message: "Invalid UUID" });
 
@@ -94,7 +95,8 @@ export const createOrderSchema = z
     shippableItemName: z.string().trim().min(1, "Item name is required"),
     shippableItemQtyInQuintal: z
       .number({ message: "Quantity must be a number" })
-      .positive("Quantity must be greater than 0"),
+      .positive("Quantity must be greater than 0")
+      .max(10000, "Quantity per vehicle cannot exceed 10,000 Quintals"),
     shippingCost: z
       .number({ message: "Shipping cost must be a number" })
       .nonnegative("Shipping cost cannot be negative"),
@@ -142,6 +144,18 @@ export const createOrderSchema = z
   .refine((v) => v.deliveryDate >= v.shippingDate, {
     message: "Delivery date cannot be before shipping date",
     path: ["deliveryDate"],
+  })
+  .superRefine((v, ctx) => {
+    if (v.vehicleTypeUniqueId && v.shippableItemQtyInQuintal > 0) {
+      const cap = getVehicleCapacity(v.vehicleTypeUniqueId);
+      if (cap?.maxQuintal && v.shippableItemQtyInQuintal > cap.maxQuintal) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Quantity per vehicle cannot exceed ${cap.maxQuintal} Quintals for ${cap.vehicleTypeName}`,
+          path: ["shippableItemQtyInQuintal"],
+        });
+      }
+    }
   });
 
 export const overrideSchema = z.object({

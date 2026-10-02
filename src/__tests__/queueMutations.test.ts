@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { checkinSchema, dispatchSchema, setupOrgSchema, overrideSchema, createOrderSchema } from "../schemas/queue";
-import { resolveVehicleName } from "../utils/vehicleType";
+import { resolveVehicleName, registerDynamicVehicleTypes, getVehicleCapacity } from "../utils/vehicleType";
 import parseError from "../utils/parseError";
 
 describe("Queue Business Logic & Mutation Validation Suite", () => {
@@ -195,6 +195,116 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       };
       const result = createOrderSchema.safeParse(invalidPayload);
       expect(result.success).toBe(false);
+    });
+
+    it("should reject order when quantity exceeds vehicle type capacity (e.g. 301 quintals for 20ft Container Truck 251-300 Q)", () => {
+      const payloadExceedingCapacity = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742", // 20ft Container Truck (251–300 Quintal)
+        shippableItemQtyInQuintal: 301,
+      };
+      const result = createOrderSchema.safeParse(payloadExceedingCapacity);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain("Quantity per vehicle cannot exceed 300 Quintals");
+        expect(result.error.issues[0].path).toContain("shippableItemQtyInQuintal");
+      }
+    });
+
+    it("should accept order when quantity is within vehicle type capacity (e.g. 300 quintals for 20ft Container Truck)", () => {
+      const validMaxPayload = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742", // 20ft Container Truck (251–300 Quintal)
+        shippableItemQtyInQuintal: 300,
+      };
+      const result = createOrderSchema.safeParse(validMaxPayload);
+      expect(result.success).toBe(true);
+    });
+
+    it("should accept 301 quintals for larger vehicle type (e.g. 2×20ft or 40ft Low-Bed Truck 301–350 Quintal)", () => {
+      const lowBedPayload = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000005", // 2×20ft or 40ft Low-Bed Truck (301–350 Quintal)
+        shippableItemQtyInQuintal: 301,
+      };
+      const result = createOrderSchema.safeParse(lowBedPayload);
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject 351 quintals for 2×20ft or 40ft Low-Bed Truck (301–350 Quintal)", () => {
+      const overLowBedPayload = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000005", // 2×20ft or 40ft Low-Bed Truck (301–350 Quintal)
+        shippableItemQtyInQuintal: 351,
+      };
+      const result = createOrderSchema.safeParse(overLowBedPayload);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain("Quantity per vehicle cannot exceed 350 Quintals");
+      }
+    });
+
+    it("should reject 4000000000000 quintals and 40 quintals for Light Truck (up to 35 Quintal)", () => {
+      // 1. Extreme 4 trillion quantity
+      const extremePayload = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000006", // Light Truck (up to 35 Quintal)
+        shippableItemQtyInQuintal: 4000000000000,
+      };
+      const extremeResult = createOrderSchema.safeParse(extremePayload);
+      expect(extremeResult.success).toBe(false);
+      if (!extremeResult.success) {
+        const messages = extremeResult.error.issues.map((i) => i.message).join(", ");
+        expect(messages).toMatch(/cannot exceed (?:35|10,000) Quintals/);
+      }
+
+      // 2. 40 quintals (exceeds 35 max)
+      const overMaxPayload = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000006", // Light Truck (up to 35 Quintal)
+        shippableItemQtyInQuintal: 40,
+      };
+      const overMaxResult = createOrderSchema.safeParse(overMaxPayload);
+      expect(overMaxResult.success).toBe(false);
+      if (!overMaxResult.success) {
+        expect(overMaxResult.error.issues[0].message).toContain("Quantity per vehicle cannot exceed 35 Quintals");
+      }
+
+      // 3. 35 quintals should be accepted
+      const validPayload = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000006", // Light Truck (up to 35 Quintal)
+        shippableItemQtyInQuintal: 35,
+      };
+      const validResult = createOrderSchema.safeParse(validPayload);
+      expect(validResult.success).toBe(true);
+    });
+
+    it("should resolve dynamic vehicle types registered from backend API with custom UUID", () => {
+      const dynamicUuid = "a1111111-2222-3333-4444-555555555555";
+      registerDynamicVehicleTypes([
+        {
+          vehicleTypeUniqueId: dynamicUuid,
+          vehicleTypeName: "Custom Dynamic Light Truck (up to 35 Quintal)",
+          carryingCapacity: 35,
+        },
+      ]);
+
+      const cap = getVehicleCapacity(dynamicUuid);
+      expect(cap).not.toBeNull();
+      expect(cap?.maxQuintal).toBe(35);
+
+      const dynamicPayload = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: dynamicUuid,
+        shippableItemQtyInQuintal: 4000000000000,
+      };
+      const result = createOrderSchema.safeParse(dynamicPayload);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(", ");
+        expect(messages).toMatch(/cannot exceed (?:35|10,000) Quintals/);
+      }
     });
   });
 

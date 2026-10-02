@@ -9,6 +9,12 @@ export interface OrderDetailsFieldsProps {
   shippingDate?: string;
   deliveryDate?: string;
   todayStr: string;
+  vehicleCapacity?: {
+    minQuintal?: number;
+    maxQuintal?: number;
+    hasPlus?: boolean;
+    vehicleTypeName?: string;
+  } | null;
   onShippingDateChange: (val: string) => void;
   onDeliveryDateChange: (val: string) => void;
 }
@@ -23,6 +29,7 @@ export function OrderDetailsFields({
   shippingDate,
   deliveryDate,
   todayStr,
+  vehicleCapacity,
   onShippingDateChange,
   onDeliveryDateChange,
 }: OrderDetailsFieldsProps) {
@@ -54,15 +61,60 @@ export function OrderDetailsFields({
           <label className="com-label">
             {t("orders.quantityQuintal", "Quantity (Quintal)")}
           </label>
-          <input
-            type="number"
-            step="any"
-            placeholder={t("orders.enterQuantity", "Enter quantity")}
-            {...register("shippableItemQtyInQuintal", {
+          {(() => {
+            const qtyRegister = register("shippableItemQtyInQuintal", {
               valueAsNumber: true,
-            })}
-            className={`com-input ${errors.shippableItemQtyInQuintal ? "com-input-error" : ""}`}
-          />
+              validate: (val) => {
+                if (
+                  vehicleCapacity?.maxQuintal &&
+                  Number(val) > vehicleCapacity.maxQuintal
+                ) {
+                  return t("orders.quantityExceedsCapacity", {
+                    max: vehicleCapacity.maxQuintal,
+                    vehicle: vehicleCapacity.vehicleTypeName,
+                    defaultValue: `Quantity per vehicle cannot exceed ${vehicleCapacity.maxQuintal} Quintals for ${vehicleCapacity.vehicleTypeName}`,
+                  });
+                }
+                return true;
+              },
+            });
+            return (
+              <input
+                type="number"
+                step="any"
+                min={1}
+                max={vehicleCapacity?.maxQuintal}
+                placeholder={
+                  vehicleCapacity?.maxQuintal
+                    ? t("orders.enterQuantityWithMax", {
+                        max: vehicleCapacity.maxQuintal,
+                        defaultValue: `Max ${vehicleCapacity.maxQuintal} Q`,
+                      })
+                    : t("orders.enterQuantity", "Enter quantity")
+                }
+                {...qtyRegister}
+                onChange={(e) => {
+                  if (vehicleCapacity?.maxQuintal) {
+                    const num = parseFloat(e.target.value);
+                    if (!isNaN(num) && num > vehicleCapacity.maxQuintal) {
+                      e.target.value = String(vehicleCapacity.maxQuintal);
+                    }
+                  }
+                  qtyRegister.onChange(e);
+                }}
+                onBlur={(e) => {
+                  if (vehicleCapacity?.maxQuintal) {
+                    const num = parseFloat(e.target.value);
+                    if (!isNaN(num) && num > vehicleCapacity.maxQuintal) {
+                      e.target.value = String(vehicleCapacity.maxQuintal);
+                    }
+                  }
+                  qtyRegister.onBlur(e);
+                }}
+                className={`com-input ${errors.shippableItemQtyInQuintal ? "com-input-error" : ""}`}
+              />
+            );
+          })()}
           {errors.shippableItemQtyInQuintal && (
             <p className="com-error-text">
               {errors.shippableItemQtyInQuintal.message}

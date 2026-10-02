@@ -315,6 +315,8 @@ export const en = {
     cargoItem: "Shippable Cargo Item",
     cargoItemPlaceholder: "e.g. Cement, Coffee, Fertilizer, Rebar",
     quantityQuintal: "Quantity (Quintals) per vehicle",
+    enterQuantityWithMax: "Max {{max}} Q per vehicle",
+    quantityExceedsCapacity: "Quantity per vehicle cannot exceed {{max}} Quintals for {{vehicle}}",
     shippingDate: "Shipping Date",
     shippingDatePastError: "Shipping date cannot be in the past",
     deliveryDate: "Delivery Date",

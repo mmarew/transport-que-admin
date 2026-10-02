@@ -303,6 +303,8 @@ export const am = {
     cargoItem: "የጭነቱ አይነት",
     cargoItemPlaceholder: "ለምሳሌ ሲሚንቶ፣ ቡና፣ ማዳበሪያ፣ ቆርቆሮ",
     quantityQuintal: "መጠን (በኩንታል) ለተሽከርካሪ",
+    enterQuantityWithMax: "ከፍተኛ {{max}} ኩንታል ለተሽከርካሪ",
+    quantityExceedsCapacity: "ለ{{vehicle}} መጠን ከ{{max}} ኩንታል መብለጥ አይችልም",
     shippingDate: "የመጫኛ ቀን",
     shippingDatePastError: "የመጫኛ ቀን ካለፈ ቀን መሆን አይችልም",
     deliveryDate: "የማድረሻ ቀን",

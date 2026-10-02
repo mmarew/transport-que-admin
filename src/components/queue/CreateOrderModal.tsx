@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type { CreateOrderPayload } from "../../types/queue";
-import { useCreateQueueOrderMutation } from "../../lib/redux/api";
+import {
+  useCreateQueueOrderMutation,
+  useListVehicleTypesQuery,
+} from "../../lib/redux/api";
 import parseError from "../../utils/parseError";
 import {
   createOrderSchema,
@@ -15,6 +17,7 @@ import { CustomSelect } from "../ui/CustomSelect";
 import { Modal } from "../ui/Modal";
 import { RequestTypeSelect } from "./order-modal/RequestTypeSelect";
 import { VehicleTypeSelect } from "./order-modal/VehicleTypeSelect";
+import { getVehicleCapacity } from "../../utils/vehicleType";
 import { OrderDetailsFields } from "./order-modal/OrderDetailsFields";
 import {
   LocationSearchField,
@@ -105,9 +108,11 @@ export function CreateOrderModal({
     handleSubmit,
     setValue,
     watch,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<CreateOrderFormValues>({
     resolver: zodResolver(createOrderSchema),
+    mode: "onChange",
     defaultValues: {
       isBiddingApproved: false,
       numberOfVehicles: 1,
@@ -130,6 +135,24 @@ export function CreateOrderModal({
   const destLng = watch("destinationLongitude");
   const shippingDate = watch("shippingDate");
   const deliveryDate = watch("deliveryDate");
+  const vehicleTypeUniqueId = watch("vehicleTypeUniqueId");
+
+  const { data: apiVehicleTypes } = useListVehicleTypesQuery();
+
+  const vehicleCapacity = useMemo(() => {
+    return getVehicleCapacity(vehicleTypeUniqueId, apiVehicleTypes?.data);
+  }, [vehicleTypeUniqueId, apiVehicleTypes?.data]);
+
+  useEffect(() => {
+    if (vehicleCapacity?.maxQuintal) {
+      const currentQty = watch("shippableItemQtyInQuintal");
+      if (currentQty && Number(currentQty) > vehicleCapacity.maxQuintal) {
+        setValue("shippableItemQtyInQuintal", vehicleCapacity.maxQuintal, {
+          shouldValidate: true,
+        });
+      }
+    }
+  }, [vehicleCapacity, setValue, watch]);
 
   const todayStr = useMemo(() => {
     const d = new Date();
@@ -168,6 +191,24 @@ export function CreateOrderModal({
           );
           return;
         }
+      }
+
+      const capacity = getVehicleCapacity(
+        values.vehicleTypeUniqueId,
+        apiVehicleTypes?.data,
+      );
+      if (
+        capacity?.maxQuintal &&
+        Number(values.shippableItemQtyInQuintal) > capacity.maxQuintal
+      ) {
+        toast.error(
+          t("orders.quantityExceedsCapacity", {
+            max: capacity.maxQuintal,
+            vehicle: capacity.vehicleTypeName,
+            defaultValue: `Quantity per vehicle cannot exceed ${capacity.maxQuintal} Quintals for ${capacity.vehicleTypeName}`,
+          }),
+        );
+        return;
       }
 
       const payload = buildOrderPayload(values, queueOrganizationUniqueId);
@@ -253,10 +294,19 @@ export function CreateOrderModal({
             />
 
             <VehicleTypeSelect
-              value={watch("vehicleTypeUniqueId") || ""}
-              onChange={(val) =>
-                setValue("vehicleTypeUniqueId", val, { shouldValidate: true })
-              }
+              value={vehicleTypeUniqueId || ""}
+              onChange={(val) => {
+                setValue("vehicleTypeUniqueId", val, { shouldValidate: true });
+                const cap = getVehicleCapacity(val, apiVehicleTypes?.data);
+                const currentQty = watch("shippableItemQtyInQuintal");
+                if (cap?.maxQuintal && currentQty && Number(currentQty) > cap.maxQuintal) {
+                  setValue("shippableItemQtyInQuintal", cap.maxQuintal, {
+                    shouldValidate: true,
+                  });
+                } else {
+                  trigger("shippableItemQtyInQuintal");
+                }
+              }}
               error={errors.vehicleTypeUniqueId?.message}
             />
           </div>
@@ -269,6 +319,7 @@ export function CreateOrderModal({
           shippingDate={shippingDate}
           deliveryDate={deliveryDate}
           todayStr={todayStr}
+          vehicleCapacity={vehicleCapacity}
           onShippingDateChange={(val) => {
             setValue("shippingDate", val, { shouldValidate: true });
             if (deliveryDate && val && deliveryDate < val) {

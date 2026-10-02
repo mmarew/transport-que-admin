@@ -9,32 +9,7 @@ export interface VehicleTypeSelectProps {
   error?: string;
 }
 
-const KNOWN_DB_TYPES = [
-  {
-    vehicleTypeUniqueId: "e93aa27f-364f-4eff-bc26-582b773071d3",
-    vehicleTypeName: "2×20ft or 40ft Low-Bed Truck (301–350 Quintal)",
-  },
-  {
-    vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742",
-    vehicleTypeName: "20ft Container Truck (251–300 Quintal)",
-  },
-  {
-    vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000002",
-    vehicleTypeName: "ISUZU / Light Cargo (50–100 Quintal)",
-  },
-  {
-    vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000001",
-    vehicleTypeName: "Heavy Duty Trailer (351–400+ Quintal)",
-  },
-  {
-    vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000003",
-    vehicleTypeName: "Tanker / Bulk Liquid",
-  },
-  {
-    vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000004",
-    vehicleTypeName: "Refrigerated Cargo Truck",
-  },
-];
+import { KNOWN_DB_TYPES, registerDynamicVehicleTypes } from "@/utils/vehicleType";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -55,31 +30,37 @@ export function VehicleTypeSelect({
     const list: Array<{
       vehicleTypeUniqueId: string;
       vehicleTypeName: string;
+      carryingCapacity?: number;
     }> = [];
     const seenIds = new Set<string>();
     const seenNames = new Set<string>();
 
-    const add = (id?: string, name?: string) => {
+    const add = (id?: string, name?: string, capacity?: number) => {
       if (!id || !UUID_REGEX.test(id)) return;
       const cleanName = (name || id).trim();
       const normKey = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "");
       if (!seenIds.has(id) && !seenNames.has(normKey)) {
         seenIds.add(id);
         seenNames.add(normKey);
-        list.push({ vehicleTypeUniqueId: id, vehicleTypeName: cleanName });
+        list.push({
+          vehicleTypeUniqueId: id,
+          vehicleTypeName: cleanName,
+          carryingCapacity: capacity != null && !isNaN(Number(capacity)) ? Number(capacity) : undefined,
+        });
       }
     };
 
     if (Array.isArray(apiVehicleTypes?.data)) {
       apiVehicleTypes.data.forEach((vt: any) => {
-        add(vt.vehicleTypeUniqueId, vt.vehicleTypeName);
+        add(vt.vehicleTypeUniqueId, vt.vehicleTypeName, vt.carryingCapacity);
       });
     }
 
     KNOWN_DB_TYPES.forEach((vt) =>
-      add(vt.vehicleTypeUniqueId, vt.vehicleTypeName),
+      add(vt.vehicleTypeUniqueId, vt.vehicleTypeName, (vt as any).carryingCapacity),
     );
 
+    registerDynamicVehicleTypes(list);
     return list;
   }, [apiVehicleTypes]);
 
