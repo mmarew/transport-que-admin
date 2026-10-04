@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { trimAddress, formatTrimmedRoute } from "../components/orders/OrdersTypes";
+import { trimAddress, formatTrimmedRoute, formatRoute } from "../components/orders/OrdersTypes";
 import { calculateDistanceKm, extractOfferCost } from "../utils/formatters";
 
 describe("Orders Location formatting & trimming", () => {
@@ -31,6 +31,17 @@ describe("Orders Location formatting & trimming", () => {
   it("falls back to default labels if origin or destination are empty", () => {
     expect(formatTrimmedRoute(undefined, undefined)).toBe("Terminal → Destination");
     expect(formatTrimmedRoute("Bole, Addis Ababa", undefined)).toBe("Bole → Destination");
+  });
+
+  it("never omits the destination when origin and destination are in the same city (intra-city)", () => {
+    expect(formatTrimmedRoute("Kombolcha", "Kombolcha")).toBe("Kombolcha → Kombolcha");
+    expect(formatTrimmedRoute("Kombolcha, Terminal", "Kombolcha, Dry Port")).toBe(
+      "Kombolcha (Terminal) → Kombolcha (Dry Port)"
+    );
+    expect(formatRoute("Kombolcha", "Kombolcha")).toBe("Kombolcha → Kombolcha");
+    expect(formatRoute("Kombolcha, Terminal", "Kombolcha, Dry Port")).toBe(
+      "Kombolcha (Terminal) → Kombolcha (Dry Port)"
+    );
   });
 
   it("calculates distance between coordinates accurately", () => {

@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Package, Truck, MapPin } from "lucide-react";
-import type { OrderDisplayItem } from "../OrdersTypes";
+import { formatTrimmedRoute, type OrderDisplayItem } from "../OrdersTypes";
 
 export interface OrderSummaryCardProps {
   order: OrderDisplayItem;
@@ -8,65 +7,65 @@ export interface OrderSummaryCardProps {
 
 /**
  * OrderSummaryCard displays shipper details, item/quintal, cost, vehicle type,
- * and origin/destination route.
+ * and origin/destination route in a 2-column grid matching the design.
  */
 export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
   const { t } = useTranslation();
 
+  const shipperDisplay = order.phone || order.shipper || "-";
+  const quantityDisplay = order.quintal ? `${order.quintal} quintal` : "-";
+  const itemDisplay = order.item || "-";
+  const costDisplay = `${order.cost.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ETB`;
+  const routeDisplay = formatTrimmedRoute(order.origin, order.destination);
+  const fullRouteTitle =
+    order.origin && order.destination
+      ? `${order.origin} → ${order.destination}`
+      : order.origin || order.destination || undefined;
+  const vehicleDisplay = order.vehicleType || "-";
+
   return (
     <div className="dbm-order-card">
-      <div className="dbm-order-row">
-        <div className="dbm-order-col">
-          <span className="dbm-order-label">
-            {t("orders.table.shipper", "Shipper")}
+      <div className="dbm-summary-grid">
+        <div className="dbm-summary-item">
+          <span className="dbm-summary-label">
+            {t("orders.table.shipper", "SHIPPER")}
           </span>
-          <span className="dbm-order-val dbm-order-shipper">
-            {order.shipper}
-            {order.phone && (
-              <span className="dbm-order-phone"> ({order.phone})</span>
-            )}
-          </span>
+          <span className="dbm-summary-value">{shipperDisplay}</span>
         </div>
-        <div className="dbm-order-col">
-          <span className="dbm-order-label">
-            {t("orders.targetCost", "Target Cost")}
+        <div className="dbm-summary-item">
+          <span className="dbm-summary-label">
+            {t("orders.targetCost", "TARGET COST")}
           </span>
-          <span className="dbm-order-val dbm-order-cost">
-            {order.cost.toLocaleString()}{" "}
-            <small className="dbm-order-cur">ETB</small>
-          </span>
+          <span className="dbm-summary-value dbm-summary-cost">{costDisplay}</span>
         </div>
-      </div>
 
-      <div className="dbm-order-row dbm-order-row--sub">
-        <div className="dbm-order-col">
-          <span className="dbm-order-label">
-            <Package size={12} /> {t("orders.table.item", "Item")}
+        <div className="dbm-summary-item">
+          <span className="dbm-summary-label">
+            {t("orders.quantity", "QUANTITY")}
           </span>
-          <span className="dbm-order-val">
-            {order.item} • {order.quintal} Qtl
-          </span>
+          <span className="dbm-summary-value">{quantityDisplay}</span>
         </div>
-        <div className="dbm-order-col">
-          <span className="dbm-order-label">
-            <Truck size={12} /> {t("orders.table.vehicleType", "Vehicle Type")}
+        <div className="dbm-summary-item">
+          <span className="dbm-summary-label">
+            {t("orders.from", "FROM")}
           </span>
-          <span className="dbm-order-val">{order.vehicleType}</span>
+          <span className="dbm-summary-value" title={fullRouteTitle}>{routeDisplay}</span>
         </div>
-      </div>
 
-      <div className="dbm-route-box">
-        <div className="dbm-route-point">
-          <MapPin size={13} className="dbm-pin-origin" />
-          <span>
-            <strong>{t("orders.from", "From")}:</strong> {order.origin}
+        <div className="dbm-summary-item">
+          <span className="dbm-summary-label">
+            {t("orders.table.item", "ITEM")}
           </span>
+          <span className="dbm-summary-value">{itemDisplay}</span>
         </div>
-        <div className="dbm-route-point">
-          <MapPin size={13} className="dbm-pin-dest" />
-          <span>
-            <strong>{t("orders.to", "To")}:</strong> {order.destination}
+        <div className="dbm-summary-item">
+          <span className="dbm-summary-label">
+            {t("orders.table.vehicleType", "VEHICLE TYPE")}
           </span>
+          <span className="dbm-summary-value">{vehicleDisplay}</span>
         </div>
       </div>
     </div>

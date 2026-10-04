@@ -97,34 +97,41 @@ export function normalizeOrgList(rawData: unknown): QueueOrgListItem[] {
     .filter((item): item is QueueOrgListItem => item !== null && item.organization != null);
 }
 
-const ETHIOPIAN_CITIES = [
-  { name: "Kombolcha", lat: 11.083, lng: 39.743 },
-  { name: "Dessie", lat: 11.133, lng: 39.633 },
-  { name: "Addis Ababa", lat: 9.022, lng: 38.746 },
-  { name: "Mojo", lat: 8.590, lng: 39.120 },
-  { name: "Adama", lat: 8.540, lng: 39.270 },
-  { name: "Bishoftu", lat: 8.750, lng: 38.980 },
-  { name: "Hawassa", lat: 7.050, lng: 38.470 },
-  { name: "Shashemene", lat: 7.200, lng: 38.600 },
-  { name: "Bahir Dar", lat: 11.590, lng: 37.390 },
-  { name: "Gondar", lat: 12.600, lng: 37.460 },
-  { name: "Dire Dawa", lat: 9.600, lng: 41.860 },
-  { name: "Harar", lat: 9.310, lng: 42.130 },
-  { name: "Jigjiga", lat: 9.350, lng: 42.800 },
-  { name: "Mekelle", lat: 13.500, lng: 39.470 },
-  { name: "Semera", lat: 11.790, lng: 41.010 },
-  { name: "Jimma", lat: 7.670, lng: 36.830 },
-  { name: "Debre Birhan", lat: 9.680, lng: 39.530 },
-  { name: "Debre Markos", lat: 10.330, lng: 37.730 },
-  { name: "Woldiya", lat: 11.830, lng: 39.600 },
-  { name: "Arba Minch", lat: 6.030, lng: 37.550 },
-  { name: "Dilla", lat: 6.410, lng: 38.310 },
-  { name: "Nekemte", lat: 9.080, lng: 36.550 },
-  { name: "Assosa", lat: 10.060, lng: 34.530 },
-  { name: "Gambela", lat: 8.250, lng: 34.580 },
-  { name: "Wolaita Sodo", lat: 6.860, lng: 37.760 },
-  { name: "Hosaena", lat: 7.550, lng: 37.850 },
-  { name: "Bale Robe", lat: 7.120, lng: 40.000 },
+export interface EthiopianCityInfo {
+  name: string;
+  region?: string;
+  lat: number;
+  lng: number;
+}
+
+export const ETHIOPIAN_CITIES: EthiopianCityInfo[] = [
+  { name: "Kombolcha", region: "South Wollo, Amhara Region, Ethiopia", lat: 11.083, lng: 39.743 },
+  { name: "Dessie", region: "South Wollo, Amhara Region, Ethiopia", lat: 11.133, lng: 39.633 },
+  { name: "Addis Ababa", region: "Addis Ababa, Ethiopia", lat: 9.022, lng: 38.746 },
+  { name: "Mojo", region: "East Shewa, Oromia Region, Ethiopia", lat: 8.590, lng: 39.120 },
+  { name: "Adama", region: "East Shewa, Oromia Region, Ethiopia", lat: 8.540, lng: 39.270 },
+  { name: "Bishoftu", region: "East Shewa, Oromia Region, Ethiopia", lat: 8.750, lng: 38.980 },
+  { name: "Hawassa", region: "Sidama Region, Ethiopia", lat: 7.050, lng: 38.470 },
+  { name: "Shashemene", region: "West Arsi, Oromia Region, Ethiopia", lat: 7.200, lng: 38.600 },
+  { name: "Bahir Dar", region: "Amhara Region, Ethiopia", lat: 11.590, lng: 37.390 },
+  { name: "Gondar", region: "Central Gondar, Amhara Region, Ethiopia", lat: 12.600, lng: 37.460 },
+  { name: "Dire Dawa", region: "Dire Dawa, Ethiopia", lat: 9.600, lng: 41.860 },
+  { name: "Harar", region: "Harari Region, Ethiopia", lat: 9.310, lng: 42.130 },
+  { name: "Jigjiga", region: "Somali Region, Ethiopia", lat: 9.350, lng: 42.800 },
+  { name: "Mekelle", region: "Tigray Region, Ethiopia", lat: 13.500, lng: 39.470 },
+  { name: "Semera", region: "Afar Region, Ethiopia", lat: 11.790, lng: 41.010 },
+  { name: "Jimma", region: "Jimma Zone, Oromia Region, Ethiopia", lat: 7.670, lng: 36.830 },
+  { name: "Debre Birhan", region: "North Shewa, Amhara Region, Ethiopia", lat: 9.680, lng: 39.530 },
+  { name: "Debre Markos", region: "East Gojjam, Amhara Region, Ethiopia", lat: 10.330, lng: 37.730 },
+  { name: "Woldiya", region: "North Wollo, Amhara Region, Ethiopia", lat: 11.830, lng: 39.600 },
+  { name: "Arba Minch", region: "Gamo Zone, South Ethiopia Region, Ethiopia", lat: 6.030, lng: 37.550 },
+  { name: "Dilla", region: "Gedeo Zone, South Ethiopia Region, Ethiopia", lat: 6.410, lng: 38.310 },
+  { name: "Nekemte", region: "East Welega, Oromia Region, Ethiopia", lat: 9.080, lng: 36.550 },
+  { name: "Assosa", region: "Benishangul-Gumuz Region, Ethiopia", lat: 10.060, lng: 34.530 },
+  { name: "Gambela", region: "Gambela Region, Ethiopia", lat: 8.250, lng: 34.580 },
+  { name: "Wolaita Sodo", region: "Wolaita Zone, South Ethiopia Region, Ethiopia", lat: 6.860, lng: 37.760 },
+  { name: "Hosaena", region: "Hadiya Zone, Central Ethiopia Region, Ethiopia", lat: 7.550, lng: 37.850 },
+  { name: "Bale Robe", region: "Bale Zone, Oromia Region, Ethiopia", lat: 7.120, lng: 40.000 },
 ];
 
 /** Resolves latitude & longitude to a known city or formatted location */

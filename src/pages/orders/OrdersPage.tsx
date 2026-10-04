@@ -47,8 +47,8 @@ export function OrdersPage() {
   const { socketConnected, isLive } = useQueueSocket(activeOrg?.queueOrganizationUniqueId || "");
   const live = isLive || socketConnected;
 
-  // Stable query arguments
-  const orgUniqueId = activeOrg?.queueOrganizationUniqueId || "";
+  // Stable query arguments: use targetOrgId immediately so initial fetch is synchronized with Sidebar and cache-deduplicated
+  const orgUniqueId = targetOrgId || activeOrg?.queueOrganizationUniqueId || "";
 
   const shipperRequestsArgs = useMemo(
     () => ({
@@ -76,7 +76,6 @@ export function OrdersPage() {
     refetch: refetchOrders,
   } = useGetShipperRequestsQuery(shipperRequestsArgs, {
     skip: !orgUniqueId,
-    refetchOnReconnect: true,
   });
 
   const {
@@ -85,7 +84,6 @@ export function OrdersPage() {
     refetch: refetchBatches,
   } = useGetShipperRequestBatchesQuery(shipperBatchesArgs, {
     skip: !orgUniqueId,
-    refetchOnReconnect: true,
   });
 
   const refetchAll = React.useCallback(() => {

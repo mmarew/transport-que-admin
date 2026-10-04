@@ -9,7 +9,7 @@ import {
   lookupLocationFromCoordinates,
   extractOfferCost,
 } from "@/utils/formatters";
-import type { OrderDisplayItem, ShipperRequestDriverInfo } from "../OrdersTypes";
+import { trimAddress, type OrderDisplayItem, type ShipperRequestDriverInfo } from "../OrdersTypes";
 import { BidOfferComparison } from "./BidOfferComparison";
 import { BidActionButtons } from "./BidActionButtons";
 
@@ -21,7 +21,6 @@ export interface BidRowProps {
   isAccepting: boolean;
   isAnyAccepting: boolean;
   onAccept: (driver: ShipperRequestDriverInfo) => void;
-  acceptDisabledReason?: string;
 }
 
 function getDriverInitials(name?: string | null): string {
@@ -45,7 +44,6 @@ export function BidRow({
   isAccepting,
   isAnyAccepting,
   onAccept,
-  acceptDisabledReason,
 }: BidRowProps) {
   const { t } = useTranslation();
 
@@ -143,7 +141,7 @@ export function BidRow({
                 }
               >
                 <MapPin size={12} className="dbm-loc-pin" />
-                {driverLoc && <span className="dbm-loc-name">{driverLoc}</span>}
+                {driverLoc && <span className="dbm-loc-name">{trimAddress(driverLoc)}</span>}
                 {driverDist != null && (
                   <span className="dbm-dist-badge">
                     {driverDist} km {t("orders.fromPickup", "from pickup")}
@@ -171,7 +169,6 @@ export function BidRow({
           isAccepting={isAccepting}
           isAnyAccepting={isAnyAccepting}
           onAccept={onAccept}
-          acceptDisabledReason={acceptDisabledReason}
         />
       </div>
     </div>

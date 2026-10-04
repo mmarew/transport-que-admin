@@ -111,7 +111,19 @@ export function formatRoute(origin: string, destination: string): string {
       .trim()
       .replace(/(Airport|Dry Port.*|Industrial.*)/i, "")
       .trim() || "Destination";
-  if (orig.toLowerCase() === dest.toLowerCase()) return dest;
+
+  if (orig.toLowerCase() === dest.toLowerCase()) {
+    const origParts = (origin || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const destParts = (destination || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const origSub = origParts.length > 1 ? origParts[1] : "";
+    const destSub = destParts.length > 1 ? destParts[1] : "";
+
+    if (origSub && destSub && origSub.toLowerCase() !== destSub.toLowerCase()) {
+      return `${orig} (${origSub}) → ${dest} (${destSub})`;
+    }
+    return `${orig} → ${dest}`;
+  }
+
   return `${orig} → ${dest}`;
 }
 
@@ -125,9 +137,24 @@ export function trimAddress(addr?: string, maxLen = 18): string {
 }
 
 export function formatTrimmedRoute(origin?: string, destination?: string): string {
-  const orig = trimAddress(origin) || "Terminal";
-  const dest = trimAddress(destination) || "Destination";
-  if (orig.toLowerCase() === dest.toLowerCase()) return orig;
+  const cleanOrig = (origin || "").trim();
+  const cleanDest = (destination || "").trim();
+
+  const orig = trimAddress(cleanOrig) || "Terminal";
+  const dest = trimAddress(cleanDest) || "Destination";
+
+  if (orig.toLowerCase() === dest.toLowerCase()) {
+    const origParts = cleanOrig.split(",").map((s) => s.trim()).filter(Boolean);
+    const destParts = cleanDest.split(",").map((s) => s.trim()).filter(Boolean);
+    const origSub = origParts.length > 1 ? origParts[1] : "";
+    const destSub = destParts.length > 1 ? destParts[1] : "";
+
+    if (origSub && destSub && origSub.toLowerCase() !== destSub.toLowerCase()) {
+      return `${orig} (${trimAddress(origSub, 12)}) → ${dest} (${trimAddress(destSub, 12)})`;
+    }
+    return `${orig} → ${dest}`;
+  }
+
   return `${orig} → ${dest}`;
 }
 

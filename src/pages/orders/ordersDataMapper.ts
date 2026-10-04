@@ -20,6 +20,27 @@ export interface MapBackendOrdersParams {
   t: TFunction;
 }
 
+function extractLocationString(...candidates: unknown[]): string | null {
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) {
+      return c.trim();
+    }
+    if (c && typeof c === "object") {
+      const obj = c as Record<string, unknown>;
+      if (typeof obj.description === "string" && obj.description.trim()) {
+        return obj.description.trim();
+      }
+      if (typeof obj.place === "string" && obj.place.trim()) {
+        return obj.place.trim();
+      }
+      if (typeof obj.locationName === "string" && obj.locationName.trim()) {
+        return obj.locationName.trim();
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Normalizes and maps raw backend shipper requests and company target batches
  * into unified UI OrderDisplayItem objects.
@@ -286,17 +307,41 @@ export function mapBackendOrdersToDisplayItems({
         t("orders.defaultGeneralCargo");
 
       const originPlace =
-        req.originPlace ||
-        (item as any).originPlace ||
-        req.pickupLocationName ||
-        (item as any).pickupLocationName ||
+        extractLocationString(
+          req.originPlace,
+          (item as any).originPlace,
+          (req as any).origin_place,
+          (item as any).origin_place,
+          (req as any).originDescription,
+          (item as any).originDescription,
+          req.pickupLocationName,
+          (item as any).pickupLocationName,
+          (req as any).origin,
+          (item as any).origin,
+          (req as any).originLocation,
+          (item as any).originLocation,
+        ) ||
+        (originLat && originLng ? lookupLocationFromCoordinates(originLat, originLng) : null) ||
         t("orders.defaultTerminal");
 
       const destPlace =
-        req.destinationPlace ||
-        (item as any).destinationPlace ||
-        req.dropoffLocationName ||
-        (item as any).dropoffLocationName ||
+        extractLocationString(
+          req.destinationPlace,
+          (item as any).destinationPlace,
+          (req as any).destination_place,
+          (item as any).destination_place,
+          (req as any).destinationDescription,
+          (item as any).destinationDescription,
+          req.dropoffLocationName,
+          (item as any).dropoffLocationName,
+          (req as any).destination,
+          (item as any).destination,
+          (req as any).destinationLocation,
+          (item as any).destinationLocation,
+        ) ||
+        (req.destinationLatitude && req.destinationLongitude
+          ? lookupLocationFromCoordinates(req.destinationLatitude, req.destinationLongitude)
+          : null) ||
         t("orders.defaultDestination");
 
       return {
@@ -381,11 +426,29 @@ export function mapBackendOrdersToDisplayItems({
         t("orders.defaultGeneralCargo");
 
       const originPlace =
-        batch.originPlace ||
+        extractLocationString(
+          batch.originPlace,
+          (batch as any).origin_place,
+          (batch as any).originDescription,
+          (batch as any).pickupLocationName,
+          (batch as any).origin,
+          (batch as any).originLocation,
+        ) ||
+        (originLat && originLng ? lookupLocationFromCoordinates(originLat, originLng) : null) ||
         t("orders.defaultTerminal");
 
       const destPlace =
-        batch.destinationPlace ||
+        extractLocationString(
+          batch.destinationPlace,
+          (batch as any).destination_place,
+          (batch as any).destinationDescription,
+          (batch as any).dropoffLocationName,
+          (batch as any).destination,
+          (batch as any).destinationLocation,
+        ) ||
+        (batch.destinationLatitude && batch.destinationLongitude
+          ? lookupLocationFromCoordinates(batch.destinationLatitude, batch.destinationLongitude)
+          : null) ||
         t("orders.defaultDestination");
 
       const originLat =

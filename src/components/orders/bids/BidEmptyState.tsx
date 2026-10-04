@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Inbox } from "lucide-react";
+import { Truck } from "lucide-react";
 
 export interface BidEmptyStateProps {
   hasAnyBids: boolean;
@@ -20,7 +20,7 @@ export function BidEmptyState({
     return (
       <div className="dbm-empty-state">
         <div className="dbm-empty-icon">
-          <Inbox size={36} />
+          <Truck size={24} />
         </div>
         <h5 className="dbm-empty-title">
           {t("orders.noBidsYet", "No driver bids yet for this order")}

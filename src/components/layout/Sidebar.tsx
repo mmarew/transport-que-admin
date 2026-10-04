@@ -73,19 +73,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const effectiveOrgId = isManagingOrg ? (urlOrgId || routeOrgId || selectedOrgId || "") : "";
   const hasActiveOrg = Boolean(effectiveOrgId);
 
+  const sidebarOrdersArgs = useMemo(
+    () => ({ queueOrganizationUniqueId: effectiveOrgId, target: "all" as const, limit: 100 }),
+    [effectiveOrgId]
+  );
+
+  const sidebarBatchesArgs = useMemo(
+    () => ({
+      queueOrganizationUniqueId: effectiveOrgId,
+      requestMode: "company_target" as const,
+      includeBids: true,
+      limit: 100,
+    }),
+    [effectiveOrgId]
+  );
+
   // Check remaining orders for the managed organization
   const { data: ordersData } = useGetShipperRequestsQuery(
-    { queueOrganizationUniqueId: effectiveOrgId, target: "all", limit: 100 },
+    sidebarOrdersArgs,
     { skip: !effectiveOrgId }
   );
 
   const { data: batchesData } = useGetShipperRequestBatchesQuery(
-    {
-      queueOrganizationUniqueId: effectiveOrgId,
-      requestMode: "company_target",
-      includeBids: true,
-      limit: 100,
-    },
+    sidebarBatchesArgs,
     { skip: !effectiveOrgId }
   );
 
