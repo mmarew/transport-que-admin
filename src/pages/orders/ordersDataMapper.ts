@@ -349,8 +349,22 @@ export function mapBackendOrdersToDisplayItems({
       if (bIdStr && existingBatchIds.has(bIdStr)) continue;
 
       const totalVehicles = Math.max(1, Number(batch.totalVehicles) || 1);
-      const batchTotalCost = Number(String(batch.shippingCost ?? 0).replace(/[^0-9.]/g, "")) || 0;
-      const batchTotalQuintal = Number(String(batch.shippableItemQtyInQuintal ?? 0).replace(/[^0-9.]/g, "")) || 0;
+      const costPerVehicle = Number(String(batch.shippingCost ?? 0).replace(/[^0-9.]/g, "")) || 0;
+      const quintalPerVehicle = Number(String(batch.shippableItemQtyInQuintal ?? 0).replace(/[^0-9.]/g, "")) || 0;
+
+      // When batchShippingCost / batchTotalQuintal are explicitly provided as whole-batch totals, use them;
+      // otherwise, batch totals are calculated as (per-vehicle value * totalVehicles).
+      const rawBatchShippingCost = (batch as any).batchShippingCost ?? (batch as any).totalShippingCost;
+      const batchTotalCost =
+        rawBatchShippingCost != null
+          ? Number(String(rawBatchShippingCost).replace(/[^0-9.]/g, "")) || (costPerVehicle * totalVehicles)
+          : costPerVehicle * totalVehicles;
+
+      const rawBatchTotalQuintal = (batch as any).batchTotalQuintal ?? (batch as any).totalQuintal;
+      const batchTotalQuintal =
+        rawBatchTotalQuintal != null
+          ? Number(String(rawBatchTotalQuintal).replace(/[^0-9.]/g, "")) || (quintalPerVehicle * totalVehicles)
+          : quintalPerVehicle * totalVehicles;
 
       const shipperName =
         batch.shipperName ||
@@ -453,8 +467,8 @@ export function mapBackendOrdersToDisplayItems({
       const isBiddingApproved = true;
 
       if (totalVehicles > 1) {
-        const childCost = Math.round((batchTotalCost / totalVehicles) * 100) / 100;
-        const childQuintal = Math.round((batchTotalQuintal / totalVehicles) * 100) / 100;
+        const childCost = costPerVehicle;
+        const childQuintal = quintalPerVehicle;
 
         for (let truckIdx = 1; truckIdx <= totalVehicles; truckIdx++) {
           const childId = `${batch.batchUniqueId || `batch-${batch.batchId}`}-truck-${truckIdx}`;

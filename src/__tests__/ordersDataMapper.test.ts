@@ -84,8 +84,10 @@ describe("ordersDataMapper", () => {
     expect(items).toHaveLength(3);
     expect(items[0].id).toBe("batch-557-uuid-truck-1");
     expect(items[0].displayId).toBe("#557/1");
-    expect(items[0].cost).toBe(30000);
-    expect(items[0].quintal).toBe(100);
+    expect(items[0].cost).toBe(90000);
+    expect(items[0].quintal).toBe(300);
+    expect(items[0].batchTotalCost).toBe(270000);
+    expect(items[0].batchTotalQuintal).toBe(900);
     expect(items[0].journeyStatusId).toBe(3); // First truck has active journey status
 
     expect(items[1].id).toBe("batch-557-uuid-truck-2");

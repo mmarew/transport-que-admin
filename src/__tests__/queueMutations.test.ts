@@ -306,6 +306,65 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
         expect(messages).toMatch(/cannot exceed (?:35|10,000) Quintals/);
       }
     });
+
+    it("should accept company_target orders with multiple vehicles (e.g. 15 vehicles) and isBiddingApproved = true", () => {
+      const companyPayload = {
+        ...validOrderPayload,
+        requestMode: "company_target" as const,
+        numberOfVehicles: 15,
+        isBiddingApproved: true,
+      };
+      const result = createOrderSchema.safeParse(companyPayload);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.requestMode).toBe("company_target");
+        expect(result.data.numberOfVehicles).toBe(15);
+        expect(result.data.isBiddingApproved).toBe(true);
+      }
+    });
+
+    it("should simulate UI auto-switch: when numberOfVehicles > 9 in individual mode, changes to company_target with isBiddingApproved = true", () => {
+      // Helper simulating the CreateOrderModal logic
+      function resolveOrderMode(vehicles: number, currentMode: "individual_target" | "company_target") {
+        if (vehicles > 9 && currentMode === "individual_target") {
+          return { mode: "company_target" as const, isBiddingApproved: true };
+        }
+        if (currentMode === "company_target") {
+          return { mode: "company_target" as const, isBiddingApproved: true };
+        }
+        return { mode: "individual_target" as const, isBiddingApproved: false };
+      }
+
+      // 1 vehicle in individual
+      expect(resolveOrderMode(1, "individual_target")).toEqual({
+        mode: "individual_target",
+        isBiddingApproved: false,
+      });
+
+      // 9 vehicles in individual
+      expect(resolveOrderMode(9, "individual_target")).toEqual({
+        mode: "individual_target",
+        isBiddingApproved: false,
+      });
+
+      // 10 vehicles in individual -> auto-switch to company_target + open for bidding
+      expect(resolveOrderMode(10, "individual_target")).toEqual({
+        mode: "company_target",
+        isBiddingApproved: true,
+      });
+
+      // 15 vehicles in individual -> auto-switch to company_target + open for bidding
+      expect(resolveOrderMode(15, "individual_target")).toEqual({
+        mode: "company_target",
+        isBiddingApproved: true,
+      });
+
+      // selecting company_target manually defaults to open for bidding
+      expect(resolveOrderMode(3, "company_target")).toEqual({
+        mode: "company_target",
+        isBiddingApproved: true,
+      });
+    });
   });
 
   describe("Vehicle Name Resolution Utility (resolveVehicleName)", () => {

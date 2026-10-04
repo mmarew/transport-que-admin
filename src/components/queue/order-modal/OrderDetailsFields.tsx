@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { UseFormRegister, FieldErrors } from "react-hook-form";
 import type { CreateOrderFormValues } from "@/schemas/queue";
 import { DatePickerField } from "@/components/ui/DatePickerField";
+import { toast } from "sonner";
 
 export interface OrderDetailsFieldsProps {
   register: UseFormRegister<CreateOrderFormValues>;
@@ -59,7 +60,7 @@ export function OrderDetailsFields({
 
         <div className="com-field-group">
           <label className="com-label">
-            {t("orders.quantityQuintal", "Quantity (Quintal)")}
+            {t("orders.quantityQuintal", "Quantity (Quintals) per vehicle")}
           </label>
           {(() => {
             const qtyRegister = register("shippableItemQtyInQuintal", {
@@ -83,33 +84,30 @@ export function OrderDetailsFields({
                 type="number"
                 step="any"
                 min={1}
-                max={vehicleCapacity?.maxQuintal}
                 placeholder={
                   vehicleCapacity?.maxQuintal
                     ? t("orders.enterQuantityWithMax", {
                         max: vehicleCapacity.maxQuintal,
-                        defaultValue: `Max ${vehicleCapacity.maxQuintal} Q`,
+                        defaultValue: `Max ${vehicleCapacity.maxQuintal} Q per vehicle`,
                       })
                     : t("orders.enterQuantity", "Enter quantity")
                 }
                 {...qtyRegister}
                 onChange={(e) => {
-                  if (vehicleCapacity?.maxQuintal) {
-                    const num = parseFloat(e.target.value);
-                    if (!isNaN(num) && num > vehicleCapacity.maxQuintal) {
-                      e.target.value = String(vehicleCapacity.maxQuintal);
-                    }
-                  }
                   qtyRegister.onChange(e);
-                }}
-                onBlur={(e) => {
                   if (vehicleCapacity?.maxQuintal) {
                     const num = parseFloat(e.target.value);
                     if (!isNaN(num) && num > vehicleCapacity.maxQuintal) {
-                      e.target.value = String(vehicleCapacity.maxQuintal);
+                      toast.error(
+                        t("orders.quantityExceedsCapacity", {
+                          max: vehicleCapacity.maxQuintal,
+                          vehicle: vehicleCapacity.vehicleTypeName,
+                          defaultValue: `Quantity per vehicle cannot exceed ${vehicleCapacity.maxQuintal} Quintals for ${vehicleCapacity.vehicleTypeName}`,
+                        }),
+                        { id: "quantity-exceeds-capacity" },
+                      );
                     }
                   }
-                  qtyRegister.onBlur(e);
                 }}
                 className={`com-input ${errors.shippableItemQtyInQuintal ? "com-input-error" : ""}`}
               />

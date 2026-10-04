@@ -128,6 +128,7 @@ export function CreateOrderModal({
   });
 
   const requestMode = watch("requestMode");
+  const numberOfVehicles = watch("numberOfVehicles");
   const originDesc = watch("originDescription");
   const originLat = watch("originLatitude");
   const originLng = watch("originLongitude");
@@ -144,16 +145,44 @@ export function CreateOrderModal({
     return getVehicleCapacity(vehicleTypeUniqueId, apiVehicleTypes?.data);
   }, [vehicleTypeUniqueId, apiVehicleTypes?.data]);
 
+  // When number of vehicles > 9 in individual mode, auto switch to company target and open for bidding by default
+  useEffect(() => {
+    const num = Number(numberOfVehicles);
+    if (num > 9 && requestMode === "individual_target") {
+      setValue("requestMode", "company_target", { shouldValidate: true });
+      setValue("isBiddingApproved", true, { shouldValidate: true });
+    }
+  }, [numberOfVehicles, requestMode, setValue]);
+
+  const handleRequestModeChange = (mode: "individual_target" | "company_target") => {
+    if (mode === "individual_target" && Number(numberOfVehicles) > 9) {
+      setValue("numberOfVehicles", 1, { shouldValidate: true });
+    }
+    setValue("requestMode", mode, { shouldValidate: true });
+    // In company mode, default to open for bidding
+    if (mode === "company_target") {
+      setValue("isBiddingApproved", true, { shouldValidate: true });
+    } else {
+      setValue("isBiddingApproved", false, { shouldValidate: true });
+    }
+  };
+
   useEffect(() => {
     if (vehicleCapacity?.maxQuintal) {
       const currentQty = watch("shippableItemQtyInQuintal");
       if (currentQty && Number(currentQty) > vehicleCapacity.maxQuintal) {
-        setValue("shippableItemQtyInQuintal", vehicleCapacity.maxQuintal, {
-          shouldValidate: true,
-        });
+        trigger("shippableItemQtyInQuintal");
+        toast.error(
+          t("orders.quantityExceedsCapacity", {
+            max: vehicleCapacity.maxQuintal,
+            vehicle: vehicleCapacity.vehicleTypeName,
+            defaultValue: `Quantity per vehicle cannot exceed ${vehicleCapacity.maxQuintal} Quintals for ${vehicleCapacity.vehicleTypeName}`,
+          }),
+          { id: "quantity-exceeds-capacity" },
+        );
       }
     }
-  }, [vehicleCapacity, setValue, watch]);
+  }, [vehicleCapacity, trigger, watch, t]);
 
   const todayStr = useMemo(() => {
     const d = new Date();
@@ -248,7 +277,7 @@ export function CreateOrderModal({
         {/* Request Type Toggle */}
         <RequestTypeSelect
           value={requestMode}
-          onChange={(mode) => setValue("requestMode", mode)}
+          onChange={handleRequestModeChange}
         />
 
         {/* Dispatch Mode Dropdown */}

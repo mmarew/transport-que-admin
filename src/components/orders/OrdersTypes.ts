@@ -453,8 +453,8 @@ export function getVehicleNoun(vehicleType?: string, count = 1): string {
 }
 
 export function formatWeight(weight?: number): string {
-  if (weight == null || isNaN(weight)) return "0 ton";
-  return `${weight.toLocaleString()} ton`;
+  if (weight == null || isNaN(weight)) return "0 Quintal";
+  return `${weight.toLocaleString()} Quintal`;
 }
 
 export function formatCost(cost?: number): string {
