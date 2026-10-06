@@ -425,6 +425,15 @@ export function mapBackendOrdersToDisplayItems({
         batch.shippableItemName ||
         t("orders.defaultGeneralCargo");
 
+      const originLat =
+        batch.originLatitude != null
+          ? batch.originLatitude
+          : (activeOrg?.latitude != null ? activeOrg.latitude : null);
+      const originLng =
+        batch.originLongitude != null
+          ? batch.originLongitude
+          : (activeOrg?.longitude != null ? activeOrg.longitude : null);
+
       const originPlace =
         extractLocationString(
           batch.originPlace,
@@ -450,15 +459,6 @@ export function mapBackendOrdersToDisplayItems({
           ? lookupLocationFromCoordinates(batch.destinationLatitude, batch.destinationLongitude)
           : null) ||
         t("orders.defaultDestination");
-
-      const originLat =
-        batch.originLatitude != null
-          ? batch.originLatitude
-          : (activeOrg?.latitude != null ? activeOrg.latitude : null);
-      const originLng =
-        batch.originLongitude != null
-          ? batch.originLongitude
-          : (activeOrg?.longitude != null ? activeOrg.longitude : null);
 
       const sid = Number(batch.journeyStatusId) || 1;
       const isComplete =
