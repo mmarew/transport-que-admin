@@ -143,7 +143,11 @@ export function OrderCard({
                 e.stopPropagation();
                 onViewRequests?.(group.orders[0]);
               }}
-              title={t("orders.driverBidsTitle", "Click to view driver proposals")}
+              title={
+                group.type === "Group"
+                  ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                  : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+              }
             >
               <span className="order-card-badge-dot" />
               <span>
@@ -265,16 +269,51 @@ export function OrderCard({
           </div>
 
           <div className="order-card-suborders-list">
-            {group.orders.map((childOrder) => {
+            {group.orders.map((childOrder, childIdx) => {
               const childJourney = getConnectedJourneyStatus(childOrder);
+              const batchNum =
+                group.batchId ||
+                childOrder.batchId ||
+                (group.displayId ? group.displayId.replace(/^#/, "") : "1");
+              const hasReqId =
+                childOrder.shipperRequestId != null &&
+                String(childOrder.shipperRequestId).trim() !== "" &&
+                !isNaN(Number(childOrder.shipperRequestId));
+              const reqId = hasReqId
+                ? String(childOrder.shipperRequestId)
+                : childOrder.displayId?.includes("/")
+                ? childOrder.displayId.replace(/^#/, "").split("/")[1]
+                : null;
+              const displayTruckId =
+                batchNum && reqId
+                  ? `#${batchNum}/${reqId}`
+                  : childOrder.displayId || `#${batchNum}`;
+
+              const queueId =
+                childOrder.queueNumber != null && childOrder.queueNumber !== ""
+                  ? childOrder.queueNumber
+                  : "—";
+
+              const loadingOrderId =
+                childOrder.loadingOrderNumber != null && childOrder.loadingOrderNumber !== ""
+                  ? childOrder.loadingOrderNumber
+                  : "—";
 
               return (
                 <div key={childOrder.id} className="order-subcard-item">
                   <div className="order-subcard-left">
-                    <span className="order-subcard-id">{childOrder.displayId}</span>
-                    <span className="order-subcard-meta">
-                      {childOrder.item} · {formatWeight(childOrder.quintal)} · {formatCost(childOrder.cost)}
-                    </span>
+                    <span className="order-subcard-id">{displayTruckId}</span>
+                    {(queueId !== "—" || loadingOrderId !== "—") && (
+                      <span className="order-subcard-meta">
+                        {queueId !== "—" && (
+                          <span>{t("orders.queueNumber", "Queue")}: {queueId}</span>
+                        )}
+                        {queueId !== "—" && loadingOrderId !== "—" && " · "}
+                        {loadingOrderId !== "—" && (
+                          <span>{t("orders.loadingOrderNumber", "Loading Order")}: {loadingOrderId}</span>
+                        )}
+                      </span>
+                    )}
                   </div>
 
                   <div className="order-subcard-right">
@@ -290,7 +329,11 @@ export function OrderCard({
                           e.stopPropagation();
                           onViewRequests?.(childOrder);
                         }}
-                        title={t("orders.driverBidsTitle", "Click to view driver proposals")}
+                        title={
+                          group.type === "Group"
+                            ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                            : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+                        }
                       >
                         {t("orders.waiting", "Waiting")}
                       </button>

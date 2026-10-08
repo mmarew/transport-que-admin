@@ -5,7 +5,11 @@ export type { ShipperRequestDriverInfo };
 export interface OrderDisplayItem {
   id: string;
   shipperRequestId?: number | string | null;
+  shipperRequestUniqueId?: string | null;
+  shipperRequestBatchUniqueId?: string | null;
   batchId?: string | null;
+  /** UUID form of the batch (shipperRequestBatchUniqueId from the shipper request API). */
+  batchUniqueId?: string | null;
   requestIdDisplay?: string;
   batchIdDisplay?: string | null;
   fullRequestId?: string;
@@ -37,6 +41,8 @@ export interface OrderDisplayItem {
   totalVehicles?: number;
   batchTotalCost?: number;
   batchTotalQuintal?: number;
+  queueNumber?: number | string | null;
+  loadingOrderNumber?: number | string | null;
   rawItem?: unknown;
 }
 
@@ -242,6 +248,22 @@ export function getConnectedJourneyStatus(order: OrderDisplayItem): ConnectedJou
   return { isConnected: false, label: "", type: "none" };
 }
 
+/**
+ * True when a truck has a driver actively working the load: Heading to Load (5)
+ * through Journey Completed (9), plus admin-completed (14). Accepted-but-idle
+ * statuses (3 = driver accepted, 4 = shipper accepted) mean the driver is NOT
+ * moving yet, so those trucks still count as waiting.
+ */
+export function isWorkingJourneySid(sid: number | undefined): boolean {
+  return typeof sid === "number" && ((sid >= 5 && sid <= 9) || sid === 14);
+}
+
+export function hasWorkingJourney(order: OrderDisplayItem): boolean {
+  return isWorkingJourneySid(
+    extractJourneyStatusId(order.journeyStatusId ?? order.journeyStatus),
+  );
+}
+
 export interface OrderBatchGroup {
   batchKey: string;
   batchId?: string | number | null;
@@ -276,6 +298,8 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
     const key =
       order.batchId != null && String(order.batchId).trim() !== ""
         ? `batch-${order.batchId}`
+        : order.batchUniqueId != null && String(order.batchUniqueId).trim() !== ""
+        ? `batch-${order.batchUniqueId}`
         : `order-${order.id}`;
 
     if (!map.has(key)) {
@@ -286,12 +310,44 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
   }
 
   for (const key of orderOfBatches) {
-    const batchOrders = map.get(key)!;
+    const batchOrders = map.get(key)!.slice().sort((a, b) => {
+      const idA = a.shipperRequestId ?? a.id;
+      const idB = b.shipperRequestId ?? b.id;
+      const numA = Number(idA);
+      const numB = Number(idB);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return String(idA).localeCompare(String(idB));
+    });
     const first = batchOrders[0];
     const isMultiVehicle =
       batchOrders.length > 1 ||
       Boolean(first.batchId != null && String(first.batchId).trim() !== "" && (first.totalVehicles || 1) > 1);
     const batchId = first.batchId;
+
+    if (isMultiVehicle && batchId && batchOrders.length > 1) {
+      batchOrders.forEach((bo) => {
+        const hasReqId =
+          bo.shipperRequestId != null &&
+          String(bo.shipperRequestId).trim() !== "" &&
+          !isNaN(Number(bo.shipperRequestId));
+        if (hasReqId) {
+          bo.displayId = `#${batchId}/${bo.shipperRequestId}`;
+          bo.fullId = `#${batchId}/${bo.shipperRequestId}`;
+        } else if (bo.displayId && bo.displayId.includes("/")) {
+          const part = bo.displayId.replace(/^#/, "").split("/")[1];
+          if (part && !isNaN(Number(part))) {
+            bo.displayId = `#${batchId}/${part}`;
+            bo.fullId = bo.displayId;
+          } else {
+            bo.displayId = `#${batchId}`;
+            bo.fullId = `#${batchId}`;
+          }
+        } else {
+          bo.displayId = `#${batchId}`;
+          bo.fullId = `#${batchId}`;
+        }
+      });
+    }
 
     const totalVehicles = batchOrders.length;
     const totalQuintal =
@@ -308,15 +364,20 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
     );
     const completedCount = completedOrders.length;
 
+    // A truck is only "committed" when a driver is actually working it
+    // (Heading to Load / Loading / Loaded / Journey Started / Completed).
+    // Status 3/4 ("Accepted") means the driver hasn't started yet, so those
+    // trucks still count as waiting — matching the caller's rule for the
+    // counter (1 working truck out of 4 is 1/4, never 4/4).
     const activeOrders = batchOrders.filter(
       (o) =>
-        getConnectedJourneyStatus(o).isConnected &&
+        hasWorkingJourney(o) &&
         getConnectedJourneyStatus(o).type !== "completed"
     );
     const activeCount = activeOrders.length;
 
     const waitingOrders = batchOrders.filter(
-      (o) => !getConnectedJourneyStatus(o).isConnected
+      (o) => !hasWorkingJourney(o) && getConnectedJourneyStatus(o).type !== "completed"
     );
     const waitingCount = waitingOrders.length;
     const acceptedCount = activeCount + completedCount;
@@ -374,14 +435,24 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
           type: primaryStage.type,
         };
       } else if (completedCount > 0 && activeCount === 0) {
-        // Completed only
-        statusStageLabel = "Completed";
-        statusSummary = {
-          isConnected: true,
-          statusId: 9,
-          label: "Completed",
-          type: "completed",
-        };
+        // Completed trucks, but nothing actively working (accepted/idle trucks
+        // count as waiting). Don't claim "Completed" for the whole batch.
+        statusStageLabel =
+          waitingCount > 0 ? `${completedCount} Completed` : "Completed";
+        statusSummary =
+          waitingCount > 0
+            ? {
+                isConnected: true,
+                statusId: 9,
+                label: `${completedCount} Completed · ${waitingCount} Waiting`,
+                type: "completed",
+              }
+            : {
+                isConnected: true,
+                statusId: 9,
+                label: "Completed",
+                type: "completed",
+              };
       } else if (activeCount > 0) {
         // Active ongoing only: group active orders by journey stage
         const stageMap = new Map<number, { label: string; count: number; type: JourneyBadgeType; statusId: number }>();
@@ -415,7 +486,7 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
             fullLabel = `${single.count} ${single.label}`;
           }
         } else {
-          // Active trucks are at multiple stages! (e.g. 1 Heading to Load · 13 Accepted)
+          // Active trucks are at multiple stages (e.g. 1 Heading to Load · 13 Loading)
           const parts = sortedStages.map((s) => `${s.count} ${s.label}`);
           if (waitingCount > 0) {
             parts.push(`${waitingCount} Waiting`);

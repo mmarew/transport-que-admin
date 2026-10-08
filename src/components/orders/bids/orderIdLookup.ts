@@ -23,19 +23,66 @@ const isUUID = (value: unknown): value is string =>
   );
 
 /**
+ * Extracts a 36-character UUID from a value (even if suffixed with e.g. "-truck-1").
+ */
+export const extractUUID = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const match = value.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  return match ? match[0] : undefined;
+};
+
+/**
  * Reads `key` from each candidate source in order and returns the first value
- * that is a real UUID. Accepting only UUIDs means a stray display name or
- * numeric index can never be mistaken for an id and sent to the API.
+ * that contains a real UUID. Automatically strips any client-side suffixes
+ * like "-truck-1".
  */
 export const findUUIDIn = (
-  key: string,
+  keyOrKeys: string | string[],
   ...sources: unknown[]
 ): string | undefined => {
+  const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
   for (const source of sources) {
-    const value = asRecord(source)[key];
-    if (isUUID(value)) return value;
+    const record = asRecord(source);
+    for (const key of keys) {
+      const value = record[key];
+      const uuid = extractUUID(value);
+      if (uuid) return uuid;
+    }
   }
   return undefined;
+};
+
+/**
+ * Reads candidate key(s) from sources and returns the first non-empty string or numeric id.
+ */
+export const findIdIn = (
+  keyOrKeys: string | string[],
+  ...sources: unknown[]
+): string | undefined => {
+  const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
+  for (const source of sources) {
+    const record = asRecord(source);
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+      if (typeof value === "number" && !Number.isNaN(value)) {
+        return String(value);
+      }
+    }
+  }
+  return undefined;
+};
+
+/**
+ * Tries UUID lookup first, then falls back to any non-empty string/number id.
+ */
+export const findFirstValidId = (
+  keyOrKeys: string | string[],
+  ...sources: unknown[]
+): string | undefined => {
+  return findUUIDIn(keyOrKeys, ...sources) || findIdIn(keyOrKeys, ...sources);
 };
 
 export { isUUID };

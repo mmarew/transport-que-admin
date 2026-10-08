@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapBackendOrdersToDisplayItems } from "../pages/orders/ordersDataMapper";
+import { mapBackendOrdersToDisplayItems, parseBatchBids } from "../pages/orders/ordersDataMapper";
 
 describe("ordersDataMapper", () => {
   const dummyT = ((key: string) => key) as any;
@@ -30,6 +30,8 @@ describe("ordersDataMapper", () => {
           destinationPlace: "Hawassa",
           isCompleted: false,
           journeyStatusId: 3,
+          queueNumber: 7,
+          loadingOrderNumber: "LO-99",
         },
       ],
     };
@@ -52,6 +54,8 @@ describe("ordersDataMapper", () => {
     expect(items[0].quintal).toBe(10);
     expect(items[0].journeyStatusId).toBe(3);
     expect(items[0].status).toBe("ongoing");
+    expect(items[0].queueNumber).toBe(7);
+    expect(items[0].loadingOrderNumber).toBe("LO-99");
   });
 
   it("decomposes multi-truck company target batch into individual truck slots", () => {
@@ -83,7 +87,8 @@ describe("ordersDataMapper", () => {
 
     expect(items).toHaveLength(3);
     expect(items[0].id).toBe("batch-557-uuid-truck-1");
-    expect(items[0].displayId).toBe("#557/1");
+    expect(items[0].displayId).toBe("#557");
+    expect(items[0].shipperRequestId).toBeNull();
     expect(items[0].cost).toBe(90000);
     expect(items[0].quintal).toBe(300);
     expect(items[0].batchTotalCost).toBe(270000);
@@ -91,11 +96,13 @@ describe("ordersDataMapper", () => {
     expect(items[0].journeyStatusId).toBe(3); // First truck has active journey status
 
     expect(items[1].id).toBe("batch-557-uuid-truck-2");
-    expect(items[1].displayId).toBe("#557/2");
+    expect(items[1].displayId).toBe("#557");
+    expect(items[1].shipperRequestId).toBeNull();
     expect(items[1].journeyStatusId).toBe(1); // Subsequent truck waits for driver assignment
 
     expect(items[2].id).toBe("batch-557-uuid-truck-3");
-    expect(items[2].displayId).toBe("#557/3");
+    expect(items[2].displayId).toBe("#557");
+    expect(items[2].shipperRequestId).toBeNull();
     expect(items[2].journeyStatusId).toBe(1);
   });
 
@@ -135,4 +142,109 @@ describe("ordersDataMapper", () => {
     expect(items[0].shipper).toBe("Overridden Name");
     expect(items[0].cost).toBe(99999);
   });
+
+  it("extracts queueNumber and loadingOrderNumber from nested entry and avoids falling back to batchId", () => {
+    const mockOrderPayload = {
+      data: [
+        {
+          shipperRequestUniqueId: "f2e911d9-420e-4422-8b88-651389484e22",
+          shipperRequestId: 4,
+          batchId: 1,
+          fullName: "Esmael Mohammed Hussen",
+          entry: {
+            queueNumber: 4,
+            loadingOrderNumber: 4,
+            status: 3,
+          },
+        },
+      ],
+    };
+
+    const items = mapBackendOrdersToDisplayItems({
+      ordersData: mockOrderPayload,
+      batchesData: null,
+      deletedIds: new Set(),
+      editedOrders: {},
+      activeOrg: null,
+      t: dummyT,
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0].queueNumber).toBe(4);
+    expect(items[0].loadingOrderNumber).toBe(4);
+    expect(items[0].journeyStatusId).toBe(3);
+  });
+
+  it("extracts queueNumber: 4 and loadingOrderNumber: 4 from item.queue.entry when shipperRequestId is 3", () => {
+    const mockOrderPayload = {
+      data: [
+        {
+          shipperRequest: {
+            shipperRequestId: 3,
+            shipperRequestUniqueId: "f2e911d9-420e-4422-8b88-651389484e22",
+            batchId: 1,
+            phoneNumber: "+251910101010",
+          },
+          queue: {
+            entry: {
+              queueNumber: 4,
+              loadingOrderNumber: 4,
+              status: 8,
+              fullName: "Esmael Mohammed Hussen",
+              phoneNumber: "+251929257880",
+            },
+          },
+          journey: {
+            journeyStatusId: 8,
+          },
+        },
+      ],
+    };
+
+    const items = mapBackendOrdersToDisplayItems({
+      ordersData: mockOrderPayload,
+      batchesData: null,
+      deletedIds: new Set(),
+      editedOrders: {},
+      activeOrg: null,
+      t: dummyT,
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0].displayId).toBe("#1/3");
+    expect(items[0].queueNumber).toBe(4);
+    expect(items[0].loadingOrderNumber).toBe(4);
+    expect(items[0].journeyStatusId).toBe(8);
+  });
+
+  it("does not duplicate company proposal rows when a company bid is accepted on a batch", () => {
+    const mockBatch = {
+      batchId: 1,
+      batchUniqueId: "batch-1-uuid",
+      targetCompanyName: "test",
+      targetCompanyPhone: "+251910101010",
+      targetCompanyUniqueId: "company-test-uuid",
+      journeyStatusId: 4,
+      status: "accepted",
+      companyBids: [
+        {
+          companyBidRequestUniqueId: "bid-123",
+          companyName: "test",
+          phoneNumber: "+251910101010",
+          userUniqueId: "company-test-uuid",
+          status: "submitted",
+          journeyStatusId: 1,
+          offerCost: 5000,
+        },
+      ],
+    };
+
+    const bids = parseBatchBids(mockBatch);
+    expect(bids).toHaveLength(1);
+    expect(bids[0].fullName).toBe("test");
+    expect(bids[0].journeyStatusId).toBe(4);
+    expect(bids[0].journeyStatus).toBe("accepted");
+    expect(bids[0].bidStatus).toBe("selected");
+  });
 });
+

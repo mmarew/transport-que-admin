@@ -60,7 +60,7 @@ function newBatchId(): string {
 function buildOrderPayload(
   values: CreateOrderFormValues,
   queueOrganizationUniqueId: string,
-): CreateOrderPayload & Record<string, unknown> {
+): CreateOrderPayload {
   return {
     isBiddingApproved: Boolean(values.isBiddingApproved),
     queueOrganizationUniqueId,
@@ -70,13 +70,6 @@ function buildOrderPayload(
     numberOfVehicles: Number(values.numberOfVehicles),
     deliveryDate: toISOStringSafe(values.deliveryDate),
     requestType: "shipper",
-    vehicleTypeUniqueId: values.vehicleTypeUniqueId,
-    originPlace: values.originDescription,
-    originLatitude: Number(values.originLatitude),
-    originLongitude: Number(values.originLongitude),
-    destinationPlace: values.destinationDescription,
-    destinationLatitude: Number(values.destinationLatitude),
-    destinationLongitude: Number(values.destinationLongitude),
     shippableItemName: values.shippableItemName,
     shippableItemQtyInQuintal: Number(values.shippableItemQtyInQuintal),
     shippingCost: Number(values.shippingCost),

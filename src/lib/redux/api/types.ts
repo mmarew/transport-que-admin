@@ -162,7 +162,11 @@ export type GetEntryHistoryResponse = ApiData<
 
 export interface AcceptDriverRequestArgs {
   queueOrganizationUniqueId: string;
-  shipperRequestUniqueId: string;
+  /** Accept key for PUT /api/company/bids/:companyBidRequestUniqueId/status. */
+  companyBidRequestUniqueId?: string;
+  /** Target bidStatus for the accept call (e.g. "selected"). Defaults to "selected". */
+  bidStatus?: string;
+  shipperRequestUniqueId?: string;
   driverPhoneNumber?: string;
   driverUserUniqueId?: string;
   driverRequestId?: number | string;
@@ -257,6 +261,9 @@ export interface GetShipperRequestsArgs {
   page?: number;
   limit?: number;
   journeyStatusId?: string;
+  /** Scopes the fetch to one batch so the client gets that batch's rows
+   *  instead of pulling every request for the org. */
+  shipperRequestBatchUniqueId?: string;
 }
 
 export interface GetShipperRequestsResponse {
@@ -278,6 +285,7 @@ export interface ShipperRequestBatchBid {
 export interface ShipperRequestBatch {
   batchId: number;
   batchUniqueId: string;
+  shipperRequestBatchUniqueId?: string;
   shipperUserUniqueId?: string;
   vehicleTypeUniqueId?: string;
   totalVehicles: number;

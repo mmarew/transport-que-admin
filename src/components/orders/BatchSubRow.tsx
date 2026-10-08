@@ -35,12 +35,7 @@ export function BatchSubRow({
             ↳
           </span>
           <span className="orders-id-badge orders-id-badge--sub">
-            #{childRequestId}
-          </span>
-          <span className="orders-subrow-truck-label">
-            {t("orders.truckIndex", "Truck {{num}}", {
-              num: childIdx + 1,
-            })}
+            {childOrder.displayId || `#${childRequestId}`}
           </span>
         </div>
       </td>
@@ -93,8 +88,16 @@ export function BatchSubRow({
               type="button"
               className="orders-btn-bids orders-btn-bids--active"
               onClick={() => onViewRequests(childOrder)}
-              title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
-              aria-label={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+              title={
+                childOrder.type === "Group"
+                  ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                  : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+              }
+              aria-label={
+                childOrder.type === "Group"
+                  ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                  : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+              }
             >
               <Gavel size={13} />
               <span>{t("orders.bids", "Bids")}</span>

@@ -10,6 +10,7 @@ import {
   extractOfferCost,
 } from "@/utils/formatters";
 import { trimAddress, type OrderDisplayItem, type ShipperRequestDriverInfo } from "../OrdersTypes";
+import { asRecord } from "./orderIdLookup";
 import { BidOfferComparison } from "./BidOfferComparison";
 import { BidActionButtons } from "./BidActionButtons";
 
@@ -20,6 +21,7 @@ export interface BidRowProps {
   hasAnyAcceptedDriver: boolean;
   isAccepting: boolean;
   isAnyAccepting: boolean;
+  isCompany?: boolean;
   onAccept: (driver: ShipperRequestDriverInfo) => void;
 }
 
@@ -33,7 +35,7 @@ function getDriverInitials(name?: string | null): string {
 }
 
 /**
- * BidRow renders an individual driver proposal item with distance, offer cost,
+ * BidRow renders an individual proposal item with distance, offer cost,
  * and acceptance action buttons.
  */
 export function BidRow({
@@ -43,6 +45,7 @@ export function BidRow({
   hasAnyAcceptedDriver,
   isAccepting,
   isAnyAccepting,
+  isCompany,
   onAccept,
 }: BidRowProps) {
   const { t } = useTranslation();
@@ -54,6 +57,43 @@ export function BidRow({
   const isShipperAccepted =
     typeof statusId === "number" && statusId >= 4 && statusId <= 9;
   const isDriverRequested = statusId === 2;
+
+  const rawOrder = asRecord((order as any).rawItem || order);
+  const rawShipperReq = asRecord(rawOrder.shipperRequest);
+  const rawDriver = asRecord(driver);
+  const rawDriverEntry = asRecord((driver as any).entry);
+
+  const resolvedBatchId =
+    rawDriver.batchId ??
+    rawDriver.shipperRequestBatchId ??
+    asRecord(rawDriver.shipperRequest).batchId ??
+    rawDriverEntry.batchId ??
+    order.batchId ??
+    (order.displayId ? order.displayId.replace(/^#/, "").split("/")[0] : null) ??
+    rawShipperReq.batchId ??
+    rawOrder.batchId ??
+    null;
+
+  const resolvedShipperRequestId =
+    rawDriver.shipperRequestId ??
+    asRecord(rawDriver.shipperRequest).shipperRequestId ??
+    rawDriverEntry.shipperRequestId ??
+    order.shipperRequestId ??
+    (order.displayId && order.displayId.includes("/")
+      ? order.displayId.replace(/^#/, "").split("/")[1]
+      : null) ??
+    rawShipperReq.shipperRequestId ??
+    rawOrder.shipperRequestId ??
+    null;
+
+  const orderIdentifier =
+    resolvedBatchId != null && resolvedShipperRequestId != null
+      ? `#${resolvedBatchId}/${resolvedShipperRequestId}`
+      : resolvedBatchId != null
+        ? `#${resolvedBatchId}`
+        : resolvedShipperRequestId != null
+          ? `#${resolvedShipperRequestId}`
+          : order.displayId || null;
 
   const directCost = extractOfferCost(driver, (order as any).rawItem || order);
   const driverOfferVal =
@@ -90,6 +130,12 @@ export function BidRow({
       ? lookupLocationFromCoordinates(driver.latitude, driver.longitude)
       : null);
 
+  const displayName =
+    driver.fullName ||
+    (isCompany
+      ? t("orders.waitingCompany", "Company")
+      : t("orders.waitingDriver", "Driver"));
+
   return (
     <div
       className={`dbm-bid-item ${isAccepted ? "dbm-bid-item--accepted" : ""}`}
@@ -103,9 +149,9 @@ export function BidRow({
           <div className="dbm-driver-header">
             <span
               className="dbm-driver-name"
-              title={driver.fullName || t("orders.waitingDriver", "Driver")}
+              title={displayName}
             >
-              {driver.fullName || t("orders.waitingDriver", "Driver")}
+              {displayName}
             </span>
             {statusId != null && (
               <span className={`dbm-status-badge status-${statusId}`}>
@@ -130,6 +176,12 @@ export function BidRow({
               {driver.vehicleTypeName || order.vehicleType}
               {driver.plateNumber && ` • ${driver.plateNumber}`}
             </span>
+
+            {orderIdentifier && (
+              <span className="dbm-driver-batch-tag">
+                {orderIdentifier}
+              </span>
+            )}
 
             {(driverLoc || driverDist != null) && (
               <span
@@ -158,6 +210,7 @@ export function BidRow({
         <BidOfferComparison
           offerVal={offerVal}
           hasDriverOffer={hasDriverOffer}
+          isCompany={isCompany}
         />
 
         <BidActionButtons
@@ -168,6 +221,7 @@ export function BidRow({
           isDriverAccepted={isDriverAccepted}
           isAccepting={isAccepting}
           isAnyAccepting={isAnyAccepting}
+          isCompany={isCompany}
           onAccept={onAccept}
         />
       </div>

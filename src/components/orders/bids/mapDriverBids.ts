@@ -13,6 +13,8 @@ export function mapDriverBidToRow(bid: DriverBid): ShipperRequestDriverInfo {
   return {
     driverBidUniqueId: bid.driverBidUniqueId,
     driverBidId: bid.driverBidId,
+    companyBidRequestUniqueId:
+      bid.companyBidRequestUniqueId || bid.driverBidUniqueId,
     bidStatus: bid.bidStatus,
     userUniqueId: bid.driverUserUniqueId,
     driverRequestUniqueId: bid.driverRequestUniqueId ?? undefined,
@@ -27,6 +29,8 @@ export function mapDriverBidToRow(bid: DriverBid): ShipperRequestDriverInfo {
     // Bid notes are the driver's own words and have no equivalent column, so
     // surface them where the row can show provenance.
     currentPlace: bid.bidNotes ?? null,
+    queueNumber: (bid as any).queueNumber ?? (bid as any).entry?.queueNumber ?? null,
+    loadingOrderNumber: (bid as any).loadingOrderNumber ?? (bid as any).entry?.loadingOrderNumber ?? null,
   };
 }
 

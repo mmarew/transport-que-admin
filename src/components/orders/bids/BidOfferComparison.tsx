@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 export interface BidOfferComparisonProps {
   offerVal: number;
   hasDriverOffer: boolean;
+  isCompany?: boolean;
 }
 
 /**
@@ -11,6 +12,7 @@ export interface BidOfferComparisonProps {
 export function BidOfferComparison({
   offerVal,
   hasDriverOffer,
+  isCompany,
 }: BidOfferComparisonProps) {
   const { t } = useTranslation();
 
@@ -18,7 +20,9 @@ export function BidOfferComparison({
     <div className="dbm-driver-offer-col">
       <span className="dbm-offer-tag-label">
         {hasDriverOffer
-          ? t("orders.driverOfferCost", "Driver Offer Cost")
+          ? isCompany
+            ? t("orders.companyOfferCost", "Company Offer Cost")
+            : t("orders.driverOfferCost", "Driver Offer Cost")
           : t("orders.targetCostLabel", "Shipper Target Cost")}
       </span>
       <span className="dbm-offer-amount">

@@ -10,6 +10,7 @@ interface BidActionButtonsProps {
   isDriverAccepted: boolean;
   isAccepting: boolean;
   isAnyAccepting: boolean;
+  isCompany?: boolean;
   onAccept: (driver: ShipperRequestDriverInfo) => void;
 }
 
@@ -21,6 +22,7 @@ export function BidActionButtons({
   isDriverAccepted,
   isAccepting,
   isAnyAccepting,
+  isCompany,
   onAccept,
 }: BidActionButtonsProps) {
   const { t } = useTranslation();
@@ -35,23 +37,41 @@ export function BidActionButtons({
       ) : hasAnyAcceptedDriver ? (
         <span
           className="dbm-btn-not-selected"
-          title={t(
-            "orders.anotherDriverAccepted",
-            "Another driver has already been accepted for this order",
-          )}
+          title={
+            isCompany
+              ? t(
+                  "orders.anotherCompanyAccepted",
+                  "Another company has already been accepted for this order",
+                )
+              : t(
+                  "orders.anotherDriverAccepted",
+                  "Another driver has already been accepted for this order",
+                )
+          }
         >
           {t("orders.notSelected", "Not Selected")}
         </span>
       ) : isDriverRequested && !isDriverAccepted ? (
         <span
           className="dbm-btn-awaiting-driver"
-          title={t(
-            "orders.driverRequestedTooltip",
-            "Driver has been requested but has not accepted yet",
-          )}
+          title={
+            isCompany
+              ? t(
+                  "orders.companyRequestedTooltip",
+                  "Company has been requested but has not accepted yet",
+                )
+              : t(
+                  "orders.driverRequestedTooltip",
+                  "Driver has been requested but has not accepted yet",
+                )
+          }
         >
           <Clock size={13} />
-          <span>{t("orders.awaitingDriverResponse", "Awaiting Driver")}</span>
+          <span>
+            {isCompany
+              ? t("orders.awaitingCompanyResponse", "Awaiting Company")
+              : t("orders.awaitingDriverResponse", "Awaiting Driver")}
+          </span>
         </span>
       ) : (
         <button

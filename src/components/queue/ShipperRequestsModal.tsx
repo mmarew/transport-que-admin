@@ -20,6 +20,10 @@ export interface ShipperRequestDriverInfo {
    *  (GET /api/queue/bidding/order/:id/bids) rather than the shipper payload. */
   driverBidUniqueId?: string;
   driverBidId?: number;
+  /** Accept key for PUT /api/company/bids/:companyBidRequestUniqueId/status.
+   *  Backend issues this id per bid; the board row carries it alongside the
+   *  legacy driverBidUniqueId alias. */
+  companyBidRequestUniqueId?: string;
   shipperRequestUniqueId?: string;
   bidStatus?: string;
   fullName?: string | null;
@@ -38,6 +42,9 @@ export interface ShipperRequestDriverInfo {
   currentPlace?: string | null;
   locationName?: string | null;
   distanceKm?: number | null;
+  queueNumber?: number | string | null;
+  loadingOrderNumber?: number | string | null;
+  entry?: any;
 }
 
 export interface ShipperRequestDetail {

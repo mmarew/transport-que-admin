@@ -15,13 +15,25 @@ export interface UseOrdersViewOptions {
   phoneFilter?: string;
 }
 
+// Extract the leading numeric id from a group display id (#12, #6/5) so the
+// default "id" sort is numeric (#1, #2, #10...) rather than lexicographic.
+function groupIdNumber(group: OrderBatchGroup): number {
+  const raw = group.batchId != null && String(group.batchId).trim() !== ""
+    ? String(group.batchId)
+    : group.displayId || "";
+  const parsed = Number(raw);
+  if (!isNaN(parsed)) return parsed;
+  const m = String(raw).match(/(\d+)/);
+  return m ? Number(m[1]) : 0;
+}
+
 export function useOrdersView({
   orders,
   phoneFilter = "",
 }: UseOrdersViewOptions) {
   const [activeTab, setActiveTab] = useState<"ongoing" | "complete">("ongoing");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [sortCol, setSortCol] = useState<SortColumn>("shipper");
+  const [sortCol, setSortCol] = useState<SortColumn>("id");
   const [sortAsc, setSortAsc] = useState<boolean>(true);
 
   // 1. Filter orders strictly by activeTab:
@@ -52,8 +64,8 @@ export function useOrdersView({
       let valB: string | number = "";
       switch (sortCol) {
         case "id":
-          valA = (a.displayId || "").toLowerCase();
-          valB = (b.displayId || "").toLowerCase();
+          valA = groupIdNumber(a) || (a.displayId || "").toLowerCase();
+          valB = groupIdNumber(b) || (b.displayId || "").toLowerCase();
           break;
         case "shipper":
           valA = a.shipper.toLowerCase();
@@ -85,11 +97,15 @@ export function useOrdersView({
           break;
       }
       if (typeof valA === "number" && typeof valB === "number") {
-        return sortAsc ? valA - valB : valB - valA;
+        if (valA !== valB) return sortAsc ? valA - valB : valB - valA;
+      } else {
+        const cmp = String(valA).localeCompare(String(valB));
+        if (cmp !== 0) return sortAsc ? cmp : -cmp;
       }
-      return sortAsc
-        ? String(valA).localeCompare(String(valB))
-        : String(valB).localeCompare(String(valA));
+      // Tie-breaker: keep a stable ascending order by batch id/creation when
+      // the sort key is identical (e.g. all rows share the same shipper).
+      const batchDiff = (Number(a.batchId) || 0) - (Number(b.batchId) || 0);
+      return sortAsc ? batchDiff : -batchDiff;
     });
   }, [allBatchGroups, sortCol, sortAsc, phoneFilter]);
 

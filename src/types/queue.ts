@@ -276,6 +276,10 @@ export interface QueueEntryHistoryItem {
 export interface DriverBid {
   driverBidUniqueId: string;
   driverBidId: number;
+  /** Identifier used by PUT /api/company/bids/:companyBidRequestUniqueId/status
+   *  to accept a bid. The bids board also exposes it as driverBidUniqueId, so
+   *  keep both populated when mapping rows. */
+  companyBidRequestUniqueId?: string | null;
   shipperRequestUniqueId: string;
   shipperRequestBatchUniqueId?: string | null;
   driverUserUniqueId: string;
