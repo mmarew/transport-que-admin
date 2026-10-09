@@ -397,3 +397,36 @@ export type ApproveBiddingResponse = ApiData<{
   count: number;
   waitingMatched: number;
 }>;
+
+export interface CompanyBidItem {
+  companyBidRequestUniqueId: string;
+  shipperRequestBatchId?: string | null;
+  shipperRequestBatchUniqueId?: string | null;
+  batchId?: number | string | null;
+  companyUniqueId?: string | null;
+  companyName?: string | null;
+  numberOfVehiclesOffered?: number | null;
+  vehicleTypeUniqueId?: string | null;
+  vehicleTypeName?: string | null;
+  proposedCostPerVehicle?: number | string | null;
+  proposedTotalCost?: number | string | null;
+  bidNotes?: string | null;
+  bidStatus?: string | null;
+  journeyStatusId?: number | null;
+  companyBidRequestCreatedAt?: string | null;
+  [key: string]: unknown;
+}
+
+export type GetCompanyBidsArgs = {
+  companyUniqueId?: string;
+  shipperRequestBatchId?: string;
+  shipperRequestBatchUniqueId?: string;
+  target?: string;
+  bidStatus?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type GetCompanyBidsResponse = ApiData<CompanyBidItem[]> & {
+  pagination?: PaginationMeta;
+};

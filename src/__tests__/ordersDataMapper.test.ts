@@ -246,5 +246,55 @@ describe("ordersDataMapper", () => {
     expect(bids[0].journeyStatus).toBe("accepted");
     expect(bids[0].bidStatus).toBe("selected");
   });
+
+  it("maps targeted company on batch awaiting bids to requested status without fake bid ID", () => {
+    const mockBatch = {
+      batchId: 4,
+      batchUniqueId: "batch-4-uuid",
+      targetCompanyName: "Alpha Transport",
+      targetCompanyPhone: "+251911223344",
+      targetCompanyUniqueId: "74fdaa52-05d2-4261-ae22-3945bc1757a4",
+      journeyStatusId: 2,
+      status: "requested",
+      companyBids: [],
+    };
+
+    const bids = parseBatchBids(mockBatch);
+    expect(bids).toHaveLength(1);
+    expect(bids[0].fullName).toBe("Alpha Transport");
+    expect(bids[0].journeyStatusId).toBe(2);
+    expect(bids[0].journeyStatus).toBe("requested");
+    expect(bids[0].bidStatus).toBe("requested");
+    // Must be null: targetCompanyUniqueId must never be treated as a bid id!
+    expect(bids[0].companyBidRequestUniqueId).toBeNull();
+  });
+
+  it("maps targeted company on batch with submitted company bid and assigns real bid id", () => {
+    const mockBatch = {
+      batchId: 4,
+      batchUniqueId: "batch-4-uuid",
+      targetCompanyName: "Alpha Transport",
+      targetCompanyPhone: "+251911223344",
+      targetCompanyUniqueId: "74fdaa52-05d2-4261-ae22-3945bc1757a4",
+      journeyStatusId: 1,
+      status: "submitted",
+      companyBids: [
+        {
+          companyBidRequestUniqueId: "real-bid-uuid-123",
+          companyUniqueId: "74fdaa52-05d2-4261-ae22-3945bc1757a4",
+          proposedCostPerVehicle: 5000,
+          bidStatus: "submitted",
+        },
+      ],
+    };
+
+    const bids = parseBatchBids(mockBatch);
+    expect(bids).toHaveLength(1);
+    expect(bids[0].fullName).toBe("Alpha Transport");
+    expect(bids[0].journeyStatusId).toBe(1);
+    expect(bids[0].journeyStatus).toBe("submitted");
+    expect(bids[0].bidStatus).toBe("submitted");
+    expect(bids[0].companyBidRequestUniqueId).toBe("real-bid-uuid-123");
+  });
 });
 

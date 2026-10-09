@@ -10,7 +10,7 @@ import { renderVehicleType } from "./OrderPrimitives";
 
 export interface BatchSubRowProps {
   childOrder: OrderDisplayItem;
-  childIdx: number;
+  childIdx?: number;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
   onViewRequests?: (order: OrderDisplayItem) => void;
@@ -18,7 +18,6 @@ export interface BatchSubRowProps {
 
 export function BatchSubRow({
   childOrder,
-  childIdx,
   onEdit,
   onDelete,
   onViewRequests,

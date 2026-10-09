@@ -7,7 +7,7 @@ export interface OrderDisplayItem {
   shipperRequestId?: number | string | null;
   shipperRequestUniqueId?: string | null;
   shipperRequestBatchUniqueId?: string | null;
-  batchId?: string | null;
+  batchId?: number | string | null;
   /** UUID form of the batch (shipperRequestBatchUniqueId from the shipper request API). */
   batchUniqueId?: string | null;
   requestIdDisplay?: string;
@@ -43,6 +43,9 @@ export interface OrderDisplayItem {
   batchTotalQuintal?: number;
   queueNumber?: number | string | null;
   loadingOrderNumber?: number | string | null;
+  targetCompanyUniqueId?: string | null;
+  targetCompanyName?: string | null;
+  targetCompanyPhone?: string | null;
   rawItem?: unknown;
 }
 

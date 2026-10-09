@@ -74,7 +74,8 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
   else if (batch.bid && typeof batch.bid === "object") rawBids = [batch.bid];
 
   let parsed: any[] = rawBids.map((b: any, bIdx: number) => {
-    const bidUid =
+    const compId = b.companyUniqueId ?? batch.targetCompanyUniqueId;
+    const rawBidUid =
       b.companyBidRequestUniqueId ??
       b.company_bid_request_unique_id ??
       b.driverBidUniqueId ??
@@ -83,11 +84,14 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       b.bid_unique_id ??
       b.companyBidRequestId ??
       b.companyBidUniqueId ??
-      b.uniqueId ??
-      b.id ??
+      (b.uniqueId && b.uniqueId !== compId ? b.uniqueId : undefined) ??
+      (b.id && b.id !== compId ? b.id : undefined) ??
       (b.companyBidRequest && b.companyBidRequest.companyBidRequestUniqueId) ??
       (b.companyBid && b.companyBid.companyBidRequestUniqueId) ??
-      `bid-${batch.batchId || bIdx + 1}-${bIdx + 1}`;
+      undefined;
+
+    const bidUid = rawBidUid ?? `bid-${batch.batchId || bIdx + 1}-${bIdx + 1}`;
+    const isRealBidId = Boolean(rawBidUid && rawBidUid !== compId);
 
     const compName =
       b.companyName ??
@@ -130,8 +134,8 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
     return {
       driverRequestId: b.driverRequestId ?? b.bidId ?? bIdx + 1,
       driverRequestUniqueId: bidUid,
-      companyBidRequestUniqueId: String(bidUid),
-      driverBidUniqueId: String(bidUid),
+      companyBidRequestUniqueId: isRealBidId ? String(rawBidUid) : null,
+      driverBidUniqueId: isRealBidId ? String(rawBidUid) : null,
       userUniqueId: b.userUniqueId ?? b.bidderUserUniqueId ?? b.companyUniqueId ?? `company-${bIdx + 1}`,
       journeyDecisionUniqueId: b.journeyDecisionUniqueId ?? null,
       fullName: compName,
@@ -200,19 +204,31 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       batch.shipperPhone ??
       null;
     const compUserUid = offer.userUniqueId ?? batch.targetCompanyUniqueId ?? null;
-    const bidKey =
+    const rawBidId =
       offer.companyBidRequestUniqueId ??
-      offer.driverRequestUniqueId ??
+      offer.driverBidUniqueId ??
       offer.bidUniqueId ??
-      batch.targetCompanyUniqueId ??
-      batch.targetCompany?.uniqueId ??
       batch.companyBidRequestUniqueId ??
-      batch.batchUniqueId ??
-      `company-bid-${batch.batchId || 1}`;
+      batch.bidUniqueId ??
+      (Array.isArray(batch.companyBids) && batch.companyBids[0]?.companyBidRequestUniqueId) ??
+      (Array.isArray(batch.bids) && (batch.bids[0]?.companyBidRequestUniqueId || batch.bids[0]?.bidUniqueId)) ??
+      undefined;
+
+    const realBidId =
+      rawBidId && rawBidId !== batch.targetCompanyUniqueId && rawBidId !== compUserUid
+        ? rawBidId
+        : undefined;
+
+    const targetUid =
+      compUserUid ||
+      batch.targetCompanyUniqueId ||
+      batch.targetCompany?.uniqueId ||
+      batch.batchUniqueId ||
+      `company-target-${batch.batchId || 1}`;
 
     // Check if this company is already present in parsed
     const existingIndex = parsed.findIndex((p) => {
-      if (offer.companyBidRequestUniqueId && p.companyBidRequestUniqueId === offer.companyBidRequestUniqueId) return true;
+      if (realBidId && (p.companyBidRequestUniqueId === realBidId || p.driverBidUniqueId === realBidId)) return true;
       if (compUserUid && (p.userUniqueId === compUserUid || (p as any).companyUniqueId === compUserUid)) return true;
       if (phone && p.phoneNumber && String(phone).replace(/\s+/g, "") === String(p.phoneNumber).replace(/\s+/g, "")) return true;
       if (companyName && p.fullName && companyName.trim().toLowerCase() === p.fullName.trim().toLowerCase()) return true;
@@ -231,18 +247,33 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
         };
       }
     } else if (!hasAccepted) {
+      const isSubmitted =
+        batch.status === "submitted" ||
+        batch.journeyStatus === "submitted" ||
+        batch.journeyStatusId === 1 ||
+        offer.bidStatus === "submitted" ||
+        offer.status === "submitted" ||
+        offer.journeyStatusId === 1 ||
+        String(batch.status || "").toLowerCase().includes("submit") ||
+        String(batch.journeyStatus || "").toLowerCase().includes("submit");
+
+      const resolvedStatusId = isActuallyAccepted ? 4 : isSubmitted ? 1 : 2;
+      const resolvedJourneyStatus = isActuallyAccepted ? "accepted" : isSubmitted ? "submitted" : "requested";
+      const resolvedBidStatus = isActuallyAccepted ? "selected" : isSubmitted ? "submitted" : "requested";
+      const effectiveBidId = realBidId || `company-proposal-${batch.batchId || 1}`;
+
       parsed.unshift({
         driverRequestId: 1,
-        driverRequestUniqueId: bidKey,
-        companyBidRequestUniqueId: String(bidKey),
-        driverBidUniqueId: String(bidKey),
-        userUniqueId: compUserUid || "company-user-1",
+        driverRequestUniqueId: effectiveBidId,
+        companyBidRequestUniqueId: realBidId || null,
+        driverBidUniqueId: realBidId || null,
+        userUniqueId: targetUid,
         journeyDecisionUniqueId: null,
         fullName: companyName,
         phoneNumber: phone,
-        journeyStatusId: isActuallyAccepted ? 4 : 1,
-        journeyStatus: isActuallyAccepted ? "accepted" : "submitted",
-        bidStatus: isActuallyAccepted ? "selected" : "submitted",
+        journeyStatusId: resolvedStatusId,
+        journeyStatus: resolvedJourneyStatus,
+        bidStatus: resolvedBidStatus,
         shipperRequestUniqueId: bUniqueIdStr || batch.batchUniqueId,
         offerCost:
           Number(
@@ -296,25 +327,46 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       batch.targetCompany?.companyName ??
       batch.companyName ??
       (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal");
-    const bidKey =
+    const rawBidId =
+      batch.companyBidRequestUniqueId ??
+      batch.companyBid?.companyBidRequestUniqueId ??
+      batch.bidUniqueId ??
+      (Array.isArray(batch.companyBids) && batch.companyBids[0]?.companyBidRequestUniqueId) ??
+      (Array.isArray(batch.bids) && (batch.bids[0]?.companyBidRequestUniqueId || batch.bids[0]?.bidUniqueId)) ??
+      undefined;
+    const realBidId =
+      rawBidId && rawBidId !== batch.targetCompanyUniqueId ? rawBidId : undefined;
+    const targetUid =
       batch.targetCompanyUniqueId ??
       batch.targetCompany?.uniqueId ??
-      batch.companyBidRequestUniqueId ??
       batch.batchUniqueId ??
       bUniqueIdStr ??
-      `company-bid-${batch.batchId || 1}`;
+      `company-target-${batch.batchId || 1}`;
+    const isSubmitted =
+      batch.status === "submitted" ||
+      batch.journeyStatus === "submitted" ||
+      batch.journeyStatusId === 1 ||
+      batch.bidStatus === "submitted" ||
+      String(batch.status || "").toLowerCase().includes("submit") ||
+      String(batch.journeyStatus || "").toLowerCase().includes("submit");
+
+    const resolvedStatusId = isSubmitted ? 1 : 2;
+    const resolvedJourneyStatus = isSubmitted ? "submitted" : "requested";
+    const resolvedBidStatus = isSubmitted ? "submitted" : "requested";
+    const effectiveBidId = realBidId || `company-proposal-${batch.batchId || 1}`;
+
     parsed.push({
       driverRequestId: 1,
-      driverRequestUniqueId: bidKey,
-      companyBidRequestUniqueId: String(bidKey),
-      driverBidUniqueId: String(bidKey),
-      userUniqueId: batch.targetCompanyUniqueId ?? "company-user-1",
+      driverRequestUniqueId: effectiveBidId,
+      companyBidRequestUniqueId: realBidId || null,
+      driverBidUniqueId: realBidId || null,
+      userUniqueId: targetUid,
       journeyDecisionUniqueId: null,
       fullName: compName,
       phoneNumber: batch.targetCompanyPhone ?? batch.shipperPhone ?? null,
-      journeyStatusId: 1,
-      journeyStatus: "submitted",
-      bidStatus: "submitted",
+      journeyStatusId: resolvedStatusId,
+      journeyStatus: resolvedJourneyStatus,
+      bidStatus: resolvedBidStatus,
       shipperRequestUniqueId: bUniqueIdStr || batch.batchUniqueId,
       offerCost: Number(batch.batchShippingCost ?? batch.shippingCost ?? batch.batchTotalCost) || null,
       proposedCost: Number(batch.batchShippingCost ?? batch.shippingCost ?? batch.batchTotalCost) || null,
@@ -412,13 +464,25 @@ export function mapBackendOrdersToDisplayItems({
       const rawReq = (item.shipperRequest && typeof item.shipperRequest === "object" ? item.shipperRequest : null) as any;
       const req = rawReq || (item as any) || {};
 
+      const compId =
+        req.targetCompanyUniqueId ||
+        (item as any).targetCompanyUniqueId ||
+        (req as any).companyUniqueId ||
+        (item as any).companyUniqueId;
+
+      const safeReqUniqueId =
+        (req as any).uniqueId && (req as any).uniqueId !== compId
+          ? (req as any).uniqueId
+          : (item as any).uniqueId && (item as any).uniqueId !== compId
+          ? (item as any).uniqueId
+          : "";
+
       const resolvedShipperRequestUniqueId =
         req.shipperRequestUniqueId ||
         (item as any).shipperRequestUniqueId ||
         (req as any).shipper_request_unique_id ||
         (item as any).shipper_request_unique_id ||
-        (req as any).uniqueId ||
-        (item as any).uniqueId ||
+        safeReqUniqueId ||
         `real-${idx}`;
 
       const resolvedShipperRequestId =
@@ -913,11 +977,24 @@ export function mapBackendOrdersToDisplayItems({
             ? (t ? t("orders.acceptedCompany", "Accepted Transport Company") : "Accepted Transport Company")
             : (t ? t("orders.acceptedDriver", "Accepted Driver") : "Accepted Driver"));
 
+        const compId =
+          (req as any).targetCompanyUniqueId ||
+          (item as any).targetCompanyUniqueId ||
+          matchedBatch?.targetCompanyUniqueId;
+
+        const rawBidId =
+          matchedBatch?.companyBidRequestUniqueId ??
+          matchedBatch?.bidUniqueId ??
+          (req as any).companyBidRequestUniqueId ??
+          (item as any).companyBidRequestUniqueId ??
+          undefined;
+
+        const safeBidId = rawBidId && rawBidId !== compId ? rawBidId : null;
+
         const targetUid =
           (req as any).targetCompanyUniqueId ||
           (item as any).targetCompanyUniqueId ||
           matchedBatch?.targetCompanyUniqueId ||
-          matchedBatch?.companyBidRequestUniqueId ||
           resolvedBatchUniqueId ||
           resolvedShipperRequestUniqueId ||
           "accepted-bid";
@@ -925,9 +1002,9 @@ export function mapBackendOrdersToDisplayItems({
         finalDriverRequests = [
           {
             driverRequestId: 1,
-            driverRequestUniqueId: targetUid,
-            companyBidRequestUniqueId: targetUid,
-            driverBidUniqueId: targetUid,
+            driverRequestUniqueId: safeBidId || targetUid,
+            companyBidRequestUniqueId: safeBidId,
+            driverBidUniqueId: safeBidId,
             fullName: companyOrDriverName,
             phoneNumber:
               (req as any).targetCompanyPhone ||
@@ -960,11 +1037,24 @@ export function mapBackendOrdersToDisplayItems({
             ? (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal")
             : (t ? t("orders.waitingDriver", "Driver") : "Driver"));
 
+        const compId =
+          (req as any).targetCompanyUniqueId ||
+          (item as any).targetCompanyUniqueId ||
+          matchedBatch?.targetCompanyUniqueId;
+
+        const rawBidId =
+          matchedBatch?.companyBidRequestUniqueId ??
+          matchedBatch?.bidUniqueId ??
+          (req as any).companyBidRequestUniqueId ??
+          (item as any).companyBidRequestUniqueId ??
+          undefined;
+
+        const safeBidId = rawBidId && rawBidId !== compId ? rawBidId : null;
+
         const targetUid =
           (req as any).targetCompanyUniqueId ||
           (item as any).targetCompanyUniqueId ||
           matchedBatch?.targetCompanyUniqueId ||
-          matchedBatch?.companyBidRequestUniqueId ||
           resolvedBatchUniqueId ||
           resolvedShipperRequestUniqueId ||
           "driver-offer";
@@ -972,9 +1062,9 @@ export function mapBackendOrdersToDisplayItems({
         finalDriverRequests = [
           {
             driverRequestId: 1,
-            driverRequestUniqueId: targetUid,
-            companyBidRequestUniqueId: targetUid,
-            driverBidUniqueId: targetUid,
+            driverRequestUniqueId: safeBidId || targetUid,
+            companyBidRequestUniqueId: safeBidId,
+            driverBidUniqueId: safeBidId,
             fullName: companyOrDriverName,
             phoneNumber:
               (req as any).targetCompanyPhone ||
@@ -990,10 +1080,10 @@ export function mapBackendOrdersToDisplayItems({
         ];
       } else if (
         finalDriverRequests.length === 0 &&
-        (mode === "Group" ||
-          String(rawMode).toLowerCase().includes("company") ||
-          (req as any).targetCompanyName ||
-          matchedBatch?.targetCompanyName)
+        ((req as any).targetCompanyName ||
+          matchedBatch?.targetCompanyName ||
+          (req as any).targetCompanyUniqueId ||
+          matchedBatch?.targetCompanyUniqueId)
       ) {
         const companyOrDriverName =
           matchedBatch?.targetCompanyName ||
@@ -1003,30 +1093,56 @@ export function mapBackendOrdersToDisplayItems({
           (item as any).companyName ||
           (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal");
 
-        const targetUid =
+        const compId =
           (req as any).targetCompanyUniqueId ||
           (item as any).targetCompanyUniqueId ||
-          matchedBatch?.targetCompanyUniqueId ||
-          matchedBatch?.companyBidRequestUniqueId ||
-          resolvedBatchUniqueId ||
-          resolvedShipperRequestUniqueId ||
-          "company-offer";
+          matchedBatch?.targetCompanyUniqueId;
+
+        const targetUid =
+          compId ||
+          "company-target";
+
+        const rawBidId =
+          matchedBatch?.companyBidRequestUniqueId ??
+          matchedBatch?.bidUniqueId ??
+          (req as any).companyBidRequestUniqueId ??
+          (item as any).companyBidRequestUniqueId ??
+          undefined;
+
+        const safeBidId = rawBidId && rawBidId !== compId ? rawBidId : null;
+
+        const isSubmitted =
+          (req as any).status === "submitted" ||
+          (req as any).journeyStatus === "submitted" ||
+          (item as any).status === "submitted" ||
+          (item as any).journeyStatus === "submitted" ||
+          matchedBatch?.status === "submitted" ||
+          matchedBatch?.journeyStatus === "submitted" ||
+          resolvedJourneyStatusId === 1 ||
+          String((req as any).status || "").toLowerCase().includes("submit") ||
+          String(matchedBatch?.status || "").toLowerCase().includes("submit");
+
+        const resolvedStatusId = isSubmitted ? 1 : 2;
+        const resolvedJourneyStatus = isSubmitted ? "submitted" : "requested";
+        const resolvedBidStatus = isSubmitted ? "submitted" : "requested";
+        const effectiveBidId = safeBidId || `company-proposal-${(req as any).batchId || matchedBatch?.batchId || 1}`;
 
         finalDriverRequests = [
           {
             driverRequestId: 1,
-            driverRequestUniqueId: targetUid,
-            companyBidRequestUniqueId: targetUid,
-            driverBidUniqueId: targetUid,
+            driverRequestUniqueId: effectiveBidId,
+            companyBidRequestUniqueId: safeBidId,
+            driverBidUniqueId: safeBidId,
+            userUniqueId: targetUid,
             fullName: companyOrDriverName,
             phoneNumber:
               (req as any).targetCompanyPhone ||
               (item as any).targetCompanyPhone ||
               matchedBatch?.shipperPhone ||
               null,
-            journeyStatusId: 1,
-            journeyStatus: "submitted",
-            bidStatus: "submitted",
+            journeyStatusId: resolvedStatusId,
+            journeyStatus: resolvedJourneyStatus,
+            bidStatus: resolvedBidStatus,
             offerCost: (mode === "Group" && matchedBatchTotalCost) ? matchedBatchTotalCost : costNum,
             vehicleTypeName: vehicleTypeName,
           },

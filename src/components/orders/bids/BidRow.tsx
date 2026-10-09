@@ -56,7 +56,9 @@ export function BidRow({
   const isDriverAccepted = statusId === 3;
   const isShipperAccepted =
     typeof statusId === "number" && statusId >= 4 && statusId <= 9;
-  const isDriverRequested = statusId === 2;
+  const isDriverRequested =
+    statusId === 2 ||
+    ((driver.journeyStatus === "requested" || driver.bidStatus === "requested") && statusId !== 1);
 
   const rawOrder = asRecord((order as any).rawItem || order);
   const rawShipperReq = asRecord(rawOrder.shipperRequest);

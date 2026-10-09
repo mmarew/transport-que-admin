@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { User, Phone, Check, CheckCircle2, Loader2 } from "lucide-react";
+import { User, Phone, Check, CheckCircle2, Loader2, Building2 } from "lucide-react";
 import { formatJourneyStatusLabel } from "../../../utils/journeyStatus";
 import type { ShipperRequestDriverInfo } from "../ShipperRequestsModal";
 
@@ -9,6 +9,7 @@ export interface ShipperDriverRequestsListProps {
   acceptingDriverId: string | null;
   acceptedDriverIds: Set<string>;
   onAcceptDriver: (driver: ShipperRequestDriverInfo) => void;
+  isCompany?: boolean;
 }
 
 export function ShipperDriverRequestsList({
@@ -17,6 +18,7 @@ export function ShipperDriverRequestsList({
   acceptingDriverId,
   acceptedDriverIds,
   onAcceptDriver,
+  isCompany,
 }: ShipperDriverRequestsListProps) {
   const { t } = useTranslation();
 
@@ -24,7 +26,9 @@ export function ShipperDriverRequestsList({
     <div className="srm-drivers-section">
       <div className="srm-drivers-header">
         <span className="srm-drivers-title">
-          {isBiddingApproved
+          {isCompany
+            ? t("orders.companyRequests", "Company Requests")
+            : isBiddingApproved
             ? t("orders.driverRequests", "Driver Requests")
             : t("orders.assignedDrivers", "Assigned Driver(s)")}
         </span>
@@ -67,12 +71,14 @@ export function ShipperDriverRequestsList({
             >
               <div className="srm-driver-info">
                 <div className="srm-driver-avatar">
-                  <User size={15} />
+                  {isCompany ? <Building2 size={15} /> : <User size={15} />}
                 </div>
                 <div className="srm-driver-details">
                   <span className="srm-driver-name">
                     {d.fullName ||
-                      t("dispatchModal.waitingDriver", "Driver")}
+                      (isCompany
+                        ? t("orders.waitingCompany", "Company Proposal")
+                        : t("dispatchModal.waitingDriver", "Driver"))}
                   </span>
                   <div className="srm-driver-submeta">
                     {d.phoneNumber && (
@@ -88,7 +94,10 @@ export function ShipperDriverRequestsList({
                     )}
                     {Boolean(offerCostValue) && (
                       <span className="srm-driver-offer-badge">
-                        {t("orders.driverOfferCost", "Driver Offer")}:{" "}
+                        {isCompany
+                          ? t("orders.companyOfferCost", "Company Offer")
+                          : t("orders.driverOfferCost", "Driver Offer")}
+                        :{" "}
                         <strong>
                           {Number(offerCostValue).toLocaleString()} ETB
                         </strong>

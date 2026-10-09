@@ -12,11 +12,11 @@ export function ShipperRequestOverview({ request }: ShipperRequestOverviewProps)
   const { t } = useTranslation();
   const cost = toNumber(request.shippingCost);
   const quintal = toNumber(request.shippableItemQtyInQuintal);
-  const mode = (request.requestMode || "")
-    .toLowerCase()
-    .includes("group")
-    ? t("orders.modeGroup", "Group")
-    : t("orders.modeIndividual", "Individual");
+  const rawMode = (request.requestMode || "").toLowerCase();
+  const mode =
+    rawMode.includes("group") || rawMode.includes("company")
+      ? t("orders.modeGroup", "Group")
+      : t("orders.modeIndividual", "Individual");
   const statusLabel = formatJourneyStatusLabel(request.journeyStatusId);
 
   return (

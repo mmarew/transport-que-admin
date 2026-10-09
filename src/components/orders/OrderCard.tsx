@@ -1,4 +1,3 @@
-import React from "react";
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, OrderBatchGroup } from "./OrdersTypes";
@@ -63,19 +62,9 @@ export function OrderCard({
 
   const hasConnectedJourney = group.statusSummary?.isConnected;
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Only toggle if user didn't click inside interactive elements (buttons, inputs)
-    const target = e.target as HTMLElement;
-    if (target.closest("button") || target.closest("a")) return;
-    if (isExpandable && onToggleExpand) {
-      onToggleExpand(group.batchKey);
-    }
-  };
-
   return (
     <div
       className={`order-card ${isExpanded ? "order-card--expanded" : ""}`}
-      onClick={handleCardClick}
     >
       {/* ── Top Header Row ── */}
       <div className="order-card-header">
@@ -269,7 +258,7 @@ export function OrderCard({
           </div>
 
           <div className="order-card-suborders-list">
-            {group.orders.map((childOrder, childIdx) => {
+            {group.orders.map((childOrder) => {
               const childJourney = getConnectedJourneyStatus(childOrder);
               const batchNum =
                 group.batchId ||

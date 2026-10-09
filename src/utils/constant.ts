@@ -51,6 +51,7 @@ const appAPIs = {
     // Accept a driver's bid. Keyed on the bid's companyBidRequestUniqueId;
     // body is { bidStatus } (e.g. "selected").
     updateCompanyBidStatusAPI: "/company/bids/:companyBidRequestUniqueId/status",
+    companyBidsAPI: "/company/bids",
 
     // ── Shipper requests / offers ─────────────────────────────────────────
     createOrderAPI: "/shipperRequest/createRequest",

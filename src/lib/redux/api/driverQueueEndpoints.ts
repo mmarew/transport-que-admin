@@ -15,6 +15,9 @@ import type {
   GetEntryHistoryResponse,
   GetBidsForOrderArgs,
   GetBidsForOrderResponse,
+  GetCompanyBidsArgs,
+  GetCompanyBidsResponse,
+  CompanyBidItem,
   ApproveBiddingArgs,
   ApproveBiddingResponse,
 } from "./types";
@@ -28,6 +31,8 @@ export const {
   useRemoveEntryMutation,
   useGetEntryHistoryQuery,
   useGetBidsForOrderQuery,
+  useGetCompanyBidsQuery,
+  useLazyGetCompanyBidsQuery,
   useApproveBiddingMutation,
 } = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -99,28 +104,34 @@ export const {
         const journeyDecisionUniqueId = normalizeId(args.journeyDecisionUniqueId);
 
         if (companyBidRequestUniqueId) {
+          const resolvedBidStatus =
+            args.bidStatus && args.bidStatus !== "selected" && args.bidStatus !== "accepted"
+              ? args.bidStatus
+              : "accepted_by_shipper";
+
           const res = await baseQuery({
             url: appAPIs.updateCompanyBidStatusAPI.replace(
               ":companyBidRequestUniqueId",
               companyBidRequestUniqueId,
             ),
-            method: "PUT",
+            method: "PATCH",
             body: {
-              bidStatus: args.bidStatus || "selected",
+              bidStatus: resolvedBidStatus,
             },
           });
 
           if (!res.error) {
             return {
               data: (res.data as AcceptDriverRequestResponse) || {
-                message: "Driver offer accepted successfully",
+                message: "Company request accepted successfully",
               },
             };
           }
 
+          const status = (res.error as any)?.status;
+
           // If the bid endpoint fails with 404 or 400 (e.g. not a company bid table entry)
           // and we have driver offer ids with journeyDecisionUniqueId, fall back to acceptDriverOfferAPI!
-          const status = (res.error as any)?.status;
           const canFallback = Boolean(
             shipperRequestUniqueId &&
             driverRequestUniqueId &&
@@ -188,8 +199,8 @@ export const {
         });
 
         if (res.error) {
-          // If 404 (order has no bids or not on the bidding board), gracefully return empty list
-          if (res.error.status === 404) {
+          // If 404 or 400 (order has no bids or not on the bidding board), gracefully return empty list
+          if (res.error.status === 404 || res.error.status === 400) {
             return {
               data: {
                 message: "No bids found",
@@ -205,6 +216,103 @@ export const {
       providesTags: (_r, _e, { shipperRequestUniqueId }) => [
         { type: "DriverBids", id: shipperRequestUniqueId },
       ],
+    }),
+
+    /**
+     * Bids submitted by transport companies for batch orders.
+     * Backed by GET /api/company/bids.
+     */
+    getCompanyBids: builder.query<GetCompanyBidsResponse, GetCompanyBidsArgs>({
+      queryFn: async (params, _queryApi, _extraOptions, baseQuery) => {
+        const res = await baseQuery({
+          url: appAPIs.companyBidsAPI,
+          params: {
+            limit: 100,
+            ...params,
+          },
+        });
+        if (res.error) {
+          // Gracefully return empty array on 404/400 (e.g. no company bids submitted yet)
+          const status = (res.error as any)?.status;
+          if (status === 404 || status === 400) {
+            return {
+              data: {
+                message: "No company bids found",
+                data: [],
+              } as GetCompanyBidsResponse,
+            };
+          }
+          return { error: res.error };
+        }
+        const raw = (res.data ?? {}) as any;
+        const rawList: any[] =
+          (Array.isArray(raw) ? raw : null) ||
+          (Array.isArray(raw?.data) ? raw.data : null) ||
+          (Array.isArray(raw?.rows) ? raw.rows : null) ||
+          (Array.isArray(raw?.items) ? raw.items : null) ||
+          [];
+
+        const normalized: CompanyBidItem[] = rawList.map((item: any) => {
+          const offer =
+            (Array.isArray(item.offers) && item.offers.length > 0 ? item.offers[0] : null) ||
+            item.offer ||
+            item.companyBidRequest ||
+            item.companyBid ||
+            item;
+
+          const bidId =
+            offer.companyBidRequestUniqueId ||
+            offer.bidUniqueId ||
+            offer.uniqueId ||
+            item.companyBidRequestUniqueId ||
+            item.bidUniqueId ||
+            item.uniqueId ||
+            item.id ||
+            "";
+
+          const batchObj =
+            item.shipperRequestBatch ||
+            item.batch ||
+            item.shipperRequest ||
+            offer.shipperRequestBatch ||
+            offer.batch ||
+            {};
+
+          return {
+            companyBidRequestUniqueId: String(bidId),
+            shipperRequestBatchId:
+              item.shipperRequestBatchId ||
+              batchObj.shipperRequestBatchId ||
+              item.batchUniqueId ||
+              batchObj.batchUniqueId ||
+              (item.batchId != null ? String(item.batchId) : null),
+            shipperRequestBatchUniqueId:
+              item.shipperRequestBatchUniqueId ||
+              batchObj.shipperRequestBatchUniqueId ||
+              item.batchUniqueId ||
+              batchObj.batchUniqueId ||
+              null,
+            batchId: item.batchId ?? batchObj.batchId ?? null,
+            companyUniqueId: item.companyUniqueId ?? offer.companyUniqueId ?? null,
+            companyName: item.companyName ?? offer.companyName ?? null,
+            proposedCostPerVehicle:
+              offer.proposedCostPerVehicle ?? offer.costPerVehicle ?? item.proposedCostPerVehicle ?? null,
+            proposedTotalCost: offer.proposedTotalCost ?? item.proposedTotalCost ?? null,
+            bidStatus: offer.bidStatus || item.bidStatus || "submitted",
+            journeyStatusId: item.journeyStatusId ?? offer.journeyStatusId ?? 1,
+            vehicleTypeName: item.vehicleTypeName ?? offer.vehicleTypeName ?? null,
+            companyPhone: item.companyPhone ?? offer.companyPhone ?? item.phoneNumber ?? offer.phoneNumber ?? null,
+          };
+        });
+
+        return {
+          data: {
+            message: "Success",
+            data: normalized,
+          },
+        };
+      },
+      providesTags: ["DriverBids"],
     }),
 
     /**

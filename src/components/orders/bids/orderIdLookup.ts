@@ -85,4 +85,56 @@ export const findFirstValidId = (
   return findUUIDIn(keyOrKeys, ...sources) || findIdIn(keyOrKeys, ...sources);
 };
 
+/**
+ * Extracts any company organization UUIDs from sources (targetCompanyUniqueId, companyUniqueId).
+ * These must NEVER be treated as order UUIDs or bid UUIDs.
+ */
+export const extractCompanyUUIDs = (...sources: unknown[]): string[] => {
+  const compKeys = [
+    "targetCompanyUniqueId",
+    "target_company_unique_id",
+    "companyUniqueId",
+    "company_unique_id",
+  ];
+  const results: string[] = [];
+  for (const source of sources) {
+    const record = asRecord(source);
+    for (const k of compKeys) {
+      const uuid = extractUUID(record[k]);
+      if (uuid && !results.includes(uuid)) results.push(uuid);
+    }
+    const targetComp = asRecord(record.targetCompany);
+    for (const k of ["uniqueId", "companyUniqueId", "id"]) {
+      const uuid = extractUUID(targetComp[k]);
+      if (uuid && !results.includes(uuid)) results.push(uuid);
+    }
+  }
+  return results;
+};
+
+/**
+ * Reads candidate key(s) from sources and returns the first UUID that is NOT in the exclude list.
+ */
+export const findUUIDInExcluding = (
+  keyOrKeys: string | string[],
+  excludeList: Array<string | undefined | null>,
+  ...sources: unknown[]
+): string | undefined => {
+  const excludeSet = new Set(
+    excludeList
+      .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+      .map((id) => id.trim().toLowerCase()),
+  );
+  const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
+  for (const source of sources) {
+    const record = asRecord(source);
+    for (const key of keys) {
+      const value = record[key];
+      const uuid = extractUUID(value);
+      if (uuid && !excludeSet.has(uuid.toLowerCase())) return uuid;
+    }
+  }
+  return undefined;
+};
+
 export { isUUID };

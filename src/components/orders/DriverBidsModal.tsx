@@ -2,7 +2,12 @@ import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { extractJourneyStatusId } from "../../utils/journeyStatus";
-import { asRecord, findUUIDIn, extractUUID } from "./bids/orderIdLookup";
+import {
+  asRecord,
+  extractUUID,
+  extractCompanyUUIDs,
+  findUUIDInExcluding,
+} from "./bids/orderIdLookup";
 import type { OrderDisplayItem, ShipperRequestDriverInfo } from "./OrdersTypes";
 import { Modal } from "../ui/Modal";
 import { OrderSummaryCard } from "./bids/OrderSummaryCard";
@@ -12,7 +17,7 @@ import { BidRow } from "./bids/BidRow";
 import { useDriverBidsFilter } from "./bids/useDriverBidsFilter";
 import { useAcceptDriverBid } from "./bids/useAcceptDriverBid";
 import { mapDriverBidsToRows } from "./bids/mapDriverBids";
-import { useGetBidsForOrderQuery } from "@/lib/redux/api";
+import { useGetBidsForOrderQuery, useGetCompanyBidsQuery } from "@/lib/redux/api";
 import "./DriverBidsModal.css";
 
 interface DriverBidsModalProps {
@@ -51,32 +56,136 @@ export function DriverBidsModal({
     String((order.rawItem as any)?.requestMode || "").toLowerCase().includes("company") ||
     String((order.rawItem as any)?.shipperRequest?.requestMode || "").toLowerCase().includes("company");
 
-  // The authoritative list of who actually bid. Before this the modal was
-  // handed `order.driverRequests` — the shipper-request payload — which is not
-  // the board: it can include drivers who never placed a bid and omit bids the
-  // board has recorded, so the console silently disagreed with the auction.
-  const shipperRequestUniqueId =
-    findUUIDIn(
-      [
-        "shipperRequestUniqueId",
-        "shipper_request_unique_id",
-        "shipperRequestBatchUniqueId",
-        "batchUniqueId",
-        "batch_unique_id",
-        "uniqueId",
-        "id",
-      ],
-      order,
-      order.rawItem,
-      asRecord(order.rawItem).shipperRequest,
-    ) ||
-    extractUUID(order.batchUniqueId) ||
-    extractUUID(order.id);
+  const targetCompanyUUIDs = useMemo(
+    () => extractCompanyUUIDs(order, order.rawItem, asRecord(order.rawItem).shipperRequest),
+    [order],
+  );
 
+  const isCompanyTargetBatch =
+    isCompany ||
+    targetCompanyUUIDs.length > 0 ||
+    Boolean(order.targetCompanyUniqueId) ||
+    Boolean((order.rawItem as any)?.targetCompanyUniqueId);
+
+  // The authoritative list of who actually bid. Exclude company UUIDs so we never query the driver-bid endpoint with a company UUID.
+  const shipperRequestUniqueId = useMemo(() => {
+    return (
+      findUUIDInExcluding(
+        [
+          "shipperRequestUniqueId",
+          "shipper_request_unique_id",
+          "shipperRequestBatchUniqueId",
+          "batchUniqueId",
+          "batch_unique_id",
+          "uniqueId",
+          "id",
+        ],
+        targetCompanyUUIDs,
+        order,
+        order.rawItem,
+        asRecord(order.rawItem).shipperRequest,
+      ) ||
+      (order.batchUniqueId && !targetCompanyUUIDs.includes(order.batchUniqueId)
+        ? extractUUID(order.batchUniqueId)
+        : undefined) ||
+      (order.id && !targetCompanyUUIDs.includes(order.id)
+        ? extractUUID(order.id)
+        : undefined)
+    );
+  }, [order, targetCompanyUUIDs]);
+
+  // Individual auction query: only run if there is a shipperRequestUniqueId AND it is NOT a company batch
   const { data: bidsData } = useGetBidsForOrderQuery(
     { shipperRequestUniqueId: shipperRequestUniqueId ?? "" },
-    { skip: !shipperRequestUniqueId || isCompany },
+    { skip: !shipperRequestUniqueId || isCompanyTargetBatch },
   );
+
+  const targetCompanyId =
+    targetCompanyUUIDs[0] ||
+    (order.rawItem as any)?.targetCompanyUniqueId ||
+    (order.rawItem as any)?.targetCompany?.uniqueId ||
+    undefined;
+
+  const batchUniqueId =
+    (order.batchUniqueId && !targetCompanyUUIDs.includes(order.batchUniqueId)
+      ? extractUUID(order.batchUniqueId)
+      : undefined) ||
+    (order.rawItem as any)?.batchUniqueId ||
+    (order.rawItem as any)?.shipperRequestBatchUniqueId ||
+    (order.rawItem as any)?.shipperRequestBatchId ||
+    undefined;
+
+  // Company bids query: fetch bids submitted via POST /api/company/bids
+  const shouldFetchCompanyBids = Boolean(isCompanyTargetBatch || targetCompanyId);
+  const { data: companyBidsData } = useGetCompanyBidsQuery(
+    {
+      companyUniqueId: targetCompanyId,
+      target: "submitted",
+    },
+    { skip: !shouldFetchCompanyBids },
+  );
+
+  const realCompanyBids = useMemo<ShipperRequestDriverInfo[]>(() => {
+    const rawList = Array.isArray(companyBidsData?.data) ? companyBidsData.data : [];
+    if (rawList.length === 0) return [];
+
+    const orderNum = String(order.id || "").replace(/\D/g, "");
+    const matching = rawList.filter((b) => {
+      // 1. Numeric batchId match (e.g. Order #4 matches batchId 4)
+      if (order.batchId != null && b.batchId != null && String(order.batchId) === String(b.batchId)) return true;
+      if (orderNum && b.batchId != null && String(b.batchId) === orderNum) return true;
+      // 2. String/UUID batchId match
+      if (batchUniqueId && (b.shipperRequestBatchId === batchUniqueId || b.shipperRequestBatchUniqueId === batchUniqueId)) return true;
+      if (order.batchUniqueId && (b.shipperRequestBatchId === order.batchUniqueId || b.shipperRequestBatchUniqueId === order.batchUniqueId)) return true;
+      // 3. If there is only one company target and batch ID is not specified on bid, accept it
+      if (!b.batchId && !b.shipperRequestBatchId) return true;
+      return false;
+    });
+
+    const bidsToMap = matching.length > 0 ? matching : rawList;
+
+    return bidsToMap.map((b, idx) => {
+      const isAccepted =
+        b.bidStatus === "selected" ||
+        b.bidStatus === "accepted" ||
+        b.bidStatus === "accepted_by_shipper" ||
+        b.journeyStatusId === 4;
+
+      const bidUid = b.companyBidRequestUniqueId;
+
+      return {
+        driverRequestId: idx + 1,
+        driverRequestUniqueId: bidUid,
+        companyBidRequestUniqueId: bidUid,
+        driverBidUniqueId: bidUid,
+        isCompany: true,
+        userUniqueId: b.companyUniqueId || targetCompanyId || `company-${idx + 1}`,
+        fullName:
+          b.companyName ||
+          order.targetCompanyName ||
+          (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal"),
+        phoneNumber:
+          (b.companyPhone as string) ||
+          (b.phoneNumber as string) ||
+          order.targetCompanyPhone ||
+          undefined,
+        journeyStatusId: isAccepted ? 4 : (b.journeyStatusId ?? 1),
+        journeyStatus: isAccepted ? "accepted" : (b.bidStatus || "submitted"),
+        bidStatus: isAccepted ? "selected" : (b.bidStatus || "submitted"),
+        offerCost:
+          Number(b.proposedTotalCost ?? b.proposedCostPerVehicle) ||
+          (order.type === "Group" && order.batchTotalCost ? order.batchTotalCost : order.cost),
+        proposedCost:
+          Number(b.proposedTotalCost ?? b.proposedCostPerVehicle) ||
+          (order.type === "Group" && order.batchTotalCost ? order.batchTotalCost : order.cost),
+        bidAmount:
+          Number(b.proposedTotalCost ?? b.proposedCostPerVehicle) ||
+          (order.type === "Group" && order.batchTotalCost ? order.batchTotalCost : order.cost),
+        vehicleTypeName: b.vehicleTypeName || order.vehicleType,
+        rawDriver: b,
+      };
+    });
+  }, [companyBidsData, batchUniqueId, targetCompanyId, order, t]);
 
   const realBids = useMemo(
     () => {
@@ -111,6 +220,10 @@ export function DriverBidsModal({
   };
 
   const driverRequests: ShipperRequestDriverInfo[] = useMemo(() => {
+    if (realCompanyBids.length > 0) {
+      return realCompanyBids;
+    }
+
     let rawFallbackDrivers =
       initialRequests && initialRequests.length > 0
         ? initialRequests
@@ -141,12 +254,16 @@ export function DriverBidsModal({
 
       if (bidsArray) {
         rawFallbackDrivers = bidsArray.map((b: any, bIdx: number) => {
-          const bidKey =
+          const rawBidKey =
             b.companyBidRequestUniqueId ||
             b.driverBidUniqueId ||
             b.bidUniqueId ||
-            b.id ||
-            `bid-${bIdx + 1}`;
+            undefined;
+          const bidKeyClean =
+            rawBidKey && !targetCompanyUUIDs.includes(rawBidKey)
+              ? rawBidKey
+              : undefined;
+          const bidKey = bidKeyClean || `bid-${bIdx + 1}`;
           const isAccepted =
             b.bidStatus === "selected" ||
             b.bidStatus === "accepted" ||
@@ -156,8 +273,9 @@ export function DriverBidsModal({
           return {
             driverRequestId: b.driverRequestId ?? bIdx + 1,
             driverRequestUniqueId: bidKey,
-            companyBidRequestUniqueId: String(bidKey),
-            driverBidUniqueId: String(bidKey),
+            companyBidRequestUniqueId: bidKeyClean,
+            driverBidUniqueId: bidKeyClean,
+            isCompany: true,
             userUniqueId: b.userUniqueId || b.companyUniqueId || `company-${bIdx + 1}`,
             fullName:
               b.companyName ||
@@ -198,32 +316,69 @@ export function DriverBidsModal({
             : (isAcceptedOrder ? t("orders.acceptedDriver", "Accepted Driver") : null));
 
         if (companyName) {
-          const bidKey =
+          const rawBidId =
             (asRecord(raw.acceptedOffer).companyBidRequestUniqueId as string) ||
+            (raw.companyBidRequestUniqueId as string) ||
+            (rawBatch.companyBidRequestUniqueId as string) ||
+            undefined;
+
+          const realBidIdClean =
+            rawBidId &&
+            !targetCompanyUUIDs.includes(rawBidId) &&
+            rawBidId !== raw.targetCompanyUniqueId &&
+            rawBidId !== rawBatch.targetCompanyUniqueId
+              ? rawBidId
+              : undefined;
+
+          const targetUid =
             (raw.targetCompanyUniqueId as string) ||
             (rawBatch.targetCompanyUniqueId as string) ||
-            (raw.companyBidRequestUniqueId as string) ||
+            targetCompanyId ||
             order.batchUniqueId ||
             order.shipperRequestUniqueId ||
             order.id ||
             "company-proposal";
 
+          const isSubmitted =
+            Boolean(realBidIdClean) ||
+            raw.bidStatus === "submitted" ||
+            rawBatch.bidStatus === "submitted";
+
+          const resolvedStatusId = isAcceptedOrder
+            ? (sid ?? order.journeyStatusId ?? 4)
+            : isSubmitted
+              ? 1
+              : 2;
+          const resolvedJourneyStatus = isAcceptedOrder
+            ? "accepted"
+            : isSubmitted
+              ? "submitted"
+              : "requested";
+          const resolvedBidStatus = isAcceptedOrder
+            ? "selected"
+            : isSubmitted
+              ? "submitted"
+              : "requested";
+
           rawFallbackDrivers = [
             {
               driverRequestId: 1,
-              driverRequestUniqueId: bidKey,
-              companyBidRequestUniqueId: String(bidKey),
-              driverBidUniqueId: String(bidKey),
+              driverRequestUniqueId: realBidIdClean || `company-proposal-${order.id || 1}`,
+              companyBidRequestUniqueId: realBidIdClean || undefined,
+              driverBidUniqueId: realBidIdClean || undefined,
+              isCompany: true,
+              userUniqueId: targetUid,
               fullName: companyName,
               phoneNumber:
                 (asRecord(raw.acceptedOffer).phoneNumber as string) ||
                 (asRecord(raw.acceptedOffer).phone as string) ||
                 (raw.targetCompanyPhone as string) ||
                 (rawBatch.targetCompanyPhone as string) ||
+                order.targetCompanyPhone ||
                 undefined,
-              journeyStatusId: isAcceptedOrder ? (sid ?? order.journeyStatusId ?? 4) : 1,
-              journeyStatus: isAcceptedOrder ? "accepted" : "submitted",
-              bidStatus: isAcceptedOrder ? "selected" : "submitted",
+              journeyStatusId: resolvedStatusId,
+              journeyStatus: resolvedJourneyStatus,
+              bidStatus: resolvedBidStatus,
               offerCost:
                 Number(
                   asRecord(raw.acceptedOffer).offerCost ??
@@ -296,7 +451,7 @@ export function DriverBidsModal({
         loadingOrderNumber: match.loadingOrderNumber ?? (match as any).entry?.loadingOrderNumber ?? (bid as any).loadingOrderNumber ?? null,
       };
     });
-  }, [realBids, initialRequests, order, isCompany, t]);
+  }, [realCompanyBids, realBids, initialRequests, order, isCompany, targetCompanyUUIDs, targetCompanyId, t]);
 
   const requiredVehicles = totalVehicles ?? order.totalVehicles;
 

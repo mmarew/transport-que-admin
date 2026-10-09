@@ -5,7 +5,7 @@ import { getConnectedJourneyStatus } from "../OrdersTypes";
 
 export interface BatchSubCardProps {
   childOrder: OrderDisplayItem;
-  childIdx: number;
+  childIdx?: number;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
   onViewRequests?: (order: OrderDisplayItem) => void;
@@ -16,7 +16,6 @@ export interface BatchSubCardProps {
  */
 export function BatchSubCard({
   childOrder,
-  childIdx,
   onEdit,
   onDelete,
   onViewRequests,

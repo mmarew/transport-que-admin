@@ -20,6 +20,8 @@ export interface ShipperRequestDriverInfo {
    *  (GET /api/queue/bidding/order/:id/bids) rather than the shipper payload. */
   driverBidUniqueId?: string;
   driverBidId?: number;
+  bidUniqueId?: string;
+  isCompany?: boolean;
   /** Accept key for PUT /api/company/bids/:companyBidRequestUniqueId/status.
    *  Backend issues this id per bid; the board row carries it alongside the
    *  legacy driverBidUniqueId alias. */
@@ -99,6 +101,11 @@ export function ShipperRequestsModal({
       String(driver.driverRequestId || driver.driverRequestUniqueId || "");
     if (!driverKey) return;
 
+    const isCompany =
+      Boolean(driver.isCompany || rawDriver.isCompany) ||
+      String(request?.requestMode || "").toLowerCase().includes("company") ||
+      String(request?.requestMode || "").toLowerCase().includes("group");
+
     setAcceptingDriverId(driverKey);
     try {
       await acceptDriverMutation({
@@ -115,10 +122,17 @@ export function ShipperRequestsModal({
 
       setAcceptedDriverIds((prev) => new Set([...prev, driverKey]));
       toast.success(
-        t("orders.driverRequestAccepted", "Driver request accepted successfully")
+        isCompany
+          ? t("orders.companyRequestAccepted", "Company request accepted successfully")
+          : t("orders.driverRequestAccepted", "Driver request accepted successfully")
       );
     } catch (err: any) {
-      console.error("Failed to accept driver request:", err);
+      console.error(
+        isCompany
+          ? "Failed to accept company request:"
+          : "Failed to accept driver request:",
+        err
+      );
       toast.error(parseError(err));
     } finally {
       setAcceptingDriverId(null);
@@ -170,6 +184,10 @@ export function ShipperRequestsModal({
                 acceptingDriverId={acceptingDriverId}
                 acceptedDriverIds={acceptedDriverIds}
                 onAcceptDriver={handleAcceptDriver}
+                isCompany={
+                  String(request.requestMode || "").toLowerCase().includes("company") ||
+                  String(request.requestMode || "").toLowerCase().includes("group")
+                }
               />
             )}
           </div>

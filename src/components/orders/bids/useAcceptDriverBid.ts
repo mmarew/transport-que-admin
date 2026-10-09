@@ -4,7 +4,16 @@ import { toast } from "sonner";
 import { useAcceptDriverRequestMutation } from "@/lib/redux/api";
 import parseError from "@/utils/parseError";
 import type { OrderDisplayItem, ShipperRequestDriverInfo } from "../OrdersTypes";
-import { asRecord, findUUIDIn, findIdIn, findFirstValidId, isUUID, extractUUID } from "./orderIdLookup";
+import {
+  asRecord,
+  findUUIDIn,
+  findIdIn,
+  findFirstValidId,
+  isUUID,
+  extractUUID,
+  extractCompanyUUIDs,
+  findUUIDInExcluding,
+} from "./orderIdLookup";
 
 const BID_ID_KEYS = [
   "companyBidRequestUniqueId",
@@ -66,40 +75,47 @@ export function useAcceptDriverBid(
   const handleAcceptDriver = async (driver: ShipperRequestDriverInfo) => {
     const rawDriver = asRecord(driver);
 
+    // 0. Extract all company UUIDs to avoid treating them as bids or order UUIDs
+    const companyUUIDs = extractCompanyUUIDs(
+      order,
+      order.rawItem,
+      asRecord(order.rawItem).shipperRequest,
+      driver,
+      rawDriver,
+    );
+
     // 1. Resolve bid id (preferred for auction / company bids)
     const companyBidRequestUniqueId =
-      findUUIDIn(
+      findUUIDInExcluding(
         BID_ID_KEYS,
-        driver,
-        rawDriver,
-        asRecord(rawDriver.companyBidRequest),
-        asRecord(rawDriver.companyBid),
-      ) ||
-      findIdIn(
-        BID_ID_KEYS,
+        companyUUIDs,
         driver,
         rawDriver,
         asRecord(rawDriver.companyBidRequest),
         asRecord(rawDriver.companyBid),
       );
 
-    // 2. Resolve shipper request id (clean 36-char GUID without client suffixes)
+    // 2. Resolve shipper request id (clean 36-char GUID without client suffixes and excluding company UUIDs)
     const shipperRequestUniqueId =
-      findUUIDIn(
+      findUUIDInExcluding(
         SHIPPER_REQ_ID_KEYS,
+        companyUUIDs,
         order,
         order.rawItem,
         asRecord(order.rawItem).shipperRequest,
         driver,
         rawDriver,
       ) ||
-      extractUUID(order.batchUniqueId) ||
-      extractUUID(order.id) ||
-      (order.id && isUUID(order.id) ? order.id : undefined);
+      (order.batchUniqueId && !companyUUIDs.includes(order.batchUniqueId)
+        ? extractUUID(order.batchUniqueId)
+        : undefined) ||
+      (order.id && !companyUUIDs.includes(order.id)
+        ? extractUUID(order.id)
+        : undefined);
 
     // 3. Resolve driver request id
     const driverRequestUniqueId =
-      findUUIDIn(DRIVER_REQ_ID_KEYS, driver, rawDriver) ||
+      findUUIDInExcluding(DRIVER_REQ_ID_KEYS, companyUUIDs, driver, rawDriver) ||
       findIdIn(DRIVER_REQ_ID_KEYS, driver, rawDriver) ||
       driverRequestUniqueIdFallback(driver, rawDriver) ||
       undefined;
@@ -129,9 +145,57 @@ export function useAcceptDriverBid(
       findFirstValidId("queueOrganizationUniqueId", order, order.rawItem, asRecord(order.rawItem).shipperRequest, driver, rawDriver) ||
       "";
 
+    if (
+      driver.bidStatus === "requested" ||
+      driver.journeyStatus === "requested" ||
+      driver.journeyStatusId === 2
+    ) {
+      toast.error(
+        t(
+          "orders.companyAwaitingResponse",
+          "This company has been requested but has not submitted a bid or accepted yet.",
+        ),
+      );
+      return;
+    }
+
+    const rawEffectiveBidId =
+      companyBidRequestUniqueId ||
+      (driver.companyBidRequestUniqueId && !companyUUIDs.includes(driver.companyBidRequestUniqueId)
+        ? extractUUID(driver.companyBidRequestUniqueId)
+        : undefined) ||
+      (driver.driverBidUniqueId && !companyUUIDs.includes(driver.driverBidUniqueId)
+        ? extractUUID(driver.driverBidUniqueId)
+        : undefined) ||
+      (driver.bidUniqueId && !companyUUIDs.includes(driver.bidUniqueId)
+        ? extractUUID(driver.bidUniqueId)
+        : undefined);
+
+    const effectiveBidId =
+      rawEffectiveBidId && !companyUUIDs.includes(rawEffectiveBidId)
+        ? rawEffectiveBidId
+        : undefined;
+
+    const isCompanyOrder =
+      order.type === "Group" ||
+      Boolean(order.targetCompanyUniqueId || asRecord(order.rawItem).targetCompanyUniqueId) ||
+      Boolean(companyUUIDs.length > 0) ||
+      Boolean(driver.isCompany || rawDriver.isCompany);
+
+    // If this is a company order, it MUST have a real bid id from the company
+    if (isCompanyOrder && !effectiveBidId) {
+      toast.error(
+        t(
+          "orders.bidCannotBeAccepted",
+          "This bid cannot be accepted: it is missing the bid id. Reload the bids and try again.",
+        ),
+      );
+      return;
+    }
+
     // Validate: must have either a bid id (for auction/company bids)
     // or valid driver request IDs including journeyDecisionUniqueId (for direct shipper offers)
-    const hasBidId = Boolean(companyBidRequestUniqueId);
+    const hasBidId = Boolean(effectiveBidId);
     const hasDriverRequest = Boolean(
       isUUID(shipperRequestUniqueId) &&
       isUUID(driverRequestUniqueId) &&
@@ -162,8 +226,8 @@ export function useAcceptDriverBid(
     try {
       await acceptDriverMutation({
         queueOrganizationUniqueId: resolvedQueueOrgId,
-        companyBidRequestUniqueId,
-        bidStatus: "selected",
+        companyBidRequestUniqueId: effectiveBidId,
+        bidStatus: "accepted_by_shipper",
         shipperRequestUniqueId,
         driverRequestUniqueId,
         driverRequestId: driver.driverRequestId ?? (rawDriver.driverRequestId as any),
@@ -176,7 +240,9 @@ export function useAcceptDriverBid(
 
       setAcceptedDriverIds((prev) => new Set([...prev, driverKey]));
       toast.success(
-        t("orders.driverRequestAccepted", "Driver request accepted successfully"),
+        isCompanyOrder
+          ? t("orders.companyRequestAccepted", "Company request accepted successfully")
+          : t("orders.driverRequestAccepted", "Driver request accepted successfully"),
       );
       onOrderUpdated?.();
     } catch (err: unknown) {
