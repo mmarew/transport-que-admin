@@ -21,8 +21,6 @@ import { OrdersModals } from "../../components/orders/OrdersModals";
 import type { OrderDisplayItem } from "../../components/orders/OrdersTypes";
 import {
   extractJourneyStatusId,
-  ONGOING_JOURNEY_STATUS_IDS,
-  COMPLETED_JOURNEY_STATUS_IDS,
 } from "../../utils/journeyStatus";
 import { mapBackendOrdersToDisplayItems } from "./ordersDataMapper";
 import "./OrdersPage.css";
@@ -71,20 +69,17 @@ export function OrdersPage() {
     }
   }, [tabParam]);
 
-  const currentJourneyStatusId =
-    activeTab === "complete" ? COMPLETED_JOURNEY_STATUS_IDS : ONGOING_JOURNEY_STATUS_IDS;
 
   const shipperRequestsArgs = useMemo(
     () => ({
       queueOrganizationUniqueId: orgUniqueId,
       target: "all" as const,
       limit: 100,
-      journeyStatusId: currentJourneyStatusId,
       // Batch-scoped: ask the backend for this batch's rows only instead of
       // pulling every request for the org.
       ...(targetBatchId ? { shipperRequestBatchUniqueId: targetBatchId } : {}),
     }),
-    [orgUniqueId, targetBatchId, currentJourneyStatusId]
+    [orgUniqueId, targetBatchId]
   );
 
   const shipperBatchesArgs = useMemo(
@@ -106,7 +101,7 @@ export function OrdersPage() {
     isLoading: isLoadingOrders,
     refetch: refetchOrders,
   } = useGetShipperRequestsQuery(shipperRequestsArgs, {
-    skip: !orgUniqueId || !targetBatchId,
+    skip: !orgUniqueId,
   });
 
   const {
@@ -176,7 +171,6 @@ export function OrdersPage() {
             target: "all" as const,
             limit: 100,
             shipperRequestBatchUniqueId: batchUid,
-            journeyStatusId: currentJourneyStatusId,
           },
           { subscribe: false }
         )
@@ -203,7 +197,7 @@ export function OrdersPage() {
           });
         });
     },
-    [orgUniqueId, currentJourneyStatusId, dispatch, batchDetailsCache]
+    [orgUniqueId, dispatch, batchDetailsCache]
   );
 
   // Toggle card expansion: expands the clicked card, collapses previous,

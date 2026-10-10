@@ -343,5 +343,155 @@ describe("ordersDataMapper", () => {
       expect(b.bidStatus).toBe("submitted");
     }
   });
+
+  it("accurately maps batch #7 payload with acceptedOffer without inventing fake queue numbers or company phone", () => {
+    const rawBatch7 = {
+      batchId: 7,
+      batchUniqueId: "d4833b0c-e012-4adf-898d-3ef12461c8c2",
+      shipperUserUniqueId: "c66e63f6-777e-434c-8249-236c5cffc9f2",
+      vehicleTypeUniqueId: "6f5d559f-8a4d-4106-83da-eb5f42751200",
+      totalVehicles: 1,
+      requestMode: "company_target",
+      targetCompanyUniqueId: null,
+      queueOrganizationUniqueId: "c4ceb8ba-1169-496e-8e83-90b9fe85b228",
+      originLatitude: "11.08135830",
+      originLongitude: "39.74087320",
+      originPlace: "Kombolcha, South Wollo, Amhara Region, Ethiopia",
+      destinationLatitude: "9.02200000",
+      destinationLongitude: "38.74600000",
+      destinationPlace: "Addis Ababa, Addis Ababa, Ethiopia",
+      shippableItemName: "cement",
+      shippableItemQtyInQuintal: "200.00",
+      shippingDate: "2026-10-09T00:00:00.000Z",
+      deliveryDate: "2026-10-09T00:00:00.000Z",
+      shippingCost: "1000.00",
+      isPodRequired: 1,
+      batchCreatedBy: "806209fa-88d0-4df1-a9ef-619addf24f00",
+      batchCreatedByRoleId: 11,
+      journeyStatusId: 4,
+      batchCreatedAt: "2026-10-09T12:51:26.000Z",
+      batchUpdatedAt: "2026-10-09T12:55:26.000Z",
+      batchDeletedAt: null,
+      shipperName: null,
+      shipperPhone: "+251929257890",
+      vehicleTypeName: "20ft Container Truck (251–300 Quintal)",
+      journeyStatusName: "acceptedByShipper",
+      targetCompanyName: null,
+      bidSummary: {
+        total: 1,
+        submitted: 0,
+        accepted: 1,
+        rejected: 0,
+        cancelledByCompany: 0,
+        expired: 0,
+        joinedCompanyCount: 1,
+      },
+      acceptedOffer: {
+        companyUniqueId: "6d63e8c4-dad6-40f5-a387-48e72c9cfcc8",
+        companyName: "test",
+        numberOfVehiclesOffered: 1,
+        proposedCostPerVehicle: "1000.00",
+        proposedTotalCost: "1000.00",
+        bidStatusUpdatedAt: "2026-10-09T12:55:26.000Z",
+      },
+    };
+
+    const items = mapBackendOrdersToDisplayItems({
+      ordersData: null,
+      batchesData: { data: [rawBatch7] },
+      deletedIds: new Set(),
+      editedOrders: {},
+      activeOrg: null,
+      t: dummyT,
+    });
+
+    expect(items).toHaveLength(1);
+    const item = items[0];
+    expect(item.displayId).toBe("#7");
+    expect(item.journeyStatusId).toBe(4);
+    // Queue & loading numbers must be null when absent from API, NOT fake #7 from batchId fallback
+    expect(item.queueNumber).toBeNull();
+    expect(item.loadingOrderNumber).toBeNull();
+
+    // Bids parsing must properly identify acceptedOffer as accepted (sid 4)
+    const bids = parseBatchBids(rawBatch7);
+    expect(bids).toHaveLength(1);
+    expect(bids[0].fullName).toBe("test");
+    expect(bids[0].journeyStatusId).toBe(4);
+    expect(bids[0].journeyStatus).toBe("accepted");
+    expect(bids[0].bidStatus).toBe("selected");
+    // Company phone must NOT mistakenly be the shipper's phone
+    expect(bids[0].phoneNumber).toBeNull();
+  });
+
+  it("correctly marks batch #7 as completed when live trip data is fetched from getShipperRequests", () => {
+    const rawBatch7 = {
+      batchId: 7,
+      batchUniqueId: "d4833b0c-e012-4adf-898d-3ef12461c8c2",
+      totalVehicles: 1,
+      requestMode: "company_target",
+      journeyStatusId: 4,
+      journeyStatusName: "acceptedByShipper",
+    };
+
+    const postmanOrdersData = {
+      data: [
+        {
+          assignmentUniqueId: "39fdbef1-0a36-4bed-95a1-5ffdc3a3f55e",
+          assignmentStatus: "completed",
+          shipperRequest: {
+            shipperRequestUniqueId: "232da5fd-c91a-4fc3-b7c8-76e2ffd8c041",
+            shipperRequestId: 16,
+            originLatitude: "11.08135830",
+            originLongitude: "39.74087320",
+            originPlace: "Kombolcha, South Wollo, Amhara Region, Ethiopia",
+            destinationLatitude: "9.02200000",
+            destinationLongitude: "38.74600000",
+            destinationPlace: "Addis Ababa, Addis Ababa, Ethiopia",
+            shippableItemName: "cement",
+            shippableItemQtyInQuintal: "200.00",
+            shippingCost: "1000.00",
+            vehicleTypeUniqueId: "6f5d559f-8a4d-4106-83da-eb5f42751200",
+            shipperRequestBatchUniqueId: "d4833b0c-e012-4adf-898d-3ef12461c8c2",
+            batchId: 7,
+            requestMode: "company_target",
+            journeyStatusId: 9,
+          },
+          driverRequests: [
+            {
+              driverRequestId: 7,
+              driverRequestUniqueId: "9ff9a7cc-5226-43fe-9f04-f17d5012ccbd",
+              vehicleUniqueId: "a93f90ad-46c4-4eca-9893-07f01e17eee7",
+              fullName: "Esmael Mohammed Hussen",
+              phoneNumber: "+251929257880",
+              journeyStatusId: 9,
+            },
+          ],
+          journey: {
+            journeyUniqueId: "7259fa33-990b-4f55-a38b-d3fbbb892bf7",
+            journeyStartedAt: "2026-10-09T13:03:51.000Z",
+            journeyCompletedAt: "2026-10-09T13:03:57.000Z",
+          },
+        },
+      ],
+    };
+
+    const items = mapBackendOrdersToDisplayItems({
+      ordersData: postmanOrdersData,
+      batchesData: { data: [rawBatch7] },
+      deletedIds: new Set(),
+      editedOrders: {},
+      activeOrg: null,
+      t: dummyT,
+    });
+
+    expect(items).toHaveLength(1);
+    const item = items[0];
+    expect(item.batchId).toBe(7);
+    expect(item.journeyStatusId).toBe(9);
+    expect(item.status).toBe("complete");
+    expect(item.driverRequests).toHaveLength(1);
+  });
 });
+
 

@@ -30,7 +30,7 @@ export function OrderCard({
 }: OrderCardProps) {
   const { t } = useTranslation();
 
-  // Accordion toggle button is present on Group / multi-truck orders (matching picture)
+  // Accordion toggle button is present on Group / multi-truck orders
   const isExpandable =
     group.type === "Group" || group.isMultiVehicle || group.orders.length > 1;
 

@@ -108,7 +108,6 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       b.phone ??
       b.driverPhoneNumber ??
       batch.targetCompanyPhone ??
-      batch.shipperPhone ??
       null;
 
     const rawBidStatus = String(b.bidStatus || b.status || "").toLowerCase();
@@ -123,7 +122,9 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
         b.bidStatus === "selected" ||
         b.bidStatus === "accepted" ||
         b.bidStatus === "accepted_by_shipper" ||
-        (b.journeyStatusId === 4 && rawBidStatus !== "submitted"));
+        (b.journeyStatusId === 4 && rawBidStatus !== "submitted") ||
+        (batch.acceptedOffer && b === batch.acceptedOffer) ||
+        (batch.journeyStatusId === 4 && rawBids.length === 1 && !isPending));
 
     const cost =
       Number(
@@ -208,7 +209,6 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       offer.phoneNumber ??
       offer.phone ??
       batch.targetCompanyPhone ??
-      batch.shipperPhone ??
       null;
     const compUserUid = offer.userUniqueId ?? batch.targetCompanyUniqueId ?? null;
     const rawBidId =
@@ -1348,8 +1348,7 @@ export function mapBackendOrdersToDisplayItems({
         (batch as any).queueNo ??
         (batch as any).queue_no ??
         (batch as any).queuePosition ??
-        batch.batchId ??
-        1;
+        null;
 
       const batchLoadingOrderNumber =
         batch.loadingOrderNumber ??
@@ -1362,8 +1361,7 @@ export function mapBackendOrdersToDisplayItems({
         (batch as any).loading_number ??
         (batch as any).loadingOrder ??
         (batch as any).loading_order ??
-        batch.batchId ??
-        1;
+        null;
 
       // Parse bids / driverRequests from batch
       let driverRequests: any[] = parseBatchBids(batch, t);
