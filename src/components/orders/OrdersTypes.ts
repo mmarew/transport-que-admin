@@ -270,6 +270,7 @@ export function hasWorkingJourney(order: OrderDisplayItem): boolean {
 export interface OrderBatchGroup {
   batchKey: string;
   batchId?: string | number | null;
+  batchUniqueId?: string | null;
   isMultiVehicle: boolean;
   totalVehicles: number;
   acceptedCount: number;
@@ -521,6 +522,7 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
     groups.push({
       batchKey: key,
       batchId,
+      batchUniqueId: first.batchUniqueId || (first as any).shipperRequestBatchUniqueId || null,
       isMultiVehicle,
       totalVehicles,
       acceptedCount,

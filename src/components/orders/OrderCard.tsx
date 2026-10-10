@@ -12,6 +12,7 @@ import {
 export interface OrderCardProps {
   group: OrderBatchGroup;
   isExpanded?: boolean;
+  isLoading?: boolean;
   onToggleExpand?: (batchKey: string) => void;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
@@ -21,6 +22,7 @@ export interface OrderCardProps {
 export function OrderCard({
   group,
   isExpanded = false,
+  isLoading = false,
   onToggleExpand,
   onEdit,
   onDelete,
@@ -64,10 +66,13 @@ export function OrderCard({
 
   return (
     <div
-      className={`order-card ${isExpanded ? "order-card--expanded" : ""}`}
+      className={`order-card ${isExpanded ? "order-card--expanded" : ""} ${isExpandable ? "order-card--expandable" : ""}`}
     >
       {/* ── Top Header Row ── */}
-      <div className="order-card-header">
+      <div
+        className={`order-card-header ${isExpandable ? "order-card-header--clickable" : ""}`}
+        onClick={isExpandable ? () => onToggleExpand?.(group.batchKey) : undefined}
+      >
         <div className="order-card-header-left">
           {/* Accordion button for Group / multi-truck orders */}
           {isExpandable ? (
@@ -177,7 +182,10 @@ export function OrderCard({
       </div>
 
       {/* ── 6 Data Boxes Grid ── */}
-      <div className="order-card-boxes">
+      <div
+        className={`order-card-boxes ${isExpandable ? "order-card-boxes--clickable" : ""}`}
+        onClick={isExpandable ? () => onToggleExpand?.(group.batchKey) : undefined}
+      >
         {/* 1. VEHICLE */}
         <div className="order-card-data-box">
           <span className="order-card-data-label">
@@ -246,7 +254,7 @@ export function OrderCard({
       </div>
 
       {/* ── Sub-Orders Accordion (for multi-vehicle batch orders) ── */}
-      {isExpanded && group.orders.length > 0 && (
+      {isExpanded && (
         <div className="order-card-suborders">
           <div className="order-card-suborders-header">
             <span className="order-card-suborders-title">
@@ -257,7 +265,13 @@ export function OrderCard({
             </span>
           </div>
 
-          <div className="order-card-suborders-list">
+          {isLoading ? (
+            <div className="order-subcard-loading">
+              <span className="order-subcard-spinner" />
+              <span>{t("orders.loadingVehicles", "Loading vehicle details...")}</span>
+            </div>
+          ) : (
+            <div className="order-card-suborders-list">
             {group.orders.map((childOrder) => {
               const childJourney = getConnectedJourneyStatus(childOrder);
               const batchNum =
@@ -357,8 +371,9 @@ export function OrderCard({
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    )}
     </div>
   );
 }

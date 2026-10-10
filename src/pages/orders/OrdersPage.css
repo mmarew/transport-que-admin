@@ -626,6 +626,39 @@
   gap: 0.25rem;
 }
 
+.order-card-header--clickable,
+.order-card-boxes--clickable {
+  cursor: pointer;
+}
+
+.order-subcard-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px dashed #cbd5e1;
+}
+
+.order-subcard-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #0284c7;
+  border-radius: 50%;
+  animation: order-card-spin 0.7s linear infinite;
+}
+
+@keyframes order-card-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Legacy table styles retained for backwards-compat */
 .orders-table-card {
   background: #ffffff;

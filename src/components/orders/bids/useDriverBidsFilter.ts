@@ -123,12 +123,24 @@ export function useDriverBidsFilter({
     return (
       acceptedDriverIds.size > 0 ||
       driverRequests.some((d) => {
+        const rawBidStatus = String(d.bidStatus || "").toLowerCase();
+        if (
+          rawBidStatus === "submitted" ||
+          rawBidStatus === "pending" ||
+          rawBidStatus === "requested"
+        ) {
+          return false;
+        }
         const sid = extractJourneyStatusId(
           d.journeyStatusId ?? d.journeyStatus ?? (d as any).status,
         );
         return (
           (typeof sid === "number" && sid >= 4 && sid <= 9) ||
-          d.journeyStatus === "acceptedByShipper"
+          sid === 14 ||
+          d.journeyStatus === "acceptedByShipper" ||
+          d.bidStatus === "selected" ||
+          d.bidStatus === "accepted" ||
+          d.bidStatus === "accepted_by_shipper"
         );
       })
     );

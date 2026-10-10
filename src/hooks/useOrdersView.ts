@@ -13,6 +13,8 @@ import {
 export interface UseOrdersViewOptions {
   orders: OrderDisplayItem[];
   phoneFilter?: string;
+  activeTab?: "ongoing" | "complete";
+  onTabChange?: (tab: "ongoing" | "complete") => void;
 }
 
 // Extract the leading numeric id from a group display id (#12, #6/5) so the
@@ -30,8 +32,11 @@ function groupIdNumber(group: OrderBatchGroup): number {
 export function useOrdersView({
   orders,
   phoneFilter = "",
+  activeTab: controlledActiveTab,
+  onTabChange,
 }: UseOrdersViewOptions) {
-  const [activeTab, setActiveTab] = useState<"ongoing" | "complete">("ongoing");
+  const [internalActiveTab, setInternalActiveTab] = useState<"ongoing" | "complete">("ongoing");
+  const activeTab = controlledActiveTab ?? internalActiveTab;
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortCol, setSortCol] = useState<SortColumn>("id");
   const [sortAsc, setSortAsc] = useState<boolean>(true);
@@ -131,7 +136,10 @@ export function useOrdersView({
   };
 
   const handleTabChange = (tab: "ongoing" | "complete") => {
-    setActiveTab(tab);
+    if (controlledActiveTab === undefined) {
+      setInternalActiveTab(tab);
+    }
+    onTabChange?.(tab);
     setCurrentPage(1);
   };
 

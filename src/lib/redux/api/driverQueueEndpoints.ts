@@ -299,7 +299,22 @@ export const {
               offer.proposedCostPerVehicle ?? offer.costPerVehicle ?? item.proposedCostPerVehicle ?? null,
             proposedTotalCost: offer.proposedTotalCost ?? item.proposedTotalCost ?? null,
             bidStatus: offer.bidStatus || item.bidStatus || "submitted",
-            journeyStatusId: item.journeyStatusId ?? offer.journeyStatusId ?? 1,
+            journeyStatusId: (() => {
+              const rawStatus = String(offer.bidStatus || item.bidStatus || "submitted").toLowerCase();
+              const isAccepted =
+                rawStatus === "selected" ||
+                rawStatus === "accepted" ||
+                rawStatus === "accepted_by_shipper" ||
+                offer.status === "accepted" ||
+                item.status === "accepted";
+              if (isAccepted) {
+                return offer.journeyStatusId ?? item.journeyStatusId ?? 4;
+              }
+              if (rawStatus === "submitted" || rawStatus === "pending" || rawStatus === "requested") {
+                return 1;
+              }
+              return offer.journeyStatusId ?? 1;
+            })(),
             vehicleTypeName: item.vehicleTypeName ?? offer.vehicleTypeName ?? null,
             companyPhone: item.companyPhone ?? offer.companyPhone ?? item.phoneNumber ?? offer.phoneNumber ?? null,
           };

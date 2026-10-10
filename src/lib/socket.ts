@@ -197,13 +197,23 @@ export function connectSocket(
             : "";
       const messageType = typeStr || (parsed as any)?.message || eventName;
 
-      // Ignore acknowledgment messages and heartbeats from triggering cache invalidation
+      // Ignore acknowledgment messages, connection handshakes, and heartbeats from triggering cache invalidation
       const lowerType = String(messageType || "").toLowerCase();
       if (
         lowerType.includes("subscribed") ||
         lowerType.includes("unsubscribed") ||
+        lowerType.includes("connect") ||
+        lowerType.includes("disconnect") ||
+        lowerType.includes("join") ||
+        lowerType.includes("room") ||
+        lowerType.includes("handshake") ||
+        lowerType.includes("welcome") ||
+        lowerType.includes("auth") ||
+        lowerType.includes("probe") ||
         lowerType === "ping" ||
-        lowerType === "pong"
+        lowerType === "pong" ||
+        lowerType === "ok" ||
+        lowerType === "success"
       ) {
         return;
       }
@@ -233,8 +243,8 @@ export function connectSocket(
       // Synchronize live WebSocket updates directly into RTK Query cache
       debouncedInvalidate(isOrgEvent);
     } catch {
-      // Even if parse fails, invalidate to ensure cache stays in sync
-      debouncedInvalidate(false);
+      // Non-JSON transport packets (e.g. engine.io probe/handshake pings) should NOT invalidate the cache
+      return;
     }
   };
 

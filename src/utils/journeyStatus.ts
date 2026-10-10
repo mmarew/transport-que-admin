@@ -232,3 +232,11 @@ export function isDriverWaiting(status: unknown, journeyStatusId?: unknown): boo
 
   return true;
 }
+
+/**
+ * Comma-separated journeyStatusId strings for backend API query filtering.
+ * - ONGOING: all active stages from waiting to journey started, excluding terminal completed/cancelled.
+ * - COMPLETED: terminal delivered / admin-completed statuses (9: journeyCompleted, 14: completedByAdmin).
+ */
+export const ONGOING_JOURNEY_STATUS_IDS = "1,2,3,4,5,6,7,8,11,16,17,18,20";
+export const COMPLETED_JOURNEY_STATUS_IDS = "9,14";

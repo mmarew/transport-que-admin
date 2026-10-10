@@ -296,5 +296,52 @@ describe("ordersDataMapper", () => {
     expect(bids[0].bidStatus).toBe("submitted");
     expect(bids[0].companyBidRequestUniqueId).toBe("real-bid-uuid-123");
   });
+
+  it("does not mark submitted company proposals as accepted when batch has multiple bids", () => {
+    const mockBatch = {
+      batchId: 8,
+      batchUniqueId: "batch-8-uuid",
+      totalVehicles: 2,
+      journeyStatusId: 1,
+      status: "submitted",
+      companyBids: [
+        {
+          companyBidRequestUniqueId: "bid-1",
+          companyName: "test",
+          phoneNumber: "+251929257891",
+          userUniqueId: "company-test-uuid",
+          bidStatus: "submitted",
+          journeyStatusId: 1,
+          proposedTotalCost: 1000,
+        },
+        {
+          companyBidRequestUniqueId: "bid-2",
+          companyName: "test",
+          phoneNumber: "+251929257891",
+          userUniqueId: "company-test-uuid",
+          bidStatus: "submitted",
+          journeyStatusId: 1,
+          proposedTotalCost: 3000,
+        },
+        {
+          companyBidRequestUniqueId: "bid-3",
+          companyName: "test",
+          phoneNumber: "+251929257891",
+          userUniqueId: "company-test-uuid",
+          bidStatus: "submitted",
+          journeyStatusId: 1,
+          proposedTotalCost: 5000,
+        },
+      ],
+    };
+
+    const bids = parseBatchBids(mockBatch);
+    expect(bids).toHaveLength(3);
+    for (const b of bids) {
+      expect(b.journeyStatusId).toBe(1);
+      expect(b.journeyStatus).toBe("submitted");
+      expect(b.bidStatus).toBe("submitted");
+    }
+  });
 });
 

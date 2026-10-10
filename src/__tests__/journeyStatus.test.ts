@@ -8,11 +8,32 @@ import {
   isDriverWaiting,
   JOURNEY_STATUS_NAMES,
   JOURNEY_STATUS_LABELS,
+  ONGOING_JOURNEY_STATUS_IDS,
+  COMPLETED_JOURNEY_STATUS_IDS,
 } from "../utils/journeyStatus";
 import { getConnectedJourneyStatus, groupOrdersByBatch } from "../components/orders/OrdersTypes";
 import type { OrderDisplayItem } from "../components/orders/OrdersTypes";
 
 describe("Journey Status utility", () => {
+  it("provides valid ongoing and completed status filter strings for API calls", () => {
+    const ongoingIds = ONGOING_JOURNEY_STATUS_IDS.split(",").map(Number);
+    const completedIds = COMPLETED_JOURNEY_STATUS_IDS.split(",").map(Number);
+
+    // Completed IDs must contain 9 (journeyCompleted) and 14 (completedByAdmin)
+    expect(completedIds).toContain(9);
+    expect(completedIds).toContain(14);
+
+    // Ongoing IDs must NOT contain any completed IDs
+    for (const compId of completedIds) {
+      expect(ongoingIds).not.toContain(compId);
+    }
+
+    // Ongoing IDs must contain active statuses 1-8
+    for (let id = 1; id <= 8; id++) {
+      expect(ongoingIds).toContain(id);
+    }
+  });
+
   it("provides valid status name and label lookup maps", () => {
     expect(JOURNEY_STATUS_NAMES[1]).toBe("waiting");
     expect(JOURNEY_STATUS_LABELS[1]).toBe("Waiting");

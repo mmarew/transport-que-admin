@@ -9,6 +9,9 @@ export interface OrdersCardsListProps {
   orders?: OrderDisplayItem[];
   batchGroups?: OrderBatchGroup[];
   activeTab: "ongoing" | "complete";
+  expandedBatchId?: string | null;
+  loadingBatchUids?: Set<string>;
+  onToggleExpand?: (batchKey: string, group?: OrderBatchGroup) => void;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
   onViewRequests?: (order: OrderDisplayItem) => void;
@@ -18,28 +21,30 @@ export function OrdersCardsList({
   orders = [],
   batchGroups: passedBatchGroups,
   activeTab,
+  expandedBatchId: passedExpandedBatchId,
+  loadingBatchUids,
+  onToggleExpand: passedOnToggleExpand,
   onEdit,
   onDelete,
   onViewRequests,
 }: OrdersCardsListProps) {
   const { t } = useTranslation();
-  const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
+  const [internalExpandedBatchId, setInternalExpandedBatchId] = useState<string | null>(null);
+
+  const isControlled = passedExpandedBatchId !== undefined;
+  const currentExpandedBatchId = isControlled ? passedExpandedBatchId : internalExpandedBatchId;
 
   const batchGroups = useMemo(
     () => passedBatchGroups || groupOrdersByBatch(orders),
     [passedBatchGroups, orders]
   );
 
-  const toggleBatch = (batchKey: string) => {
-    setExpandedBatches((prev) => {
-      const next = new Set(prev);
-      if (next.has(batchKey)) {
-        next.delete(batchKey);
-      } else {
-        next.add(batchKey);
-      }
-      return next;
-    });
+  const toggleBatch = (batchKey: string, group: OrderBatchGroup) => {
+    if (passedOnToggleExpand) {
+      passedOnToggleExpand(batchKey, group);
+    } else {
+      setInternalExpandedBatchId((prev) => (prev === batchKey ? null : batchKey));
+    }
   };
 
   if (batchGroups.length === 0) {
@@ -57,17 +62,27 @@ export function OrdersCardsList({
 
   return (
     <div className="orders-cards-container">
-      {batchGroups.map((group) => (
-        <OrderCard
-          key={group.batchKey}
-          group={group}
-          isExpanded={expandedBatches.has(group.batchKey)}
-          onToggleExpand={toggleBatch}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onViewRequests={onViewRequests}
-        />
-      ))}
+      {batchGroups.map((group) => {
+        const batchUid =
+          group.batchUniqueId ||
+          group.orders[0]?.batchUniqueId ||
+          (group.orders[0] as any)?.shipperRequestBatchUniqueId ||
+          group.batchKey.replace(/^batch-/, "");
+        const isLoading = Boolean(loadingBatchUids?.has(batchUid));
+
+        return (
+          <OrderCard
+            key={group.batchKey}
+            group={group}
+            isExpanded={currentExpandedBatchId === group.batchKey}
+            isLoading={isLoading}
+            onToggleExpand={(key) => toggleBatch(key, group)}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onViewRequests={onViewRequests}
+          />
+        );
+      })}
     </div>
   );
 }

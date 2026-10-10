@@ -111,12 +111,19 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       batch.shipperPhone ??
       null;
 
+    const rawBidStatus = String(b.bidStatus || b.status || "").toLowerCase();
+    const isPending =
+      rawBidStatus === "submitted" ||
+      rawBidStatus === "pending" ||
+      rawBidStatus === "requested";
+
     const isAccepted =
-      b.status === "accepted" ||
-      b.bidStatus === "selected" ||
-      b.bidStatus === "accepted" ||
-      b.bidStatus === "accepted_by_shipper" ||
-      b.journeyStatusId === 4;
+      !isPending &&
+      (b.status === "accepted" ||
+        b.bidStatus === "selected" ||
+        b.bidStatus === "accepted" ||
+        b.bidStatus === "accepted_by_shipper" ||
+        (b.journeyStatusId === 4 && rawBidStatus !== "submitted"));
 
     const cost =
       Number(
@@ -140,7 +147,7 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       journeyDecisionUniqueId: b.journeyDecisionUniqueId ?? null,
       fullName: compName,
       phoneNumber: phone,
-      journeyStatusId: isAccepted ? 4 : (b.journeyStatusId ?? 1),
+      journeyStatusId: isAccepted ? 4 : (isPending ? 1 : (b.journeyStatusId ?? 1)),
       journeyStatus: isAccepted ? "accepted" : (b.journeyStatus || "submitted"),
       bidStatus: isAccepted ? "selected" : (b.bidStatus || "submitted"),
       shipperRequestUniqueId: b.shipperRequestUniqueId ?? (bUniqueIdStr || batch.batchUniqueId),

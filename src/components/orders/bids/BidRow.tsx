@@ -157,7 +157,9 @@ export function BidRow({
             </span>
             {statusId != null && (
               <span className={`dbm-status-badge status-${statusId}`}>
-                {formatJourneyStatusLabel(statusId)}
+                {driver.bidStatus === "submitted"
+                  ? t("orders.submitted", "Submitted")
+                  : formatJourneyStatusLabel(statusId)}
               </span>
             )}
           </div>

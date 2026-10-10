@@ -120,6 +120,7 @@ export function DriverBidsModal({
   const { data: companyBidsData } = useGetCompanyBidsQuery(
     {
       companyUniqueId: targetCompanyId,
+      shipperRequestBatchUniqueId: batchUniqueId || undefined,
       target: "submitted",
     },
     { skip: !shouldFetchCompanyBids },
@@ -137,19 +138,30 @@ export function DriverBidsModal({
       // 2. String/UUID batchId match
       if (batchUniqueId && (b.shipperRequestBatchId === batchUniqueId || b.shipperRequestBatchUniqueId === batchUniqueId)) return true;
       if (order.batchUniqueId && (b.shipperRequestBatchId === order.batchUniqueId || b.shipperRequestBatchUniqueId === order.batchUniqueId)) return true;
-      // 3. If there is only one company target and batch ID is not specified on bid, accept it
-      if (!b.batchId && !b.shipperRequestBatchId) return true;
       return false;
     });
 
-    const bidsToMap = matching.length > 0 ? matching : rawList;
+    // Only map bids that strictly match this batch; NEVER fall back to unrelated rawList bids
+    const bidsToMap = matching;
+    if (bidsToMap.length === 0) return [];
 
     return bidsToMap.map((b, idx) => {
+      const rawBidStatus = String(b.bidStatus || "").toLowerCase();
+      const rawStatus = String(b.status || "").toLowerCase();
+      const isPending =
+        rawBidStatus === "submitted" ||
+        rawBidStatus === "pending" ||
+        rawBidStatus === "requested" ||
+        rawStatus === "submitted" ||
+        rawStatus === "pending";
+
       const isAccepted =
-        b.bidStatus === "selected" ||
-        b.bidStatus === "accepted" ||
-        b.bidStatus === "accepted_by_shipper" ||
-        b.journeyStatusId === 4;
+        !isPending &&
+        (rawBidStatus === "selected" ||
+          rawBidStatus === "accepted" ||
+          rawBidStatus === "accepted_by_shipper" ||
+          rawStatus === "accepted" ||
+          (b.journeyStatusId === 4 && rawBidStatus !== "submitted"));
 
       const bidUid = b.companyBidRequestUniqueId;
 
@@ -169,7 +181,7 @@ export function DriverBidsModal({
           (b.phoneNumber as string) ||
           order.targetCompanyPhone ||
           undefined,
-        journeyStatusId: isAccepted ? 4 : (b.journeyStatusId ?? 1),
+        journeyStatusId: isAccepted ? 4 : (isPending ? 1 : (b.journeyStatusId ?? 1)),
         journeyStatus: isAccepted ? "accepted" : (b.bidStatus || "submitted"),
         bidStatus: isAccepted ? "selected" : (b.bidStatus || "submitted"),
         offerCost:
@@ -202,20 +214,32 @@ export function DriverBidsModal({
   // Otherwise a driver who is already Loading (status 6) reads as an open bid
   // and the accepted counter under-reports (e.g. 0/5 while one truck loads).
   const isDriverAccepted = (driver: ShipperRequestDriverInfo) => {
+    const bidStatus = String(driver.bidStatus || "").toLowerCase();
+    const journeyStatus = String(driver.journeyStatus || "").toLowerCase();
+    if (
+      bidStatus === "submitted" ||
+      bidStatus === "pending" ||
+      bidStatus === "requested" ||
+      journeyStatus === "submitted" ||
+      journeyStatus === "requested"
+    ) {
+      return false;
+    }
+
     const sid = extractJourneyStatusId(
       driver.journeyStatusId ?? driver.journeyStatus ?? (driver as any).status,
     );
-    // Status 3 is "Accepted by Driver" — the driver accepted/made an offer,
-    // but the shipper has NOT accepted the offer yet. It must NOT be marked accepted!
-    if (sid === 3) {
+    // Status 1 is Waiting, Status 2 is Requested, Status 3 is "Accepted by Driver" (awaiting shipper)
+    if (sid === 1 || sid === 2 || sid === 3) {
       return false;
     }
     return (
       (typeof sid === "number" && sid >= 4 && sid <= 9) ||
       sid === 14 ||
-      driver.journeyStatus === "acceptedByShipper" ||
-      driver.bidStatus === "selected" ||
-      driver.bidStatus === "accepted"
+      journeyStatus === "acceptedbyshipper" ||
+      bidStatus === "selected" ||
+      bidStatus === "accepted" ||
+      bidStatus === "accepted_by_shipper"
     );
   };
 
@@ -263,16 +287,30 @@ export function DriverBidsModal({
             rawBidKey && !targetCompanyUUIDs.includes(rawBidKey)
               ? rawBidKey
               : undefined;
-          const bidKey = bidKeyClean || `bid-${bIdx + 1}`;
+          const rawBidStatus = String(b.bidStatus || b.status || "").toLowerCase();
+          const isPending =
+            rawBidStatus === "submitted" ||
+            rawBidStatus === "pending" ||
+            rawBidStatus === "requested";
+
+          const isMatchingAcceptedOffer = Boolean(
+            raw.acceptedOffer &&
+            bidKeyClean &&
+            (asRecord(raw.acceptedOffer).companyBidRequestUniqueId === bidKeyClean ||
+             asRecord(raw.acceptedOffer).bidUniqueId === bidKeyClean ||
+             asRecord(raw.acceptedOffer).userUniqueId === b.userUniqueId)
+          );
+
           const isAccepted =
-            b.bidStatus === "selected" ||
-            b.bidStatus === "accepted" ||
-            b.bidStatus === "accepted_by_shipper" ||
-            b.journeyStatusId === 4 ||
-            isAcceptedOrder;
+            !isPending &&
+            (rawBidStatus === "selected" ||
+              rawBidStatus === "accepted" ||
+              rawBidStatus === "accepted_by_shipper" ||
+              isMatchingAcceptedOffer);
+
           return {
             driverRequestId: b.driverRequestId ?? bIdx + 1,
-            driverRequestUniqueId: bidKey,
+            driverRequestUniqueId: bidKeyClean,
             companyBidRequestUniqueId: bidKeyClean,
             driverBidUniqueId: bidKeyClean,
             isCompany: true,
@@ -283,8 +321,8 @@ export function DriverBidsModal({
               b.fullName ||
               (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal"),
             phoneNumber: b.companyPhone || b.phoneNumber || b.phone || undefined,
-            journeyStatusId: isAccepted ? 4 : (b.journeyStatusId ?? 1),
-            journeyStatus: isAccepted ? "accepted" : (b.journeyStatus || "submitted"),
+            journeyStatusId: isAccepted ? 4 : (isPending ? 1 : (b.journeyStatusId ?? 1)),
+            journeyStatus: isAccepted ? "accepted" : (b.bidStatus || "submitted"),
             bidStatus: isAccepted ? "selected" : (b.bidStatus || "submitted"),
             offerCost:
               Number(
