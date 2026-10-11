@@ -46,6 +46,7 @@ export interface OrderDisplayItem {
   targetCompanyUniqueId?: string | null;
   targetCompanyName?: string | null;
   targetCompanyPhone?: string | null;
+  plateNumber?: string | null;
   rawItem?: unknown;
 }
 

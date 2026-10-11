@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2, Gavel, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem } from "./OrdersTypes";
@@ -23,8 +24,21 @@ export function BatchSubRow({
   onViewRequests,
 }: BatchSubRowProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const journey = getConnectedJourneyStatus(childOrder);
   const childRequestId = childOrder.shipperRequestId || childOrder.id;
+
+  const handleNavigateToDriver = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const targetId =
+      childOrder.id ||
+      childOrder.shipperRequestUniqueId ||
+      childOrder.batchId ||
+      childOrder.shipperRequestId;
+    navigate(`/orders/driver/${encodeURIComponent(String(targetId))}`, {
+      state: { order: childOrder },
+    });
+  };
 
   return (
     <tr className="orders-row orders-batch-subrow">
@@ -33,9 +47,14 @@ export function BatchSubRow({
           <span className="orders-subrow-tree" aria-hidden="true">
             ↳
           </span>
-          <span className="orders-id-badge orders-id-badge--sub">
+          <button
+            type="button"
+            className="orders-id-badge orders-id-badge--sub orders-id-badge--clickable"
+            onClick={handleNavigateToDriver}
+            title={t("orders.viewDriverDetails", "View driver details")}
+          >
             {childOrder.displayId || `#${childRequestId}`}
-          </span>
+          </button>
         </div>
       </td>
       <td className="td-shipper td-subrow-cell" title={childOrder.shipper}>

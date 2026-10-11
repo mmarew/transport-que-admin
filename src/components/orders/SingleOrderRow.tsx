@@ -1,4 +1,5 @@
 import type React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronDown,
   ChevronUp,
@@ -35,13 +36,33 @@ export function SingleOrderRow({
   onViewRequests,
 }: SingleOrderRowProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const journey = getConnectedJourneyStatus(order);
   const isExpandedLoc = expandedLocationId === order.id;
+
+  const handleNavigateToDriver = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const targetId =
+      order.id ||
+      order.shipperRequestUniqueId ||
+      order.batchId ||
+      order.shipperRequestId;
+    navigate(`/orders/driver/${encodeURIComponent(String(targetId))}`, {
+      state: { order },
+    });
+  };
 
   return (
     <tr className="orders-row">
       <td className="td-num" title={order.displayId}>
-        <span className="orders-id-badge">{order.displayId}</span>
+        <button
+          type="button"
+          className="orders-id-badge orders-id-badge--clickable"
+          onClick={handleNavigateToDriver}
+          title={t("orders.viewDriverDetails", "View driver details")}
+        >
+          {order.displayId}
+        </button>
       </td>
       <td className="td-shipper" title={order.shipper}>
         <span className="orders-shipper-desktop">{order.shipper}</span>

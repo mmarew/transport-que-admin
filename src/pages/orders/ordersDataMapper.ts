@@ -156,7 +156,26 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       proposedCost: cost,
       bidAmount: cost,
       vehicleTypeName: b.vehicleTypeName ?? b.offeredVehicleTypeName ?? batch.vehicleTypeName ?? null,
-      plateNumber: b.plateNumber ?? null,
+      plateNumber:
+        b.licensePlate ??
+        b.license_plate ??
+        b.plateNumber ??
+        b.plate_number ??
+        b.vehiclePlateNumber ??
+        b.vehicle_plate_number ??
+        b.vehiclePlate ??
+        b.vehicle_plate ??
+        b.plate ??
+        b.vehicleOfDriver?.licensePlate ??
+        b.vehicleOfDriver?.license_plate ??
+        b.vehicleOfDriver?.plateNumber ??
+        b.vehicle?.licensePlate ??
+        b.vehicle?.plateNumber ??
+        batch.licensePlate ??
+        batch.license_plate ??
+        batch.plateNumber ??
+        batch.plate_number ??
+        null,
       latitude: b.latitude ?? null,
       longitude: b.longitude ?? null,
       currentPlace: b.currentPlace ?? null,
@@ -310,7 +329,24 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
               batch.batchTotalCost,
           ) || null,
         vehicleTypeName: batch.vehicleTypeName ?? null,
-        plateNumber: null,
+        plateNumber:
+          offer.licensePlate ??
+          offer.license_plate ??
+          offer.plateNumber ??
+          offer.plate_number ??
+          offer.vehiclePlateNumber ??
+          offer.vehicle_plate_number ??
+          offer.vehiclePlate ??
+          offer.vehicle_plate ??
+          offer.plate ??
+          offer.vehicleOfDriver?.licensePlate ??
+          offer.vehicleOfDriver?.license_plate ??
+          offer.vehicle?.licensePlate ??
+          batch.licensePlate ??
+          batch.license_plate ??
+          batch.plateNumber ??
+          batch.plate_number ??
+          null,
         latitude: null,
         longitude: null,
         currentPlace: null,
@@ -379,7 +415,14 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       proposedCost: Number(batch.batchShippingCost ?? batch.shippingCost ?? batch.batchTotalCost) || null,
       bidAmount: Number(batch.batchShippingCost ?? batch.shippingCost ?? batch.batchTotalCost) || null,
       vehicleTypeName: batch.vehicleTypeName ?? null,
-      plateNumber: null,
+      plateNumber:
+        batch.licensePlate ??
+        batch.license_plate ??
+        batch.plateNumber ??
+        batch.plate_number ??
+        batch.vehiclePlateNumber ??
+        batch.vehiclePlate ??
+        null,
       latitude: null,
       longitude: null,
       currentPlace: null,
@@ -878,7 +921,54 @@ export function mapBackendOrdersToDisplayItems({
             d.offerCost ??
             null,
           vehicleTypeName: d.vehicleTypeName ?? d.vehicleType ?? null,
-          plateNumber: d.plateNumber ?? d.vehiclePlateNumber ?? null,
+          plateNumber:
+            d.licensePlate ??
+            d.license_plate ??
+            d.plateNumber ??
+            d.plate_number ??
+            d.vehiclePlateNumber ??
+            d.vehicle_plate_number ??
+            d.vehiclePlate ??
+            d.vehicle_plate ??
+            d.plate ??
+            d.vehicleOfDriver?.licensePlate ??
+            d.vehicleOfDriver?.license_plate ??
+            d.vehicleOfDriver?.plateNumber ??
+            d.vehicleOfDriver?.plate_number ??
+            d.vehicle?.licensePlate ??
+            d.vehicle?.license_plate ??
+            d.vehicle?.plateNumber ??
+            d.vehicle?.plate_number ??
+            driverEntry?.licensePlate ??
+            driverEntry?.license_plate ??
+            driverEntry?.plateNumber ??
+            driverEntry?.plate_number ??
+            matchingDecision?.licensePlate ??
+            matchingDecision?.license_plate ??
+            matchingDecision?.plateNumber ??
+            matchingDecision?.plate_number ??
+            matchingDecision?.vehicleOfDriver?.licensePlate ??
+            matchingDecision?.vehicle?.licensePlate ??
+            (item as any).journey?.licensePlate ??
+            (item as any).journey?.license_plate ??
+            (item as any).journey?.plateNumber ??
+            (item as any).journey?.plate_number ??
+            (item as any).journey?.vehicle?.licensePlate ??
+            (item as any).journey?.vehicle?.license_plate ??
+            (item as any).journey?.vehicle?.plateNumber ??
+            (item as any).journey?.vehicleOfDriver?.licensePlate ??
+            (req as any).journey?.licensePlate ??
+            (req as any).journey?.license_plate ??
+            (req as any).journey?.plateNumber ??
+            (item as any).licensePlate ??
+            (item as any).license_plate ??
+            (item as any).plateNumber ??
+            (item as any).plate_number ??
+            (req as any).licensePlate ??
+            (req as any).license_plate ??
+            (req as any).plateNumber ??
+            (req as any).plate_number ??
+            null,
           latitude: dLat,
           longitude: dLng,
           currentPlace: resolvedLoc,
@@ -962,6 +1052,47 @@ export function mapBackendOrdersToDisplayItems({
         finalDriverRequests = batchBids;
       }
 
+      const resolvedPlateNumber =
+        (item as any).journey?.licensePlate ??
+        (item as any).journey?.license_plate ??
+        (item as any).journey?.plateNumber ??
+        (item as any).journey?.plate_number ??
+        (item as any).journey?.vehicle?.licensePlate ??
+        (item as any).journey?.vehicle?.license_plate ??
+        (item as any).journey?.vehicle?.plateNumber ??
+        (item as any).journey?.vehicleOfDriver?.licensePlate ??
+        (item as any).journey?.vehicleOfDriver?.license_plate ??
+        (item as any).journey?.vehicleOfDriver?.plateNumber ??
+        (req as any).journey?.licensePlate ??
+        (req as any).journey?.license_plate ??
+        (req as any).journey?.plateNumber ??
+        (req as any).journey?.plate_number ??
+        (req as any).journey?.vehicle?.licensePlate ??
+        (req as any).journey?.vehicleOfDriver?.licensePlate ??
+        (item as any).licensePlate ??
+        (item as any).license_plate ??
+        (item as any).plateNumber ??
+        (item as any).plate_number ??
+        (item as any).vehiclePlateNumber ??
+        (item as any).vehicle_plate_number ??
+        (item as any).vehiclePlate ??
+        (item as any).vehicle_plate ??
+        (req as any).licensePlate ??
+        (req as any).license_plate ??
+        (req as any).plateNumber ??
+        (req as any).plate_number ??
+        (req as any).vehiclePlateNumber ??
+        (req as any).vehicle_plate_number ??
+        (req as any).vehiclePlate ??
+        (req as any).vehicle_plate ??
+        matchedBatch?.licensePlate ??
+        matchedBatch?.license_plate ??
+        matchedBatch?.plateNumber ??
+        matchedBatch?.plate_number ??
+        (Array.isArray(rawDecisions) && rawDecisions[0]?.licensePlate) ??
+        (Array.isArray(rawDecisions) && rawDecisions[0]?.plateNumber) ??
+        null;
+
       if (
         finalDriverRequests.length === 0 &&
         (resolvedJourneyStatusId === 4 ||
@@ -1023,6 +1154,9 @@ export function mapBackendOrdersToDisplayItems({
             bidStatus: "selected",
             offerCost: (mode === "Group" && matchedBatchTotalCost) ? matchedBatchTotalCost : costNum,
             vehicleTypeName: vehicleTypeName,
+            plateNumber: resolvedPlateNumber,
+            rawDriver: (item as any).journey || (req as any).journey || null,
+            rawItem: item,
           },
         ];
       } else if (
@@ -1083,6 +1217,9 @@ export function mapBackendOrdersToDisplayItems({
             bidStatus: "pending",
             offerCost: (mode === "Group" && matchedBatchTotalCost) ? matchedBatchTotalCost : costNum,
             vehicleTypeName: vehicleTypeName,
+            plateNumber: resolvedPlateNumber,
+            rawDriver: (item as any).journey || (req as any).journey || null,
+            rawItem: item,
           },
         ];
       } else if (
@@ -1234,6 +1371,9 @@ export function mapBackendOrdersToDisplayItems({
         totalVehicles: matchedTotalVehicles,
         batchTotalCost: matchedBatchTotalCost,
         batchTotalQuintal: matchedBatchTotalQuintal,
+        plateNumber:
+          finalDriverRequests.find((d: any) => d?.plateNumber)?.plateNumber ??
+          resolvedPlateNumber,
         rawItem: item,
       };
     });
@@ -1508,6 +1648,22 @@ export function mapBackendOrdersToDisplayItems({
             batchTotalQuintal,
             queueNumber: childQueueNumber,
             loadingOrderNumber: childLoadingOrderNumber,
+            plateNumber:
+              childTruck?.licensePlate ??
+              childTruck?.license_plate ??
+              childTruck?.plateNumber ??
+              childTruck?.plate_number ??
+              childTruck?.vehiclePlateNumber ??
+              childTruck?.vehiclePlate ??
+              childTruck?.vehicle?.licensePlate ??
+              childTruck?.vehicleOfDriver?.licensePlate ??
+              childEntry?.licensePlate ??
+              childEntry?.plateNumber ??
+              batch.licensePlate ??
+              batch.license_plate ??
+              batch.plateNumber ??
+              batch.plate_number ??
+              null,
             rawItem: batch,
           });
         }
@@ -1552,6 +1708,14 @@ export function mapBackendOrdersToDisplayItems({
           batchTotalQuintal,
           queueNumber: batchQueueNumber,
           loadingOrderNumber: batchLoadingOrderNumber,
+          plateNumber:
+            batch.licensePlate ??
+            batch.license_plate ??
+            batch.plateNumber ??
+            batch.plate_number ??
+            batch.vehiclePlateNumber ??
+            batch.vehiclePlate ??
+            null,
           rawItem: batch,
         });
       }

@@ -12,6 +12,8 @@ import "./DispatchModal.css";
 import "./ShipperRequestsModal.css";
 
 export interface ShipperRequestDriverInfo {
+  driverId?: number | string | null;
+  driver_id?: number | string | null;
   driverRequestId?: number;
   driverRequestUniqueId?: string;
   userUniqueId?: string;
