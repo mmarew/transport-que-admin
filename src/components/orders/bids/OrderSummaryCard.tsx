@@ -13,9 +13,19 @@ export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
   const { t } = useTranslation();
 
   const shipperDisplay = order.phone || order.shipper || "-";
-  const quantityDisplay = order.quintal ? `${order.quintal} quintal` : "-";
+  const isGroup = order.type === "Group";
+  const costVal =
+    isGroup && order.batchTotalCost != null && Number(order.batchTotalCost) > 0
+      ? Number(order.batchTotalCost)
+      : order.cost;
+  const quintalVal =
+    isGroup && order.batchTotalQuintal != null && Number(order.batchTotalQuintal) > 0
+      ? order.batchTotalQuintal
+      : order.quintal;
+
+  const quantityDisplay = quintalVal ? `${quintalVal} quintal` : "-";
   const itemDisplay = order.item || "-";
-  const costDisplay = `${order.cost.toLocaleString(undefined, {
+  const costDisplay = `${costVal.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })} ETB`;

@@ -1,5 +1,5 @@
-import React from "react";
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, OrderBatchGroup } from "./OrdersTypes";
 import {
@@ -13,6 +13,8 @@ import {
 export interface OrderCardProps {
   group: OrderBatchGroup;
   isExpanded?: boolean;
+  isLoading?: boolean;
+  currentPage?: number;
   onToggleExpand?: (batchKey: string) => void;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
@@ -22,14 +24,49 @@ export interface OrderCardProps {
 export function OrderCard({
   group,
   isExpanded = false,
+  isLoading = false,
+  currentPage,
   onToggleExpand,
   onEdit,
   onDelete,
   onViewRequests,
 }: OrderCardProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Accordion toggle button is present on Group / multi-truck orders (matching picture)
+  const handleNavigateToDriver = (order: OrderDisplayItem) => {
+    const targetId =
+      order.id ||
+      order.shipperRequestUniqueId ||
+      order.batchId ||
+      order.shipperRequestId;
+    const isCompleted = getConnectedJourneyStatus(order).type === "completed";
+    const currentTab = isCompleted
+      ? "complete"
+      : (new URLSearchParams(location.search).get("tab") || "ongoing");
+
+    const returnParams = new URLSearchParams(location.search);
+    if (currentTab === "complete") {
+      returnParams.set("tab", "complete");
+    } else {
+      returnParams.delete("tab");
+    }
+    const returnUrl = `${location.pathname}${returnParams.toString() ? `?${returnParams.toString()}` : ""}`;
+
+    navigate(`/orders/driver/${encodeURIComponent(String(targetId))}`, {
+      state: {
+        order,
+        fromTab: currentTab,
+        returnUrl,
+        page: currentPage || 1,
+        batchKey: group.batchKey,
+        targetCardId: `order-card-${group.batchKey}`,
+      },
+    });
+  };
+
+  // Accordion toggle button is present on Group / multi-truck orders
   const isExpandable =
     group.type === "Group" || group.isMultiVehicle || group.orders.length > 1;
 
@@ -63,19 +100,10 @@ export function OrderCard({
 
   const hasConnectedJourney = group.statusSummary?.isConnected;
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Only toggle if user didn't click inside interactive elements (buttons, inputs)
-    const target = e.target as HTMLElement;
-    if (target.closest("button") || target.closest("a")) return;
-    if (isExpandable && onToggleExpand) {
-      onToggleExpand(group.batchKey);
-    }
-  };
-
   return (
     <div
-      className={`order-card ${isExpanded ? "order-card--expanded" : ""}`}
-      onClick={handleCardClick}
+      id={`order-card-${group.batchKey}`}
+      className={`order-card ${isExpanded ? "order-card--expanded" : ""} ${isExpandable ? "order-card--expandable" : ""}`}
     >
       {/* ── Top Header Row ── */}
       <div className="order-card-header">
@@ -105,13 +133,15 @@ export function OrderCard({
           ) : null}
 
           <div className="order-card-title-group">
-            <span className="order-card-id">{displayId}</span>
-            <h3
-              className="order-card-route"
-              title={`${group.origin} → ${group.destination}`}
-            >
-              {routeText}
-            </h3>
+            <div className="order-card-title-top">
+              <span className="order-card-id">{displayId}</span>
+              <h3
+                className="order-card-route"
+                title={`${group.origin} → ${group.destination}`}
+              >
+                {routeText}
+              </h3>
+            </div>
             {phone ? (
               <span className="order-card-phone" title={group.shipper}>
                 {phone}
@@ -143,7 +173,11 @@ export function OrderCard({
                 e.stopPropagation();
                 onViewRequests?.(group.orders[0]);
               }}
-              title={t("orders.driverBidsTitle", "Click to view driver proposals")}
+              title={
+                group.type === "Group"
+                  ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                  : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+              }
             >
               <span className="order-card-badge-dot" />
               <span>
@@ -154,6 +188,21 @@ export function OrderCard({
 
           {/* Quick Action Buttons */}
           <div className="order-card-actions">
+            {!isExpandable && (
+              <button
+                type="button"
+                className="order-card-action-btn order-card-action-btn--view"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNavigateToDriver(group.orders[0]);
+                }}
+                title={t("orders.viewDriverDetails", "View driver details")}
+                aria-label={t("orders.viewDriverDetails", "View driver details")}
+              >
+                <Eye size={15} />
+              </button>
+            )}
+
             <button
               type="button"
               className="order-card-action-btn"
@@ -253,7 +302,7 @@ export function OrderCard({
       </div>
 
       {/* ── Sub-Orders Accordion (for multi-vehicle batch orders) ── */}
-      {isExpanded && group.orders.length > 0 && (
+      {isExpanded && (
         <div className="order-card-suborders">
           <div className="order-card-suborders-header">
             <span className="order-card-suborders-title">
@@ -264,17 +313,58 @@ export function OrderCard({
             </span>
           </div>
 
-          <div className="order-card-suborders-list">
+          {isLoading ? (
+            <div className="order-subcard-loading">
+              <span className="order-subcard-spinner" />
+              <span>{t("orders.loadingVehicles", "Loading vehicle details...")}</span>
+            </div>
+          ) : (
+            <div className="order-card-suborders-list">
             {group.orders.map((childOrder) => {
               const childJourney = getConnectedJourneyStatus(childOrder);
+              const batchNum =
+                group.batchId ||
+                childOrder.batchId ||
+                (group.displayId ? group.displayId.replace(/^#/, "") : "1");
+              const hasReqId =
+                childOrder.shipperRequestId != null &&
+                String(childOrder.shipperRequestId).trim() !== "" &&
+                !isNaN(Number(childOrder.shipperRequestId));
+              const reqId = hasReqId
+                ? String(childOrder.shipperRequestId)
+                : childOrder.displayId?.includes("/")
+                ? childOrder.displayId.replace(/^#/, "").split("/")[1]
+                : null;
+              const displayTruckId =
+                batchNum && reqId
+                  ? `#${batchNum}/${reqId}`
+                  : childOrder.displayId || `#${batchNum}`;
+
+              const queueId =
+                childOrder.queueNumber != null && childOrder.queueNumber !== ""
+                  ? childOrder.queueNumber
+                  : "—";
+
+              const loadingOrderId =
+                childOrder.loadingOrderNumber != null && childOrder.loadingOrderNumber !== ""
+                  ? childOrder.loadingOrderNumber
+                  : "—";
 
               return (
                 <div key={childOrder.id} className="order-subcard-item">
                   <div className="order-subcard-left">
-                    <span className="order-subcard-id">{childOrder.displayId}</span>
-                    <span className="order-subcard-meta">
-                      {childOrder.item} · {formatWeight(childOrder.quintal)} · {formatCost(childOrder.cost)}
-                    </span>
+                    <span className="order-subcard-id">{displayTruckId}</span>
+                    {(queueId !== "—" || loadingOrderId !== "—") && (
+                      <span className="order-subcard-meta">
+                        {queueId !== "—" && (
+                          <span>{t("orders.queueNumber", "Queue")}: {queueId}</span>
+                        )}
+                        {queueId !== "—" && loadingOrderId !== "—" && " · "}
+                        {loadingOrderId !== "—" && (
+                          <span>{t("orders.loadingOrderNumber", "Loading Order")}: {loadingOrderId}</span>
+                        )}
+                      </span>
+                    )}
                   </div>
 
                   <div className="order-subcard-right">
@@ -290,13 +380,29 @@ export function OrderCard({
                           e.stopPropagation();
                           onViewRequests?.(childOrder);
                         }}
-                        title={t("orders.driverBidsTitle", "Click to view driver proposals")}
+                        title={
+                          group.type === "Group"
+                            ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                            : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+                        }
                       >
                         {t("orders.waiting", "Waiting")}
                       </button>
                     )}
 
                     <div className="order-subcard-actions">
+                      <button
+                        type="button"
+                        className="order-card-action-btn order-card-action-btn--view"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNavigateToDriver(childOrder);
+                        }}
+                        title={t("orders.viewDriverDetails", "View driver details")}
+                        aria-label={t("orders.viewDriverDetails", "View driver details")}
+                      >
+                        <Eye size={13} />
+                      </button>
                       <button
                         type="button"
                         className="order-card-action-btn"
@@ -325,8 +431,9 @@ export function OrderCard({
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    )}
     </div>
   );
 }

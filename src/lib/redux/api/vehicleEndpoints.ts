@@ -8,7 +8,11 @@ import type {
   VehicleTypeListResponse,
 } from "./types";
 
-export const { useListVehicleTypesQuery, useListVehicleDriversQuery } = api.injectEndpoints({
+export const {
+  useListVehicleTypesQuery,
+  useListVehicleDriversQuery,
+  useGetDriverAccountStatusQuery,
+} = api.injectEndpoints({
   endpoints: (builder) => ({
     listVehicleTypes: builder.query<VehicleTypeListResponse, void>({
       queryFn: async (_arg, _queryApi, _extraOptions, baseQuery) => {
@@ -87,6 +91,25 @@ export const { useListVehicleTypesQuery, useListVehicleDriversQuery } = api.inje
         },
       }),
       providesTags: ["DriverDirectory"],
+    }),
+
+    /**
+     * Comprehensive driver account status and verified documents — GET /api/account/status
+     */
+    getDriverAccountStatus: builder.query<
+      any,
+      { ownerUserUniqueId?: string; phoneNumber?: string; roleId?: number }
+    >({
+      query: ({ ownerUserUniqueId, phoneNumber, roleId = 2 }) => ({
+        url: appAPIs.accountStatusAPI,
+        params: {
+          ...(ownerUserUniqueId ? { ownerUserUniqueId } : {}),
+          ...(phoneNumber ? { phoneNumber } : {}),
+          roleId,
+          enableDocumentChecks: true,
+        },
+      }),
+      providesTags: ["DriverAccountStatus"],
     }),
   }),
 });

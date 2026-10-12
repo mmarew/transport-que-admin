@@ -621,17 +621,34 @@ Every socket payload has this shape:
 ### Environment Variables (.env)
 
 ```
-VITE_API_BASE_URL=https://queue.dynamicsroute.tech
-VITE_WEBSOCKET_URL=https://queue.dynamicsroute.tech
+VITE_API_BASE_URL=https://dev.dynamicsroute.tech
+VITE_WEBSOCKET_URL=https://dev.dynamicsroute.tech
 ```
 
-**Important:** The queue backend is deployed at `queue.dynamicsroute.tech`, NOT `dynamicsroute.tech`. The main domain does not proxy queue API routes.
+**Important:** `VITE_API_BASE_URL` / `VITE_WEBSOCKET_URL` must point at the **backend**
+(`dev.dynamicsroute.tech` on QA, `app.dynamicsroute.tech` on prod). Do **not** point them at
+`queue.dynamicsroute.tech` — that host is the static deployment of *this* SPA (nginx serving
+`index.html` for every path). It has no API and no socket.io server, so requests to
+`https://queue.dynamicsroute.tech/api/...` and `/socket.io/...` silently return the HTML page
+with `200 OK`, which surfaces as unparseable-JSON and a hanging WebSocket rather than a clean
+error.
 
 ### API Base URL Resolution
 
 - Axios and RTK Query append `/api` to `VITE_API_BASE_URL`.
-- So `GET /queue/status` becomes `https://queue.dynamicsroute.tech/api/queue/status`.
-- WebSocket connects directly to `VITE_WEBSOCKET_URL`.
+- So `GET /queue/status` becomes `https://dev.dynamicsroute.tech/api/queue/status`.
+- WebSocket connects directly to `VITE_WEBSOCKET_URL` at `/socket.io/`.
+
+### Socket Transport Order
+
+`socket.ts` connects with `transports: ["polling", "websocket"]` + `tryAllTransports: true`.
+
+Ordering **polling first** is deliberate. engine.io-client (v6.6.x) treats an explicit
+`transports` array as "use the first entry", not "try these in order" — so
+`["websocket", "polling"]` is websocket-*only* with no fallback, and a failed upgrade surfaces as
+`[WebSocket] Connection error: timeout` after the full `timeout` window. Starting on polling gets a
+live connection immediately and then upgrades to WebSocket in the background. `tryAllTransports`
+additionally guarantees the client walks the whole list if the first transport is blocked.
 
 ### Socket Connection Flow
 

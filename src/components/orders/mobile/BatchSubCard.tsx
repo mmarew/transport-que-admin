@@ -5,7 +5,7 @@ import { getConnectedJourneyStatus } from "../OrdersTypes";
 
 export interface BatchSubCardProps {
   childOrder: OrderDisplayItem;
-  childIdx: number;
+  childIdx?: number;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
   onViewRequests?: (order: OrderDisplayItem) => void;
@@ -16,7 +16,6 @@ export interface BatchSubCardProps {
  */
 export function BatchSubCard({
   childOrder,
-  childIdx,
   onEdit,
   onDelete,
   onViewRequests,
@@ -33,19 +32,32 @@ export function BatchSubCard({
             ↳
           </span>
           <span className="orders-id-badge orders-id-badge--sub">
-            #{childRequestId}
-          </span>
-          <span className="orders-subcard-truck-tag">
-            {t("orders.truckIndex", "Truck {{num}}", {
-              num: childIdx + 1,
-            })}
+            {childOrder.displayId || `#${childRequestId}`}
           </span>
         </div>
-        <div className="orders-m-subcard-meta">
-          <span>{childOrder.quintal} Qtl</span>
-          <span>•</span>
-          <span>{childOrder.cost.toLocaleString()} ETB</span>
-        </div>
+        {(() => {
+          const queueId =
+            childOrder.queueNumber != null && childOrder.queueNumber !== ""
+              ? childOrder.queueNumber
+              : "—";
+
+          const loadingOrderId =
+            childOrder.loadingOrderNumber != null && childOrder.loadingOrderNumber !== ""
+              ? childOrder.loadingOrderNumber
+              : "—";
+
+          return (
+            <div className="orders-m-subcard-meta">
+              <span>
+                {t("orders.queueNumber", "Queue")}: {queueId}
+              </span>
+              <span>•</span>
+              <span>
+                {t("orders.loadingOrderNumber", "Loading Order")}: {loadingOrderId}
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="orders-m-subcard-actions">
@@ -65,7 +77,11 @@ export function BatchSubCard({
             type="button"
             className="orders-m-btn-requests orders-m-btn-requests--active"
             onClick={() => onViewRequests(childOrder)}
-            title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+            title={
+              childOrder.type === "Group"
+                ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+            }
           >
             <Gavel size={12} />
             <span>

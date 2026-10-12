@@ -8,11 +8,32 @@ import {
   isDriverWaiting,
   JOURNEY_STATUS_NAMES,
   JOURNEY_STATUS_LABELS,
+  ONGOING_JOURNEY_STATUS_IDS,
+  COMPLETED_JOURNEY_STATUS_IDS,
 } from "../utils/journeyStatus";
 import { getConnectedJourneyStatus, groupOrdersByBatch } from "../components/orders/OrdersTypes";
 import type { OrderDisplayItem } from "../components/orders/OrdersTypes";
 
 describe("Journey Status utility", () => {
+  it("provides valid ongoing and completed status filter strings for API calls", () => {
+    const ongoingIds = ONGOING_JOURNEY_STATUS_IDS.split(",").map(Number);
+    const completedIds = COMPLETED_JOURNEY_STATUS_IDS.split(",").map(Number);
+
+    // Completed IDs must contain 9 (journeyCompleted) and 14 (completedByAdmin)
+    expect(completedIds).toContain(9);
+    expect(completedIds).toContain(14);
+
+    // Ongoing IDs must NOT contain any completed IDs
+    for (const compId of completedIds) {
+      expect(ongoingIds).not.toContain(compId);
+    }
+
+    // Ongoing IDs must contain active statuses 1-8
+    for (let id = 1; id <= 8; id++) {
+      expect(ongoingIds).toContain(id);
+    }
+  });
+
   it("provides valid status name and label lookup maps", () => {
     expect(JOURNEY_STATUS_NAMES[1]).toBe("waiting");
     expect(JOURNEY_STATUS_LABELS[1]).toBe("Waiting");
@@ -232,7 +253,7 @@ describe("Journey Status utility", () => {
     expect(batch504.totalQuintal).toBe(300);
   });
 
-  it("should correctly calculate partial acceptance for a 5-truck batch (1 accepted, 4 waiting)", () => {
+  it("should not count a Driver-Accepted truck as working (1 driver accepted but not yet heading, 5 waiting)", () => {
     const batch555Orders: OrderDisplayItem[] = [
       {
         id: "req-1",
@@ -318,11 +339,9 @@ describe("Journey Status utility", () => {
     const batch = groups[0];
     expect(batch.isMultiVehicle).toBe(true);
     expect(batch.totalVehicles).toBe(5);
-    expect(batch.acceptedCount).toBe(1);
-    expect(batch.waitingCount).toBe(4);
-    expect(batch.statusSummary.isConnected).toBe(true);
-    expect(batch.statusSummary.type).toBe("accepted");
-    expect(batch.statusSummary.label).toBe("1/5 Driver Accepted · 4 Waiting");
+    expect(batch.acceptedCount).toBe(0);
+    expect(batch.waitingCount).toBe(5);
+    expect(batch.statusSummary.isConnected).toBe(false);
   });
 
   it("should dynamically reflect Heading to Load stage and loading type for a 5-truck batch", () => {
@@ -489,8 +508,8 @@ describe("Journey Status utility", () => {
     expect(g.totalQuintal).toBe(220);
   });
 
-  it("accurately handles 1 completed truck and 14 accepted trucks in a 15-truck batch without mislabeling as 15/15 Completed", () => {
-    // 1 completed truck + 14 accepted trucks
+  it("accurately handles 1 completed truck and 14 accepted-but-idle trucks in a 15-truck batch", () => {
+    // 1 completed truck + 14 accepted-but-not-yet-working trucks
     const batch557Mixed: OrderDisplayItem[] = Array.from({ length: 15 }, (_, i) => ({
       id: `req-557-${i + 1}`,
       shipperRequestId: 700 + i,
@@ -505,7 +524,7 @@ describe("Journey Status utility", () => {
       item: "Constraction Materials",
       type: "Group",
       // Truck 1 is completed (statusId: 9)
-      // Trucks 2-15 are accepted (statusId: 4)
+      // Trucks 2-15 are accepted but have no working driver yet (statusId: 4)
       status: i === 0 ? "complete" : "ongoing",
       journeyStatusId: i === 0 ? 9 : 4,
       driverRequests: [
@@ -531,16 +550,16 @@ describe("Journey Status utility", () => {
     expect(g.batchId).toBe("557");
     expect(g.totalVehicles).toBe(15);
     expect(g.completedCount).toBe(1);
-    expect(g.activeCount).toBe(14);
-    expect(g.waitingCount).toBe(0);
-    expect(g.acceptedCount).toBe(15);
+    expect(g.activeCount).toBe(0);
+    expect(g.waitingCount).toBe(14);
+    expect(g.acceptedCount).toBe(1);
 
-    // Active label reflects ongoing trucks:
+    // Active label reflects only trucks with a working driver:
     expect(g.statusSummary.isConnected).toBe(true);
-    expect(g.statusSummary.label).toBe("14 Accepted");
-    expect(g.statusSummary.type).toBe("accepted");
+    expect(g.statusSummary.label).toBe("1 Completed · 14 Waiting");
+    expect(g.statusSummary.type).toBe("completed");
 
-    // Must NOT be marked as complete batch (since 14 trucks are still active!)
+    // Must NOT be marked as complete batch (since 14 trucks are still waiting!)
     const isBatchComplete = g.totalVehicles > 0 && g.completedCount === g.totalVehicles;
     expect(isBatchComplete).toBe(false);
   });
@@ -699,7 +718,9 @@ describe("Journey Status utility", () => {
     const ongoingBatches = groupOrdersByBatch(ongoingOrders);
     expect(ongoingBatches).toHaveLength(1);
     expect(ongoingBatches[0].batchId).toBe("557");
-    expect(ongoingBatches[0].statusSummary.label).toBe("14 Accepted");
+    // 14 accepted-but-idle trucks have no working driver, so no active summary.
+    expect(ongoingBatches[0].statusSummary.isConnected).toBe(false);
+    expect(ongoingBatches[0].statusSummary.label).toBe("");
     expect(ongoingBatches[0].orders).toHaveLength(14);
     expect(ongoingBatches[0].orders.every((o) => o.status === "ongoing")).toBe(true);
 
