@@ -16,7 +16,6 @@ import SidebarItem from "./SidebarItem";
 import { useAuth } from "../../context/AuthContext";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
 import {
-  useGetShipperRequestsQuery,
   useGetShipperRequestBatchesQuery,
 } from "../../lib/redux/api";
 import { mapBackendOrdersToDisplayItems } from "../../pages/orders/ordersDataMapper";
@@ -73,10 +72,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const effectiveOrgId = isManagingOrg ? (urlOrgId || routeOrgId || selectedOrgId || "") : "";
   const hasActiveOrg = Boolean(effectiveOrgId);
 
-  const sidebarOrdersArgs = useMemo(
-    () => ({ queueOrganizationUniqueId: effectiveOrgId, target: "all" as const, limit: 100 }),
-    [effectiveOrgId]
-  );
+  // While drilling into a single batch (`/orders?...&batch=<id>`) the page
+  // already fetches that batch via the batch-scoped API, so the sidebar's
+  // full-list subscription is redundant — and worse, every journey update
+  // forces a 100-row refetch alongside the scoped one. Drop it here; the
+  // badge count is not needed mid-drill-down.
+  const isBatchScopedOrdersView =
+    currentPath.startsWith("/orders") &&
+    Boolean(new URLSearchParams(currentSearch).get("batch"));
 
   const sidebarBatchesArgs = useMemo(
     () => ({
@@ -88,21 +91,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     [effectiveOrgId]
   );
 
-  // Check remaining orders for the managed organization
-  const { data: ordersData } = useGetShipperRequestsQuery(
-    sidebarOrdersArgs,
-    { skip: !effectiveOrgId }
-  );
-
   const { data: batchesData } = useGetShipperRequestBatchesQuery(
     sidebarBatchesArgs,
-    { skip: !effectiveOrgId }
+    { skip: !effectiveOrgId || isBatchScopedOrdersView }
   );
 
   const remainingOrdersCount = useMemo(() => {
-    if (!ordersData && !batchesData) return 0;
+    if (!batchesData) return 0;
     const orders = mapBackendOrdersToDisplayItems({
-      ordersData,
+      ordersData: null,
       batchesData,
       deletedIds: EMPTY_DELETED_IDS,
       editedOrders: EMPTY_EDITED_ORDERS,
@@ -114,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       (o) => getConnectedJourneyStatus(o).type !== "completed"
     );
     return groupOrdersByBatch(ongoingOrders).length;
-  }, [ordersData, batchesData, effectiveOrgId, t]);
+  }, [batchesData, effectiveOrgId, t]);
 
   const handleLogout = () => {
     logout();

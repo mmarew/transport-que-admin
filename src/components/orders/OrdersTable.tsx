@@ -33,7 +33,7 @@ export function OrdersTable({
 }: OrdersTableProps) {
   const { t } = useTranslation();
   const [expandedLocationId, setExpandedLocationId] = useState<string | null>(null);
-  const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
+  const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
 
   const batchGroups = useMemo(
     () => passedBatchGroups || groupOrdersByBatch(orders),
@@ -41,15 +41,7 @@ export function OrdersTable({
   );
 
   const toggleBatch = (batchKey: string) => {
-    setExpandedBatches((prev) => {
-      const next = new Set(prev);
-      if (next.has(batchKey)) {
-        next.delete(batchKey);
-      } else {
-        next.add(batchKey);
-      }
-      return next;
-    });
+    setExpandedBatchId((prev) => (prev === batchKey ? null : batchKey));
   };
 
   useEffect(() => {
@@ -173,7 +165,7 @@ export function OrdersTable({
                   );
                 }
 
-                const isExpanded = expandedBatches.has(group.batchKey);
+                const isExpanded = expandedBatchId === group.batchKey;
 
                 return (
                   <Fragment key={group.batchKey}>

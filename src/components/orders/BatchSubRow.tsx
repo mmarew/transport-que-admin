@@ -1,4 +1,5 @@
-import { Pencil, Trash2, Gavel, Clock } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Pencil, Trash2, Gavel, Clock, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem } from "./OrdersTypes";
 import {
@@ -10,7 +11,7 @@ import { renderVehicleType } from "./OrderPrimitives";
 
 export interface BatchSubRowProps {
   childOrder: OrderDisplayItem;
-  childIdx: number;
+  childIdx?: number;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
   onViewRequests?: (order: OrderDisplayItem) => void;
@@ -18,14 +19,46 @@ export interface BatchSubRowProps {
 
 export function BatchSubRow({
   childOrder,
-  childIdx,
   onEdit,
   onDelete,
   onViewRequests,
 }: BatchSubRowProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const journey = getConnectedJourneyStatus(childOrder);
   const childRequestId = childOrder.shipperRequestId || childOrder.id;
+
+  const handleNavigateToDriver = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const targetId =
+      childOrder.id ||
+      childOrder.shipperRequestUniqueId ||
+      childOrder.batchId ||
+      childOrder.shipperRequestId;
+    const isCompleted = journey.isConnected && journey.type === "completed";
+    const currentTab = isCompleted
+      ? "complete"
+      : (new URLSearchParams(location.search).get("tab") || "ongoing");
+
+    const returnParams = new URLSearchParams(location.search);
+    if (currentTab === "complete") {
+      returnParams.set("tab", "complete");
+    } else {
+      returnParams.delete("tab");
+    }
+    const returnUrl = `${location.pathname}${returnParams.toString() ? `?${returnParams.toString()}` : ""}`;
+
+    navigate(`/orders/driver/${encodeURIComponent(String(targetId))}`, {
+      state: {
+        order: childOrder,
+        fromTab: currentTab,
+        returnUrl,
+        batchKey: childOrder.batchId ? `batch-${childOrder.batchId}` : undefined,
+        targetCardId: childOrder.batchId ? `order-card-batch-${childOrder.batchId}` : undefined,
+      },
+    });
+  };
 
   return (
     <tr className="orders-row orders-batch-subrow">
@@ -35,12 +68,7 @@ export function BatchSubRow({
             ↳
           </span>
           <span className="orders-id-badge orders-id-badge--sub">
-            #{childRequestId}
-          </span>
-          <span className="orders-subrow-truck-label">
-            {t("orders.truckIndex", "Truck {{num}}", {
-              num: childIdx + 1,
-            })}
+            {childOrder.displayId || `#${childRequestId}`}
           </span>
         </div>
       </td>
@@ -93,8 +121,16 @@ export function BatchSubRow({
               type="button"
               className="orders-btn-bids orders-btn-bids--active"
               onClick={() => onViewRequests(childOrder)}
-              title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
-              aria-label={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+              title={
+                childOrder.type === "Group"
+                  ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                  : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+              }
+              aria-label={
+                childOrder.type === "Group"
+                  ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                  : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+              }
             >
               <Gavel size={13} />
               <span>{t("orders.bids", "Bids")}</span>
@@ -132,6 +168,15 @@ export function BatchSubRow({
               <span>{t("orders.waiting", "Waiting")}</span>
             </button>
           )}
+          <button
+            type="button"
+            className="orders-action-btn orders-action-btn--view"
+            onClick={handleNavigateToDriver}
+            title={t("orders.viewDriverDetails", "View driver details")}
+            aria-label={t("orders.viewDriverDetails", "View driver details")}
+          >
+            <Eye size={17} strokeWidth={2} />
+          </button>
           <button
             type="button"
             className="orders-action-btn orders-action-btn--edit"

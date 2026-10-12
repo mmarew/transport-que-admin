@@ -35,6 +35,11 @@ const SettingsPage = lazy(() =>
 const OrdersPage = lazy(() =>
   import("../pages/orders/OrdersPage").then((m) => ({ default: m.OrdersPage })),
 );
+const DriverDetailsPage = lazy(() =>
+  import("../pages/orders/driver-details/DriverDetailsPage").then((m) => ({
+    default: m.DriverDetailsPage,
+  })),
+);
 const SecurityPage = lazy(() =>
   import("../pages/security/SecurityPage").then((m) => ({
     default: m.SecurityPage,
@@ -130,6 +135,38 @@ export function AppRoutes() {
             <ProtectedRoute>
               <RoleGuard>
                 <OrdersPage />
+              </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Driver Details */}
+        <Route
+          path="/orders/driver/:orderId"
+          element={
+            <ProtectedRoute>
+              <RoleGuard>
+                <DriverDetailsPage />
+              </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orgs/:queueOrganizationUniqueId/orders/driver/:orderId"
+          element={
+            <ProtectedRoute>
+              <RoleGuard>
+                <DriverDetailsPage />
+              </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/driver-details/:orderId"
+          element={
+            <ProtectedRoute>
+              <RoleGuard>
+                <DriverDetailsPage />
               </RoleGuard>
             </ProtectedRoute>
           }

@@ -237,8 +237,8 @@ export function BatchMasterRow({
                       e.stopPropagation();
                       onViewRequests(group.orders[0]);
                     }}
-                    title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
-                    aria-label={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
+                    title={t("orders.companyBidsTitle", "Company Bids & Proposals")}
+                    aria-label={t("orders.companyBidsTitle", "Company Bids & Proposals")}
                   >
                     <Gavel size={13} />
                     <span>{t("orders.bids", "Bids")}</span>

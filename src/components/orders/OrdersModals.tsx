@@ -7,6 +7,7 @@ import { OrdersDeleteModal } from "./OrdersDeleteModal";
 
 export interface OrdersModalsProps {
   currentViewingOrder: OrderDisplayItem | null;
+  driverRequests?: import("./OrdersTypes").ShipperRequestDriverInfo[];
   activeOrg: {
     queueOrganizationUniqueId?: string;
     latitude?: number | string | null;
@@ -15,6 +16,8 @@ export interface OrdersModalsProps {
   } | null;
   onCloseViewing: () => void;
   onRefresh: () => void;
+  viewingTotalVehicles?: number;
+  viewingAcceptedVehicles?: number;
 
   showCreateModal: boolean;
   onCloseCreate: () => void;
@@ -31,9 +34,12 @@ export interface OrdersModalsProps {
 
 export function OrdersModals({
   currentViewingOrder,
+  driverRequests,
   activeOrg,
   onCloseViewing,
   onRefresh,
+  viewingTotalVehicles,
+  viewingAcceptedVehicles,
   showCreateModal,
   onCloseCreate,
   onOrderCreated,
@@ -64,16 +70,19 @@ export function OrdersModals({
       {currentViewingOrder && (
         <DriverBidsModal
           order={currentViewingOrder}
-          driverRequests={currentViewingOrder.driverRequests || []}
+          driverRequests={
+            driverRequests && driverRequests.length > 0
+              ? driverRequests
+              : currentViewingOrder.driverRequests || []
+          }
           queueOrganizationUniqueId={
             activeOrg?.queueOrganizationUniqueId ||
             currentViewingOrder.queueOrganizationUniqueId ||
             ""
           }
-          onClose={() => {
-            onCloseViewing();
-            onRefresh();
-          }}
+          totalVehicles={viewingTotalVehicles}
+          acceptedVehicles={viewingAcceptedVehicles}
+          onClose={onCloseViewing}
           onOrderUpdated={onRefresh}
         />
       )}

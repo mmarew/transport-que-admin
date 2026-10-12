@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -8,7 +8,9 @@ import {
   useListQueueOrganizationsQuery,
   useGetShipperRequestsQuery,
   useGetShipperRequestBatchesQuery,
+  api,
 } from "../../lib/redux/api";
+import { useAppDispatch } from "../../lib/redux/hooks";
 import { useQueueSocket } from "../../hooks/useQueueSocket";
 import { useOrdersView } from "../../hooks/useOrdersView";
 import { useQueueAdminStore } from "../../store/queueAdminStore";
@@ -16,19 +18,25 @@ import { normalizeOrgList, extractCity } from "../../utils/formatters";
 import { OrdersCardsList } from "../../components/orders/OrdersCardsList";
 import { OrdersPagination } from "../../components/orders/OrdersPagination";
 import { OrdersModals } from "../../components/orders/OrdersModals";
+import { isUUID, extractUUID } from "../../components/orders/bids/orderIdLookup";
 import type { OrderDisplayItem } from "../../components/orders/OrdersTypes";
+import {
+  extractJourneyStatusId,
+} from "../../utils/journeyStatus";
 import { mapBackendOrdersToDisplayItems } from "./ordersDataMapper";
 import "./OrdersPage.css";
 
 export function OrdersPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const selectedOrgId = useQueueAdminStore((s) => s.selectedOrgId);
   const setSelectedOrgId = useQueueAdminStore((s) => s.setSelectedOrgId);
 
   // Active organization
   const targetOrgId = searchParams.get("orgId") || selectedOrgId || "";
+  // Optional single-batch scope: /orders?orgId=<id>&batch=<shipperRequestBatchUniqueId>
+  const targetBatchId = searchParams.get("batch") || "";
   const { data: orgListData } = useListQueueOrganizationsQuery();
   const orgList = useMemo(() => normalizeOrgList(orgListData), [orgListData]);
 
@@ -43,20 +51,36 @@ export function OrdersPage() {
     );
   }, [orgList, targetOrgId]);
 
-  // Live WebSocket subscription for orders
-  const { socketConnected, isLive } = useQueueSocket(activeOrg?.queueOrganizationUniqueId || "");
-  const live = isLive || socketConnected;
-
   // Stable query arguments: use targetOrgId immediately so initial fetch is synchronized with Sidebar and cache-deduplicated
   const orgUniqueId = targetOrgId || activeOrg?.queueOrganizationUniqueId || "";
+
+  const location = useLocation();
+
+  // Active tab state: "ongoing" | "complete"
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"ongoing" | "complete">(() => {
+    if (tabParam === "complete" || tabParam === "ongoing") return tabParam;
+    if (location.state?.fromTab === "complete" || location.state?.activeTab === "complete") return "complete";
+    return "ongoing";
+  });
+
+  useEffect(() => {
+    if (tabParam === "complete" || tabParam === "ongoing") {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
 
   const shipperRequestsArgs = useMemo(
     () => ({
       queueOrganizationUniqueId: orgUniqueId,
       target: "all" as const,
       limit: 100,
+      // Batch-scoped: ask the backend for this batch's rows only instead of
+      // pulling every request for the org.
+      ...(targetBatchId && isUUID(targetBatchId) ? { shipperRequestBatchUniqueId: targetBatchId } : {}),
     }),
-    [orgUniqueId]
+    [orgUniqueId, targetBatchId]
   );
 
   const shipperBatchesArgs = useMemo(
@@ -69,7 +93,10 @@ export function OrdersPage() {
     [orgUniqueId]
   );
 
-  // Backend queries
+  // Backend queries:
+  // Only query general shipper requests when scoped to a specific target batch (drill-down).
+  // Otherwise, the main orders page relies on /shipperRequestBatch to list cards without
+  // spamming multiple API calls upfront.
   const {
     data: backendOrdersData,
     isLoading: isLoadingOrders,
@@ -86,17 +113,193 @@ export function OrdersPage() {
     skip: !orgUniqueId,
   });
 
+  const dispatch = useAppDispatch();
+
+  // Helper to reliably extract batch UUID across backend schema variants
+  const getBatchUid = React.useCallback((b: any): string => {
+    const raw =
+      b?.shipperRequestBatchUniqueId ||
+      b?.batchUniqueId ||
+      b?.uniqueId ||
+      b?.batch_unique_id ||
+      b?.shipper_request_batch_unique_id ||
+      "";
+    return extractUUID(String(raw)) || "";
+  }, []);
+
+  // ── Lazy batch details loading on card click / expand ──
+  // We keep a single expanded batch key (accordion style).
+  // Individual truck data is fetched ONLY when the card is expanded, rather than
+  // flooding the network tab on page load.
+  const [expandedBatchKey, setExpandedBatchKey] = useState<string | null>(
+    () => location.state?.batchKey || null
+  );
+  const [batchDetailsCache, setBatchDetailsCache] = useState<Record<string, any[]>>({});
+  const [loadingBatchUids, setLoadingBatchUids] = useState<Set<string>>(new Set());
+
+  // Helper to resolve the batch UUID given a batchKey or group object
+  const findBatchUid = React.useCallback(
+    (batchKey: string, group?: any): string => {
+      if (group) {
+        const directCandidate =
+          group.batchUniqueId ||
+          group.orders?.[0]?.batchUniqueId ||
+          group.orders?.[0]?.shipperRequestBatchUniqueId ||
+          getBatchUid(group.orders?.[0]?.rawItem);
+        const resolvedDirect = extractUUID(String(directCandidate || ""));
+        if (resolvedDirect) return resolvedDirect;
+      }
+      const cleanKey = batchKey.replace(/^batch-/, "").trim();
+      const directClean = extractUUID(cleanKey);
+      if (directClean) return directClean;
+
+      const batches = Array.isArray(backendBatchesData?.data) ? backendBatchesData!.data : [];
+      const match = batches.find((b: any) => {
+        const uid = getBatchUid(b);
+        return (uid && uid === cleanKey) || String(b?.batchId) === cleanKey;
+      });
+      return match ? getBatchUid(match) : "";
+    },
+    [backendBatchesData?.data, getBatchUid]
+  );
+
+  // Lazy fetch batch details on demand
+  const fetchBatchDetails = React.useCallback(
+    (batchUid: string, force = false) => {
+      if (!orgUniqueId || !batchUid || !isUUID(batchUid)) return;
+      if (!force && batchDetailsCache[batchUid]) return;
+
+      setLoadingBatchUids((prev) => new Set(prev).add(batchUid));
+
+      dispatch(
+        (api.endpoints as any).getShipperRequests.initiate(
+          {
+            queueOrganizationUniqueId: orgUniqueId,
+            target: "all" as const,
+            limit: 100,
+            shipperRequestBatchUniqueId: batchUid,
+          },
+          { subscribe: false }
+        )
+      )
+        .then((res: any) => {
+          const rows = Array.isArray(res?.data?.data)
+            ? res.data.data
+            : Array.isArray(res?.data)
+            ? res.data
+            : [];
+          setBatchDetailsCache((prev) => ({
+            ...prev,
+            [batchUid]: rows,
+          }));
+        })
+        .catch((err: any) => {
+          console.error("Failed to load batch details:", err);
+        })
+        .finally(() => {
+          setLoadingBatchUids((prev) => {
+            const next = new Set(prev);
+            next.delete(batchUid);
+            return next;
+          });
+        });
+    },
+    [orgUniqueId, dispatch, batchDetailsCache]
+  );
+
+  // Auto-fetch details if returning to an expanded batch
+  useEffect(() => {
+    if (location.state?.batchKey) {
+      const uid = findBatchUid(location.state.batchKey);
+      if (uid && isUUID(uid)) {
+        fetchBatchDetails(uid);
+      }
+    }
+  }, [location.state?.batchKey, backendBatchesData?.data, findBatchUid, fetchBatchDetails]);
+
+  // Toggle card expansion: expands the clicked card, collapses previous,
+  // and lazily triggers details fetch only for the clicked card
+  const handleToggleExpandBatch = React.useCallback(
+    (batchKey: string, group?: any) => {
+      if (expandedBatchKey === batchKey) {
+        setExpandedBatchKey(null);
+        return;
+      }
+      setExpandedBatchKey(batchKey);
+      const batchUid = findBatchUid(batchKey, group);
+      if (batchUid && isUUID(batchUid)) {
+        fetchBatchDetails(batchUid);
+      }
+    },
+    [expandedBatchKey, findBatchUid, fetchBatchDetails]
+  );
+
+  // Merge individual orders (if any) with lazily loaded per-batch truck rows
+  const mergedOrdersData = useMemo(() => {
+    const cachedRows = Object.values(batchDetailsCache).flat();
+    const individual: unknown[] = Array.isArray((backendOrdersData as any)?.data)
+      ? (backendOrdersData as any).data
+      : [];
+    if (!cachedRows.length && !individual.length) {
+      return backendOrdersData || { data: [] };
+    }
+    // Deduplicate by shipperRequestUniqueId to avoid double-counting
+    const existingIds = new Set<string>(
+      individual
+        .map((r: any) => r?.shipperRequest?.shipperRequestUniqueId || (r as any)?.shipperRequestUniqueId)
+        .filter(Boolean)
+    );
+    const newRows = cachedRows.filter(
+      (r: any) => !existingIds.has(r?.shipperRequest?.shipperRequestUniqueId || (r as any)?.shipperRequestUniqueId)
+    );
+    return { ...(backendOrdersData as any) ?? {}, data: [...individual, ...newRows] };
+  }, [backendOrdersData, batchDetailsCache]);
+
+  const lastRefetchTimeRef = useRef(0);
   const refetchAll = React.useCallback(() => {
-    refetchOrders();
+    const now = Date.now();
+    if (now - lastRefetchTimeRef.current < 600) return;
+    lastRefetchTimeRef.current = now;
+    if (targetBatchId) {
+      refetchOrders();
+    }
     refetchBatches();
-  }, [refetchOrders, refetchBatches]);
+    if (expandedBatchKey) {
+      const uid = findBatchUid(expandedBatchKey);
+      if (uid && isUUID(uid)) fetchBatchDetails(uid, true);
+    }
+  }, [refetchOrders, refetchBatches, targetBatchId, expandedBatchKey, findBatchUid, fetchBatchDetails]);
+
+  // Live WebSocket subscription for orders
+  const { socketConnected, isLive } = useQueueSocket(orgUniqueId, refetchAll);
+  const live = isLive || socketConnected;
+
+  const handleTabChange = React.useCallback(
+    (newTab: "ongoing" | "complete") => {
+      if (newTab === activeTab) {
+        refetchAll();
+        return;
+      }
+      setActiveTab(newTab);
+      const next = new URLSearchParams(searchParams);
+      if (newTab === "complete") {
+        next.set("tab", "complete");
+      } else {
+        next.delete("tab");
+      }
+      setSearchParams(next);
+    },
+    [activeTab, searchParams, setSearchParams, refetchAll]
+  );
 
   const handleCloseCreate = React.useCallback(() => setShowCreateModal(false), []);
   const handleOrderCreated = React.useCallback(() => {
     setShowCreateModal(false);
     refetchAll();
   }, [refetchAll]);
-  const handleCloseViewing = React.useCallback(() => setViewingRequestsOrder(null), []);
+  const handleCloseViewing = React.useCallback(() => {
+    setViewingRequestsOrder(null);
+  }, []);
   const handleCloseEdit = React.useCallback(() => setEditingOrder(null), []);
   const handleCloseDelete = React.useCallback(() => setDeletingOrder(null), []);
 
@@ -110,33 +313,74 @@ export function OrdersPage() {
   const [deletingOrder, setDeletingOrder] = useState<OrderDisplayItem | null>(null);
   const [viewingRequestsOrder, setViewingRequestsOrder] = useState<OrderDisplayItem | null>(null);
 
-  // Derive orders from backend data via data mapper
+  // When a single batch is selected, keep the batches list in sync: the
+  // /shipperRequestBatch call still returns every batch, and the orders mapper
+  // re-adds any batch it sees there that isn't already represented. Scoping it
+  // client-side guarantees only the selected batch renders.
+  const scopedBatchesData = useMemo(() => {
+    if (!targetBatchId || !backendBatchesData) return backendBatchesData;
+    const list = Array.isArray(backendBatchesData.data)
+      ? backendBatchesData.data
+      : [];
+    const filtered = list.filter((b) => {
+      const uid = getBatchUid(b);
+      return uid === targetBatchId || String(b?.batchId) === targetBatchId;
+    });
+    return {
+      ...backendBatchesData,
+      data: filtered.length > 0 ? filtered : list,
+    };
+  }, [backendBatchesData, targetBatchId, getBatchUid]);
+
+  // Derive orders from backend data via data mapper.
+  // mergedOrdersData combines individual_target rows (from the general query)
+  // with company_target per-truck rows (from per-batch queries), giving the
+  // mapper accurate per-truck journeyStatusIds instead of a single batch-level one.
   const orders = useMemo<OrderDisplayItem[]>(
     () =>
       mapBackendOrdersToDisplayItems({
-        ordersData: backendOrdersData,
-        batchesData: backendBatchesData,
+        ordersData: mergedOrdersData,
+        batchesData: scopedBatchesData,
         deletedIds,
         editedOrders,
         activeOrg,
         targetOrgId,
         t,
       }),
-    [backendOrdersData, backendBatchesData, deletedIds, editedOrders, activeOrg, targetOrgId, t]
+    [mergedOrdersData, scopedBatchesData, deletedIds, editedOrders, activeOrg, targetOrgId, t]
   );
 
   // Extracted orders view pipeline (tabs, filters, sorts, pagination)
   const phoneFilter = searchParams.get("phone") || "";
   const {
-    activeTab,
-    setActiveTab,
     safeCurrentPage,
     setCurrentPage,
     allBatches,
     currentBatches,
     paginatedOrders,
     totalPages,
-  } = useOrdersView({ orders, phoneFilter });
+  } = useOrdersView({
+    orders,
+    phoneFilter,
+    activeTab,
+    onTabChange: handleTabChange,
+    initialPage: location.state?.page || 1,
+  });
+
+  // Smoothly scroll back to the specific card if returning from driver details
+  const hasScrolledRef = useRef(false);
+  useEffect(() => {
+    if (location.state?.targetCardId && !hasScrolledRef.current && currentBatches.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(location.state.targetCardId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          hasScrolledRef.current = true;
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state?.targetCardId, currentBatches]);
 
   // Handlers
   const confirmDelete = () => {
@@ -187,6 +431,67 @@ export function OrdersPage() {
     return orders.find((o) => o.id === viewingRequestsOrder.id) || viewingRequestsOrder;
   }, [orders, viewingRequestsOrder]);
 
+  // Real required-vehicle count for the bids modal. `OrderDisplayItem.totalVehicles`
+  // is undefined for step-1 shipper-request rows (the mapper never sets it), so the
+  // modal previously fell back to a hardcoded 3. The batch group knows the true count
+  // (4 rows sharing the batch id -> group.totalVehicles), which is the backend data.
+  const viewingBatchGroup = useMemo(() => {
+    if (!currentViewingOrder) return undefined;
+    return allBatches.find((g) =>
+      g.orders.some((o) => o.id === currentViewingOrder.id)
+    );
+  }, [currentViewingOrder, allBatches]);
+
+  const viewingTotalVehicles =
+    viewingBatchGroup?.totalVehicles ?? currentViewingOrder?.totalVehicles;
+
+  // Numerator: count of all trucks in this batch group that are accepted by the shipper
+  // (status >= 4, heading to load, loaded, etc.). Status 3 is "Accepted by Driver", awaiting shipper acceptance.
+  const viewingAcceptedVehicles = useMemo(() => {
+    const isTruckShipperAccepted = (o: OrderDisplayItem) => {
+      const sid = (o.journeyStatusId ?? o.journeyStatus) != null
+        ? extractJourneyStatusId(o.journeyStatusId ?? o.journeyStatus)
+        : undefined;
+      return typeof sid === "number" && ((sid >= 4 && sid <= 9) || sid === 14);
+    };
+
+    if (!viewingBatchGroup) {
+      if (!currentViewingOrder) return 0;
+      return isTruckShipperAccepted(currentViewingOrder) ? 1 : 0;
+    }
+    const connectedCount = viewingBatchGroup.orders.filter(isTruckShipperAccepted).length;
+    return Math.max(viewingBatchGroup.acceptedCount ?? 0, connectedCount);
+  }, [viewingBatchGroup, currentViewingOrder]);
+
+  // Pull driverRequests from the current viewing order or sibling orders in the batch
+  const viewingDriverRequests = useMemo(() => {
+    if (currentViewingOrder?.driverRequests && currentViewingOrder.driverRequests.length > 0) {
+      return currentViewingOrder.driverRequests;
+    }
+    if (viewingBatchGroup) {
+      for (const sibling of viewingBatchGroup.orders) {
+        if (sibling.driverRequests && sibling.driverRequests.length > 0) {
+          return sibling.driverRequests;
+        }
+      }
+    }
+    return currentViewingOrder?.driverRequests || [];
+  }, [currentViewingOrder, viewingBatchGroup]);
+
+  // Enrich order with batch-level totals when viewing a group batch
+  const effectiveViewingOrder = useMemo(() => {
+    if (!currentViewingOrder) return null;
+    if (currentViewingOrder.type === "Group" && viewingBatchGroup) {
+      return {
+        ...currentViewingOrder,
+        batchTotalCost: currentViewingOrder.batchTotalCost ?? viewingBatchGroup.totalCost,
+        batchTotalQuintal: currentViewingOrder.batchTotalQuintal ?? viewingBatchGroup.totalQuintal,
+        totalVehicles: viewingTotalVehicles ?? currentViewingOrder.totalVehicles,
+      };
+    }
+    return currentViewingOrder;
+  }, [currentViewingOrder, viewingBatchGroup, viewingTotalVehicles]);
+
   return (
     <DashboardLayout activeTab="orders">
       <div className="orders-page-container">
@@ -236,14 +541,14 @@ export function OrdersPage() {
           <button
             type="button"
             className={`orders-tab-pill ${activeTab === "ongoing" ? "active" : ""}`}
-            onClick={() => setActiveTab("ongoing")}
+            onClick={() => handleTabChange("ongoing")}
           >
             {t("orders.ongoingTab", "Ongoing")}
           </button>
           <button
             type="button"
             className={`orders-tab-pill ${activeTab === "complete" ? "active" : ""}`}
-            onClick={() => setActiveTab("complete")}
+            onClick={() => handleTabChange("complete")}
           >
             {t("orders.completeTab", "Complete")}
           </button>
@@ -254,9 +559,23 @@ export function OrdersPage() {
           batchGroups={currentBatches}
           orders={paginatedOrders}
           activeTab={activeTab}
+          expandedBatchId={expandedBatchKey}
+          onToggleExpand={handleToggleExpandBatch}
+          loadingBatchUids={loadingBatchUids}
+          currentPage={safeCurrentPage}
           onEdit={setEditingOrder}
           onDelete={setDeletingOrder}
-          onViewRequests={setViewingRequestsOrder}
+          onViewRequests={(order) => {
+            setViewingRequestsOrder(order);
+            const rawUid =
+              order.batchUniqueId ||
+              (order as any).shipperRequestBatchUniqueId ||
+              (order as any).batchUniqueId;
+            const uid = extractUUID(String(rawUid || ""));
+            if (uid && isUUID(uid)) {
+              fetchBatchDetails(uid);
+            }
+          }}
         />
 
         {/* ── Pagination ── */}
@@ -271,10 +590,13 @@ export function OrdersPage() {
 
         {/* ── All Modals Orchestration ── */}
         <OrdersModals
-          currentViewingOrder={currentViewingOrder}
+          currentViewingOrder={effectiveViewingOrder}
+          driverRequests={viewingDriverRequests}
           activeOrg={activeOrg}
           onCloseViewing={handleCloseViewing}
           onRefresh={refetchAll}
+          viewingTotalVehicles={viewingTotalVehicles}
+          viewingAcceptedVehicles={viewingAcceptedVehicles}
           showCreateModal={showCreateModal}
           onCloseCreate={handleCloseCreate}
           onOrderCreated={handleOrderCreated}

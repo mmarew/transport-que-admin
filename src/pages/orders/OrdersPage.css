@@ -223,6 +223,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  width: 100%;
 }
 
 .order-card-header-left {
@@ -230,6 +231,7 @@
   align-items: flex-start;
   gap: 0.75rem;
   min-width: 0;
+  flex: 1;
 }
 
 .order-card-chevron-btn {
@@ -257,12 +259,19 @@
 .order-card-title-group {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.25rem;
   min-width: 0;
 }
 
+.order-card-title-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
 .order-card-id {
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: #0284c7;
   letter-spacing: -0.01em;
@@ -289,6 +298,7 @@
   align-items: center;
   gap: 0.625rem;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* Status / Waiting Badge */
@@ -306,6 +316,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .order-card-badge-waiting:hover {
@@ -334,6 +345,7 @@
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
   color: #334155;
+  flex-shrink: 0;
 }
 
 .order-card-badge-status--completed {
@@ -374,6 +386,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  margin-left: 0.25rem;
 }
 
 .order-card-action-btn {
@@ -394,6 +407,12 @@
   background: #f8fafc;
   border-color: #cbd5e1;
   color: #0b4d6d;
+}
+
+.order-card-action-btn--view:hover {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0284c7;
 }
 
 .order-card-action-btn--delete:hover {
@@ -545,8 +564,28 @@
 
 .order-subcard-id {
   font-size: 0.8125rem;
-  font-weight: 600;
-  color: #475569;
+  font-weight: 700;
+  color: #0B4D6D;
+  background: #f0f7fa;
+  border: 1px solid #cce3ed;
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+  user-select: text;
+}
+
+.orders-id-badge--clickable {
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  border: none;
+}
+
+.orders-id-badge--clickable:hover {
+  background: #0B4D6D !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(11, 77, 109, 0.25) !important;
 }
 
 .order-subcard-meta {
@@ -624,6 +663,35 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+
+.order-subcard-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px dashed #cbd5e1;
+}
+
+.order-subcard-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #0284c7;
+  border-radius: 50%;
+  animation: order-card-spin 0.7s linear infinite;
+}
+
+@keyframes order-card-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Legacy table styles retained for backwards-compat */
@@ -776,7 +844,7 @@
 .orders-batch-id-wrapper {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .orders-batch-expand-btn {
@@ -847,15 +915,6 @@
   line-height: 1;
 }
 
-.orders-subrow-truck-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #475569;
-  background: #e2e8f0;
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  white-space: nowrap;
-}
 
 .td-subrow-cell {
   font-size: 0.8125rem;
@@ -930,14 +989,6 @@
   gap: 0.4rem;
 }
 
-.orders-subcard-truck-tag {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #334155;
-  background: #e2e8f0;
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-}
 
 .orders-m-subcard-meta {
   display: flex;
@@ -1335,6 +1386,19 @@
   width: 28px;
   height: 28px;
   flex-shrink: 0;
+}
+
+.orders-action-btn--view {
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  color: #0284c7;
+}
+
+.orders-action-btn--view:hover {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+  transform: translateY(-1px);
 }
 
 .orders-action-btn--edit {

@@ -162,7 +162,11 @@ export type GetEntryHistoryResponse = ApiData<
 
 export interface AcceptDriverRequestArgs {
   queueOrganizationUniqueId: string;
-  shipperRequestUniqueId: string;
+  /** Accept key for PUT /api/company/bids/:companyBidRequestUniqueId/status. */
+  companyBidRequestUniqueId?: string;
+  /** Target bidStatus for the accept call (e.g. "selected"). Defaults to "selected". */
+  bidStatus?: string;
+  shipperRequestUniqueId?: string;
   driverPhoneNumber?: string;
   driverUserUniqueId?: string;
   driverRequestId?: number | string;
@@ -257,6 +261,9 @@ export interface GetShipperRequestsArgs {
   page?: number;
   limit?: number;
   journeyStatusId?: string;
+  /** Scopes the fetch to one batch so the client gets that batch's rows
+   *  instead of pulling every request for the org. */
+  shipperRequestBatchUniqueId?: string;
 }
 
 export interface GetShipperRequestsResponse {
@@ -278,6 +285,7 @@ export interface ShipperRequestBatchBid {
 export interface ShipperRequestBatch {
   batchId: number;
   batchUniqueId: string;
+  shipperRequestBatchUniqueId?: string;
   shipperUserUniqueId?: string;
   vehicleTypeUniqueId?: string;
   totalVehicles: number;
@@ -389,3 +397,36 @@ export type ApproveBiddingResponse = ApiData<{
   count: number;
   waitingMatched: number;
 }>;
+
+export interface CompanyBidItem {
+  companyBidRequestUniqueId: string;
+  shipperRequestBatchId?: string | null;
+  shipperRequestBatchUniqueId?: string | null;
+  batchId?: number | string | null;
+  companyUniqueId?: string | null;
+  companyName?: string | null;
+  numberOfVehiclesOffered?: number | null;
+  vehicleTypeUniqueId?: string | null;
+  vehicleTypeName?: string | null;
+  proposedCostPerVehicle?: number | string | null;
+  proposedTotalCost?: number | string | null;
+  bidNotes?: string | null;
+  bidStatus?: string | null;
+  journeyStatusId?: number | null;
+  companyBidRequestCreatedAt?: string | null;
+  [key: string]: unknown;
+}
+
+export type GetCompanyBidsArgs = {
+  companyUniqueId?: string;
+  shipperRequestBatchId?: string;
+  shipperRequestBatchUniqueId?: string;
+  target?: string;
+  bidStatus?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type GetCompanyBidsResponse = ApiData<CompanyBidItem[]> & {
+  pagination?: PaginationMeta;
+};

@@ -18,10 +18,11 @@ export interface BidsToolbarProps {
   shownCount: number;
   totalFiltered: number;
   onShowAll: () => void;
+  isCompany?: boolean;
 }
 
 /**
- * BidsToolbar provides search, sorting, display limit, and count bar for driver bids.
+ * BidsToolbar provides search, sorting, display limit, and count bar for bids.
  */
 export function BidsToolbar({
   searchTerm,
@@ -33,6 +34,7 @@ export function BidsToolbar({
   shownCount,
   totalFiltered,
   onShowAll,
+  isCompany,
 }: BidsToolbarProps) {
   const { t } = useTranslation();
 
@@ -44,10 +46,17 @@ export function BidsToolbar({
           <input
             type="text"
             className="dbm-search-input"
-            placeholder={t(
-              "orders.searchDriversPlaceholder",
-              "Search by driver name, phone, or plate...",
-            )}
+            placeholder={
+              isCompany
+                ? t(
+                    "orders.searchCompaniesPlaceholder",
+                    "Search by company name or phone...",
+                  )
+                : t(
+                    "orders.searchDriversPlaceholder",
+                    "Search by driver name, phone, or plate...",
+                  )
+            }
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -82,7 +91,9 @@ export function BidsToolbar({
                 {t("orders.highestPriceFirst", "Highest Offer First")}
               </option>
               <option value="name">
-                {t("orders.nameAZ", "Driver Name (A-Z)")}
+                {isCompany
+                  ? t("orders.companyNameAZ", "Company Name (A-Z)")
+                  : t("orders.nameAZ", "Driver Name (A-Z)")}
               </option>
               <option value="default">
                 {t("orders.defaultOrder", "Default Order")}
@@ -108,11 +119,17 @@ export function BidsToolbar({
 
       <div className="dbm-showing-bar">
         <span className="dbm-showing-text">
-          {t("orders.showingDrivers", {
-            shown: shownCount,
-            total: totalFiltered,
-            defaultValue: `Showing ${shownCount} of ${totalFiltered} drivers`,
-          })}
+          {isCompany
+            ? t("orders.showingCompanies", {
+                shown: shownCount,
+                total: totalFiltered,
+                defaultValue: `Showing ${shownCount} of ${totalFiltered} companies`,
+              })
+            : t("orders.showingDrivers", {
+                shown: shownCount,
+                total: totalFiltered,
+                defaultValue: `Showing ${shownCount} of ${totalFiltered} drivers`,
+              })}
         </span>
         {totalFiltered > shownCount && (
           <button

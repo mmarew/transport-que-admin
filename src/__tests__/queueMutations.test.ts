@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { checkinSchema, dispatchSchema, setupOrgSchema, overrideSchema, createOrderSchema } from "../schemas/queue";
 import { resolveVehicleName, registerDynamicVehicleTypes, getVehicleCapacity } from "../utils/vehicleType";
 import parseError from "../utils/parseError";
+import { en } from "../i18n/en";
+import { am } from "../i18n/am";
 
 describe("Queue Business Logic & Mutation Validation Suite", () => {
   describe("Manual Check-in Validation (checkinSchema)", () => {
@@ -661,6 +663,25 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
 
       expect(processedBids[3].cost).toBe(50000);
       expect(processedBids[3].diffStatus).toBe("match");
+    });
+
+    it("should provide distinct acceptance messages for individual driver vs company requests in en and am", () => {
+      expect(en.orders.driverRequestAccepted).toBe("Driver request accepted successfully");
+      expect(en.orders.companyRequestAccepted).toBe("Company request accepted successfully");
+
+      expect(am.orders.driverRequestAccepted).toBe("የአሽከርካሪው ጥያቄ በትክክል ተቀባይነት አግኝቷል");
+      expect(am.orders.companyRequestAccepted).toBe("የድርጅቱ ጥያቄ በትክክል ተቀባይነት አግኝቷል");
+    });
+
+    it("should correctly resolve the acceptance message for individual drivers vs company bids", () => {
+      const getAcceptanceMessage = (isCompany: boolean) =>
+        isCompany ? en.orders.companyRequestAccepted : en.orders.driverRequestAccepted;
+
+      // Individual driver request
+      expect(getAcceptanceMessage(false)).toBe("Driver request accepted successfully");
+
+      // Company bid / request
+      expect(getAcceptanceMessage(true)).toBe("Company request accepted successfully");
     });
   });
 });
