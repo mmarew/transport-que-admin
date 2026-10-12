@@ -45,6 +45,9 @@ const appAPIs = {
     // Driver directory for manual check-in — queue org staff only.
     driverDirectoryAPI: "/queue/driverDirectory",
 
+    // Driver account status and verified documents
+    accountStatusAPI: "/api/account/status",
+
     // ── Bidding on behalf of a shipper ────────────────────────────────────
     approveBiddingAPI: "/queue/bidding/approve",
     getBidsForOrderAPI: "/queue/bidding/order/:shipperRequestUniqueId/bids",

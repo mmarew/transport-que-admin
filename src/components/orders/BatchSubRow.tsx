@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { Pencil, Trash2, Gavel, Clock } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Pencil, Trash2, Gavel, Clock, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem } from "./OrdersTypes";
 import {
@@ -25,6 +25,7 @@ export function BatchSubRow({
 }: BatchSubRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const journey = getConnectedJourneyStatus(childOrder);
   const childRequestId = childOrder.shipperRequestId || childOrder.id;
 
@@ -35,8 +36,27 @@ export function BatchSubRow({
       childOrder.shipperRequestUniqueId ||
       childOrder.batchId ||
       childOrder.shipperRequestId;
+    const isCompleted = journey.isConnected && journey.type === "completed";
+    const currentTab = isCompleted
+      ? "complete"
+      : (new URLSearchParams(location.search).get("tab") || "ongoing");
+
+    const returnParams = new URLSearchParams(location.search);
+    if (currentTab === "complete") {
+      returnParams.set("tab", "complete");
+    } else {
+      returnParams.delete("tab");
+    }
+    const returnUrl = `${location.pathname}${returnParams.toString() ? `?${returnParams.toString()}` : ""}`;
+
     navigate(`/orders/driver/${encodeURIComponent(String(targetId))}`, {
-      state: { order: childOrder },
+      state: {
+        order: childOrder,
+        fromTab: currentTab,
+        returnUrl,
+        batchKey: childOrder.batchId ? `batch-${childOrder.batchId}` : undefined,
+        targetCardId: childOrder.batchId ? `order-card-batch-${childOrder.batchId}` : undefined,
+      },
     });
   };
 
@@ -47,14 +67,9 @@ export function BatchSubRow({
           <span className="orders-subrow-tree" aria-hidden="true">
             ↳
           </span>
-          <button
-            type="button"
-            className="orders-id-badge orders-id-badge--sub orders-id-badge--clickable"
-            onClick={handleNavigateToDriver}
-            title={t("orders.viewDriverDetails", "View driver details")}
-          >
+          <span className="orders-id-badge orders-id-badge--sub">
             {childOrder.displayId || `#${childRequestId}`}
-          </button>
+          </span>
         </div>
       </td>
       <td className="td-shipper td-subrow-cell" title={childOrder.shipper}>
@@ -153,6 +168,15 @@ export function BatchSubRow({
               <span>{t("orders.waiting", "Waiting")}</span>
             </button>
           )}
+          <button
+            type="button"
+            className="orders-action-btn orders-action-btn--view"
+            onClick={handleNavigateToDriver}
+            title={t("orders.viewDriverDetails", "View driver details")}
+            aria-label={t("orders.viewDriverDetails", "View driver details")}
+          >
+            <Eye size={17} strokeWidth={2} />
+          </button>
           <button
             type="button"
             className="orders-action-btn orders-action-btn--edit"

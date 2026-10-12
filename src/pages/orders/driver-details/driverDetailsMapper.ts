@@ -23,6 +23,7 @@ export interface DriverDetailsModel {
   driverInitials: string;
   driverPhone: string;
   driverId: string;
+  companyName: string | null;
   isDriverAssigned: boolean;
   driverStatus: {
     label: string;
@@ -94,6 +95,8 @@ export interface DriverDetailsModel {
 export interface ExtraDriverContext {
   queueStatusData?: any;
   directoryData?: any;
+  accountStatusData?: any;
+  driverAccountStatus?: any;
 }
 
 /**
@@ -157,6 +160,7 @@ export function buildDriverDetailsModel(
     driverInitials,
     driverPhone,
     driverId,
+    companyName,
   } = driverIdentity;
 
   // 3. Journey Status
@@ -224,6 +228,7 @@ export function buildDriverDetailsModel(
     matchedQueueEntry,
     queueEntry,
     acceptedBid,
+    extraContext,
   );
   const candidateDriverObjs = poolCandidateDriverObjs(
     rawDriverReq,
@@ -232,6 +237,7 @@ export function buildDriverDetailsModel(
     rawItem,
     rawReq,
     acceptedBid,
+    extraContext,
   );
 
   const vehicle = resolveVehicleSpecs(
@@ -245,9 +251,10 @@ export function buildDriverDetailsModel(
     isDriverAssigned,
     candidateVehicles,
     candidateDriverObjs,
+    extraContext,
   );
 
-  const licence = resolveLicenceSpecs(candidateDriverObjs, isDriverAssigned);
+  const licence = resolveLicenceSpecs(candidateDriverObjs, isDriverAssigned, extraContext, rawDriverReq);
 
   // 8. Organization & Payment
   const orgName = activeOrg?.queueOrganizationName || order?.shipper || "Transport Terminal";
@@ -293,6 +300,7 @@ export function buildDriverDetailsModel(
     driverInitials,
     driverPhone,
     driverId,
+    companyName,
     isDriverAssigned,
     driverStatus: {
       label: statusLabel,

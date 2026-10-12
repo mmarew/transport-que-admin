@@ -10,10 +10,12 @@ import {
   useGetBidsForOrderQuery,
   useGetQueueStatusQuery,
   useListVehicleDriversQuery,
+  useGetDriverAccountStatusQuery,
 } from "../../../lib/redux/api";
 import { useQueueAdminStore } from "../../../store/queueAdminStore";
 import { normalizeOrgList, extractCity } from "../../../utils/formatters";
 import type { OrderDisplayItem } from "../../../components/orders/OrdersTypes";
+import { getConnectedJourneyStatus } from "../../../components/orders/OrdersTypes";
 import { mapBackendOrdersToDisplayItems } from "../ordersDataMapper";
 import { buildDriverDetailsModel } from "./driverDetailsMapper";
 import { DriverHeaderAndStats } from "./components/DriverHeaderAndStats";
@@ -185,20 +187,45 @@ export function DriverDetailsPage() {
     }
   );
 
-  // Driver details model from mapped order, real bids, queue status, and directory
+  // Driver account status & verified documents (vehicle plate, insurance, driver's license)
+  const candidateDriverUserUid =
+    resolvedOrder?.driverRequests?.[0]?.userUniqueId ||
+    (resolvedOrder?.driverRequests?.[0] as any)?.driverUserUniqueId ||
+    (resolvedOrder as any)?.rawItem?.driverUserUniqueId ||
+    (resolvedOrder as any)?.rawItem?.userUniqueId;
+
+  const { data: accountStatusData } = useGetDriverAccountStatusQuery(
+    {
+      ownerUserUniqueId: candidateDriverUserUid || undefined,
+      phoneNumber: !candidateDriverUserUid && candidatePhone ? String(candidatePhone) : undefined,
+      roleId: 2,
+    },
+    {
+      skip: !candidateDriverUserUid && !candidatePhone,
+    }
+  );
+
+  // Driver details model from mapped order, real bids, queue status, directory, and driver account status
   const activeModel = useMemo(() => {
     return buildDriverDetailsModel(resolvedOrder, activeOrg, bidsData, {
       queueStatusData,
       directoryData,
+      accountStatusData,
     });
-  }, [resolvedOrder, activeOrg, bidsData, queueStatusData, directoryData]);
+  }, [resolvedOrder, activeOrg, bidsData, queueStatusData, directoryData, accountStatusData]);
+
+  const isCompletedOrder =
+    resolvedOrder && getConnectedJourneyStatus(resolvedOrder).type === "completed";
+  const returnTab =
+    location.state?.fromTab || (isCompletedOrder ? "complete" : undefined);
+  const backToOrdersUrl =
+    location.state?.returnUrl ||
+    (targetOrgId
+      ? `/orgs/${targetOrgId}/orders${returnTab === "complete" ? "?tab=complete" : ""}`
+      : `/orders${returnTab === "complete" ? "?tab=complete" : ""}`);
 
   const handleBackToOrders = () => {
-    if (targetOrgId) {
-      navigate(`/orgs/${targetOrgId}/orders`);
-    } else {
-      navigate("/orders");
-    }
+    navigate(backToOrdersUrl, { state: location.state });
   };
 
   const orgName = activeOrg?.queueOrganizationName || "Cement Factory";
@@ -225,6 +252,11 @@ export function DriverDetailsPage() {
         {/* ── Dedicated Mobile Top Header (Matches Mobile Design Mockup) ── */}
         <div className="driver-mobile-header">
           <h1 className="driver-mobile-title">{activeModel.driverName}</h1>
+          {activeModel.companyName ? (
+            <div className="driver-mobile-company-tag" style={{ fontSize: "0.8rem", color: "var(--color-primary, #0B4D6D)", fontWeight: 600, marginTop: "2px" }}>
+              Company · {activeModel.companyName}
+            </div>
+          ) : null}
           <div className="driver-mobile-route">
             <span>{activeModel.route.origin}</span>
             <span className="driver-mobile-route-arrow">→</span>
@@ -232,7 +264,8 @@ export function DriverDetailsPage() {
           </div>
           <div className="driver-mobile-meta-row">
             <Link
-              to={targetOrgId ? `/orgs/${targetOrgId}/orders` : "/orders"}
+              to={backToOrdersUrl}
+              state={location.state}
               className="driver-mobile-order-link"
             >
               Order #{activeModel.orderNumber}
@@ -260,7 +293,8 @@ export function DriverDetailsPage() {
 
           <div className="driver-breadcrumb">
             <Link
-              to={targetOrgId ? `/orgs/${targetOrgId}/orders` : "/orders"}
+              to={backToOrdersUrl}
+              state={location.state}
               className="driver-breadcrumb-link"
             >
               Order #{activeModel.orderNumber}

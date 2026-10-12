@@ -1040,7 +1040,7 @@ export function mapBackendOrdersToDisplayItems({
       let finalDriverRequests = driverRequests;
 
       if (mode === "Group" || String(rawMode).toLowerCase().includes("company")) {
-        if (batchBids.length > 0) {
+        if (finalDriverRequests.length === 0 && batchBids.length > 0) {
           finalDriverRequests = batchBids;
         } else if (finalDriverRequests.length === 0) {
           const itemBids = parseBatchBids(item as any, t);

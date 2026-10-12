@@ -448,4 +448,104 @@ describe("Driver Details Mapper with Precise Real Data", () => {
     // Payment status for completed order
     expect(model.dispatch.paymentStatus).toBe("Paid");
   });
+
+  it("extracts plate number, insurance valid until, and licence valid until from backend account status payload", () => {
+    const rawAccountStatus = {
+      message: "Account status fetched",
+      messageType: "accountStatus",
+      vehicle: {
+        vehicleDriverId: 1,
+        vehicleDriverUniqueId: "290545c7-7d7d-4113-8066-452784407e66",
+        vehicleUniqueId: "a93f90ad-46c4-4eca-9893-07f01e17eee7",
+        driverUserUniqueId: "136795bd-fff3-49d2-a22f-230a87388eb8",
+        assignmentStatus: "active",
+        licensePlate: "101010",
+        color: "Black",
+        vehicleTypeId: 6,
+        vehicleTypeName: "20ft Container Truck (251–300 Quintal)",
+        fullName: "Esmael Mohammed Hussen",
+        phoneNumber: "+251929257880",
+      },
+      userData: {
+        userUniqueId: "136795bd-fff3-49d2-a22f-230a87388eb8",
+        roleId: 2,
+        fullName: "Esmael Mohammed Hussen",
+        phoneNumber: "+251929257880",
+        statusName: "active",
+      },
+      attachedDocumentsByStatus: {
+        PENDING: [],
+        ACCEPTED: [
+          {
+            attachedDocumentId: 15,
+            documentTypeName: "Driver’s License",
+            uploadedDocumentName: "driversLicense",
+            attachedDocumentFileNumber: "5678",
+            documentExpirationDate: "2028-09-30T21:00:00.000Z",
+            attachedDocumentAcceptance: "ACCEPTED",
+          },
+          {
+            attachedDocumentId: 17,
+            documentTypeName: "Insurance Document",
+            uploadedDocumentName: "insuranceDocument",
+            attachedDocumentFileNumber: "34",
+            documentExpirationDate: "2030-09-30T21:00:00.000Z",
+            attachedDocumentAcceptance: "ACCEPTED",
+          },
+          {
+            attachedDocumentId: 18,
+            documentTypeName: " Vehicle Registration (librea)",
+            uploadedDocumentName: "VehicleRegistrationLibrea",
+            attachedDocumentFileNumber: "1010",
+            attachedDocumentAcceptance: "ACCEPTED",
+          },
+        ],
+        REJECTED: [],
+      },
+      status: 1,
+      reason: "All requirements satisfied",
+    };
+
+    const mockOrder: OrderDisplayItem = {
+      id: "ord-account-status-test",
+      batchId: 7,
+      shipperRequestId: 16,
+      displayId: "#7/16",
+      shipper: "National Shipper",
+      type: "Group",
+      vehicleType: "20ft Container Truck (251–300 Quintal)",
+      item: "Cement",
+      origin: "Kombolcha",
+      destination: "Addis Ababa",
+      quintal: 200,
+      cost: 1000,
+      status: "ongoing",
+      driverRequests: [
+        {
+          fullName: "Esmael Mohammed Hussen",
+          phoneNumber: "+251929257880",
+          userUniqueId: "136795bd-fff3-49d2-a22f-230a87388eb8",
+          journeyStatusId: 8,
+        },
+      ],
+    };
+
+    const model = buildDriverDetailsModel(mockOrder, null, null, {
+      accountStatusData: rawAccountStatus,
+    });
+
+    expect(model.driverName).toBe("Esmael Mohammed Hussen");
+    expect(model.driverPhone).toBe("+251929257880");
+    // Plate number
+    expect(model.vehicle.plateNumber).toBe("101010");
+    // Vehicle specs
+    expect(model.vehicle.type).toBe("20ft Container Truck (251–300 Quintal)");
+    expect(model.vehicle.makeModel).toBe("Black Commercial Vehicle");
+    // Insurance valid until
+    expect(model.vehicle.insuranceExpiry).toBe("01 Oct 2030");
+    // Driver licence valid until and licence number
+    expect(model.licence.validUntil).toBe("01 Oct 2028");
+    expect(model.licence.number).toBe("5678");
+    expect(model.licence.isVerified).toBe(true);
+  });
 });

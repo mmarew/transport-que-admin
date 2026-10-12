@@ -44,6 +44,14 @@ export const DriverHeaderAndStats: React.FC<DriverHeaderAndStatsProps> = ({
               </div>
               <div className="driver-profile-id-row">
                 <span className="driver-profile-phone">{model.driverPhone}</span>
+                {model.companyName ? (
+                  <>
+                    <span className="driver-profile-separator">·</span>
+                    <span className="driver-profile-company" style={{ fontWeight: 600, color: "var(--color-primary, #0B4D6D)" }}>
+                      Company · {model.companyName}
+                    </span>
+                  </>
+                ) : null}
                 {model.driverId ? (
                   <>
                     <span className="driver-profile-separator">·</span>

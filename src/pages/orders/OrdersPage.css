@@ -220,14 +220,7 @@
 /* ── Card Header ── */
 .order-card-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  width: 100%;
-}
-
-.order-card-header-top {
-  display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   width: 100%;
@@ -235,10 +228,10 @@
 
 .order-card-header-left {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   min-width: 0;
-  flex-wrap: nowrap;
+  flex: 1;
 }
 
 .order-card-chevron-btn {
@@ -253,6 +246,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
+  margin-top: 2px;
   flex-shrink: 0;
 }
 
@@ -262,16 +256,26 @@
   color: #0b4d6d;
 }
 
-.order-card-route-row {
+.order-card-title-group {
   display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding-left: 2.75rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
 }
 
-.order-card:not(.order-card--expandable) .order-card-route-row {
-  padding-left: 0;
+.order-card-title-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.order-card-id {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0284c7;
+  letter-spacing: -0.01em;
+  font-family: inherit;
 }
 
 .order-card-route {
@@ -295,7 +299,6 @@
   gap: 0.625rem;
   flex-shrink: 0;
   margin-left: auto;
-  padding-left: 0.875rem;
 }
 
 /* Status / Waiting Badge */
@@ -314,7 +317,6 @@
   transition: all 0.15s ease;
   white-space: nowrap;
   flex-shrink: 0;
-  margin-right: 0.5rem;
 }
 
 .order-card-badge-waiting:hover {
@@ -344,7 +346,6 @@
   border: 1px solid #cbd5e1;
   color: #334155;
   flex-shrink: 0;
-  margin-right: 0.5rem;
 }
 
 .order-card-badge-status--completed {
@@ -406,6 +407,12 @@
   background: #f8fafc;
   border-color: #cbd5e1;
   color: #0b4d6d;
+}
+
+.order-card-action-btn--view:hover {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0284c7;
 }
 
 .order-card-action-btn--delete:hover {
@@ -555,8 +562,7 @@
 }
 
 
-.order-subcard-id,
-.order-subcard-id-btn {
+.order-subcard-id {
   font-size: 0.8125rem;
   font-weight: 700;
   color: #0B4D6D;
@@ -564,41 +570,10 @@
   border: 1px solid #cce3ed;
   border-radius: 6px;
   padding: 0.15rem 0.5rem;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  transition: all 0.15s ease;
   font-family: inherit;
-}
-
-.order-subcard-id-btn:hover {
-  background: #0B4D6D;
-  color: #ffffff;
-  border-color: #0B4D6D;
-  box-shadow: 0 2px 4px rgba(11, 77, 109, 0.2);
-}
-
-.order-card-id-btn {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #0B4D6D;
-  background: #f0f7fa;
-  border: 1px solid #cce3ed;
-  border-radius: 6px;
-  padding: 0.15rem 0.55rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  transition: all 0.15s ease;
-  font-family: inherit;
-  flex-shrink: 0;
-}
-
-.order-card-id-btn:hover {
-  background: #0B4D6D;
-  color: #ffffff;
-  border-color: #0B4D6D;
-  box-shadow: 0 2px 4px rgba(11, 77, 109, 0.2);
+  user-select: text;
 }
 
 .orders-id-badge--clickable {
@@ -690,10 +665,6 @@
   gap: 0.25rem;
 }
 
-.order-card-header--clickable,
-.order-card-boxes--clickable {
-  cursor: pointer;
-}
 
 .order-subcard-loading {
   display: flex;
@@ -1415,6 +1386,19 @@
   width: 28px;
   height: 28px;
   flex-shrink: 0;
+}
+
+.orders-action-btn--view {
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  color: #0284c7;
+}
+
+.orders-action-btn--view:hover {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+  transform: translateY(-1px);
 }
 
 .orders-action-btn--edit {

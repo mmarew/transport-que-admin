@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, OrderBatchGroup } from "./OrdersTypes";
 import {
@@ -14,6 +14,7 @@ export interface OrderCardProps {
   group: OrderBatchGroup;
   isExpanded?: boolean;
   isLoading?: boolean;
+  currentPage?: number;
   onToggleExpand?: (batchKey: string) => void;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
@@ -24,6 +25,7 @@ export function OrderCard({
   group,
   isExpanded = false,
   isLoading = false,
+  currentPage,
   onToggleExpand,
   onEdit,
   onDelete,
@@ -31,6 +33,7 @@ export function OrderCard({
 }: OrderCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleNavigateToDriver = (order: OrderDisplayItem) => {
     const targetId =
@@ -38,8 +41,28 @@ export function OrderCard({
       order.shipperRequestUniqueId ||
       order.batchId ||
       order.shipperRequestId;
+    const isCompleted = getConnectedJourneyStatus(order).type === "completed";
+    const currentTab = isCompleted
+      ? "complete"
+      : (new URLSearchParams(location.search).get("tab") || "ongoing");
+
+    const returnParams = new URLSearchParams(location.search);
+    if (currentTab === "complete") {
+      returnParams.set("tab", "complete");
+    } else {
+      returnParams.delete("tab");
+    }
+    const returnUrl = `${location.pathname}${returnParams.toString() ? `?${returnParams.toString()}` : ""}`;
+
     navigate(`/orders/driver/${encodeURIComponent(String(targetId))}`, {
-      state: { order },
+      state: {
+        order,
+        fromTab: currentTab,
+        returnUrl,
+        page: currentPage || 1,
+        batchKey: group.batchKey,
+        targetCardId: `order-card-${group.batchKey}`,
+      },
     });
   };
 
@@ -79,140 +102,138 @@ export function OrderCard({
 
   return (
     <div
+      id={`order-card-${group.batchKey}`}
       className={`order-card ${isExpanded ? "order-card--expanded" : ""} ${isExpandable ? "order-card--expandable" : ""}`}
     >
       {/* ── Top Header Row ── */}
-      <div
-        className={`order-card-header ${isExpandable ? "order-card-header--clickable" : ""}`}
-        onClick={isExpandable ? () => onToggleExpand?.(group.batchKey) : undefined}
-      >
-        <div className="order-card-header-top">
-          <div className="order-card-header-left">
-            {/* Accordion button for Group / multi-truck orders */}
-            {isExpandable ? (
-              <button
-                type="button"
-                className="order-card-chevron-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleExpand?.(group.batchKey);
-                }}
-                title={
-                  isExpanded
-                    ? t("orders.collapseBatch", "Collapse")
-                    : t("orders.expandBatch", "Expand")
-                }
-                aria-label={
-                  isExpanded
-                    ? t("orders.collapseBatch", "Collapse")
-                    : t("orders.expandBatch", "Expand")
-                }
-              >
-                {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-              </button>
-            ) : null}
-
+      <div className="order-card-header">
+        <div className="order-card-header-left">
+          {/* Accordion button for Group / multi-truck orders */}
+          {isExpandable ? (
             <button
               type="button"
-              className="order-card-id-btn"
+              className="order-card-chevron-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                handleNavigateToDriver(group.orders[0]);
+                onToggleExpand?.(group.batchKey);
               }}
-              title={t("orders.viewDriverDetails", "View driver details")}
+              title={
+                isExpanded
+                  ? t("orders.collapseBatch", "Collapse")
+                  : t("orders.expandBatch", "Expand")
+              }
+              aria-label={
+                isExpanded
+                  ? t("orders.collapseBatch", "Collapse")
+                  : t("orders.expandBatch", "Expand")
+              }
             >
-              {displayId}
+              {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
             </button>
+          ) : null}
 
-            {/* Waiting / Journey status pill — placed on the mark between #1 and actions */}
-            {hasConnectedJourney ? (
-              <button
-                type="button"
-                className={`order-card-badge-status order-card-badge-status--${group.statusSummary.type}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewRequests?.(group.orders[0]);
-                }}
-                title={group.statusSummary.label}
+          <div className="order-card-title-group">
+            <div className="order-card-title-top">
+              <span className="order-card-id">{displayId}</span>
+              <h3
+                className="order-card-route"
+                title={`${group.origin} → ${group.destination}`}
               >
-                <span className="order-card-status-dot" />
-                <span>{group.statusSummary.label}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="order-card-badge-waiting"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewRequests?.(group.orders[0]);
-                }}
-                title={
-                  group.type === "Group"
-                    ? t("orders.companyBidsTitle", "Company Bids & Proposals")
-                    : t("orders.driverBidsTitle", "Driver Bids & Proposals")
-                }
-              >
-                <span className="order-card-badge-dot" />
-                <span>
-                  {waitingCount} {t("orders.waitingLower", "waiting")}
-                </span>
-              </button>
-            )}
-          </div>
-
-          <div className="order-card-header-right">
-            {/* Quick Action Buttons */}
-            <div className="order-card-actions">
-              <button
-                type="button"
-                className="order-card-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(group.orders[0]);
-                }}
-                title={t("orders.editOrderTitle", "Edit Order")}
-                aria-label={t("orders.editOrderTitle", "Edit Order")}
-              >
-                <Pencil size={15} />
-              </button>
-
-              <button
-                type="button"
-                className="order-card-action-btn order-card-action-btn--delete"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete({ ...group.orders[0], _isBatchMaster: true } as any);
-                }}
-                title={t("orders.deleteOrderTitle", "Delete Order")}
-                aria-label={t("orders.deleteOrderTitle", "Delete Order")}
-              >
-                <Trash2 size={15} />
-              </button>
+                {routeText}
+              </h3>
             </div>
+            {phone ? (
+              <span className="order-card-phone" title={group.shipper}>
+                {phone}
+              </span>
+            ) : null}
           </div>
         </div>
 
-        {/* ── Route and Phone row below the top header line ── */}
-        <div className="order-card-route-row">
-          <h3
-            className="order-card-route"
-            title={`${group.origin} → ${group.destination}`}
-          >
-            {routeText}
-          </h3>
-          {phone ? (
-            <span className="order-card-phone" title={group.shipper}>
-              {phone}
-            </span>
-          ) : null}
+        <div className="order-card-header-right">
+          {/* Waiting / Journey status pill */}
+          {hasConnectedJourney ? (
+            <button
+              type="button"
+              className={`order-card-badge-status order-card-badge-status--${group.statusSummary.type}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewRequests?.(group.orders[0]);
+              }}
+              title={group.statusSummary.label}
+            >
+              <span className="order-card-status-dot" />
+              <span>{group.statusSummary.label}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="order-card-badge-waiting"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewRequests?.(group.orders[0]);
+              }}
+              title={
+                group.type === "Group"
+                  ? t("orders.companyBidsTitle", "Company Bids & Proposals")
+                  : t("orders.driverBidsTitle", "Driver Bids & Proposals")
+              }
+            >
+              <span className="order-card-badge-dot" />
+              <span>
+                {waitingCount} {t("orders.waitingLower", "waiting")}
+              </span>
+            </button>
+          )}
+
+          {/* Quick Action Buttons */}
+          <div className="order-card-actions">
+            {!isExpandable && (
+              <button
+                type="button"
+                className="order-card-action-btn order-card-action-btn--view"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNavigateToDriver(group.orders[0]);
+                }}
+                title={t("orders.viewDriverDetails", "View driver details")}
+                aria-label={t("orders.viewDriverDetails", "View driver details")}
+              >
+                <Eye size={15} />
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="order-card-action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(group.orders[0]);
+              }}
+              title={t("orders.editOrderTitle", "Edit Order")}
+              aria-label={t("orders.editOrderTitle", "Edit Order")}
+            >
+              <Pencil size={15} />
+            </button>
+
+            <button
+              type="button"
+              className="order-card-action-btn order-card-action-btn--delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete({ ...group.orders[0], _isBatchMaster: true } as any);
+              }}
+              title={t("orders.deleteOrderTitle", "Delete Order")}
+              aria-label={t("orders.deleteOrderTitle", "Delete Order")}
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── 6 Data Boxes Grid ── */}
-      <div
-        className={`order-card-boxes ${isExpandable ? "order-card-boxes--clickable" : ""}`}
-        onClick={isExpandable ? () => onToggleExpand?.(group.batchKey) : undefined}
-      >
+      <div className="order-card-boxes">
         {/* 1. VEHICLE */}
         <div className="order-card-data-box">
           <span className="order-card-data-label">
@@ -332,17 +353,7 @@ export function OrderCard({
               return (
                 <div key={childOrder.id} className="order-subcard-item">
                   <div className="order-subcard-left">
-                    <button
-                      type="button"
-                      className="order-subcard-id-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNavigateToDriver(childOrder);
-                      }}
-                      title={t("orders.viewDriverDetails", "View driver details")}
-                    >
-                      {displayTruckId}
-                    </button>
+                    <span className="order-subcard-id">{displayTruckId}</span>
                     {(queueId !== "—" || loadingOrderId !== "—") && (
                       <span className="order-subcard-meta">
                         {queueId !== "—" && (
@@ -380,6 +391,18 @@ export function OrderCard({
                     )}
 
                     <div className="order-subcard-actions">
+                      <button
+                        type="button"
+                        className="order-card-action-btn order-card-action-btn--view"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNavigateToDriver(childOrder);
+                        }}
+                        title={t("orders.viewDriverDetails", "View driver details")}
+                        aria-label={t("orders.viewDriverDetails", "View driver details")}
+                      >
+                        <Eye size={13} />
+                      </button>
                       <button
                         type="button"
                         className="order-card-action-btn"

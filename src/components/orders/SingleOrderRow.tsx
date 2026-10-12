@@ -1,5 +1,4 @@
-import type React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   ChevronDown,
   ChevronUp,
@@ -8,6 +7,7 @@ import {
   Tag,
   Gavel,
   Clock,
+  Eye,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem } from "./OrdersTypes";
@@ -37,6 +37,7 @@ export function SingleOrderRow({
 }: SingleOrderRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const journey = getConnectedJourneyStatus(order);
   const isExpandedLoc = expandedLocationId === order.id;
 
@@ -47,22 +48,36 @@ export function SingleOrderRow({
       order.shipperRequestUniqueId ||
       order.batchId ||
       order.shipperRequestId;
+    const isCompleted = journey.isConnected && journey.type === "completed";
+    const currentTab = isCompleted
+      ? "complete"
+      : (new URLSearchParams(location.search).get("tab") || "ongoing");
+
+    const returnParams = new URLSearchParams(location.search);
+    if (currentTab === "complete") {
+      returnParams.set("tab", "complete");
+    } else {
+      returnParams.delete("tab");
+    }
+    const returnUrl = `${location.pathname}${returnParams.toString() ? `?${returnParams.toString()}` : ""}`;
+
     navigate(`/orders/driver/${encodeURIComponent(String(targetId))}`, {
-      state: { order },
+      state: {
+        order,
+        fromTab: currentTab,
+        returnUrl,
+        batchKey: order.batchId ? `batch-${order.batchId}` : undefined,
+        targetCardId: order.batchId ? `order-card-batch-${order.batchId}` : undefined,
+      },
     });
   };
 
   return (
     <tr className="orders-row">
       <td className="td-num" title={order.displayId}>
-        <button
-          type="button"
-          className="orders-id-badge orders-id-badge--clickable"
-          onClick={handleNavigateToDriver}
-          title={t("orders.viewDriverDetails", "View driver details")}
-        >
+        <span className="orders-id-badge">
           {order.displayId}
-        </button>
+        </span>
       </td>
       <td className="td-shipper" title={order.shipper}>
         <span className="orders-shipper-desktop">{order.shipper}</span>
@@ -205,6 +220,15 @@ export function SingleOrderRow({
               <span>{t("orders.waiting", "Waiting")}</span>
             </button>
           )}
+          <button
+            type="button"
+            className="orders-action-btn orders-action-btn--view"
+            onClick={handleNavigateToDriver}
+            title={t("orders.viewDriverDetails", "View driver details")}
+            aria-label={t("orders.viewDriverDetails", "View driver details")}
+          >
+            <Eye size={17} strokeWidth={2} />
+          </button>
           <button
             type="button"
             className="orders-action-btn orders-action-btn--edit"

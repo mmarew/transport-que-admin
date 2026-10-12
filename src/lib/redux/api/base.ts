@@ -79,6 +79,7 @@ export const api = createApi({
     "DriverQueue",
     "DriverBids",
     "DriverDirectory",
+    "DriverAccountStatus",
     "Auth",
     "VehicleTypes",
     "ShipperRequests",

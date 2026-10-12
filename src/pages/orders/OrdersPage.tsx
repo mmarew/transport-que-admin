@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -57,11 +57,15 @@ export function OrdersPage() {
   const { socketConnected, isLive } = useQueueSocket(orgUniqueId);
   const live = isLive || socketConnected;
 
+  const location = useLocation();
+
   // Active tab state: "ongoing" | "complete"
   const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<"ongoing" | "complete">(
-    tabParam === "complete" ? "complete" : "ongoing"
-  );
+  const [activeTab, setActiveTab] = useState<"ongoing" | "complete">(() => {
+    if (tabParam === "complete" || tabParam === "ongoing") return tabParam;
+    if (location.state?.fromTab === "complete" || location.state?.activeTab === "complete") return "complete";
+    return "ongoing";
+  });
 
   useEffect(() => {
     if (tabParam === "complete" || tabParam === "ongoing") {
@@ -130,7 +134,9 @@ export function OrdersPage() {
   // We keep a single expanded batch key (accordion style).
   // Individual truck data is fetched ONLY when the card is expanded, rather than
   // flooding the network tab on page load.
-  const [expandedBatchKey, setExpandedBatchKey] = useState<string | null>(null);
+  const [expandedBatchKey, setExpandedBatchKey] = useState<string | null>(
+    () => location.state?.batchKey || null
+  );
   const [batchDetailsCache, setBatchDetailsCache] = useState<Record<string, any[]>>({});
   const [loadingBatchUids, setLoadingBatchUids] = useState<Set<string>>(new Set());
 
@@ -200,6 +206,14 @@ export function OrdersPage() {
     [orgUniqueId, dispatch, batchDetailsCache]
   );
 
+  // Auto-fetch details if returning to an expanded batch
+  useEffect(() => {
+    if (location.state?.batchKey) {
+      const uid = findBatchUid(location.state.batchKey);
+      if (uid) fetchBatchDetails(uid);
+    }
+  }, [location.state?.batchKey, findBatchUid, fetchBatchDetails]);
+
   // Toggle card expansion: expands the clicked card, collapses previous,
   // and lazily triggers details fetch only for the clicked card
   const handleToggleExpandBatch = React.useCallback(
@@ -266,7 +280,7 @@ export function OrdersPage() {
       } else {
         next.delete("tab");
       }
-      setSearchParams(next, { replace: true });
+      setSearchParams(next);
     },
     [activeTab, searchParams, setSearchParams, refetchAll]
   );
@@ -278,14 +292,7 @@ export function OrdersPage() {
   }, [refetchAll]);
   const handleCloseViewing = React.useCallback(() => {
     setViewingRequestsOrder(null);
-    // Leave the batch drill-down: clear the ?batch= scope so the list view
-    // (and its full-list query) returns to the unfiltered state.
-    if (searchParams.get("batch")) {
-      const next = new URLSearchParams(searchParams);
-      next.delete("batch");
-      setSearchParams(next, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
+  }, []);
   const handleCloseEdit = React.useCallback(() => setEditingOrder(null), []);
   const handleCloseDelete = React.useCallback(() => setDeletingOrder(null), []);
 
@@ -350,7 +357,23 @@ export function OrdersPage() {
     phoneFilter,
     activeTab,
     onTabChange: handleTabChange,
+    initialPage: location.state?.page || 1,
   });
+
+  // Smoothly scroll back to the specific card if returning from driver details
+  const hasScrolledRef = useRef(false);
+  useEffect(() => {
+    if (location.state?.targetCardId && !hasScrolledRef.current && currentBatches.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(location.state.targetCardId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          hasScrolledRef.current = true;
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state?.targetCardId, currentBatches]);
 
   // Handlers
   const confirmDelete = () => {
@@ -532,22 +555,17 @@ export function OrdersPage() {
           expandedBatchId={expandedBatchKey}
           onToggleExpand={handleToggleExpandBatch}
           loadingBatchUids={loadingBatchUids}
+          currentPage={safeCurrentPage}
           onEdit={setEditingOrder}
           onDelete={setDeletingOrder}
           onViewRequests={(order) => {
             setViewingRequestsOrder(order);
-            // Scope the page to the order's batch so OrdersPage switches to the
-            // batch-scoped API (shipperRequestBatchUniqueId) instead of pulling
-            // every request in the org.
             const uid =
               order.batchUniqueId ||
               (order as any).shipperRequestBatchUniqueId ||
               (order as any).batchUniqueId;
             if (uid) {
-              const next = new URLSearchParams(searchParams);
-              next.set("orgId", targetOrgId || orgUniqueId);
-              next.set("batch", uid);
-              setSearchParams(next, { replace: true });
+              fetchBatchDetails(uid);
             }
           }}
         />

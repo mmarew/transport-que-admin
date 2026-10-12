@@ -13,10 +13,13 @@ export interface ResolvedDriverIdentity {
   driverInitials: string;
   driverPhone: string;
   driverId: string;
+  companyName: string | null;
 }
 
 /**
- * Resolves driver identity, matching against bids, live queues, and directory rows.
+ * Resolves driver identity, matching against bids, live queues, directory rows, and verified driver accounts.
+ * Clearly separates human driver name from transport company name so company names (e.g. "test")
+ * are never mistaken for personal driver names.
  */
 export function resolveDriverIdentity(
   order?: OrderDisplayItem | null,
@@ -48,6 +51,40 @@ export function resolveDriverIdentity(
       b.bidStatus === "accepted_by_shipper" ||
       b.journeyStatusId >= 4
   ) || bidList[0];
+
+  // 1. Resolve Transport Company Name
+  const orderRawItem = (order?.rawItem as any) || {};
+  const rawCompanyName =
+    acceptedBid?.companyName ||
+    rawDriverReq.companyName ||
+    rawItem.targetCompanyName ||
+    rawItem.companyName ||
+    rawReq.targetCompanyName ||
+    rawReq.companyName ||
+    orderRawItem.targetCompanyName ||
+    orderRawItem.companyName ||
+    (orderRawItem.targetCompany && typeof orderRawItem.targetCompany === "object"
+      ? (orderRawItem.targetCompany.companyName || orderRawItem.targetCompany.name)
+      : null) ||
+    (rawItem.targetCompany && typeof rawItem.targetCompany === "object"
+      ? (rawItem.targetCompany.companyName || rawItem.targetCompany.name)
+      : null) ||
+    (rawReq.targetCompany && typeof rawReq.targetCompany === "object"
+      ? (rawReq.targetCompany.companyName || rawReq.targetCompany.name)
+      : null) ||
+    extraContext?.accountStatusData?.companies?.[0]?.companyName ||
+    extraContext?.driverAccountStatus?.companies?.[0]?.companyName ||
+    null;
+
+  const companyName = rawCompanyName && typeof rawCompanyName === "string" ? rawCompanyName.trim() : null;
+
+  // Helper to verify if a candidate string is merely the transport company name
+  const isCompanyName = (name?: string | null): boolean => {
+    if (!name || typeof name !== "string") return false;
+    const clean = name.trim().toLowerCase();
+    if (companyName && clean === companyName.toLowerCase()) return true;
+    return false;
+  };
 
   // Match live queue entries from extraContext if provided
   let matchedQueueEntry: any = null;
@@ -97,18 +134,25 @@ export function resolveDriverIdentity(
     }) || (dirRows.length === 1 ? dirRows[0] : null);
   }
 
+  // 2. Resolve Human Driver Name
+  // Priority: Verified driver user data > direct driver requests > queue records
+  // Never assign company name (e.g. "test") as the human driver's name
   const resolvedDriverName =
-    assignedDriverReq?.fullName ||
-    queueEntry.fullName ||
-    queueEntry.driverName ||
-    matchedQueueEntry?.driverName ||
-    matchedQueueEntry?.fullName ||
-    matchedDirectoryRow?.fullName ||
-    rawItem.driverName ||
-    rawReq.driverName ||
-    acceptedBid?.companyName ||
-    acceptedBid?.driverName ||
-    acceptedBid?.fullName ||
+    (!isCompanyName(rawDriverReq.driverName) ? rawDriverReq.driverName : null) ||
+    (!isCompanyName(rawDriverReq.driver?.fullName) ? rawDriverReq.driver?.fullName : null) ||
+    extraContext?.accountStatusData?.userData?.fullName ||
+    extraContext?.accountStatusData?.vehicle?.fullName ||
+    extraContext?.driverAccountStatus?.userData?.fullName ||
+    (!isCompanyName(rawItem.driverName) ? rawItem.driverName : null) ||
+    (!isCompanyName(rawReq.driverName) ? rawReq.driverName : null) ||
+    (!isCompanyName(assignedDriverReq?.fullName) ? assignedDriverReq?.fullName : null) ||
+    (!isCompanyName(matchedDirectoryRow?.fullName) ? matchedDirectoryRow?.fullName : null) ||
+    (!isCompanyName(matchedQueueEntry?.driverName) ? matchedQueueEntry?.driverName : null) ||
+    (!isCompanyName(matchedQueueEntry?.fullName) ? matchedQueueEntry?.fullName : null) ||
+    (!isCompanyName(queueEntry.driverName) ? queueEntry.driverName : null) ||
+    (!isCompanyName(queueEntry.fullName) ? queueEntry.fullName : null) ||
+    (!isCompanyName(acceptedBid?.driverName) ? acceptedBid?.driverName : null) ||
+    (!isCompanyName(acceptedBid?.fullName) ? acceptedBid?.fullName : null) ||
     null;
 
   const isDriverAssigned = Boolean(resolvedDriverName);
@@ -120,7 +164,12 @@ export function resolveDriverIdentity(
       ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase()
       : driverName.slice(0, 2).toUpperCase() || "AD";
 
+  // 3. Resolve Driver Phone
   const driverPhone =
+    (!isCompanyName(assignedDriverReq?.fullName) ? assignedDriverReq?.phoneNumber : null) ||
+    extraContext?.accountStatusData?.userData?.phoneNumber ||
+    extraContext?.accountStatusData?.vehicle?.phoneNumber ||
+    extraContext?.driverAccountStatus?.userData?.phoneNumber ||
     assignedDriverReq?.phoneNumber ||
     queueEntry.phoneNumber ||
     queueEntry.driverPhoneNumber ||
@@ -128,13 +177,13 @@ export function resolveDriverIdentity(
     matchedDirectoryRow?.phoneNumber ||
     rawItem.driverPhoneNumber ||
     rawReq.driverPhoneNumber ||
-    acceptedBid?.companyPhone ||
     acceptedBid?.phoneNumber ||
+    acceptedBid?.companyPhone ||
     order?.phone ||
     activeOrg?.queueOrganizationPhone ||
     "—";
 
-  // Real Driver ID (never fabricate synthetic "DR-####" from request row IDs or UUID suffixes)
+  // 4. Real Driver ID
   let driverId = "";
   const rawExplicitDriverId =
     (assignedDriverReq as any)?.driverId ??
@@ -164,5 +213,6 @@ export function resolveDriverIdentity(
     driverInitials,
     driverPhone,
     driverId,
+    companyName,
   };
 }

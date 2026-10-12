@@ -11,6 +11,7 @@ export interface OrdersCardsListProps {
   activeTab: "ongoing" | "complete";
   expandedBatchId?: string | null;
   loadingBatchUids?: Set<string>;
+  currentPage?: number;
   onToggleExpand?: (batchKey: string, group?: OrderBatchGroup) => void;
   onEdit: (order: OrderDisplayItem) => void;
   onDelete: (order: OrderDisplayItem) => void;
@@ -23,6 +24,7 @@ export function OrdersCardsList({
   activeTab,
   expandedBatchId: passedExpandedBatchId,
   loadingBatchUids,
+  currentPage,
   onToggleExpand: passedOnToggleExpand,
   onEdit,
   onDelete,
@@ -76,6 +78,7 @@ export function OrdersCardsList({
             group={group}
             isExpanded={currentExpandedBatchId === group.batchKey}
             isLoading={isLoading}
+            currentPage={currentPage}
             onToggleExpand={(key) => toggleBatch(key, group)}
             onEdit={onEdit}
             onDelete={onDelete}

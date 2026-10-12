@@ -1,4 +1,5 @@
-import type { DriverDetailsModel } from "../driverDetailsMapper";
+import type { DriverDetailsModel, ExtraDriverContext } from "../driverDetailsMapper";
+import { extractDriverAttachedDocuments } from "./documentExtractor";
 
 /**
  * Resolves driving licence specifications, authority, and verification status.
@@ -6,14 +7,49 @@ import type { DriverDetailsModel } from "../driverDetailsMapper";
 export function resolveLicenceSpecs(
   candidateDriverObjs: Array<Record<string, any>>,
   isDriverAssigned: boolean,
+  extraContext?: ExtraDriverContext,
+  rawDriverReq?: any,
 ): DriverDetailsModel["licence"] {
+  // Extract attached documents from all sources
+  const allDocSources = [
+    extraContext?.accountStatusData,
+    extraContext?.driverAccountStatus,
+    (extraContext?.accountStatusData as any)?.data,
+    rawDriverReq,
+    rawDriverReq?.rawDriver,
+    rawDriverReq?.accountStatus,
+    ...candidateDriverObjs,
+  ];
+  const attachedDocs = extractDriverAttachedDocuments(allDocSources);
+
+  // Find Driver's License document
+  const licDoc = attachedDocs.find((d: any) => {
+    const name = String(d.documentTypeName || d.uploadedDocumentName || d.documentTypeDescription || "").toLowerCase();
+    return (
+      (name.includes("license") || name.includes("licence") || name.includes("driver")) &&
+      !name.includes("vehicle") &&
+      !name.includes("librea") &&
+      !name.includes("registration") &&
+      !name.includes("insurance")
+    );
+  });
+
   // Licence Number
   let resolvedLicenceNum: string | null = null;
-  for (const d of candidateDriverObjs) {
-    const num = d.drivingLicense || d.driverLicense || d.licenseNumber || d.drivingLicenceNumber || d.licenceNumber;
-    if (num && typeof num === "string" && num.trim()) {
-      resolvedLicenceNum = num.trim();
-      break;
+  if (licDoc) {
+    const fNum = licDoc.attachedDocumentFileNumber || licDoc.uploadedDocumentFileNumber || licDoc.fileNumber;
+    if (fNum && typeof fNum === "string" && fNum.trim()) {
+      resolvedLicenceNum = fNum.trim();
+    }
+  }
+
+  if (!resolvedLicenceNum) {
+    for (const d of candidateDriverObjs) {
+      const num = d.drivingLicense || d.driverLicense || d.licenseNumber || d.drivingLicenceNumber || d.licenceNumber;
+      if (num && typeof num === "string" && num.trim()) {
+        resolvedLicenceNum = num.trim();
+        break;
+      }
     }
   }
   const licenceNumber = resolvedLicenceNum
@@ -29,6 +65,13 @@ export function resolveLicenceSpecs(
     if (c && typeof c === "string" && c.trim()) {
       resolvedClass = c.trim();
       break;
+    }
+  }
+  if (!resolvedClass && licDoc?.documentTypeDescription) {
+    const desc = licDoc.documentTypeDescription;
+    const gradeMatch = desc.match(/grade\s*[0-9a-z]+/i);
+    if (gradeMatch) {
+      resolvedClass = gradeMatch[0];
     }
   }
   const licenceClass = resolvedClass
@@ -54,13 +97,23 @@ export function resolveLicenceSpecs(
 
   // Valid Until
   let resolvedValidUntil: string | null = null;
-  for (const d of candidateDriverObjs) {
-    const val = d.licenseValidUntil || d.licenseExpiryDate || d.validUntil || d.expiryDate;
-    if (val && typeof val === "string" && val.trim()) {
-      resolvedValidUntil = val.trim();
-      break;
+  if (licDoc) {
+    const exp = licDoc.documentExpirationDate || licDoc.uploadedDocumentExpirationDate || licDoc.expirationDate;
+    if (exp && typeof exp === "string" && exp.trim()) {
+      resolvedValidUntil = exp.trim();
     }
   }
+
+  if (!resolvedValidUntil) {
+    for (const d of candidateDriverObjs) {
+      const val = d.licenseValidUntil || d.licenseExpiryDate || d.validUntil || d.expiryDate;
+      if (val && typeof val === "string" && val.trim()) {
+        resolvedValidUntil = val.trim();
+        break;
+      }
+    }
+  }
+
   let validUntil = isDriverAssigned ? "Not recorded" : "—";
   if (resolvedValidUntil) {
     try {
@@ -70,6 +123,7 @@ export function resolveLicenceSpecs(
           day: "2-digit",
           month: "short",
           year: "numeric",
+          timeZone: "Africa/Addis_Ababa",
         });
       } else {
         validUntil = resolvedValidUntil;
@@ -104,7 +158,14 @@ export function resolveLicenceSpecs(
     }
   }
   const emergencyContact = resolvedEmergency || (isDriverAssigned ? "Not recorded" : "—");
-  const isVerified = Boolean(isDriverAssigned);
+
+  const hasAcceptedDocs = (extraContext?.accountStatusData?.attachedDocumentsByStatus?.ACCEPTED?.length ?? 0) > 0;
+  const isAccountActive =
+    extraContext?.accountStatusData?.status === 1 ||
+    extraContext?.accountStatusData?.userData?.statusName === "active" ||
+    hasAcceptedDocs;
+
+  const isVerified = Boolean(isDriverAssigned || isAccountActive);
 
   return {
     number: licenceNumber,

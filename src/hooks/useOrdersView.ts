@@ -15,6 +15,7 @@ export interface UseOrdersViewOptions {
   phoneFilter?: string;
   activeTab?: "ongoing" | "complete";
   onTabChange?: (tab: "ongoing" | "complete") => void;
+  initialPage?: number;
 }
 
 // Extract the leading numeric id from a group display id (#12, #6/5) so the
@@ -34,10 +35,11 @@ export function useOrdersView({
   phoneFilter = "",
   activeTab: controlledActiveTab,
   onTabChange,
+  initialPage = 1,
 }: UseOrdersViewOptions) {
   const [internalActiveTab, setInternalActiveTab] = useState<"ongoing" | "complete">("ongoing");
   const activeTab = controlledActiveTab ?? internalActiveTab;
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentPage, setCurrentPage] = useState<number>(initialPage);
   const [sortCol, setSortCol] = useState<SortColumn>("id");
   const [sortAsc, setSortAsc] = useState<boolean>(true);
 
