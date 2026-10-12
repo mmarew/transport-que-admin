@@ -18,6 +18,7 @@ import { normalizeOrgList, extractCity } from "../../utils/formatters";
 import { OrdersCardsList } from "../../components/orders/OrdersCardsList";
 import { OrdersPagination } from "../../components/orders/OrdersPagination";
 import { OrdersModals } from "../../components/orders/OrdersModals";
+import { isUUID, extractUUID } from "../../components/orders/bids/orderIdLookup";
 import type { OrderDisplayItem } from "../../components/orders/OrdersTypes";
 import {
   extractJourneyStatusId,
@@ -53,10 +54,6 @@ export function OrdersPage() {
   // Stable query arguments: use targetOrgId immediately so initial fetch is synchronized with Sidebar and cache-deduplicated
   const orgUniqueId = targetOrgId || activeOrg?.queueOrganizationUniqueId || "";
 
-  // Live WebSocket subscription for orders
-  const { socketConnected, isLive } = useQueueSocket(orgUniqueId);
-  const live = isLive || socketConnected;
-
   const location = useLocation();
 
   // Active tab state: "ongoing" | "complete"
@@ -81,7 +78,7 @@ export function OrdersPage() {
       limit: 100,
       // Batch-scoped: ask the backend for this batch's rows only instead of
       // pulling every request for the org.
-      ...(targetBatchId ? { shipperRequestBatchUniqueId: targetBatchId } : {}),
+      ...(targetBatchId && isUUID(targetBatchId) ? { shipperRequestBatchUniqueId: targetBatchId } : {}),
     }),
     [orgUniqueId, targetBatchId]
   );
@@ -120,14 +117,14 @@ export function OrdersPage() {
 
   // Helper to reliably extract batch UUID across backend schema variants
   const getBatchUid = React.useCallback((b: any): string => {
-    return String(
+    const raw =
       b?.shipperRequestBatchUniqueId ||
       b?.batchUniqueId ||
       b?.uniqueId ||
       b?.batch_unique_id ||
       b?.shipper_request_batch_unique_id ||
-      ""
-    ).trim();
+      "";
+    return extractUUID(String(raw)) || "";
   }, []);
 
   // ── Lazy batch details loading on card click / expand ──
@@ -144,20 +141,24 @@ export function OrdersPage() {
   const findBatchUid = React.useCallback(
     (batchKey: string, group?: any): string => {
       if (group) {
-        const directUid =
+        const directCandidate =
           group.batchUniqueId ||
           group.orders?.[0]?.batchUniqueId ||
           group.orders?.[0]?.shipperRequestBatchUniqueId ||
           getBatchUid(group.orders?.[0]?.rawItem);
-        if (directUid) return directUid;
+        const resolvedDirect = extractUUID(String(directCandidate || ""));
+        if (resolvedDirect) return resolvedDirect;
       }
-      const cleanKey = batchKey.replace(/^batch-/, "");
+      const cleanKey = batchKey.replace(/^batch-/, "").trim();
+      const directClean = extractUUID(cleanKey);
+      if (directClean) return directClean;
+
       const batches = Array.isArray(backendBatchesData?.data) ? backendBatchesData!.data : [];
       const match = batches.find((b: any) => {
         const uid = getBatchUid(b);
-        return uid === cleanKey || String(b?.batchId) === cleanKey;
+        return (uid && uid === cleanKey) || String(b?.batchId) === cleanKey;
       });
-      return match ? getBatchUid(match) : cleanKey;
+      return match ? getBatchUid(match) : "";
     },
     [backendBatchesData?.data, getBatchUid]
   );
@@ -165,7 +166,7 @@ export function OrdersPage() {
   // Lazy fetch batch details on demand
   const fetchBatchDetails = React.useCallback(
     (batchUid: string, force = false) => {
-      if (!orgUniqueId || !batchUid) return;
+      if (!orgUniqueId || !batchUid || !isUUID(batchUid)) return;
       if (!force && batchDetailsCache[batchUid]) return;
 
       setLoadingBatchUids((prev) => new Set(prev).add(batchUid));
@@ -210,9 +211,11 @@ export function OrdersPage() {
   useEffect(() => {
     if (location.state?.batchKey) {
       const uid = findBatchUid(location.state.batchKey);
-      if (uid) fetchBatchDetails(uid);
+      if (uid && isUUID(uid)) {
+        fetchBatchDetails(uid);
+      }
     }
-  }, [location.state?.batchKey, findBatchUid, fetchBatchDetails]);
+  }, [location.state?.batchKey, backendBatchesData?.data, findBatchUid, fetchBatchDetails]);
 
   // Toggle card expansion: expands the clicked card, collapses previous,
   // and lazily triggers details fetch only for the clicked card
@@ -224,7 +227,7 @@ export function OrdersPage() {
       }
       setExpandedBatchKey(batchKey);
       const batchUid = findBatchUid(batchKey, group);
-      if (batchUid) {
+      if (batchUid && isUUID(batchUid)) {
         fetchBatchDetails(batchUid);
       }
     },
@@ -263,9 +266,13 @@ export function OrdersPage() {
     refetchBatches();
     if (expandedBatchKey) {
       const uid = findBatchUid(expandedBatchKey);
-      if (uid) fetchBatchDetails(uid, true);
+      if (uid && isUUID(uid)) fetchBatchDetails(uid, true);
     }
   }, [refetchOrders, refetchBatches, targetBatchId, expandedBatchKey, findBatchUid, fetchBatchDetails]);
+
+  // Live WebSocket subscription for orders
+  const { socketConnected, isLive } = useQueueSocket(orgUniqueId, refetchAll);
+  const live = isLive || socketConnected;
 
   const handleTabChange = React.useCallback(
     (newTab: "ongoing" | "complete") => {
@@ -560,11 +567,12 @@ export function OrdersPage() {
           onDelete={setDeletingOrder}
           onViewRequests={(order) => {
             setViewingRequestsOrder(order);
-            const uid =
+            const rawUid =
               order.batchUniqueId ||
               (order as any).shipperRequestBatchUniqueId ||
               (order as any).batchUniqueId;
-            if (uid) {
+            const uid = extractUUID(String(rawUid || ""));
+            if (uid && isUUID(uid)) {
               fetchBatchDetails(uid);
             }
           }}

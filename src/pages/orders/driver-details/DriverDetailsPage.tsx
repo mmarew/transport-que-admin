@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, ChevronRight } from "lucide-react";
@@ -12,8 +12,10 @@ import {
   useListVehicleDriversQuery,
   useGetDriverAccountStatusQuery,
 } from "../../../lib/redux/api";
+import { useQueueSocket } from "../../../hooks/useQueueSocket";
 import { useQueueAdminStore } from "../../../store/queueAdminStore";
 import { normalizeOrgList, extractCity } from "../../../utils/formatters";
+import { isUUID, extractUUID } from "../../../components/orders/bids/orderIdLookup";
 import type { OrderDisplayItem } from "../../../components/orders/OrdersTypes";
 import { getConnectedJourneyStatus } from "../../../components/orders/OrdersTypes";
 import { mapBackendOrdersToDisplayItems } from "../ordersDataMapper";
@@ -63,17 +65,13 @@ export function DriverDetailsPage() {
 
   const orgUniqueId = targetOrgId || activeOrg?.queueOrganizationUniqueId || "";
 
-  // 2. Fetch orders and batches to support direct URL refresh / bookmarks
-  const { data: backendOrdersData } = useGetShipperRequestsQuery(
-    {
-      queueOrganizationUniqueId: orgUniqueId,
-      target: "all",
-      limit: 100,
-    },
-    { skip: !orgUniqueId }
-  );
+  const stateOrder = location.state?.order as OrderDisplayItem | undefined;
+  const candidateBatchKey = location.state?.batchKey
+    ? String(location.state.batchKey).replace(/^batch-/, "")
+    : "";
 
-  const { data: backendBatchesData } = useGetShipperRequestBatchesQuery(
+  // 2. Fetch batches to support batch UUID lookup & direct URL refresh
+  const { data: backendBatchesData, refetch: refetchBatches } = useGetShipperRequestBatchesQuery(
     {
       queueOrganizationUniqueId: orgUniqueId,
       requestMode: "company_target",
@@ -83,10 +81,97 @@ export function DriverDetailsPage() {
     { skip: !orgUniqueId }
   );
 
+  // Safely resolve the 36-character batch UUID (never numeric "1")
+  const resolvedBatchUid = useMemo(() => {
+    const directCandidates = [
+      stateOrder?.batchUniqueId,
+      (stateOrder as any)?.shipperRequestBatchUniqueId,
+      (stateOrder as any)?.rawItem?.shipperRequestBatchUniqueId,
+      (stateOrder as any)?.rawItem?.shipperRequest?.shipperRequestBatchUniqueId,
+      (stateOrder as any)?.rawItem?.uniqueId,
+      candidateBatchKey,
+    ];
+    for (const c of directCandidates) {
+      const u = extractUUID(c);
+      if (u) return u;
+    }
+
+    const batches = Array.isArray((backendBatchesData as any)?.data)
+      ? (backendBatchesData as any).data
+      : [];
+    const targetNumeric = String(stateOrder?.batchId || candidateBatchKey || "").trim();
+    if (targetNumeric) {
+      const match = batches.find((b: any) => {
+        return (
+          String(b?.batchId) === targetNumeric ||
+          b?.shipperRequestBatchUniqueId === targetNumeric ||
+          b?.batchUniqueId === targetNumeric
+        );
+      });
+      if (match) {
+        const u = extractUUID(
+          match.shipperRequestBatchUniqueId ||
+          match.batchUniqueId ||
+          match.uniqueId ||
+          match.batch_unique_id
+        );
+        if (u) return u;
+      }
+    }
+    return undefined;
+  }, [stateOrder, candidateBatchKey, backendBatchesData]);
+
+  const isBatchUidValid = Boolean(resolvedBatchUid && isUUID(resolvedBatchUid));
+
+  // 3. Fetch orders (general and per-batch if valid UUID)
+  const { data: backendOrdersData, refetch: refetchOrders } = useGetShipperRequestsQuery(
+    {
+      queueOrganizationUniqueId: orgUniqueId,
+      target: "all",
+      limit: 100,
+    },
+    { skip: !orgUniqueId }
+  );
+
+  const { data: backendBatchOrdersData, refetch: refetchBatchOrders } = useGetShipperRequestsQuery(
+    {
+      queueOrganizationUniqueId: orgUniqueId,
+      target: "all",
+      shipperRequestBatchUniqueId: resolvedBatchUid,
+      limit: 100,
+    },
+    { skip: !orgUniqueId || !isBatchUidValid }
+  );
+
+  // Combine general orders with per-batch truck records
+  const mergedOrdersData = useMemo(() => {
+    const list1 = Array.isArray((backendOrdersData as any)?.data)
+      ? (backendOrdersData as any).data
+      : Array.isArray(backendOrdersData)
+      ? backendOrdersData
+      : [];
+    const list2 = Array.isArray((backendBatchOrdersData as any)?.data)
+      ? (backendBatchOrdersData as any).data
+      : Array.isArray(backendBatchOrdersData)
+      ? backendBatchOrdersData
+      : [];
+    if (!list2.length) return backendOrdersData;
+    const existing = new Set(
+      list1.map((r: any) => r?.shipperRequest?.shipperRequestUniqueId || r?.shipperRequestUniqueId || r?.uniqueId)
+    );
+    const newRows = list2.filter(
+      (r: any) => !existing.has(r?.shipperRequest?.shipperRequestUniqueId || r?.shipperRequestUniqueId || r?.uniqueId)
+    );
+    return {
+      ...(backendOrdersData as any || {}),
+      data: [...list1, ...newRows],
+    };
+  }, [backendOrdersData, backendBatchOrdersData]);
+
   // Derive mapped orders list
   const mappedOrders = useMemo<OrderDisplayItem[]>(() => {
     return mapBackendOrdersToDisplayItems({
-      ordersData: backendOrdersData,
+      ordersData: mergedOrdersData,
       batchesData: backendBatchesData,
       deletedIds: new Set(),
       editedOrders: {},
@@ -94,74 +179,117 @@ export function DriverDetailsPage() {
       targetOrgId,
       t,
     });
-  }, [backendOrdersData, backendBatchesData, activeOrg, targetOrgId, t]);
+  }, [mergedOrdersData, backendBatchesData, activeOrg, targetOrgId, t]);
 
-  // Target ID to match
-  const searchId = (paramOrderId || paramBatchId || "").trim();
-
-  // Find the target order
+  // Find the target order (prioritizes fresh liveMatch from mappedOrders over frozen stateOrder)
   const resolvedOrder = useMemo<OrderDisplayItem | null>(() => {
-    if (location.state?.order) {
-      return location.state.order as OrderDisplayItem;
-    }
+    const targetId = (paramOrderId || paramBatchId || paramReqId || stateOrder?.id || stateOrder?.shipperRequestUniqueId || "").trim();
+    const cleanSearch = targetId.replace(/^#/, "");
 
-    if (!searchId && !paramReqId) {
-      return mappedOrders[0] || null;
-    }
+    // 1. Look for live updated order in mappedOrders FIRST
+    let liveMatch: OrderDisplayItem | undefined = undefined;
 
-    const cleanSearch = searchId.replace(/^#/, "");
-
-    // 1. Exact match on id or unique id
-    let found = mappedOrders.find(
-      (o) =>
-        o.id === searchId ||
-        o.id === cleanSearch ||
-        o.shipperRequestUniqueId === searchId ||
-        o.batchUniqueId === searchId
-    );
-    if (found) return found;
-
-    // 2. Match on displayId (e.g. "#558/1" or "#558")
-    found = mappedOrders.find((o) => {
-      const disp = (o.displayId || "").replace(/^#/, "");
-      return disp === cleanSearch || o.displayId === searchId;
-    });
-    if (found) return found;
-
-    // 3. Match on batchId or shipperRequestId
-    found = mappedOrders.find((o) => {
-      if (paramBatchId && paramReqId) {
-        return (
-          String(o.batchId) === String(paramBatchId) &&
-          String(o.shipperRequestId) === String(paramReqId)
-        );
-      }
-      return (
-        String(o.batchId) === cleanSearch ||
-        String(o.shipperRequestId) === cleanSearch
+    if (targetId) {
+      liveMatch = mappedOrders.find(
+        (o) =>
+          o.id === targetId ||
+          o.id === cleanSearch ||
+          o.shipperRequestUniqueId === targetId ||
+          (cleanSearch && o.displayId?.replace(/^#/, "") === cleanSearch) ||
+          (cleanSearch && o.id?.replace(/^#/, "") === cleanSearch)
       );
-    });
-    if (found) return found;
+    }
 
+    if (!liveMatch && stateOrder) {
+      liveMatch = mappedOrders.find(
+        (o) =>
+          (stateOrder.shipperRequestUniqueId && o.shipperRequestUniqueId === stateOrder.shipperRequestUniqueId) ||
+          (stateOrder.id && o.id === stateOrder.id) ||
+          (stateOrder.displayId && o.displayId === stateOrder.displayId) ||
+          (stateOrder.batchId && stateOrder.shipperRequestId &&
+            String(o.batchId) === String(stateOrder.batchId) &&
+            String(o.shipperRequestId) === String(stateOrder.shipperRequestId))
+      );
+    }
+
+    if (liveMatch) {
+      return {
+        ...(stateOrder || {}),
+        ...liveMatch,
+        journeyStatusId: liveMatch.journeyStatusId ?? stateOrder?.journeyStatusId,
+        journeyStatus: liveMatch.journeyStatus ?? stateOrder?.journeyStatus,
+        status: liveMatch.status ?? stateOrder?.status,
+        rawItem: liveMatch.rawItem ?? stateOrder?.rawItem,
+      };
+    }
+
+    // 2. Fallback to stateOrder if backend has not finished loading
+    if (stateOrder) {
+      return stateOrder;
+    }
+
+    // 3. Fallback to first mapped order
     return mappedOrders[0] || null;
-  }, [location.state?.order, searchId, paramBatchId, paramReqId, mappedOrders]);
+  }, [mappedOrders, stateOrder, paramOrderId, paramBatchId, paramReqId]);
 
   // Target shipper request UUID for live bidding query
-  const targetReqUid =
+  const rawTargetReqUid =
     resolvedOrder?.shipperRequestUniqueId ||
     (resolvedOrder as any)?.rawItem?.shipperRequest?.shipperRequestUniqueId ||
+    (resolvedOrder as any)?.rawItem?.uniqueId ||
     "";
+  const targetReqUid = extractUUID(rawTargetReqUid) || "";
+  const isReqUidValid = Boolean(targetReqUid && isUUID(targetReqUid));
 
-  const { data: bidsData } = useGetBidsForOrderQuery(
+  const { data: bidsData, refetch: refetchBids } = useGetBidsForOrderQuery(
     { shipperRequestUniqueId: targetReqUid },
-    { skip: !targetReqUid }
+    { skip: !isReqUidValid }
   );
 
   // Live queue status to access current queue vehicle assignments
-  const { data: queueStatusData } = useGetQueueStatusQuery(
+  const { data: queueStatusData, refetch: refetchQueueStatus } = useGetQueueStatusQuery(
     { queueOrganizationUniqueId: orgUniqueId },
     { skip: !orgUniqueId }
   );
+
+  // 3. Live WebSocket subscription and refetch callback
+  const refetchAll = useCallback(() => {
+    refetchOrders();
+    refetchBatches();
+    if (isBatchUidValid) {
+      refetchBatchOrders();
+    }
+    if (isReqUidValid) {
+      refetchBids();
+    }
+    refetchQueueStatus();
+  }, [
+    refetchOrders,
+    refetchBatches,
+    refetchBatchOrders,
+    refetchBids,
+    refetchQueueStatus,
+    isBatchUidValid,
+    isReqUidValid,
+  ]);
+
+  useQueueSocket(orgUniqueId, refetchAll);
+
+  // Poll while order is not completed to guarantee real-time updates even if WS is dropped
+  useEffect(() => {
+    const isCompleted =
+      resolvedOrder?.status === "complete" ||
+      (resolvedOrder?.journeyStatusId != null &&
+        (resolvedOrder.journeyStatusId === 9 || resolvedOrder.journeyStatusId === 14));
+
+    if (isCompleted) return;
+
+    const interval = setInterval(() => {
+      refetchAll();
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [refetchAll, resolvedOrder?.status, resolvedOrder?.journeyStatusId]);
 
   // Live vehicle directory to access vehicle plates and colors
   const candidatePhone =

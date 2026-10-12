@@ -106,14 +106,15 @@ export function DriverBidsModal({
     (order.rawItem as any)?.targetCompany?.uniqueId ||
     undefined;
 
-  const batchUniqueId =
+  const rawBatchCandidate =
     (order.batchUniqueId && !targetCompanyUUIDs.includes(order.batchUniqueId)
-      ? extractUUID(order.batchUniqueId)
+      ? order.batchUniqueId
       : undefined) ||
     (order.rawItem as any)?.batchUniqueId ||
     (order.rawItem as any)?.shipperRequestBatchUniqueId ||
     (order.rawItem as any)?.shipperRequestBatchId ||
     undefined;
+  const batchUniqueId = rawBatchCandidate ? extractUUID(rawBatchCandidate) : undefined;
 
   // Company bids query: fetch bids submitted via POST /api/company/bids
   const shouldFetchCompanyBids = Boolean(isCompanyTargetBatch || targetCompanyId);
