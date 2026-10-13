@@ -253,6 +253,36 @@ export function getConnectedJourneyStatus(order: OrderDisplayItem): ConnectedJou
 }
 
 /**
+ * Checks whether an order has a driver assigned or connected to it.
+ * If true, the order is beyond the unassigned "waiting for driver" phase.
+ */
+export function isDriverConnectedToOrder(order?: OrderDisplayItem | null): boolean {
+  if (!order) return false;
+  const journey = getConnectedJourneyStatus(order);
+  if (journey.isConnected) return true;
+
+  if (Array.isArray(order.driverRequests) && order.driverRequests.length > 0) {
+    const hasAcceptedBid = order.driverRequests.some((d: any) => {
+      const bidStatus = String(d?.bidStatus || "").toLowerCase();
+      const journeyStatus = String(d?.journeyStatus || "").toLowerCase();
+      const dsid = extractJourneyStatusId(d?.journeyStatusId ?? d?.journeyStatus ?? (d as any)?.status);
+      return (
+        (typeof dsid === "number" && dsid >= 3 && dsid <= 9) ||
+        dsid === 14 ||
+        bidStatus === "selected" ||
+        bidStatus === "accepted" ||
+        bidStatus === "accepted_by_shipper" ||
+        journeyStatus === "acceptedbyshipper" ||
+        journeyStatus === "accepted"
+      );
+    });
+    if (hasAcceptedBid) return true;
+  }
+
+  return false;
+}
+
+/**
  * True when a truck has a driver actively working the load: Heading to Load (5)
  * through Journey Completed (9), plus admin-completed (14). Accepted-but-idle
  * statuses (3 = driver accepted, 4 = shipper accepted) mean the driver is NOT

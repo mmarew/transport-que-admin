@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph System["Queue Admin System"]
+        QA["Queue Admin Console<br/>React SPA — queue.dynamicsroute.tech"]
+    end
+    SHP(["Shipper"]) -- "freight requests, batch offers, bid outcomes" --> QA
+    DRV(["Driver / Vehicle Owner"]) -- "GPS-proven check-in, queue position, bids, journey updates" --> QA
+    QAS(["Queue Org Admin (role 11)<br/>Queue Dispatcher (role 12)"]) -- "operate the loading-place queue" --> QA
+    ADM(["Admin (role 3)<br/>Super Admin (role 6)"]) -- "loading-place approval, oversight" --> QA
+    QA -- "REST /api, httpOnly cookie session" --> BE["transportBackEndNative<br/>REST + Socket.IO"]
+    QA -- "queue:subscribe, live events" --> BE
+    BE -- "responses, socket fan-out" --> QA
+    QA -- "tiles, geocoding, routing" --> MAP["OpenStreetMap<br/>Nominatim / OSRM"]

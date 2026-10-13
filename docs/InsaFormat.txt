@@ -1,0 +1,23 @@
+Here is the text extracted from the "Add Asset" form for a Web Application, with the requirement status indicated for each field:
+
+**General Asset Information**
+
+*   **Enter asset name** — **Required** *(indicated by red asterisk)*
+*   **Asset Type** (Value: "Web Application") — **Required** *(indicated by red asterisk)*
+*   **Asset Code** (Placeholder: "e.g. ASSET-001") — **Required** *(indicated by red asterisk)*
+*   **Asset Version** (Placeholder: "e.g. 1.0.0") — **Required** *(indicated by red asterisk)*
+*   **CPE** (Placeholder: "Enter CPE") — **Optional** *(no asterisk)*
+*   **Asset Detail** (Placeholder: "Describe the asset in detail") — **Required** *(indicated by red asterisk)*
+
+**Document Requirements (General Rules)**
+*   Only PDF and ZIP files are allowed.
+*   If multiple required documents are combined into a single file, you may upload the same file for each relevant input.
+*   If you upload the same file for multiple inputs, you must ensure that all required contents are included in that file.
+
+**Document Upload Fields**
+
+*   **Requirements Documentation (SRS) - (Preferable Format...)** — **Required**
+*   **System & Architecture Design Document (SDD) - (Prefera...)** — **Required**
+*   **Technical Specifications (TDD / LLD) - (Preferable Forma...)** — **Required**
+*   **User Documentation (User Guide) - (Preferable Format: ...)** — **Required**
+*   **Security Documentation - (Preferable Format: PDF)** — **Optional**

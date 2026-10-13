@@ -8,6 +8,7 @@ import {
   formatWeight,
   formatCost,
   getConnectedJourneyStatus,
+  isDriverConnectedToOrder,
 } from "./OrdersTypes";
 
 export interface OrderCardProps {
@@ -36,6 +37,7 @@ export function OrderCard({
   const location = useLocation();
 
   const handleNavigateToDriver = (order: OrderDisplayItem) => {
+    if (!isDriverConnectedToOrder(order)) return;
     const targetId =
       order.id ||
       order.shipperRequestUniqueId ||
@@ -188,20 +190,34 @@ export function OrderCard({
 
           {/* Quick Action Buttons */}
           <div className="order-card-actions">
-            {!isExpandable && (
-              <button
-                type="button"
-                className="order-card-action-btn order-card-action-btn--view"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNavigateToDriver(group.orders[0]);
-                }}
-                title={t("orders.viewDriverDetails", "View driver details")}
-                aria-label={t("orders.viewDriverDetails", "View driver details")}
-              >
-                <Eye size={15} />
-              </button>
-            )}
+            {!isExpandable && (() => {
+              const singleOrder = group.orders[0];
+              const isConnected = isDriverConnectedToOrder(singleOrder);
+              return (
+                <button
+                  type="button"
+                  className={`order-card-action-btn order-card-action-btn--view ${!isConnected ? "order-card-action-btn--disabled" : ""}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isConnected) return;
+                    handleNavigateToDriver(singleOrder);
+                  }}
+                  disabled={!isConnected}
+                  title={
+                    isConnected
+                      ? t("orders.viewDriverDetails", "View driver details")
+                      : t("orders.noDriverConnected", "No driver connected yet")
+                  }
+                  aria-label={
+                    isConnected
+                      ? t("orders.viewDriverDetails", "View driver details")
+                      : t("orders.noDriverConnected", "No driver connected yet")
+                  }
+                >
+                  <Eye size={15} />
+                </button>
+              );
+            })()}
 
             <button
               type="button"
@@ -391,18 +407,33 @@ export function OrderCard({
                     )}
 
                     <div className="order-subcard-actions">
-                      <button
-                        type="button"
-                        className="order-card-action-btn order-card-action-btn--view"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleNavigateToDriver(childOrder);
-                        }}
-                        title={t("orders.viewDriverDetails", "View driver details")}
-                        aria-label={t("orders.viewDriverDetails", "View driver details")}
-                      >
-                        <Eye size={13} />
-                      </button>
+                      {(() => {
+                        const isChildConnected = isDriverConnectedToOrder(childOrder);
+                        return (
+                          <button
+                            type="button"
+                            className={`order-card-action-btn order-card-action-btn--view ${!isChildConnected ? "order-card-action-btn--disabled" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isChildConnected) return;
+                              handleNavigateToDriver(childOrder);
+                            }}
+                            disabled={!isChildConnected}
+                            title={
+                              isChildConnected
+                                ? t("orders.viewDriverDetails", "View driver details")
+                                : t("orders.noDriverConnected", "No driver connected yet")
+                            }
+                            aria-label={
+                              isChildConnected
+                                ? t("orders.viewDriverDetails", "View driver details")
+                                : t("orders.noDriverConnected", "No driver connected yet")
+                            }
+                          >
+                            <Eye size={13} />
+                          </button>
+                        );
+                      })()}
                       <button
                         type="button"
                         className="order-card-action-btn"

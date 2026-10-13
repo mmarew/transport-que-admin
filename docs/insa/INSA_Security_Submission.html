@@ -1,0 +1,3398 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dynamics Queue Admin — Security Documentation (SEC-1.0.0)</title>
+    <style>
+      /* ---------- Print-first design ---------- */
+      @page {
+        size: A4;
+        margin: 20mm 16mm 18mm 16mm;
+      }
+
+      :root {
+        --ink: #14181d;
+        --muted: #5a6472;
+        --line: #c9d1da;
+        --soft: #f2f4f7;
+        --accent: #1f4e79;
+        --warn: #8a5a00;
+        --warn-bg: #fdf6e6;
+        --ok: #1c6b45;
+        --ok-bg: #eef7f2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 10.2pt;
+        line-height: 1.5;
+        color: var(--ink);
+        margin: 0;
+        padding-left: 6mm;
+        padding-right: 6mm;
+      }
+
+      h1,
+      h2,
+      h3 {
+        color: var(--accent);
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+
+      h1 {
+        font-size: 17pt;
+        margin: 0 0 4mm;
+      }
+      h2 {
+        font-size: 13pt;
+        margin: 0 0 3mm;
+        padding-bottom: 1.4mm;
+        border-bottom: 1pt solid var(--accent);
+      }
+      h3 {
+        font-size: 10.8pt;
+        margin: 5mm 0 2mm;
+      }
+
+      p {
+        margin: 0 0 2.6mm;
+        text-align: justify;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      code,
+      .mono {
+        font-family: "SF Mono", Menlo, Consolas, monospace;
+        font-size: 8.6pt;
+        background: var(--soft);
+        padding: 0.3mm 0.9mm;
+        border-radius: 1mm;
+      }
+
+      section {
+        page-break-before: always;
+        break-before: page;
+      }
+
+      section.cover {
+        page-break-before: auto;
+        break-before: auto;
+      }
+
+      /* ---------- Cover ---------- */
+      .cover-rule {
+        height: 3.5mm;
+        background: var(--accent);
+        margin-bottom: 14mm;
+      }
+
+      .cover-title {
+        font-size: 25pt;
+        line-height: 1.15;
+        color: var(--ink);
+        margin: 0 0 4mm;
+        font-weight: 700;
+      }
+
+      .cover-sub {
+        font-size: 12.5pt;
+        color: var(--muted);
+        margin-bottom: 16mm;
+      }
+
+      .meta {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 8mm;
+      }
+      .meta td {
+        padding: 2.4mm 2mm;
+        border-bottom: 0.4pt solid var(--line);
+        vertical-align: top;
+        font-size: 9.6pt;
+      }
+      .meta td:first-child {
+        width: 38mm;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      /* ---------- Tables ---------- */
+      table.grid {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 4mm;
+        font-size: 8.9pt;
+      }
+      table.grid th {
+        background: var(--accent);
+        color: #fff;
+        text-align: left;
+        padding: 1.8mm 2mm;
+        font-weight: 600;
+        border: 0.4pt solid var(--accent);
+      }
+      table.grid td {
+        border: 0.4pt solid var(--line);
+        padding: 1.8mm 2mm;
+        vertical-align: top;
+      }
+      table.grid tr:nth-child(even) td {
+        background: var(--soft);
+      }
+      thead {
+        display: table-header-group;
+      }
+      tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      /* ---------- Callouts ---------- */
+      .box {
+        border: 0.5pt solid var(--line);
+        border-left: 2.2pt solid var(--accent);
+        background: var(--soft);
+        padding: 3mm 3.5mm;
+        margin: 0 0 4mm;
+        page-break-inside: avoid;
+      }
+      .box.warn {
+        border-left-color: var(--warn);
+        background: var(--warn-bg);
+      }
+      .box.ok {
+        border-left-color: var(--ok);
+        background: var(--ok-bg);
+      }
+      .box p:last-child {
+        margin-bottom: 0;
+      }
+      .box .t {
+        font-weight: 700;
+        display: block;
+        margin-bottom: 1.4mm;
+      }
+
+      .tag {
+        display: inline-block;
+        font-size: 7.4pt;
+        font-weight: 700;
+        padding: 0.3mm 1.4mm;
+        border-radius: 1mm;
+        text-transform: uppercase;
+        letter-spacing: 0.2pt;
+      }
+      .tag.done {
+        background: var(--ok);
+        color: #fff;
+      }
+      .tag.open {
+        background: var(--warn);
+        color: #fff;
+      }
+      .tag.na {
+        background: var(--muted);
+        color: #fff;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 3mm;
+        padding-left: 5.5mm;
+      }
+      li {
+        margin-bottom: 1.2mm;
+      }
+
+      .toc td {
+        padding: 1.5mm 2mm;
+        border-bottom: 0.4pt dotted var(--line);
+        font-size: 9.4pt;
+      }
+      .toc td:first-child {
+        width: 12mm;
+        color: var(--muted);
+      }
+
+      .fill {
+        color: var(--warn);
+        font-weight: 600;
+      }
+
+      .sig {
+        margin-top: 12mm;
+        page-break-inside: avoid;
+      }
+      .sig-line {
+        border-bottom: 0.5pt solid var(--ink);
+        height: 12mm;
+        margin-bottom: 1.5mm;
+        width: 78mm;
+      }
+      .sig-label {
+        font-size: 8.4pt;
+        color: var(--muted);
+      }
+
+      .pagebreak {
+        page-break-before: always;
+        break-before: page;
+      }
+
+      code,
+      pre,
+      table.grid td,
+      table.grid th {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============ COVER ============ -->
+    <section class="cover">
+      <div class="cover-rule"></div>
+      <div class="cover-title">Security Documentation</div>
+      <div class="cover-sub">
+        Dynamics Queue Admin — dispatch-queue management console (Single-Page Application), version
+        1.0.0. Security submission against the INSA Secure Website Management Standard, 2014 EC.
+      </div>
+
+      <table class="meta">
+        <tr>
+          <td>Document</td>
+          <td><strong>SEC-1.0.0</strong> — Security Documentation</td>
+        </tr>
+        <tr>
+          <td>Asset name</td>
+          <td>Dynamics Queue Admin — queue organization / dispatch management console</td>
+        </tr>
+        <tr>
+          <td>Asset type</td>
+          <td>Web Application (client-side single-page application)</td>
+        </tr>
+        <tr>
+          <td>Asset version</td>
+          <td>1.0.0</td>
+        </tr>
+        <tr>
+          <td>Asset code</td>
+          <td><code>ASSET-DYN-QA-001</code></td>
+        </tr>
+        <tr>
+          <td>Repository</td>
+          <td><code>queadmin-frontend</code></td>
+        </tr>
+        <tr>
+          <td>Production host</td>
+          <td><code>queue.dynamicsroute.tech</code></td>
+        </tr>
+        <tr>
+          <td>Backend API</td>
+          <td>
+            Separate system (<code>transportBackEndNative</code>, Node.js/Express + MySQL).
+            Development API <code>https://dev.dynamicsroute.tech</code>; production build defaults
+            to the same-origin path <code>/api</code> unless <code>VITE_API_BASE_URL</code> is
+            supplied at build time.
+          </td>
+        </tr>
+        <tr>
+          <td>Governing standard</td>
+          <td>
+            INSA Secure Website Management Standard, 2014 EC (<code>INSAREQUIREMENT.md</code>),
+            Annexes A and B
+          </td>
+        </tr>
+        <tr>
+          <td>Submitting entity</td>
+          <td class="fill">[ LEGAL NAME OF COMPANY / LICENCEE ]</td>
+        </tr>
+        <tr>
+          <td>Contact person</td>
+          <td class="fill">[ NAME, TITLE, EMAIL, TELEPHONE ]</td>
+        </tr>
+        <tr>
+          <td>Date of submission</td>
+          <td class="fill">[ DD MONTH YYYY ]</td>
+        </tr>
+      </table>
+
+      <div class="box warn">
+        <span class="t">Honesty note on scope and status</span>
+        <p>
+          This document covers <strong>this repository and this asset only</strong> — the Dynamics
+          Queue Admin console SPA. The backend (<code>transportBackEndNative</code>) and the hosting
+          platform are separate systems documented elsewhere; where a control depends on them this
+          document says so rather than claiming it. Application-layer controls that are present in
+          the submitted source are marked <span class="tag done">Pass</span>. Server and hosting
+          controls that are <strong>absent entirely</strong> (this repository contains no CSP, no
+          security response headers and no nginx/server configuration), and organizational items
+          with no evidence, are marked <span class="tag open">Open</span>. Genuinely inapplicable
+          tests are marked <span class="tag na">N/A</span>. Fields in
+          <span class="fill">amber</span> are administrative placeholders to be completed by the
+          submitting entity.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ TOC ============ -->
+    <section>
+      <h1>Contents</h1>
+      <table class="toc">
+        <tr>
+          <td>1</td>
+          <td>Introduction</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Asset and contact information</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>System description</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Security requirements and objectives</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Authentication and session management</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Authorization and access control</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Transport security</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>Application security controls</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>Input validation and data handling</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>Third-party and integration security</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>Dependency and supply-chain management</td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td>Deployment and hosting security</td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td>Logging, monitoring and incident response</td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td>Testing and assurance (Annex B checklist)</td>
+        </tr>
+        <tr>
+          <td>15</td>
+          <td>Annex A — Common vulnerabilities and threats</td>
+        </tr>
+        <tr>
+          <td>16</td>
+          <td>Compliance summary and deviations register</td>
+        </tr>
+        <tr>
+          <td>17</td>
+          <td>Security recommendations and roadmap</td>
+        </tr>
+        <tr>
+          <td>&mdash;</td>
+          <td>Document control, approvals and signatures</td>
+        </tr>
+      </table>
+
+      <h3>Related documents</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 34mm">Document</th>
+            <th>Identifier / location</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Software Design Description</td>
+            <td><code>SDD-1.0.0</code> — <code>docs/insa/SDD.html</code></td>
+          </tr>
+          <tr>
+            <td>Technical Design / Low-Level Design</td>
+            <td><code>TDD-1.0.0</code> — <code>docs/insa/TDD_LLD.html</code></td>
+          </tr>
+          <tr>
+            <td>End User Guide</td>
+            <td><code>docs/insa/UserGuide.html</code></td>
+          </tr>
+          <tr>
+            <td>Standard and checklist</td>
+            <td><code>INSAREQUIREMENT.md</code></td>
+          </tr>
+          <tr>
+            <td>In-application security self-assessment</td>
+            <td>
+              <code>src/pages/security/SecurityPage.tsx</code> with
+              <code>src/data/insaStandard.ts</code> (5 focus areas, 35 requirements, 102 tests, 8
+              Annex A vulnerabilities)
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>How to read this document</h3>
+      <p>
+        Section 14 contains the full 102-item INSA Annex B minimum security testing checklist with a
+        status for every item. Section 16 maps the five focus areas (2.1&ndash;2.5) to the
+        organization's status. Section 17 gives the phased remediation roadmap. Where a control is
+        described as implemented, the implementation point (file and symbol) is named so the
+        reviewer can independently verify it. The source of truth for every negative statement is
+        the submitted repository; no control is claimed that is not present in it.
+      </p>
+    </section>
+
+    <!-- ============ 1. INTRODUCTION ============ -->
+    <section>
+      <h1>1. Introduction</h1>
+
+      <h3>1.1 Purpose</h3>
+      <p>
+        This is the security documentation for <strong>Dynamics Queue Admin</strong>
+        (<code>queadmin-frontend</code>), the dispatch-queue management console used by queue staff
+        to manage driver queues, shipper requests, trips, queue organizations and real-time dispatch
+        operations. It is submitted to the Information Network Security Agency (INSA) in support of
+        the Secure Website Management Standard, 2014 EC. The document states the security
+        requirements the asset is designed to meet, the controls actually implemented in the
+        submitted release, the evidence for those controls, and — with equal prominence — the
+        controls that are planned, outstanding, organizational, or owned by a separate system.
+      </p>
+
+      <h3>1.2 Scope</h3>
+      <p>
+        <strong>In scope:</strong> the client-side single-page application in this repository (React
+        19 + TypeScript + Vite 8), its production build, and its client-side security behaviours:
+        session handling, route guards, form validation and sanitisation, storage handling, and
+        error handling. The application is served at <code>queue.dynamicsroute.tech</code>.
+      </p>
+      <p>
+        <strong>Out of scope:</strong> the backend system of record
+        (<code>transportBackEndNative</code>, Node.js/Express + MySQL), the driver mobile
+        application, the shipper application, and the hosting platform itself. The backend is the
+        enforcement boundary for authentication, authorization, session lifetime, upload handling
+        and request validation; those obligations are identified here as dependencies and must be
+        evidenced by the backend's own submission. The hosting platform (web server, TLS
+        termination, certificate management, HTTP response headers) is a separate hosting
+        engagement.
+        <strong
+          >This repository contains no server configuration, no Content-Security-Policy and no
+          security response headers; the document states this plainly rather than implying a server
+          layer that does not exist in the source.</strong
+        >
+      </p>
+
+      <h3>1.3 Governing standard</h3>
+      <p>
+        The governing standard is the INSA <em>Secure Website Management Standard, 2014 EC</em>. It
+        defines five focus areas — Requirement Gathering and Analysis (2.1), Design (2.2),
+        Implementation (2.3), Hosting (2.4), and Operation and Management (2.5) — plus Annex A
+        (eight common vulnerabilities and threats) and Annex B (a 102-item minimum security testing
+        checklist). This document addresses all five focus areas and both annexes in turn.
+      </p>
+
+      <h3>1.4 Summary of outcome</h3>
+      <p>
+        The application layer is in reasonable shape. The console uses an httpOnly-cookie session
+        model and never reads or stores a JWT in JavaScript (<code>getToken()</code> in
+        <code>src/lib/auth.ts</code> deliberately returns <code>null</code>); login is
+        one-time-password only, so there are no passwords to leak; forms are validated and sanitised
+        with React Hook Form and Zod (<code>src/schemas/queue.ts</code> strips HTML tags and control
+        characters); the client never renders untrusted HTML (a source scan found no
+        <code>dangerouslySetInnerHTML</code>, <code>innerHTML</code>, <code>eval</code> or
+        <code>new Function</code> in <code>src/</code>); logout clears the stored session profile
+        and calls the backend logout; a global 401 handler ends the session on any unauthorized
+        response; and production sourcemaps are disabled.
+      </p>
+      <p>
+        The largest gaps are real and are stated without mitigation. There is
+        <strong
+          >no Content-Security-Policy and no security response header anywhere in the
+          repository</strong
+        >, and no server configuration to deliver them, so anti-clickjacking, HSTS, anti-sniffing
+        and related items cannot be evidenced from this asset. The error utility
+        <code>src/utils/parseError.ts</code> logs the
+        <strong>raw error object by default</strong> (<code
+          >console.error("[parseError]", error)</code
+        >) and is not gated to development builds, so failure payloads can reach the browser console
+        in production. The OTP is submitted to the backend as a JavaScript <code>Number</code>,
+        which corrupts codes with a leading zero. The client also sends <code>roleId</code> and
+        <code>statusId</code> on login and OTP verification even though the code comments and README
+        claim it does not, so the backend must be confirmed to ignore them. There is no continuous
+        integration, no dependency audit gate and no security linting plugin. Sections 14 and 16
+        quantify all of this precisely.
+      </p>
+    </section>
+
+    <!-- ============ 2. ASSET AND CONTACT ============ -->
+    <section>
+      <h1>2. Asset and contact information</h1>
+
+      <h3>2.1 Asset detail</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 44mm">Attribute</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Asset name</td>
+            <td>Dynamics Queue Admin (dispatch-queue management console)</td>
+          </tr>
+          <tr>
+            <td>Repository / asset code</td>
+            <td><code>queadmin-frontend</code> &mdash; asset code <code>ASSET-DYN-QA-001</code></td>
+          </tr>
+          <tr>
+            <td>Asset type</td>
+            <td>Web Application &mdash; client-side single-page application</td>
+          </tr>
+          <tr>
+            <td>Version</td>
+            <td>1.0.0 (<code>package.json</code> private version is <code>0.0.0</code>)</td>
+          </tr>
+          <tr>
+            <td>Technology</td>
+            <td>
+              React 19, TypeScript, Vite 8, react-router-dom 7, Redux Toolkit / RTK Query, Zustand,
+              axios, socket.io-client 4, react-hook-form + zod, i18next, date-fns, sonner
+            </td>
+          </tr>
+          <tr>
+            <td>Production URL</td>
+            <td><code>https://queue.dynamicsroute.tech/</code></td>
+          </tr>
+          <tr>
+            <td>API endpoint</td>
+            <td>
+              Same-origin <code>/api</code> by default in production; development API
+              <code>https://dev.dynamicsroute.tech</code> (separate backend system)
+            </td>
+          </tr>
+          <tr>
+            <td>Real-time channel</td>
+            <td>
+              Socket.IO with <code>withCredentials</code> to the backend (<code
+                >VITE_WEBSOCKET_URL</code
+              >
+              / API base)
+            </td>
+          </tr>
+          <tr>
+            <td>Distribution</td>
+            <td>Static bundle (HTML/JS/CSS) served from a document root (<code>dist/</code>)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.2 Classification</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 44mm">Attribute</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Asset classification</td>
+            <td>Business / internal-use web application; commercially sensitive</td>
+          </tr>
+          <tr>
+            <td>Data sensitivity</td>
+            <td>
+              Confidential operational data and personal data (driver and shipper names, phone
+              numbers, email, vehicle and queue records)
+            </td>
+          </tr>
+          <tr>
+            <td>Availability class</td>
+            <td>Business-operational (daily driver queue and dispatch operations)</td>
+          </tr>
+          <tr>
+            <td>Owner</td>
+            <td>
+              <span class="fill">TBD</span> (business owner),
+              <span class="fill">TBD</span> (system/technical owner)
+            </td>
+          </tr>
+          <tr>
+            <td>Criticality</td>
+            <td><span class="fill">TBD</span> (business impact statement to be supplied)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.3 Ownership and points of contact</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 44mm">Role</th>
+            <th style="width: 40mm">Name</th>
+            <th>Contact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Business owner</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+          <tr>
+            <td>Technical / system owner</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+          <tr>
+            <td>Security contact</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+          <tr>
+            <td>Hosting provider contact</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+          <tr>
+            <td>Backend (API) team contact</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+          <tr>
+            <td>CERT / INSA reporting contact</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="box">
+        <span class="t">Placeholders</span>
+        <p>
+          Ownership and contact fields are intentionally not invented. They must be completed by the
+          submitting entity before submission. The same applies to classification criticality and
+          the submission date on the cover.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 3. SYSTEM DESCRIPTION ============ -->
+    <section>
+      <h1>3. System description</h1>
+
+      <h3>3.1 Architecture</h3>
+      <p>
+        Dynamics Queue Admin is a standalone single-page application. It is loaded once from the
+        static host, then communicates with a single backend over HTTPS (REST/JSON) and a single
+        real-time channel (Socket.IO, with cookie credentials). It also calls third-party services
+        directly from the browser for fonts, avatars and place search. The console is a
+        queue-operations tool: queue organizations manage their driver queues, check drivers in,
+        dispatch vehicles against shipper requests, and receive live queue updates. It holds no
+        server-side logic and stores no database of its own; all state of record lives in the
+        backend.
+      </p>
+
+      <pre>
+  +-----------------------+   HTTPS (REST/JSON)   +-------------------------+
+  |  Dynamics Queue Admin | --------------------> |  Dynamics backend       |
+  |  console (this asset) |                       |  transportBackEndNative |
+  |  React 19 + Vite SPA  | <-------------------- |  REST + Socket.IO       |
+  +-----------+-----------+   Socket.IO (WSS)     |  MySQL 8 (system of     |
+              |                                   |  record)                |
+              | browser -> third parties          +-------------------------+
+              v
+   Google Fonts (Manrope) - ui-avatars.com - Photon/Komoot (place search)
+      </pre>
+
+      <h3>3.2 Security-relevant boundaries</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 40mm">Boundary</th>
+            <th>Description and control implication</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Browser</td>
+            <td>
+              The untrusted runtime. All client-side checks are conveniences, not security
+              boundaries. There is no CSP in this asset, so the browser is not given a
+              script-execution policy to enforce.
+            </td>
+          </tr>
+          <tr>
+            <td>SPA client</td>
+            <td>
+              Holds only a non-sensitive user profile in <code>localStorage</code>; the session JWT
+              lives only in an httpOnly cookie set by the API host. As a cross-site (or same-origin,
+              depending on configuration) cookie model, requests use
+              <code>credentials: "include"</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Backend API</td>
+            <td>
+              The <strong>authorization and validation enforcement boundary</strong>. It derives
+              identity and role from the session, enforces CSRF/session/rate-limit controls and
+              re-validates all input. This asset cannot enforce these; see §6 and §16.
+            </td>
+          </tr>
+          <tr>
+            <td>Socket (Socket.IO)</td>
+            <td>
+              Live queue events. Uses <code>withCredentials: true</code> and negotiates
+              <code>websocket</code> with a <code>polling</code> fallback
+              (<code>src/lib/socket.ts</code>). Message authorization is a backend responsibility.
+            </td>
+          </tr>
+          <tr>
+            <td>Third-party services</td>
+            <td>
+              Google Fonts, ui-avatars.com and Photon/Komoot place search are contacted directly by
+              the browser. These are points where data (including search text) can leave the
+              Dynamics trust boundary; see §10.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>3.3 Data-flow summary</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 34mm">Flow</th>
+            <th style="width: 34mm">Transport</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Authentication</td>
+            <td>HTTPS + OTP</td>
+            <td>
+              Phone number → OTP by SMS → verify (<code>POST /user/verifyUserByOTP</code>) → session
+              cookie set by the backend; non-secret profile persisted locally. No password is used.
+            </td>
+          </tr>
+          <tr>
+            <td>Session bootstrap</td>
+            <td>HTTPS, cookie</td>
+            <td>
+              The profile is hydrated from <code>localStorage</code> on start for optimistic
+              rendering; the backend is the authority, and any 401 on a subsequent request clears
+              the session and returns the user to login.
+            </td>
+          </tr>
+          <tr>
+            <td>Queue operations</td>
+            <td>HTTPS + cookie</td>
+            <td>
+              REST/JSON for queue status, check-in, dispatch, shipper requests and organization
+              management; authorized by the backend.
+            </td>
+          </tr>
+          <tr>
+            <td>Real-time events</td>
+            <td>Socket.IO</td>
+            <td>Live queue and organization updates; RTK Query cache invalidation on receipt.</td>
+          </tr>
+          <tr>
+            <td>Place search</td>
+            <td>HTTPS to third party</td>
+            <td>
+              Address/place text is sent to Photon/Komoot when a queue organization address is
+              entered and not matched against the local Ethiopian-city list. §10.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 4. SECURITY REQUIREMENTS ============ -->
+    <section>
+      <h1>4. Security requirements and objectives</h1>
+      <p>
+        The standard's objectives are expressed through the CI4A+Accountability model
+        (Confidentiality, Integrity, Authentication, Authorization, Availability, and
+        Accountability). The table below states the objective for this asset, the assets and data
+        protected, and how the objective is met (and where it depends on the backend or hosting
+        platform).
+      </p>
+
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 32mm">Objective</th>
+            <th style="width: 50mm">Assets / data protected</th>
+            <th>How it is met</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Confidentiality</strong></td>
+            <td>Queue operations, driver and shipper personal data, session cookie</td>
+            <td>
+              TLS in production; httpOnly session cookie (no JS-readable token); logout clears the
+              local profile; no secrets in the bundle; production sourcemaps disabled. Third-party
+              place-search egress and raw error logging remain open (§9, §10).
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Integrity</strong></td>
+            <td>Queue entries, dispatch actions, shipper requests, organization records</td>
+            <td>
+              Server-side validation and business rules authorize and persist all changes; the
+              client presents data and forwards intent only. Client-side Zod schemas sanitise input
+              before it is sent.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Authentication</strong></td>
+            <td>User accounts (phone identity)</td>
+            <td>
+              Phone number plus one-time password delivered by SMS. Single factor, accepted for this
+              population; server-side OTP rate limiting is a required backend control (§5).
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Authorization</strong></td>
+            <td>Queue-organization-scoped operations and administration</td>
+            <td>
+              Role-based access enforced by the backend; a client route-boundary guard
+              (<code>RoleGuard</code>) prevents unauthorized UI from mounting. The backend is the
+              enforcement boundary (§6).
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Availability</strong></td>
+            <td>Queue and dispatch services during operating hours</td>
+            <td>
+              Static, cacheable bundle; the socket client reconnects with bounded attempts. The
+              organization route check fails open on a transient error so a network blip does not
+              lock operators out (a deliberate availability decision, noted in §6 and §16).
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Accountability</strong></td>
+            <td>Security events, changes, approvals</td>
+            <td>
+              Application logging is development-oriented and, in one respect, unsafe in production
+              (<code>parseError</code> logs raw errors by default). Server-side and organizational
+              audit logging, change control, monitoring and risk assessment are outstanding (§13,
+              §16).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="box warn">
+        <span class="t">Boundary discipline</span>
+        <p>
+          Several objectives above are only partially satisfiable from this repository. The document
+          names the owning system rather than implying this asset controls them. In particular,
+          authentication strength, session lifetime, rate limiting, CSRF defence, cookie flags and
+          per-request authorization are all backend obligations.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 5. AUTH AND SESSION ============ -->
+    <section>
+      <h1>5. Authentication and session management</h1>
+
+      <h3>5.1 Authentication flow</h3>
+      <ol>
+        <li>
+          The user enters a phone number; the console requests an OTP (<code>requestLoginOtp</code>,
+          <code>POST /user/loginUser</code>).
+        </li>
+        <li>
+          A one-time password is delivered by SMS; the console collects six digits and verifies it
+          (<code>verifyOtp</code>, <code>POST /user/verifyUserByOTP</code>).
+        </li>
+        <li>
+          On success the backend issues a session JWT in an
+          <strong>httpOnly cookie</strong>. The console does not read or store the token: the RTK
+          Query <code>onQueryStarted</code> handler stores only <code>userData</code>
+          (<code>src/lib/redux/api/authEndpoints.ts</code>).
+        </li>
+        <li>
+          The console persists only the non-sensitive profile in
+          <code>localStorage</code> under <code>queueadmin:user</code> so the UI can render the
+          user's name and role across reloads (<code>src/lib/auth.ts</code>).
+        </li>
+      </ol>
+
+      <div class="box ok">
+        <span class="t">Implemented application-layer controls (verified in source)</span>
+        <ul>
+          <li>
+            <strong>No JS-readable token.</strong> <code>getToken()</code> returns
+            <code>null</code> by design; the lexically stored record is
+            <code>{ userData }</code> only. Saved under <code>queueadmin:user</code>; the legacy
+            <code>queueadmin:auth</code> record that could have held a token is migrated and then
+            deleted (<code>purgeLegacyAuth()</code>).
+          </li>
+          <li>
+            <strong>Cookie-credential requests.</strong> Both the axios layer
+            (<code>src/lib/api.ts</code>, <code>withCredentials: true</code>) and the RTK Query base
+            (<code>src/lib/redux/api/base.ts</code>, <code>credentials: "include"</code>) send the
+            session cookie. No <code>Authorization</code> header is constructed.
+          </li>
+          <li>
+            <strong>Logout clears state.</strong> <code>AuthContext.logout()</code> disconnects the
+            socket, calls <code>POST /user/logout</code> (best-effort, to clear the httpOnly cookie
+            server-side), clears the stored profile via <code>clearAuth()</code>, and dispatches the
+            redux <code>logout</code> action — Annex B #39, #63.
+          </li>
+          <li>
+            <strong>Central 401 handling.</strong> Any 401 on any API call ends the session: the
+            axios interceptor clears auth and redirects to <code>/login</code>, and
+            <code>baseQueryWithReauth</code> dispatches <code>logout()</code>. A 401 on the socket
+            handshake also ends the session so the client does not reconnect-loop against a dead
+            cookie (<code>src/lib/socket.ts</code>).
+          </li>
+          <li>
+            <strong>Phone masking.</strong> The OTP screen shows a masked number (<code
+              >maskedPhone</code
+            >
+            in <code>src/hooks/useOtpVerification.ts</code>).
+          </li>
+        </ul>
+      </div>
+
+      <div class="box warn">
+        <span class="t">Findings that prevent Pass status (verified in source)</span>
+        <ul>
+          <li>
+            <strong>OTP transmitted as a number.</strong>
+            <code>verifyOtp</code> sends <code>OTP: Number(OTP)</code>
+            (<code>src/services/auth.service.ts</code>). A six-digit code with a leading zero is
+            transmitted with the zero stripped, so a valid code can be rejected (and the behaviour
+            differs from the string-safe handling expected). Annex B #26 is marked
+            <span class="tag open">Open</span> on this ground.
+          </li>
+          <li>
+            <strong>roleId/statusId sent despite contrary comments.</strong> Both
+            <code>requestLoginOtp</code> and <code>verifyOtp</code> send
+            <code>roleId: QUEUE_ORG_ADMIN_ROLE</code> (11) and <code>statusId: 1</code>, while the
+            in-file comment and the README state that the client does <em>not</em> send a role. The
+            backend must be confirmed to derive the role from the session and ignore these
+            client-supplied values. Annex B #28, #36.
+          </li>
+          <li>
+            <strong>Raw error logging.</strong> <code>parseError</code> logs the entire error object
+            unless <code>silent</code> is passed, and it is not gated to development builds
+            (<code>src/utils/parseError.ts:116</code>). This is discussed in §9 and is the basis for
+            marking the token/log-disclosure items <span class="tag open">Open</span>.
+          </li>
+          <li>
+            <strong>Server messages surfaced.</strong> <code>resolveServerMsg</code> returns the
+            backend's <code>message</code>/<code>error</code> text when present, so a failed OTP can
+            display backend prose that may distinguish "unknown user" from "wrong code" (username
+            enumeration). Annex B #35 is <span class="tag open">Open</span>.
+          </li>
+        </ul>
+      </div>
+
+      <h3>5.2 Session lifetime</h3>
+      <p>
+        Session lifetime is <strong>backend-controlled and not visible to the client</strong>.
+        <code>VITE_JWT_EXPIRATION_DAYS=7</code> exists in <code>.env.development</code> /
+        <code>.env.example</code> but is read nowhere in <code>src/</code>; it is misleading and
+        should be removed. Per the backend session policy documentation (README, referencing
+        <code>Utils/SessionPolicy.js</code>), sessions are role-dependent:
+        <strong
+          >Admin (3) and SuperAdmin (6) = 24 hours; Queue Org Admin (11) and Queue Dispatcher (12) =
+          365 days.</strong
+        >
+        The 365-day lifetime for queue staff is unusually long and is called out as a hardening
+        recommendation (§17). A periodic-expiration requirement (Annex B #76) therefore rests
+        entirely on the backend.
+      </p>
+
+      <h3>5.3 Residual items to confirm with the backend team</h3>
+      <div class="box warn">
+        <span class="t">These cannot be implemented in this repository</span>
+        <table class="grid">
+          <thead>
+            <tr>
+              <th style="width: 46mm">Item</th>
+              <th>Why it matters</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cookie flags: <code>HttpOnly; Secure; SameSite</code>; <code>Path=/</code></td>
+              <td>
+                The production build defaults to a same-origin <code>/api</code> path, but a
+                cross-site deployment (separate API host) would require
+                <code>SameSite=None; Secure</code>.
+                <strong>Confirm the backend's actual configuration.</strong> Annex B #67&ndash;#70.
+              </td>
+            </tr>
+            <tr>
+              <td>Server-side OTP rate limiting and lockout</td>
+              <td>
+                The console has only a 60-second resend cooldown (<code
+                  >RESEND_COOLDOWN_SECONDS = 60</code
+                >). Without a server-side counter, OTPs can be brute-forced and SMS-toll abuse is
+                possible. Annex B #37.
+              </td>
+            </tr>
+            <tr>
+              <td>Server-side session revocation and regeneration</td>
+              <td>
+                Regeneration on login and revocation on logout/credential change must happen
+                server-side. Annex B #64&ndash;#66, #73.
+              </td>
+            </tr>
+            <tr>
+              <td>Periodic session expiration and idle timeout</td>
+              <td>
+                A maximum session age and idle timeout are backend decisions; the 365-day window
+                should be reviewed. Annex B #76.
+              </td>
+            </tr>
+            <tr>
+              <td>Session identifier quality</td>
+              <td>
+                Unpredictability, collision resistance and transmission only over TLS are backend
+                properties. Annex B #71, #72, #74, #75.
+              </td>
+            </tr>
+            <tr>
+              <td>JWT returned in the response body</td>
+              <td>
+                <code>VerifyOtpResponse</code> types a <code>token: string</code> field
+                (<code>src/types/queue.ts</code>). If the cookie model is the target, the body token
+                should be dropped or shortened. Annex B #36, #74.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 6. AUTHORIZATION ============ -->
+    <section>
+      <h1>6. Authorization and access control</h1>
+
+      <h3>6.1 Role model</h3>
+      <p>
+        The console is intended for queue-console roles: Queue Org Admin (role 11), Queue Dispatcher
+        (role 12), platform Admin (role 3) and Super Admin (role 6). The role is part of the stored
+        profile and is resolved by the backend at login. Membership in a specific queue organization
+        is a backend relationship; the client cannot grant it.
+      </p>
+
+      <h3>6.2 Client route-boundary guards</h3>
+      <p>Two components wrap protected routes and run <em>before</em> the child renders:</p>
+      <ul>
+        <li>
+          <code>src/components/auth/RoleGuard.tsx</code> — the user must hold one of the allowed
+          role IDs (<code>{ 11, 12, 3, 6 }</code>), otherwise the guard redirects to
+          <code>/login</code>. Roles 3 and 6 are included because they are legitimate platform
+          operators of the queue console.
+        </li>
+        <li>
+          <code>src/components/auth/ProtectedRoute.tsx</code> — the user must be authenticated and
+          must have at least one queue organization, otherwise they are redirected to
+          <code>/setup-org</code>. It waits for the organization query to settle before deciding.
+        </li>
+      </ul>
+
+      <div class="box warn">
+        <span class="t">Fail-open behaviour in ProtectedRoute (Annex B #32)</span>
+        <p>
+          When the organization query returns an error, <code>ProtectedRoute</code> returns
+          <code>true</code> for <code>hasOrg</code> and allows the user through:
+          <code>orgsError ? true : false</code>
+          (<code>src/components/auth/ProtectedRoute.tsx:48-52</code>). This is a deliberate
+          availability choice — a transient backend failure should not lock operators out of a live
+          queue — but it is a fail-open condition and is marked
+          <span class="tag open">Open</span> under Annex B #32. It does not bypass authentication
+          (the session check precedes it) nor backend authorization; it only affects the client's
+          organization-setup gate. The recommended remediation is to distinguish an authorization
+          failure (redirect) from a transport failure (show a retryable error, not the app).
+        </p>
+      </div>
+
+      <div class="box warn">
+        <span class="t">The backend is the enforcement boundary — explicit statement</span>
+        <p>
+          The route guards are a <strong>UI safety control, not an authorization boundary</strong>.
+          A user who forges their stored profile or calls the API directly must still be denied by
+          the backend. The backend must:
+        </p>
+        <ul>
+          <li>
+            derive <code>roleId</code>/<code>statusId</code> from the session, never from the
+            request body (the client sends them for legacy reasons — see §5.1);
+          </li>
+          <li>scope every queue-organization query and mutation to the cookie identity;</li>
+          <li>
+            authorize every organization and queue identifier against the session's memberships.
+          </li>
+        </ul>
+        <p>
+          Until the backend team evidences these, Annex B #23, #24, #27 and #28 cannot be closed.
+        </p>
+      </div>
+
+      <h3>6.3 Per-action checks</h3>
+      <p>
+        Individual actions present only the affordances the role permits (for example, bid approval
+        is shown only to role 11 in the bidding board), and every mutating request is sent to the
+        backend, which is solely responsible for accepting or rejecting it. No client-side decision
+        is treated as authoritative.
+      </p>
+
+      <h3>6.4 Privilege categories and lifecycle</h3>
+      <p>
+        The code implements privilege categorization (INSA 2.5.D) through the role set above and the
+        queue-organization membership model. Granting and revoking access, and rotating credentials
+        on a fixed schedule, are organizational procedures that are not evidenced in this repository
+        (INSA 2.5.C and 2.5.E).
+      </p>
+    </section>
+
+    <!-- ============ 7. TRANSPORT ============ -->
+    <section>
+      <h1>7. Transport security</h1>
+
+      <h3>7.1 HTTPS</h3>
+      <p>
+        The production URL is HTTPS-only (<code>queue.dynamicsroute.tech</code>). The application is
+        configured to call the API over <code>https://</code> in development
+        (<code>VITE_API_BASE_URL=https://dev.dynamicsroute.tech</code>) and defaults to the
+        same-origin <code>/api</code> path in a production build, which inherits the page's TLS. The
+        socket client targets the same host and sends the cookie with
+        <code>withCredentials: true</code>.
+      </p>
+
+      <div class="box">
+        <span class="t">Not independently verified for this submission</span>
+        <p>
+          This repository contains no server configuration, so the HTTP→HTTPS redirect, the TLS
+          protocol/cipher set, and the certificate chain on the production host were
+          <strong>not independently assessed</strong> here. The application itself only ever
+          addresses HTTPS origins in production. Annex B #13 and #15 are marked
+          <span class="tag done">Pass</span> on the basis of the application's own transport choices
+          (HTTPS/WSS and no mixed content); #14 is marked <span class="tag done">Pass</span> with
+          the platform redirect noted as unverified; #16 (HSTS) and #17&ndash;#18 (TLS/certificate)
+          are <span class="tag open">Open</span>.
+        </p>
+      </div>
+
+      <h3>7.2 Socket transport</h3>
+      <p>
+        <code>src/lib/socket.ts</code> initializes Socket.IO with
+        <code>transports: ["websocket", "polling"]</code>, <code>withCredentials: true</code>,
+        <code>reconnectionAttempts: 5</code>, <code>reconnectionDelay: 1500</code>,
+        <code>reconnectionDelayMax: 5000</code> and <code>timeout: 20000</code>. The polling
+        fallback is retained for restrictive networks; unlike a purely WebSocket-pinned client, the
+        polling handshake is an HTTP request that must also be protected by the platform's cookie
+        and CSRF controls.
+      </p>
+
+      <h3>7.3 HSTS and cookie scope</h3>
+      <p>
+        No <code>Strict-Transport-Security</code> header is defined anywhere in the repository, so
+        HSTS is <strong>absent</strong> (Annex B #16). Because a production build defaults to a
+        same-origin API path, the session cookie may be same-site; if the deployment instead splits
+        the SPA and API across registrable domains, the cookie must be
+        <code>SameSite=None; Secure</code> and CSRF defence cannot rely on the default
+        <code>SameSite=Lax</code> (see §5.3 and §14 #61, #62). This ambiguity must be resolved by
+        the deployment and the backend before submission.
+      </p>
+    </section>
+
+    <!-- ============ 8. APPLICATION SECURITY CONTROLS ============ -->
+    <section>
+      <h1>8. Application security controls</h1>
+
+      <h3>8.1 Content-Security-Policy</h3>
+      <div class="box warn">
+        <span class="t">There is no CSP — stated plainly</span>
+        <p>
+          A full-repository scan (<code>src/</code>, <code>public/</code>, <code>index.html</code>,
+          <code>vite.config.ts</code>) found <strong>no Content-Security-Policy</strong> — no meta
+          tag, no build-time injection, and no server configuration to deliver a header. Unlike a
+          hardened SPA, this asset provides no script-execution policy to the browser. Annex B #83
+          (non-specific content types), #85 (anti-sniffing) and #96 (anti-clickjacking) are
+          therefore <span class="tag open">Open</span>, and there is no defence-in-depth layer
+          behind React's output encoding for Annex B #43.
+        </p>
+      </div>
+      <p>
+        Note that <code>index.html</code> embeds an inline
+        <code>&lt;script type="application/ld+json"&gt;</code> structured-data block. A strict
+        <code>script-src</code> policy introduced later would need to accommodate it with a hash or
+        nonce, or the block should be moved to an external file. This is recorded as a dependency of
+        the remediation in §17.
+      </p>
+
+      <h3>8.2 Security response headers</h3>
+      <p>
+        No security response headers are configured in this repository:
+        <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>,
+        <code>Referrer-Policy</code>, <code>Permissions-Policy</code>,
+        <code>Cross-Origin-Opener-Policy</code> and <code>Cross-Origin-Resource-Policy</code> are
+        all absent. The hosting platform may add some of these, but that is outside this asset and
+        is <strong>not evidenced</strong>. They are recorded as hosting items in §16.
+      </p>
+
+      <h3>8.3 Client-side output encoding</h3>
+      <ul>
+        <li>
+          <strong>React escaping.</strong> All untrusted values are rendered through JSX text nodes
+          and attribute bindings, which React escapes by default (Annex B #43).
+        </li>
+        <li>
+          <strong>No raw HTML sinks.</strong> A source scan found no
+          <code>dangerouslySetInnerHTML</code>, <code>innerHTML</code>, <code>eval</code>,
+          <code>new Function</code> or <code>document.write</code> in <code>src/</code>.
+        </li>
+        <li>
+          <strong>Input sanitisation.</strong> Zod transforms strip HTML tags and control characters
+          from names, addresses and emails before they are stored or sent
+          (<code>src/schemas/queue.ts</code>: <code>stripTags</code>, <code>stripCtrl</code>,
+          <code>sanitizeText</code>, <code>sanitizeEmail</code>).
+        </li>
+      </ul>
+      <p>
+        Without a CSP, these controls are the only layer preventing script injection; the
+        recommendation in §17 is to add a policy as the first server-side change.
+      </p>
+
+      <h3>8.4 Build hardening</h3>
+      <ul>
+        <li>
+          <strong>Sourcemap suppression.</strong> <code>vite.config.ts</code> sets
+          <code>build.sourcemap = process.env.NODE_ENV !== "production"</code>, so development
+          builds carry sourcemaps and production builds do not. This is effective but implicit;
+          pinning an explicit <code>false</code> for production is recommended (Annex B #6).
+        </li>
+        <li>
+          <strong>No secrets in the bundle.</strong> Only public configuration (API/socket hosts) is
+          referenced from environment variables; no API keys or credentials are embedded or
+          committed.
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============ 9. INPUT VALIDATION ============ -->
+    <section>
+      <h1>9. Input validation and data handling</h1>
+
+      <h3>9.1 Form validation and sanitisers</h3>
+      <p>
+        Forms use <code>react-hook-form</code> with <code>zod</code> schemas
+        (<code>src/schemas/queue.ts</code>): login, registration, organization setup, check-in and
+        dispatch. Schemas constrain length and format, and transform values to strip HTML tags
+        (<code>stripTags</code>), remove non-printable control characters (<code>stripCtrl</code>),
+        collapse whitespace (<code>sanitizeText</code>) and normalise email
+        (<code>sanitizeEmail</code>). Phone numbers are normalised to E.164 (<code>+251…</code>) by
+        <code>src/utils/phoneFormatter.ts</code> and <code>src/lib/authConfig.ts</code>. Client
+        validation is a usability and hygiene control only; the backend must re-validate every
+        field.
+      </p>
+
+      <h3>9.2 File uploads</h3>
+      <div class="box">
+        <span class="t">No file upload feature</span>
+        <p>
+          The console does not upload or download files: a source scan found no
+          <code>FormData</code>, file input, <code>FileReader</code> or multipart request. The Annex
+          B File Upload group (#78&ndash;#82) is therefore marked
+          <span class="tag na">N/A</span> for this asset. If uploads are added later (for example,
+          compliance documents), the validation and storage controls must be designed and added to
+          this document.
+        </p>
+      </div>
+
+      <h3>9.3 Production error handling and log hygiene</h3>
+      <div class="box warn">
+        <span class="t">Finding: raw error logging is not dev-gated</span>
+        <p>
+          <code>src/utils/parseError.ts</code> runs
+          <code>console.error("[parseError]", error)</code> unless the caller passes
+          <code>{ silent: true }</code>. It is <strong>not</strong> gated behind
+          <code>import.meta.env.DEV</code>. The logged error object can include the request
+          configuration and response data (which for auth calls can carry the phone number and OTP).
+          This is a production information-disclosure and log-hygiene gap, and it is the reason
+          Annex B #4 (sensitive information in logs/errors) and #77 (disclosure of tokens in logs)
+          are marked <span class="tag open">Open</span>, and it also contributes to #7.
+        </p>
+      </div>
+      <p>
+        The user-facing path is better: <code>parseError</code> returns mapped, generic messages for
+        HTTP statuses (401 → "Session expired", 403 → "You do not have permission", etc.). However,
+        when the backend supplies a <code>message</code>/<code>error</code> string it is surfaced to
+        the user (<code>resolveServerMsg</code>), which can disclose internal detail. Consider
+        returning only server messages from an allow-list.
+      </p>
+
+      <h3>9.4 Client-side data and PII handling</h3>
+      <p>
+        The session JWT lives only in the httpOnly cookie; <code>localStorage</code> holds the
+        non-secret profile (<code>queueadmin:user</code>: name, phone, email, role) used for
+        rendering. On logout, <code>clearAuth()</code> removes that profile from both
+        <code>localStorage</code> and <code>sessionStorage</code>. Other local keys
+        (<code>app_language</code>, <code>queueadmin:store</code> — a UI selection only,
+        <code>insa_security_checklist_v1</code>, theme and sidebar preferences) hold no personal
+        data and are not cleared; this is acceptable but is noted for completeness. The residual
+        risk is that the profile is stored in cleartext while signed in; this is a deliberate
+        routing decision and is recorded in §16.
+      </p>
+    </section>
+
+    <!-- ============ 10. THIRD-PARTY ============ -->
+    <section>
+      <h1>10. Third-party and integration security</h1>
+      <p>
+        The console contacts third parties directly from the browser. Each is listed with its actual
+        call site; no other external origin is referenced in the source.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 40mm">Third party</th>
+            <th style="width: 38mm">Purpose</th>
+            <th>Security notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Google Fonts (<code>fonts.googleapis.com</code>)</td>
+            <td>Manrope typeface</td>
+            <td>
+              Loaded via an <code>@import</code> at the top of <code>src/index.css</code>. Static
+              assets only; no application data sent, but it is an external dependency on the
+              critical rendering path and a request to a third party on every page load.
+            </td>
+          </tr>
+          <tr>
+            <td>ui-avatars.com</td>
+            <td>Generated avatar images</td>
+            <td>
+              Used in <code>DashboardLayout.tsx:42</code>,
+              <code>DesktopProfileSection.tsx:44</code> and <code>MobileProfileView.tsx:41</code>.
+              The user's display name is placed in the query string (<code>?name=…</code>), so a
+              portion of personal data is disclosed to the third party and appears in its access
+              logs. Self-hosting avatar generation would remove this egress.
+            </td>
+          </tr>
+          <tr>
+            <td>Photon / Komoot (<code>photon.komoot.io</code>)</td>
+            <td>Address / place search autocomplete</td>
+            <td>
+              <strong>PII egress.</strong> <code>src/hooks/usePhotonSearch.ts</code> sends the
+              user's typed place/address text to Photon when it is not matched against the local
+              Ethiopian-city list, debounced at 350 ms. Queue-organization addresses and search
+              terms therefore leave the Dynamics boundary. Configurable via
+              <code>VITE_PHOTON_URL</code>; a backend proxy or a self-hosted instance is the
+              recommended remediation (§17).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="box warn">
+        <span class="t">No CSP restricts these origins</span>
+        <p>
+          Because the asset has no Content-Security-Policy, the browser is not constrained from
+          contacting any origin. Introducing a policy that allow-lists only these three origins (and
+          the backend) would both document and mechanically enforce the third-party surface. Until
+          then, Annex B #8 and #11 remain <span class="tag open">Open</span>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 11. DEPENDENCIES ============ -->
+    <section>
+      <h1>11. Dependency and supply-chain management</h1>
+
+      <h3>11.1 Dependency auditing</h3>
+      <p>
+        <code>npm audit --omit=dev</code> reports
+        <strong>one high-severity vulnerable runtime dependency</strong>. The remediation is a
+        one-command fix (<code>npm audit fix</code>) but is <strong>not yet applied</strong> and is
+        not enforced anywhere. This fails Annex B #90 (missing security updates).
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 36mm">Package</th>
+            <th style="width: 24mm">Range</th>
+            <th style="width: 22mm">Severity</th>
+            <th>Notable advisories</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>axios</code></td>
+            <td>1.0.0 &ndash; 1.19.0</td>
+            <td>High</td>
+            <td>
+              Prototype-pollution gadgets (fetch adapter, default instance, toFormData options),
+              ReDoS in the <code>data:</code> URL parser, redirect-based SSRF, HTTP/2 adapter
+              DNS/proxy bypass, and header injection via inherited headers (12+ advisories)
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>11.2 Static analysis and security linting</h3>
+      <p>
+        The ESLint configuration (<code>eslint.config.mjs</code>) uses
+        <code>@eslint/js</code>, <code>typescript-eslint</code>,
+        <code>eslint-plugin-react</code> and <code>eslint-plugin-react-hooks</code> only. There is
+        <strong>no security plugin</strong> (no <code>eslint-plugin-security</code>), so risky
+        patterns such as non-literal regular expressions, timing comparisons or unsafe object
+        injection are not flagged. <code>oxlint</code> is installed and configured but is not a
+        security gate. The <code>lint</code> script is
+        <code>eslint . --ext ts,tsx --max-warnings 0</code>, while the README describes
+        <code>npm run lint</code> as oxlint — the documentation and the script disagree.
+      </p>
+
+      <h3>11.3 A gap: unused and mis-declared dependencies</h3>
+      <ul>
+        <li>
+          <code>@tanstack/react-query</code> is listed in <code>package.json</code> but
+          <strong>nothing imports it</strong>; the project uses RTK Query. It is dead weight and
+          expands the attack surface and audit scope for no benefit.
+        </li>
+        <li>
+          <code>.npmrc</code> sets <code>legacy-peer-deps=true</code>, which suppresses peer
+          dependency resolution and weakens reproducibility of the install graph.
+        </li>
+      </ul>
+
+      <h3>11.4 Continuous integration</h3>
+      <div class="box warn">
+        <span class="t">No CI today</span>
+        <p>
+          There is no <code>.github/</code> directory, no Dependabot configuration, no secret
+          scanning and no build pipeline. Nothing catches dependency drift, ensures a clean rebuild
+          on deploy, or runs the test suite (107 tests, all passing) automatically. A recommended
+          workflow is given in §17.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 12. DEPLOYMENT ============ -->
+    <section>
+      <h1>12. Deployment and hosting security</h1>
+
+      <h3>12.1 Deployment model</h3>
+      <p>
+        The console is built to a static bundle (<code>npm run build</code>:
+        <code>tsc -b &amp;&amp; vite build</code>) and served from a document root
+        (<code>dist/</code>). The production host serves a static site and terminates TLS. The
+        development server proxies <code>/api</code> and <code>/socket.io</code> to the backend
+        (<code>vite.config.ts</code>).
+      </p>
+
+      <h3>12.2 Server configuration status</h3>
+      <p>
+        <strong>This repository contains no server configuration at all</strong> — no nginx file, no
+        header set, no 404 blocks, no caching policy. The table below therefore states the
+        hosting-layer items as unverified rather than claiming a proposed configuration. They must
+        be completed and evidenced by the hosting engagement.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 50mm">Item</th>
+            <th style="width: 28mm">Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Security response headers</td>
+            <td><span class="tag open">Absent / unverified</span></td>
+            <td>No header set exists in the repository; platform behaviour unknown.</td>
+          </tr>
+          <tr>
+            <td>Content-Security-Policy</td>
+            <td><span class="tag open">Absent</span></td>
+            <td>No meta tag, no build injection, no header.</td>
+          </tr>
+          <tr>
+            <td>Extraneous-file 404 blocks</td>
+            <td><span class="tag open">Unverified</span></td>
+            <td>No <code>/.env</code>, <code>/.git</code>, <code>*.map</code> guard is defined.</td>
+          </tr>
+          <tr>
+            <td>Cache-Control policy</td>
+            <td><span class="tag open">Unverified</span></td>
+            <td>HTML should be <code>no-store</code>; hashed assets <code>immutable</code>.</td>
+          </tr>
+          <tr>
+            <td>HTTP→HTTPS redirect</td>
+            <td><span class="tag open">Unverified</span></td>
+            <td>Assumed at the platform; not evidenced here.</td>
+          </tr>
+          <tr>
+            <td>TLS termination</td>
+            <td><span class="tag open">Unverified</span></td>
+            <td>Platform manages certificates; configuration not independently assessed.</td>
+          </tr>
+          <tr>
+            <td>Staging environment</td>
+            <td><span class="tag open">Absent</span></td>
+            <td>Patch/config changes cannot be tested on a separate environment (INSA 2.5.M).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>12.3 Organizational hosting items</h3>
+      <p>
+        The standard's hosting focus area (2.4) is largely organizational and cannot be satisfied by
+        repository artifacts: a hosting security requirements document, assessment of the provider's
+        technical and non-technical capability, hosting location, and a comprehensive security
+        agreement. These are recorded as outstanding in §16.
+      </p>
+    </section>
+
+    <!-- ============ 13. LOGGING AND IR ============ -->
+    <section>
+      <h1>13. Logging, monitoring and incident response</h1>
+
+      <h3>13.1 Current state</h3>
+      <ul>
+        <li>
+          Application logging is development-oriented but <strong>not safe in production</strong> in
+          one respect: <code>parseError</code> logs the raw error object by default and is not
+          dev-gated. The socket client also logs connection errors via
+          <code>console.warn</code> with the underlying error object
+          (<code>src/lib/socket.ts</code>).
+        </li>
+        <li>
+          There is no client-side transmission of security events, no server-side audit log
+          evidenced for this asset, and no alerting.
+        </li>
+        <li>
+          Because there is no CSP, there is no violation-reporting capability
+          (<code>report-uri</code>/<code>report-to</code>).
+        </li>
+      </ul>
+
+      <h3>13.2 Gaps</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 50mm">Gap</th>
+            <th>INSA reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>No breach or misuse monitoring for the web application</td>
+            <td>2.5.K (current status: Fail)</td>
+          </tr>
+          <tr>
+            <td>No access/audit logging of security-relevant events</td>
+            <td>2.5.B, 2.5.K</td>
+          </tr>
+          <tr>
+            <td>No periodic security testing or auditing programme</td>
+            <td>2.5.G, 2.5.H</td>
+          </tr>
+          <tr>
+            <td>No documented incident response or breach-notification procedure</td>
+            <td>2.4.E.ii, 2.5.A.ii</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>13.3 Recommendations</h3>
+      <ul>
+        <li>
+          Gate <code>parseError</code>'s raw logging behind <code>import.meta.env.DEV</code> and log
+          only a terse, payload-free object in production (immediate, code-only).
+        </li>
+        <li>
+          Enable structured application monitoring and attack/misuse detection for the public host.
+        </li>
+        <li>Configure a CSP report endpoint once a policy is deployed and triage violations.</li>
+        <li>
+          Define a documented breach-handling and emergency-communication procedure with named
+          owners.
+        </li>
+        <li>
+          Establish the CERT/INSA reporting contact and the escalation path — currently
+          <span class="fill">TBD</span>.
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============ 14. TESTING ============ -->
+    <section>
+      <h1>14. Testing and assurance</h1>
+
+      <h3>14.1 Automated tests</h3>
+      <p>
+        The repository has a Vitest suite that is <strong>independently verifiable</strong>: the
+        current run reports <strong>107 passing tests across 7 files</strong> (<code>npm test</code
+        >, executed during the preparation of this document). The suite includes security-relevant
+        coverage:
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 44mm">Test file</th>
+            <th style="width: 20mm">Tests</th>
+            <th>Coverage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>src/__tests__/insaStandard.test.ts</code></td>
+            <td>6</td>
+            <td>
+              Structural integrity of the embedded INSA model: 5 focus areas, 35 requirements, 102
+              Annex B tests, 8 Annex A vulnerabilities.
+            </td>
+          </tr>
+          <tr>
+            <td><code>src/__tests__/securityChecklist.test.ts</code></td>
+            <td>14</td>
+            <td>
+              Whitelisting/sanitisation of the checklist state stored in localStorage: invalid,
+              oversized and wrong-typed entries are dropped.
+            </td>
+          </tr>
+          <tr>
+            <td><code>src/__tests__/queueMutations.test.ts</code></td>
+            <td>40</td>
+            <td>
+              Queue business logic and mutation validation, including
+              <code>parseError</code> behaviour and status-transition rules.
+            </td>
+          </tr>
+          <tr>
+            <td><code>src/__tests__/journeyStatus.test.ts</code></td>
+            <td>19</td>
+            <td>Journey/order status mapping.</td>
+          </tr>
+          <tr>
+            <td><code>src/__tests__/phoneFormatter.test.ts</code></td>
+            <td>12</td>
+            <td>Phone normalisation and masking behaviour.</td>
+          </tr>
+          <tr>
+            <td><code>src/__tests__/ordersLocation.test.ts</code></td>
+            <td>12</td>
+            <td>Location parsing and validation.</td>
+          </tr>
+          <tr>
+            <td><code>src/__tests__/ordersDataMapper.test.ts</code></td>
+            <td>4</td>
+            <td>Order payload mapping.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The suite is <strong>not run in CI</strong> because there is no CI. There are no automated
+        tests for the auth flow, route guards or socket handling.
+      </p>
+
+      <div class="box warn">
+        <span class="t">How to read the Annex B table</span>
+        <p>
+          <span class="tag done">Pass</span> = implemented and verified in the submitted source (a
+          specific file is named). <span class="tag open">Open</span> = failing, absent, dependent
+          on the separate backend, or organizational with no evidence.
+          <span class="tag na">N/A</span> = genuinely not applicable to this asset (for example, a
+          static SPA has no server-side XML parser and executes no uploaded file; this console
+          performs no file uploads). Server and hosting rows are left
+          <span class="tag open">Open</span> because
+          <strong>no server configuration exists in the repository</strong> to verify them against.
+        </p>
+      </div>
+
+      <h3>14.2 Annex B — minimum security testing checklist (102 items)</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">No</th>
+            <th>Test</th>
+            <th style="width: 20mm">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th colspan="3">Information Disclosure</th>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td>
+              Test for extraneous files in the document root — no server configuration or 404 guard
+              for <code>/.env</code>, <code>/.git</code>, <code>*.map</code>; live host behaviour
+              not evidenced
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>
+              Test for extraneous directory listings — no server configuration to confirm autoindex
+              is disabled
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>
+              Test for accessible debug functionality — no debug pages in the application, but
+              server-side debug endpoints are not evidenced
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>
+              Test for sensitive information in log and error messages — <code>parseError</code>
+              logs the raw error object by default and is not dev-gated
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>
+              Test for sensitive information in <code>robots.txt</code> — contains only
+              <code>Allow: /</code> and the sitemap URL; nothing sensitive
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>
+              Test for sensitive information in source code — no secrets in the bundle; production
+              sourcemaps disabled
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>
+              Test for disclosure of internal addresses — no internal addresses in the bundle;
+              residual disclosure through surfacing of raw server messages is noted in §9
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+
+          <tr>
+            <th colspan="3">Privacy and Confidentiality</th>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>
+              Test for sensitive information stored in URLs — place-search text is sent to
+              Photon/Komoot; no <code>Referrer-Policy</code> exists; avatar names are placed in
+              ui-avatars URLs
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>
+              Test for unencrypted sensitive information stored at the client-side — logout purges
+              the stored profile (name, phone, email) from both storages; remaining local keys hold
+              no personal data
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td>
+              Test for sensitive information stored in (externally) archived pages — no
+              <code>Cache-Control</code> policy defined or verified
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td>
+              Test for content included from untrusted sources — Google Fonts, ui-avatars.com,
+              Photon/Komoot; third-party data egress with no CSP to constrain it
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>12</td>
+            <td>
+              Test for caching of pages with sensitive information — no
+              <code>Cache-Control</code> configuration exists in the repository
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>13</td>
+            <td>
+              Test for insecure transmission of sensitive information — production URL and API are
+              HTTPS; socket uses WSS/HTTPS with cookie credentials
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>14</td>
+            <td>
+              Test for non-SSL/TLS pages on sites processing sensitive information — the application
+              only ever addresses HTTPS origins in production; host redirect not independently
+              evidenced
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>15</td>
+            <td>
+              Test for SSL/TLS pages served with mixed content — all fetched resources (fonts,
+              avatars, API, socket) are HTTPS; no mixed content
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>16</td>
+            <td>
+              Test for missing HSTS header on full SSL sites — no HSTS is defined anywhere in the
+              repository
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>17</td>
+            <td>
+              Test for known vulnerabilities in SSL/TLS — platform TLS configuration not
+              independently assessed
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>18</td>
+            <td>
+              Test for weak, untrusted or expired SSL certificates — platform certificate not
+              independently assessed
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>19</td>
+            <td>
+              Test for the usage of unproven cryptographic primitives — the SPA performs no custom
+              cryptography; relies on browser TLS
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>20</td>
+            <td>
+              Test for the incorrect usage of cryptographic primitives — no custom cryptographic
+              implementation in the asset
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+
+          <tr>
+            <th colspan="3">State Management</th>
+          </tr>
+          <tr>
+            <td>21</td>
+            <td>
+              Test for client-side state management — non-secret profile held in
+              <code>localStorage</code> plus smaller UI keys; not encrypted while signed in;
+              mitigated by server-side authority and logout purge
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>22</td>
+            <td>
+              Test for invalid state transitions — business state machine enforced by the backend,
+              not this asset
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+
+          <tr>
+            <th colspan="3">Authentication and Authorization Process</th>
+          </tr>
+          <tr>
+            <td>23</td>
+            <td>
+              Test for missing authentication or authorization — route-boundary guards exist;
+              backend must enforce per request; <code>ProtectedRoute</code> includes one fail-open
+              branch
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>24</td>
+            <td>
+              Test for client-side authentication — <code>isAuthenticated</code>/role derived from
+              the locally stored profile; the backend is the boundary
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>25</td>
+            <td>
+              Test for predictable and default credentials — OTP-only, so no default passwords;
+              backend assurance of OTP strength and delivery required
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>26</td>
+            <td>
+              Test for predictable authentication or authorization tokens — OTP is cast to
+              <code>Number</code> before transmission, corrupting codes with a leading zero
+              (<code>src/services/auth.service.ts</code>)
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>27</td>
+            <td>
+              Test for authentication or authorization based on obscurity — role/membership enforced
+              by the backend; client guard is UI only
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>28</td>
+            <td>
+              Test for identifier-based authorization / privilege escalation — the client sends
+              <code>roleId</code> (11) and <code>statusId</code> (1) on login/OTP despite comments
+              claiming otherwise; every organization/queue identifier must be authorized server-side
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>29</td>
+            <td>
+              Test for acceptance of weak passwords — no password authentication is used (phone +
+              OTP)
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>30</td>
+            <td>Test for account recovery process — account recovery, if any, is backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>31</td>
+            <td>
+              Test any &ldquo;remember me&rdquo; function — no such function exists in the console
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>32</td>
+            <td>
+              Test for fail-open conditions — <code>ProtectedRoute</code> allows the user through
+              when the organization query errors
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>33</td>
+            <td>
+              Test any impersonation function / reCAPTCHA — no impersonation function; CAPTCHA is a
+              backend decision
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>34</td>
+            <td>
+              Test for plaintext retrieval of passwords — no passwords are stored or retrieved
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>35</td>
+            <td>
+              Test for username enumeration / username uniqueness — raw backend
+              <code>message</code>/<code>error</code> text is surfaced to the user when present
+              (<code>resolveServerMsg</code>), allowing distinct OTP/unknown-user responses
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>36</td>
+            <td>
+              Check for unsafe distribution of credentials — <code>VerifyOtpResponse</code> types a
+              <code>token</code> field returned in the response body; backend should review
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>37</td>
+            <td>
+              Test for missing rate limiting on authentication functionality — the client has only a
+              60 s resend cooldown; server-side limiting required
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>38</td>
+            <td>Test for missing re-authentication when changing credentials — backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>39</td>
+            <td>
+              Test for missing logout functionality — logout disconnects the socket, calls the
+              backend logout, clears both storages and dispatches the redux logout
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>40</td>
+            <td>Test any multi-stage mechanisms — multi-stage flows are backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+
+          <tr>
+            <th colspan="3">User Input Management</th>
+          </tr>
+          <tr>
+            <td>41</td>
+            <td>Test for SQL injection — no SQL in this asset; backend responsibility</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>42</td>
+            <td>
+              Test for path traversal and filename injection — the console has no file upload and
+              accepts no filesystem path input, so there is no traversal surface
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>43</td>
+            <td>
+              Test for cross-site scripting (stored, DOM and reflected) — React output encoding;
+              source scan found no <code>dangerouslySetInnerHTML</code>/<code>innerHTML</code>; Zod
+              sanitisers strip tags and control characters. No CSP defence-in-depth exists (noted)
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>44</td>
+            <td>Test for system command injection — no command execution in a browser SPA</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>45</td>
+            <td>Test for XML injection — no XML parsing in this asset</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>46</td>
+            <td>Test for XPath injection — no XPath processing</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>47</td>
+            <td>Test for XSL(T) injection — no XSLT processing</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>48</td>
+            <td>Test for SMTP injection — no mail sending from this asset</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>49</td>
+            <td>Test for SSI injection — no server-side includes in this asset</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>50</td>
+            <td>
+              Test for HTTP header injection — response headers are server-controlled; backend
+              responsibility
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>51</td>
+            <td>
+              Test for HTTP parameter injection — client passes parameters to the backend; the
+              server must validate
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>52</td>
+            <td>
+              Test for native software flaws (buffer overflow, integer bugs, format strings) —
+              managed JS runtime; no native code in this asset
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>53</td>
+            <td>Test for LDAP injection — no LDAP processing</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>54</td>
+            <td>
+              Test for dynamic scripting injection — source scan found no <code>eval</code>,
+              <code>new Function</code> or <code>document.write</code>, so no dynamic-script sink
+              exists; note this is enforced by review, not by a CSP
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>55</td>
+            <td>
+              Test for regular expression injection — no security lint gate flags non-literal regex
+              constructions; not assessed exhaustively
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>56</td>
+            <td>
+              Test for data property / field injection — wide request typings invite mass
+              assignment; a server-side allow-list is required
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>57</td>
+            <td>Test for protocol-specific injection — no custom protocol handling</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>58</td>
+            <td>Test for expression language injection — no expression language in this asset</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>59</td>
+            <td>
+              Fuzz all request parameters — no fuzzing performed; backend owns request parsing
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>60</td>
+            <td>
+              Test for arbitrary redirection — the only programmatic redirect target is the constant
+              <code>/login</code>; the only dynamic <code>href</code> is a <code>tel:</code> URI; no
+              user-controlled redirect exists
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+
+          <tr>
+            <th colspan="3">Session Management</th>
+          </tr>
+          <tr>
+            <td>61</td>
+            <td>
+              Test for cross-site request forgery (CSRF) — cookie-based session; backend CSRF
+              defence not evidenced
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>62</td>
+            <td>
+              Test for predictable CSRF tokens — no CSRF token in the client; backend responsibility
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>63</td>
+            <td>
+              Test for missing session revocation on logout — <code>clearAuth()</code> plus
+              best-effort server logout and full storage purge; server revocation must be confirmed
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>64</td>
+            <td>Test for missing session regeneration on login — backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>65</td>
+            <td>Test for missing session regeneration when changing credentials — backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>66</td>
+            <td>
+              Test for missing revocation of other sessions when changing credentials —
+              backend-owned
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>67</td>
+            <td>
+              Test for missing <code>Secure</code> flag on session cookies — backend configuration
+              unverified
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>68</td>
+            <td>
+              Test for missing <code>HttpOnly</code> flag on session cookies — intended httpOnly;
+              backend configuration unverified; the client never reads a token
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>69</td>
+            <td>
+              Test for non-restrictive domain on session cookies — same-origin default versus
+              cross-site deployment ambiguity; backend-owned
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>70</td>
+            <td>Test for non-restrictive or missing path on session cookies — backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>71</td>
+            <td>Test for predictable session identifiers — backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>72</td>
+            <td>Test for session identifier collisions — backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>73</td>
+            <td>Test for session fixation — backend-owned</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>74</td>
+            <td>
+              Test for insecure transmission of session identifiers — cookie rides TLS only, but the
+              JWT is also returned in the response body
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>75</td>
+            <td>
+              Test for external session hijacking — backend/transport property; cookie flags to be
+              confirmed
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>76</td>
+            <td>
+              Test for missing periodic expiration of sessions — client env variable is dead;
+              lifetimes are backend-only and are 24&nbsp;h (roles 3/6) and 365&nbsp;d (roles 11/12)
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>77</td>
+            <td>
+              Check for disclosure of tokens in logs — <code>parseError</code> logs the raw error
+              object by default; request/response payloads for auth calls can carry the phone number
+              and OTP
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+
+          <tr>
+            <th colspan="3">File Upload</th>
+          </tr>
+          <tr>
+            <td>78</td>
+            <td>
+              Test for storage of uploaded files in the document root — no upload feature exists in
+              this asset
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>79</td>
+            <td>
+              Test for execution or interpretation of uploaded files — the console executes no
+              uploaded file
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>80</td>
+            <td>
+              Test for uploading outside of designated upload directory — no upload feature exists
+            </td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>81</td>
+            <td>Test for missing size restrictions on uploaded files — no upload feature exists</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>82</td>
+            <td>Test for missing type validation on uploaded files — no upload feature exists</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+
+          <tr>
+            <th colspan="3">Additional Checks</th>
+          </tr>
+          <tr>
+            <td>83</td>
+            <td>
+              Test for missing or non-specific content type definitions — no server/content-type
+              configuration exists
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>84</td>
+            <td>
+              Test for missing character set definitions — <code>index.html</code> declares
+              <code>&lt;meta charset="UTF-8"&gt;</code>
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>85</td>
+            <td>
+              Test for missing anti content sniffing measures — no
+              <code>X-Content-Type-Options: nosniff</code> anywhere
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>86</td>
+            <td>Test for XML external entity expansion — no XML processing in this asset</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>87</td>
+            <td>Test for external DTD parsing — no DTD processing</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>88</td>
+            <td>Test for extraneous or dangerous XML extensions — no XML subsystem</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>89</td>
+            <td>Test for recursive entity expansion — no XML entity processing</td>
+            <td><span class="tag na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>90</td>
+            <td>
+              Test for missing security updates — <code>npm audit --omit=dev</code> reports a
+              high-severity advisory for <code>axios</code>; not yet fixed; no audit gate
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>91</td>
+            <td>
+              Test for unsupported or end-of-life software versions — no automated dependency gate
+              exists
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>92</td>
+            <td>
+              Test for HTTP TRACK and TRACE methods / dangerous methods — no server configuration
+              restricts methods; live behaviour not evidenced
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>93</td>
+            <td>
+              Test for extraneous functionality — no debug endpoints or dead application surfaces
+              identified in <code>src/</code>; server identity disclosure unverified
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>94</td>
+            <td>
+              Test for default credentials — OTP-only; default-credential management is
+              backend/hosting
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>95</td>
+            <td>Test for bugs in web server software — web server version not assessed</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>96</td>
+            <td>
+              Test for missing anti-clickjacking measures — no <code>frame-ancestors</code> and no
+              <code>X-Frame-Options</code>; a meta tag cannot deliver either
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>97</td>
+            <td>
+              Test for open redirection — no user-controlled redirect exists (only the constant
+              <code>/login</code> target and <code>tel:</code> links)
+            </td>
+            <td><span class="tag done">Pass</span></td>
+          </tr>
+          <tr>
+            <td>98</td>
+            <td>
+              Test for insecure cross-domain access policy — no
+              <code>Permissions-Policy</code>/COOP/CORP headers exist
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>99</td>
+            <td>
+              Test for missing rate limiting on e-mail functionality — e-mail is backend-owned; none
+              sent by this asset
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>100</td>
+            <td>
+              Test for missing rate limiting on resource-intensive functionality — backend-owned
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>101</td>
+            <td>
+              Test for inappropriate rate limiting resulting in a denial of service — backend
+              dimensioning; not assessed
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>102</td>
+            <td>
+              Test for application- or setup-specific problems — no app-specific defects identified
+              in this code review; continuous testing recommended
+            </td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>14.3 Checklist result summary</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Pass</th>
+            <th>Open</th>
+            <th>N/A</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>14</td>
+            <td>63</td>
+            <td>25</td>
+            <td>102</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The fourteen passing items are verified in the submitted source: #5, #6, #7, #9, #13, #14,
+        #15, #39, #43, #54, #60, #63, #84 and #97. A substantial share of the 63 open items are
+        backend, hosting or organizational obligations that cannot be closed from this repository.
+        The client-side gaps that <em>can</em> be closed here are #4/#77 (dev-gate raw error
+        logging), #26 (send the OTP as a string), #28/#35/#36 (stop sending roleId/statusId; stop
+        surfacing raw server messages), and #55 (add a security lint gate); plus #90 (apply
+        <code>npm audit fix</code>).
+      </p>
+    </section>
+
+    <!-- ============ 15. ANNEX A ============ -->
+    <section>
+      <h1>15. Annex A — Common vulnerabilities and threats</h1>
+      <p>
+        Annex A lists eight common website vulnerabilities and threats that must be considered
+        during design, implementation, hosting, operation and management. The table states how the
+        console is affected and the control applied (and to whom the control belongs).
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 38mm">Vulnerability / threat</th>
+            <th style="width: 36mm">Console exposure</th>
+            <th>Control applied</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. SQL Injection</strong></td>
+            <td>The SPA issues no SQL; data access is entirely behind the backend API.</td>
+            <td>
+              Backend responsibility (parameterised queries). Client sends only structured JSON over
+              TLS. Marked <span class="tag open">Open</span> pending backend evidence.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>2. Unchecked Path Parameter / Directory Traversal</strong></td>
+            <td>
+              No filesystem path input, no file upload, and no server-supplied document opening in
+              this console.
+            </td>
+            <td>
+              No traversal surface in this asset. Server document serving and upload directory
+              confinement are backend/hosting responsibilities.
+              <span class="tag na">N/A</span> for the console.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>3. Improper Session Management</strong></td>
+            <td>Session cookie; optimistic local profile; role-dependent lifetime.</td>
+            <td>
+              Implemented client-side: httpOnly-cookie model (token never JS-readable), central
+              logout, full storage purge on logout, 401-driven session end, socket 401 handling.
+              Backend must confirm cookie flags, periodic expiry, regeneration and revocation; the
+              365-day lifetime for roles 11/12 should be reviewed. Partially
+              <span class="tag open">Open</span>.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>4. Cross-Site Scripting</strong></td>
+            <td>
+              Any untrusted string rendered into the DOM; server-supplied messages; OTP errors.
+            </td>
+            <td>
+              Implemented: React's output encoding, no raw HTML sinks
+              (<code>dangerouslySetInnerHTML</code>/<code>innerHTML</code> absent), Zod sanitisers
+              on form input. <strong>No CSP exists</strong>, so there is no script-execution policy
+              as defence-in-depth. Marked <span class="tag done">Pass</span> at the application
+              layer with the CSP gap recorded in §17.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>5. CSRF</strong></td>
+            <td>Cookie-session authenticated state-changing REST calls.</td>
+            <td>
+              Not controllable from this asset. Backend must implement CSRF defence (token or Origin
+              checking) and set cookie <code>SameSite</code> correctly for its deployment topology.
+              Marked <span class="tag open">Open</span>.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>6. HTTP Header Injection</strong></td>
+            <td>Response headers and any reflected input reaching them.</td>
+            <td>
+              No response headers are constructed by the SPA. Backend/hosting responsibility; no
+              server configuration exists in the repository. Marked
+              <span class="tag open">Open</span>.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>7. Mail Header Injection</strong></td>
+            <td>The console sends no e-mail. OTP SMS delivery is backend-owned.</td>
+            <td>
+              Not applicable to this asset. Backend responsibility for any mail/SMS composition.
+              <span class="tag na">N/A</span> for the console; backend assurance required.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>8. Lack of Authentication and Authorization</strong></td>
+            <td>Route-level UI access and every API call.</td>
+            <td>
+              Implemented client-side: OTP authentication, <code>RoleGuard</code> role boundary,
+              <code>ProtectedRoute</code> organization gate (with one fail-open branch). The
+              <strong>backend is the enforcement boundary</strong> and must derive identity/role
+              from the session and authorize every resource. Partially
+              <span class="tag open">Open</span> pending backend evidence.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 16. COMPLIANCE SUMMARY ============ -->
+    <section>
+      <h1>16. Compliance summary and deviations register</h1>
+
+      <h3>16.1 Focus-area status</h3>
+      <p>
+        The status below reflects the evidence in this repository and the controls verifiable from
+        it. It is deliberately blunt: application-layer controls that are implemented are
+        distinguished from organizational, hosting and backend items that are outstanding or
+        unknown. The five focus areas correspond to the standard's sections 2.1&ndash;2.5 and are
+        also modelled inside the application itself in
+        <code>src/data/insaStandard.ts</code> (35 requirements).
+      </p>
+
+      <h3>2.1 Requirement Gathering and Analysis</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">Req</th>
+            <th style="width: 24mm">Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A&ndash;F</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>
+              Business requirements, security objectives and interfaces are implemented and
+              documented in the SDD/TDD artefacts and the embedded standard model. Formal
+              stakeholder sign-off evidence is not present.
+            </td>
+          </tr>
+          <tr>
+            <td>G</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>
+              Developer contracts addressing source-code intellectual property are not in evidence —
+              organizational.
+            </td>
+          </tr>
+          <tr>
+            <td>H</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>Top-management approval of the security requirements is not documented.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.2 Design</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">Req</th>
+            <th style="width: 24mm">Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>
+              Security is designed into the asset (httpOnly-cookie session, role guards, Zod
+              sanitisers, storage discipline) and documented in the SDD/TDD artefacts, but the
+              design lacks a CSP/header strategy and no mapping to the Secure Software Development
+              and Management Standard V.1 is evidenced.
+            </td>
+          </tr>
+          <tr>
+            <td>B</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>Design review and approval by the responsible body is not documented.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.3 Implementation</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">Req</th>
+            <th style="width: 24mm">Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>
+              Secure software standard not mapped; CI and a security lint baseline are outstanding.
+            </td>
+          </tr>
+          <tr>
+            <td>B</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>No evidence of developer security training.</td>
+          </tr>
+          <tr>
+            <td>C</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>CMCSRS accreditation before hosting — organizational.</td>
+          </tr>
+          <tr>
+            <td>D</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>Pre-hosting audit — organizational.</td>
+          </tr>
+          <tr>
+            <td>E</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>This repository contains no secrets; repository access control is not verified.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.4 Hosting</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">Req</th>
+            <th style="width: 24mm">Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A&ndash;C</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>
+              No hosting security requirements document, and no assessment of the provider's
+              technical or non-technical capability.
+            </td>
+          </tr>
+          <tr>
+            <td>D</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>Hosting location unverified (relevant if the website is a government asset).</td>
+          </tr>
+          <tr>
+            <td>E</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>
+              No comprehensive security agreement; the twelve named provisions are outstanding.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.5 Operation and Management</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">Req</th>
+            <th style="width: 24mm">Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>
+              No website management policy (administrative responsibilities, emergency
+              communications, content management).
+            </td>
+          </tr>
+          <tr>
+            <td>B&ndash;D</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>
+              <code>RoleGuard</code> implements privilege categorization (D) in code; documented
+              operating procedures are unknown.
+            </td>
+          </tr>
+          <tr>
+            <td>E</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>Session revokes on logout; credential rotation interval unknown.</td>
+          </tr>
+          <tr>
+            <td>F</td>
+            <td><span class="tag open">Fail</span></td>
+            <td>No quarterly vulnerability and risk assessment evidence.</td>
+          </tr>
+          <tr>
+            <td>G&ndash;H</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>No periodic testing/auditing evidence.</td>
+          </tr>
+          <tr>
+            <td>I</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>
+              No CI or formal change-control procedure; changes are committed but not approved by a
+              security owner.
+            </td>
+          </tr>
+          <tr>
+            <td>J</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>No in-advance operational risk assessment for significant changes.</td>
+          </tr>
+          <tr>
+            <td>K</td>
+            <td><span class="tag open">Fail</span></td>
+            <td>No breach or misuse monitoring.</td>
+          </tr>
+          <tr>
+            <td>L&ndash;M</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>
+              Dependency remediation (<code>axios</code>) pending; no documented patch plan and no
+              staging environment.
+            </td>
+          </tr>
+          <tr>
+            <td>N</td>
+            <td><span class="tag open">Partial</span></td>
+            <td>
+              The application uses HTTPS in production; certificate renewal and HSTS are not
+              evidenced.
+            </td>
+          </tr>
+          <tr>
+            <td>O</td>
+            <td><span class="tag open">Unknown</span></td>
+            <td>No monitoring of the provider's security updates.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="box">
+        <span class="t">Assessment</span>
+        <p>
+          The application-layer controls are in reasonable shape. The compliance scaffolding is
+          largely absent and the server layer provides no security headers at all. The largest gaps
+          are the CSP/header layer (hosting), the raw error logging, the OTP/role findings, and
+          continuous integration.
+        </p>
+      </div>
+
+      <h3>16.2 Deviations register</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">ID</th>
+            <th style="width: 48mm">Deviation</th>
+            <th>Justification / owner</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>D1</td>
+            <td>
+              Backend controls (CSRF, cookie flags, OTP rate limiting, session regeneration and
+              revocation, per-request authorization, derivation of role from the session) are not
+              evidenced.
+            </td>
+            <td>
+              Owned by the separate <code>transportBackEndNative</code> system; to be covered by the
+              backend submission. The client's sending of <code>roleId</code>/
+              <code>statusId</code> makes this confirmation urgent. Risk accepted pending that
+              evidence.
+            </td>
+          </tr>
+          <tr>
+            <td>D2</td>
+            <td>
+              No Content-Security-Policy and no security response headers (HSTS,
+              <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>,
+              <code>Referrer-Policy</code>, <code>Permissions-Policy</code>, COOP, CORP) exist in
+              the repository.
+            </td>
+            <td>
+              Requires a hosting/server layer that is not part of this asset. Accepted as a
+              documented deviation, not an unknown gap. Consequence: #16, #83, #85, #96, #98 remain
+              open. Owner: platform/hosting team.
+            </td>
+          </tr>
+          <tr>
+            <td>D3</td>
+            <td>No CI, dependency gate, or security lint baseline.</td>
+            <td>
+              Remediation defined (§17). Risk accepted in the interim; the <code>axios</code>
+              high-severity advisory is not yet fixed.
+            </td>
+          </tr>
+          <tr>
+            <td>D4</td>
+            <td>Third-party PII egress via Photon place search and ui-avatars.</td>
+            <td>
+              Functional requirement for address autocomplete and avatars. Mitigation is a backend
+              proxy or local-only data; full fix in §17.
+            </td>
+          </tr>
+          <tr>
+            <td>D5</td>
+            <td>
+              Organizational items (2.1 G&ndash;H; 2.2 B; 2.3 B&ndash;D; all of 2.4; 2.5 A, F, K, O
+              and others) have no evidence.
+            </td>
+            <td>
+              Outside engineering control; requires business action. Recorded as open, not claimed.
+            </td>
+          </tr>
+          <tr>
+            <td>D6</td>
+            <td>
+              Client profile (name, phone, email, role — non-secret) held in cleartext
+              <code>localStorage</code> while signed in.
+            </td>
+            <td>
+              Deliberate routing decision; the profile carries no token and is cleared on logout.
+              The backend remains the authority.
+            </td>
+          </tr>
+          <tr>
+            <td>D7</td>
+            <td>Single-factor authentication (phone + OTP); no second factor or device binding.</td>
+            <td>
+              Accepted for the queue-console population on connectivity grounds. Server-side OTP
+              rate limiting is a precondition (§17).
+            </td>
+          </tr>
+          <tr>
+            <td>D8</td>
+            <td>
+              <code>ProtectedRoute</code> fails open when the organization query errors, and the
+              365-day session lifetime for roles 11/12.
+            </td>
+            <td>
+              Fail-open is an availability decision for live queue operations; the long lifetime is
+              backend policy. Both to be reviewed, with the risk recorded in §14 (#32, #76).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 17. ROADMAP ============ -->
+    <section>
+      <h1>17. Security recommendations and roadmap</h1>
+      <p>
+        The remediation is phased by risk reduction per unit effort. Phases 1&ndash;4 are code-only
+        and independent of the platform decision; Phase 0 and Phase 6 require hosting or backend
+        action and are the highest-impact changes. The recommended order is Phase 1 → Phase 2 →
+        Phase 3 → Phase 4, with Phase 0 started immediately in parallel.
+      </p>
+
+      <h3>Phase 0 — Server/header layer (highest impact; needs hosting access)</h3>
+      <p>
+        Deliver a CSP and security-header layer on <code>queue.dynamicsroute.tech</code>. The policy
+        must account for the inline JSON-LD block in <code>index.html</code> (hash or nonce, or move
+        the block to an external file). Recommended header set:
+        <code>Content-Security-Policy</code> (with <code>frame-ancestors 'none'</code>),
+        <code>Strict-Transport-Security</code>, <code>X-Content-Type-Options: nosniff</code>,
+        <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy</code>,
+        <code>Permissions-Policy</code>, COOP/CORP, a <code>Cache-Control</code> policy (<code
+          >no-store</code
+        >
+        on HTML, <code>immutable</code> on hashed assets), method restriction, and 404 blocks for
+        <code>/.env</code>, <code>/.git</code> and <code>*.map</code>.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 30mm">Phase</th>
+            <th>Scope</th>
+            <th style="width: 26mm">Blocks</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0.1 Headers</td>
+            <td>
+              CSP, HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy,
+              Permissions-Policy, COOP, CORP
+            </td>
+            <td>#16, #83, #85, #96, #98</td>
+          </tr>
+          <tr>
+            <td>0.2 Files &amp; methods</td>
+            <td>
+              404 blocks for <code>/.env</code>, <code>/.git</code>, <code>*.map</code>; method
+              restriction; server identity suppression
+            </td>
+            <td>#1, #2, #3, #92, #93</td>
+          </tr>
+          <tr>
+            <td>0.3 Caching</td>
+            <td><code>no-store</code> on HTML, <code>immutable</code> on hashed assets</td>
+            <td>#12</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 1 — Stop the bleeding (half day, code-only)</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">#</th>
+            <th>Change</th>
+            <th style="width: 26mm">Annex B</th>
+            <th style="width: 22mm">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1.1</td>
+            <td>
+              Gate <code>parseError</code> raw logging behind <code>import.meta.env.DEV</code>; log
+              a terse, payload-free object in production
+            </td>
+            <td>#4, #77</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>1.2</td>
+            <td>Send the OTP as a string (<code>OTP: OTP</code>, not <code>Number(OTP)</code>)</td>
+            <td>#26</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>1.3</td>
+            <td>
+              Stop sending <code>roleId</code>/<code>statusId</code> on login and OTP, or reconcile
+              the comments/README with reality
+            </td>
+            <td>#28, #36</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>1.4</td>
+            <td>
+              Return only allow-listed server messages (no raw <code>message</code>/
+              <code>error</code> passthrough) to close enumeration
+            </td>
+            <td>#35</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>1.5</td>
+            <td>
+              <code>npm audit fix</code> and remove the unused <code>@tanstack/react-query</code>
+            </td>
+            <td>#90</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>1.6</td>
+            <td>Remove the dead <code>VITE_JWT_EXPIRATION_DAYS</code> variable</td>
+            <td>#76</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 2 — Client hardening (1 day, code-only)</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 12mm">#</th>
+            <th>Change</th>
+            <th style="width: 26mm">Annex B</th>
+            <th style="width: 22mm">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2.1</td>
+            <td>Pin <code>build.sourcemap: false</code> explicitly for production</td>
+            <td>#6</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>2.2</td>
+            <td>
+              Change <code>ProtectedRoute</code> fail-open to distinguish transport failure
+              (retryable message) from authorization failure (redirect)
+            </td>
+            <td>#32</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>2.3</td>
+            <td>
+              Add security linting (<code>eslint-plugin-security</code> or equivalent) with
+              <code>detect-non-literal-regexp</code> enforced
+            </td>
+            <td>#55</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+          <tr>
+            <td>2.4</td>
+            <td>
+              Add tests for auth flow, route guards, 401 handling and socket unauthorized handling
+            </td>
+            <td>#102</td>
+            <td><span class="tag open">Open</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Phase 3 — Third-party privacy (half day)</h3>
+      <p>
+        Self-host the Manrope font and avatar generation, and proxy Photon place search through the
+        backend (or restrict it to the local Ethiopian-city list). This removes ui-avatars and
+        Photon egress and keeps third-party data flows minimal.
+      </p>
+
+      <h3>Phase 4 — CI, so this cannot rot again (half day)</h3>
+      <p>
+        Add a CI workflow: <code>npm ci</code> → <code>npm run lint</code> →
+        <code>npm run build</code> → <code>npm test</code> →
+        <code>npm audit --audit-level=high</code>. Add Dependabot for <code>npm</code>, secret
+        scanning, and gate on a clean lint baseline. Align the README's description of
+        <code>npm run lint</code> with the actual ESLint script.
+      </p>
+
+      <h3>Phase 5 — Server policy source of truth (hosting)</h3>
+      <p>
+        Once a header layer exists, keep a single source of truth for the CSP (for example, a
+        <code>src/constants/csp.ts</code> consumed by both build and server configuration) and add a
+        drift guard so the two copies cannot diverge, plus a post-build assertion that the meta tag
+        (or header) is present.
+      </p>
+
+      <h3>Phase 6 — Backend dependencies (separate repository)</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 56mm">Item</th>
+            <th style="width: 22mm">Annex B</th>
+            <th>Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Confirm CSRF defence (double-submit or Origin checking)</td>
+            <td>#61, #62</td>
+            <td>Cookie-session authenticated mutations</td>
+          </tr>
+          <tr>
+            <td>
+              Derive <code>roleId</code>/<code>statusId</code> from the session, never the body
+            </td>
+            <td>#28</td>
+            <td>The client sends them for legacy reasons</td>
+          </tr>
+          <tr>
+            <td>Scope every queue/organization query to the cookie identity</td>
+            <td>#28</td>
+            <td>Ignore any client-supplied identifiers</td>
+          </tr>
+          <tr>
+            <td>
+              Cookie flags: <code>HttpOnly; Secure</code>; correct <code>SameSite</code> for the
+              deployment topology
+            </td>
+            <td>#67&ndash;#70</td>
+            <td>Same-origin vs cross-site ambiguity must be resolved</td>
+          </tr>
+          <tr>
+            <td>Stop returning the JWT in the response body</td>
+            <td>#74</td>
+            <td>Target the cookie-only model</td>
+          </tr>
+          <tr>
+            <td>Server-side rate limiting on OTP and lockout</td>
+            <td>#37</td>
+            <td>Only a 60 s client cooldown exists</td>
+          </tr>
+          <tr>
+            <td>Server-side session regeneration, periodic expiry and revocation</td>
+            <td>#64&ndash;#66, #73, #76</td>
+            <td>365-day sessions and no regeneration are high-risk</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="box ok">
+        <span class="t">Bottom line</span>
+        <p>
+          Subject to the outstanding server, backend and organizational items above, the Dynamics
+          Queue Admin console is suitable for continued operation and for INSA verification testing.
+          The application-layer improvements listed as
+          <span class="tag done">Pass</span> are real and independently verifiable in the source.
+          This document does not claim the production header layer is live, because no server
+          configuration exists in the repository to evidence it.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ DOCUMENT CONTROL ============ -->
+    <section>
+      <h1>Document control, approvals and signatures</h1>
+
+      <h3>Document control</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 40mm">Item</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Document title</td>
+            <td>Dynamics Queue Admin — Security Documentation</td>
+          </tr>
+          <tr>
+            <td>Document identifier</td>
+            <td><code>SEC-1.0.0</code></td>
+          </tr>
+          <tr>
+            <td>Version</td>
+            <td>1.0.0 (initial submission)</td>
+          </tr>
+          <tr>
+            <td>Asset</td>
+            <td>Dynamics Queue Admin web console (asset code <code>ASSET-DYN-QA-001</code>)</td>
+          </tr>
+          <tr>
+            <td>Governing standard</td>
+            <td>INSA Secure Website Management Standard, 2014 EC</td>
+          </tr>
+          <tr>
+            <td>Status</td>
+            <td>For INSA review</td>
+          </tr>
+          <tr>
+            <td>Classification</td>
+            <td>Confidential — submitted to INSA</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Revision history</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 20mm">Version</th>
+            <th style="width: 30mm">Date</th>
+            <th style="width: 40mm">Author</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0.1</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+            <td>Initial draft security documentation.</td>
+          </tr>
+          <tr>
+            <td>1.0.0</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+            <td>First issue for INSA submission.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Approval</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width: 34mm">Role</th>
+            <th style="width: 40mm">Name</th>
+            <th>Signature</th>
+            <th style="width: 30mm">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Prepared by</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+          <tr>
+            <td>Reviewed by</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+          <tr>
+            <td>Approved by</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+            <td class="fill">TBD</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="sig">
+        <div class="sig-line"></div>
+        <div class="sig-label">Prepared by — <span class="fill">[ NAME, TITLE ]</span></div>
+        <div class="sig-label">
+          Signature — <span class="fill">[ SIGNATURE ]</span> &nbsp;&nbsp; Date —
+          <span class="fill">[ DD MONTH YYYY ]</span>
+        </div>
+      </div>
+      <div class="sig">
+        <div class="sig-line"></div>
+        <div class="sig-label">Reviewed by — <span class="fill">[ NAME, TITLE ]</span></div>
+        <div class="sig-label">
+          Signature — <span class="fill">[ SIGNATURE ]</span> &nbsp;&nbsp; Date —
+          <span class="fill">[ DD MONTH YYYY ]</span>
+        </div>
+      </div>
+      <div class="sig">
+        <div class="sig-line"></div>
+        <div class="sig-label">Approved by — <span class="fill">[ NAME, TITLE ]</span></div>
+        <div class="sig-label">
+          Signature — <span class="fill">[ SIGNATURE ]</span> &nbsp;&nbsp; Date —
+          <span class="fill">[ DD MONTH YYYY ]</span>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

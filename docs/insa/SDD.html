@@ -1,0 +1,2057 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dynamics Queue Admin — System &amp; Architecture Design Document</title>
+    <style>
+      /* ---------- Print-first design ---------- */
+      @page {
+        size: A4;
+        margin: 20mm 16mm 18mm 16mm;
+      }
+
+      :root {
+        --ink: #14181d;
+        --muted: #5a6472;
+        --line: #c9d1da;
+        --soft: #f2f4f7;
+        --accent: #1f4e79;
+        --warn: #8a5a00;
+        --warn-bg: #fdf6e6;
+        --ok: #1c6b45;
+        --ok-bg: #eef7f2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 10.2pt;
+        line-height: 1.5;
+        color: var(--ink);
+        margin: 0;
+        padding-left: 6mm;
+        padding-right: 6mm;
+      }
+
+      h1,
+      h2,
+      h3 {
+        color: var(--accent);
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+
+      h1 {
+        font-size: 17pt;
+        margin: 0 0 4mm;
+      }
+      h2 {
+        font-size: 13pt;
+        margin: 0 0 3mm;
+        padding-bottom: 1.4mm;
+        border-bottom: 1pt solid var(--accent);
+      }
+      h3 {
+        font-size: 10.8pt;
+        margin: 5mm 0 2mm;
+      }
+
+      p {
+        margin: 0 0 2.6mm;
+        text-align: justify;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      code,
+      .mono {
+        font-family: "SF Mono", Menlo, Consolas, monospace;
+        font-size: 8.6pt;
+        background: var(--soft);
+        padding: 0.3mm 0.9mm;
+        border-radius: 1mm;
+      }
+
+      section {
+        page-break-before: always;
+        break-before: page;
+      }
+
+      section.cover {
+        page-break-before: auto;
+        break-before: auto;
+      }
+
+      .cover-rule {
+        height: 3.5mm;
+        background: var(--accent);
+        margin-bottom: 14mm;
+      }
+
+      .cover-title {
+        font-size: 25pt;
+        line-height: 1.15;
+        color: var(--ink);
+        margin: 0 0 4mm;
+        font-weight: 700;
+      }
+
+      .cover-sub {
+        font-size: 12.5pt;
+        color: var(--muted);
+        margin-bottom: 16mm;
+      }
+
+      .meta {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 8mm;
+      }
+      .meta td {
+        padding: 2.4mm 2mm;
+        border-bottom: 0.4pt solid var(--line);
+        vertical-align: top;
+        font-size: 9.6pt;
+      }
+      .meta td:first-child {
+        width: 38mm;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      table.grid {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 4mm;
+        font-size: 8.9pt;
+      }
+      table.grid th {
+        background: var(--accent);
+        color: #fff;
+        text-align: left;
+        padding: 1.8mm 2mm;
+        font-weight: 600;
+        border: 0.4pt solid var(--accent);
+      }
+      table.grid td {
+        border: 0.4pt solid var(--line);
+        padding: 1.8mm 2mm;
+        vertical-align: top;
+      }
+      table.grid tr:nth-child(even) td {
+        background: var(--soft);
+      }
+      thead {
+        display: table-header-group;
+      }
+      tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      .box {
+        border: 0.5pt solid var(--line);
+        border-left: 2.2pt solid var(--accent);
+        background: var(--soft);
+        padding: 3mm 3.5mm;
+        margin: 0 0 4mm;
+        page-break-inside: avoid;
+      }
+      .box.warn {
+        border-left-color: var(--warn);
+        background: var(--warn-bg);
+      }
+      .box.ok {
+        border-left-color: var(--ok);
+        background: var(--ok-bg);
+      }
+      .box p:last-child {
+        margin-bottom: 0;
+      }
+      .box .t {
+        font-weight: 700;
+        display: block;
+        margin-bottom: 1.4mm;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 7.4pt;
+        font-weight: 700;
+        padding: 0.3mm 1.4mm;
+        border-radius: 1mm;
+        text-transform: uppercase;
+        letter-spacing: 0.2pt;
+      }
+      .tag.done {
+        background: var(--ok);
+        color: #fff;
+      }
+      .tag.open {
+        background: var(--warn);
+        color: #fff;
+      }
+      .tag.na {
+        background: var(--muted);
+        color: #fff;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 3mm;
+        padding-left: 5.5mm;
+      }
+      li {
+        margin-bottom: 1.2mm;
+      }
+
+      .toc td {
+        padding: 1.5mm 2mm;
+        border-bottom: 0.4pt dotted var(--line);
+        font-size: 9.4pt;
+      }
+      .toc td:first-child {
+        width: 12mm;
+        color: var(--muted);
+      }
+
+      .fill {
+        color: var(--warn);
+        font-weight: 600;
+      }
+
+      pre {
+        font-family: "SF Mono", Menlo, Consolas, monospace;
+        font-size: 8.4pt;
+        background: var(--soft);
+        border: 0.4pt solid var(--line);
+        border-left: 2.2pt solid var(--accent);
+        padding: 2.4mm 3mm;
+        margin: 0 0 3.5mm;
+        white-space: pre-wrap;
+        page-break-inside: avoid;
+      }
+
+      /* ---------- Figures ---------- */
+      figure {
+        margin: 0 0 5mm;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      figure img {
+        width: 100%;
+        border: 0.4pt solid var(--line);
+        background: #fff;
+        display: block;
+      }
+      figcaption {
+        font-size: 8.4pt;
+        color: var(--muted);
+        margin-top: 1.6mm;
+        text-align: center;
+      }
+
+      .pagebreak {
+        page-break-before: always;
+        break-before: page;
+      }
+      code,
+      pre,
+      table.grid td,
+      table.grid th {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============ COVER ============ -->
+    <section class="cover">
+      <div class="cover-rule"></div>
+      <div class="cover-title">Dynamics Queue Admin</div>
+      <div class="cover-sub">
+        System &amp; Architecture Design Document — dispatch-queue management console
+        (<code>queadmin-frontend</code>, SPA), version 1.0.0
+      </div>
+
+      <table class="meta">
+        <tr>
+          <td>Document</td>
+          <td><strong>SDD-1.0.0</strong> — System &amp; Architecture Design Document</td>
+        </tr>
+        <tr>
+          <td>Application</td>
+          <td>
+            Dynamics Queue Admin (<em>Queue Admin</em>) — dispatch-queue management console of the
+            Dynamics freight marketplace
+          </td>
+        </tr>
+        <tr>
+          <td>Asset type</td>
+          <td>Web Application</td>
+        </tr>
+        <tr>
+          <td>Asset code</td>
+          <td><strong>ASSET-DYN-QA-001</strong></td>
+        </tr>
+        <tr>
+          <td>Standard</td>
+          <td>INSA Secure Website Management Standard, Version 1.0, 2014 EC</td>
+        </tr>
+        <tr>
+          <td>Platform</td>
+          <td>
+            Vite 8 + React 19 + TypeScript SPA (React Router 7), Redux Toolkit / RTK Query,
+            socket.io-client 4, hand-written CSS
+          </td>
+        </tr>
+        <tr>
+          <td>Production host</td>
+          <td><code>queue.dynamicsroute.tech</code></td>
+        </tr>
+        <tr>
+          <td>Design version</td>
+          <td>1.0.0 (as-built)</td>
+        </tr>
+        <tr>
+          <td>Companion documents</td>
+          <td>
+            SRS, Technical Specifications (TDD/LLD), User Documentation (User Guide), Security
+            Documentation
+          </td>
+        </tr>
+        <tr>
+          <td>Submitting entity</td>
+          <td class="fill">TBD</td>
+        </tr>
+        <tr>
+          <td>Contact person</td>
+          <td class="fill">TBD</td>
+        </tr>
+        <tr>
+          <td>Prepared by</td>
+          <td class="fill">TBD</td>
+        </tr>
+        <tr>
+          <td>Reviewed by</td>
+          <td class="fill">TBD</td>
+        </tr>
+        <tr>
+          <td>Signatories</td>
+          <td class="fill">TBD</td>
+        </tr>
+        <tr>
+          <td>Date of submission</td>
+          <td class="fill">TBD</td>
+        </tr>
+      </table>
+
+      <div class="box">
+        <span class="t">As-built document</span>
+        <p>
+          This document describes the design of the submitted release of the Dynamics Queue Admin
+          console as implemented in <code>queadmin-frontend</code>. It is the design counterpart to
+          the SRS and is prepared for INSA Secure Website Management Standard review. Where
+          behaviour is server-enforced in the backend (<code>transportBackEndNative</code>) it is
+          stated explicitly, so reviewers can distinguish client responsibility from backend
+          authority.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ TOC ============ -->
+    <section>
+      <h1>Contents</h1>
+      <table class="toc">
+        <tr>
+          <td>1</td>
+          <td>Introduction</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>System overview and context</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Architectural design</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Functional decomposition</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Component design</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Data design</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Interface design</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>Security design</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>Deployment and hosting</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>Cross-cutting design</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>Design decisions and trade-offs</td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td>Requirements-to-design traceability</td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td>Known limitations and future work</td>
+        </tr>
+      </table>
+      <h3>List of Figures</h3>
+      <table class="toc">
+        <tr>
+          <td>2.1</td>
+          <td>Level 0 — Context diagram (external ecosystem)</td>
+        </tr>
+        <tr>
+          <td>3.1</td>
+          <td>Level 2 — Architecture layers</td>
+        </tr>
+        <tr>
+          <td>4.1</td>
+          <td>Level 1 — Functional decomposition</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- ============ 1. INTRODUCTION ============ -->
+    <section>
+      <h1>1. Introduction</h1>
+      <h3>1.1 Purpose</h3>
+      <p>
+        This document describes the architecture and internal design of the Dynamics Queue Admin web
+        console (<code>queadmin-frontend</code>, SPA) as implemented. It defines the system context,
+        the layered architecture, the functional decomposition, the components, data, interfaces,
+        security posture, and deployment model of the console, and supports INSA submission review
+        against the Secure Website Management Standard (Version 1.0, 2014 EC).
+      </p>
+
+      <h3>1.2 Scope</h3>
+      <p>
+        The scope is the client application (Web Application, asset code
+        <strong>ASSET-DYN-QA-001</strong>, version 1.0.0). The backend service
+        (<code>transportBackEndNative</code>, REST + Socket.IO) is described only at the level of
+        the contracts this SPA depends on; its internal design is outside the scope of this
+        document. The console operates a single kind of tenant — a <em>loading place</em> or
+        <em>Queue Organization</em> — and provides three jobs: loading-place management, the FIFO
+        driver queue, and bidding on behalf of shippers.
+      </p>
+
+      <h3>1.3 References</h3>
+      <ul>
+        <li><code>src/utils/constant.ts</code> — single source of truth for REST endpoint paths</li>
+        <li><code>src/lib/redux/api/*.ts</code> — endpoint modules and RTK Query contract</li>
+        <li><code>src/lib/redux/api/base.ts</code> — base query, credentials, 401 → logout</li>
+        <li>
+          <code>src/lib/socket.ts</code> — Socket.IO client, subscriptions, debounced invalidation
+        </li>
+        <li><code>src/routes/AppRoutes.tsx</code> — route table and lazy loading</li>
+        <li>
+          <code>src/components/auth/ProtectedRoute.tsx</code>,
+          <code>src/components/auth/RoleGuard.tsx</code>
+        </li>
+        <li>
+          <code>src/types/queue.ts</code>, <code>src/lib/redux/api/types.ts</code> — domain types
+        </li>
+        <li>
+          <code>src/data/insaStandard.ts</code> — INSA standard content for the compliance dashboard
+        </li>
+        <li>
+          <code>vite.config.ts</code>, <code>.env.example</code> — build and environment model
+        </li>
+        <li><code>docs/insa/assets/*.mmd</code> and <code>*.svg</code> — figure sources</li>
+      </ul>
+
+      <h3>1.4 Definitions</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Term</th>
+            <th>Definition</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Queue Organization</td>
+            <td>
+              A “loading place” tenant of the console (customs, factory, cement, depot, mine, farm,
+              port, other) with coordinates, an optional check-in radius, and an approval status.
+            </td>
+          </tr>
+          <tr>
+            <td>Queue Org Admin</td>
+            <td>
+              Role id 11. Administers the loading place: profile, membership, and approval of
+              bidding per order.
+            </td>
+          </tr>
+          <tr>
+            <td>Queue Dispatcher</td>
+            <td>
+              Role id 12. Runs the FIFO queue: manual check-in, dispatch, override, remove, history.
+            </td>
+          </tr>
+          <tr>
+            <td>Admin / Super Admin</td>
+            <td>
+              Role id 3 / 6. Approve loading places and oversee all organizations. Short session
+              (24h).
+            </td>
+          </tr>
+          <tr>
+            <td>FIFO queue</td>
+            <td>
+              First-in-first-out driver waiting line per vehicle type, keyed by
+              <code>queueNumber</code>; entries are dispatched, overridden, or removed.
+            </td>
+          </tr>
+          <tr>
+            <td>RTK Query</td>
+            <td>
+              Server-state data fetching/caching layer; one base <code>api</code> extended by
+              <code>injectEndpoints</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Entry history / audit</td>
+            <td>
+              Per-entry change log (column, old value, performed by, performed at) and the backend
+              queue audit trail.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 2. SYSTEM OVERVIEW AND CONTEXT ============ -->
+    <section>
+      <h1>2. System overview and context</h1>
+      <p>
+        Dynamics Queue Admin is the dispatch-queue management console of the Dynamics freight
+        marketplace. Display name “Queue Admin”. Asset type: Web Application. Asset code
+        <strong>ASSET-DYN-QA-001</strong>. Version 1.0.0. It is a single-page React application
+        served in production at <code>queue.dynamicsroute.tech</code>.
+      </p>
+      <p>
+        A Queue Organization is a physical loading place. Drivers who arrive at the place prove
+        presence by GPS check-in and join a FIFO line; dispatchers assign queued drivers to shipper
+        requests and can override or remove an entry with an audited reason; queue-org admins
+        administer the place’s profile and members and approve bidding per order; platform admins
+        approve origins and oversee all organizations. The backend
+        (<code>transportBackEndNative</code>) is the authority for all business rules; the console
+        is a presentation and orchestration layer over its REST and Socket.IO contracts.
+      </p>
+
+      <h3>2.1 External actors and systems</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Actor/System</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Shipper</td>
+            <td>
+              Creates freight requests (individual or batch); receives bid outcomes for dispatched
+              drivers.
+            </td>
+          </tr>
+          <tr>
+            <td>Driver / Vehicle Owner</td>
+            <td>
+              GPS-proven check-in, FIFO queue position, bids, and journey status updates.
+              Represented by a vehicle-driver assignment.
+            </td>
+          </tr>
+          <tr>
+            <td>Queue Org Admin (11) / Queue Dispatcher (12)</td>
+            <td>Primary users of the console; operate the loading-place queue and bidding.</td>
+          </tr>
+          <tr>
+            <td>Admin (3) / Super Admin (6)</td>
+            <td>Approve loading places and oversee organizations across the marketplace.</td>
+          </tr>
+          <tr>
+            <td>Backend REST API</td>
+            <td>
+              <code>/api</code> endpoints consumed via RTK Query and legacy axios
+              (<code>src/utils/constant.ts</code>).
+            </td>
+          </tr>
+          <tr>
+            <td>Backend Socket.IO</td>
+            <td>
+              Realtime queue fan-out; client subscribes with <code>queue:subscribe</code>
+              (<code>src/lib/socket.ts</code>).
+            </td>
+          </tr>
+          <tr>
+            <td>Photon geocoder (optional)</td>
+            <td>
+              Place search for order origin/destination (<code>VITE_PHOTON_URL</code>, default
+              <code>photon.komoot.io</code>). Falls back to a built-in list of Ethiopian cities.
+            </td>
+          </tr>
+          <tr>
+            <td>OpenStreetMap / Nominatim / OSRM</td>
+            <td>
+              Listed as optional external map services; not wired in this console asset (place
+              search uses Photon). Where absent, no map tiles or routing calls are made.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.2 Level 0 context</h3>
+      <figure>
+        <img src="assets/l0.svg" alt="Level 0 context diagram" />
+        <figcaption>
+          <b>Figure 2.1.</b> Level 0 — Context diagram (external ecosystem). Flows: freight requests
+          / batch offers / bid outcomes, GPS-proven check-in and queue position, loading-place
+          operation, approval and oversight, REST <code>/api</code> + cookie session, and Socket.IO
+          events (per <code>assets/l0.mmd</code>).
+        </figcaption>
+      </figure>
+    </section>
+
+    <!-- ============ 3. ARCHITECTURAL DESIGN ============ -->
+    <section>
+      <h1>3. Architectural design</h1>
+      <h3>3.1 Architectural goals</h3>
+      <ul>
+        <li>
+          Single-page React SPA with strict, layered route authorization (<code
+            >ProtectedRoute</code
+          >
+          → <code>RoleGuard</code>).
+        </li>
+        <li>
+          Centralized API access: one RTK Query base <code>api</code> extended by feature endpoint
+          modules, plus a legacy axios instance for a small set of services.
+        </li>
+        <li>
+          Cookie-based session with no token in JavaScript; a single 401 handler logs the user out
+          everywhere.
+        </li>
+        <li>
+          Realtime synchronization through Socket.IO subscriptions with debounced cache
+          invalidation.
+        </li>
+        <li>
+          Clear separation of concerns across presentation, application, state/data, API contract,
+          and external layers.
+        </li>
+        <li>
+          Hand-written CSS with design tokens for a lightweight, dependency-free visual system.
+        </li>
+      </ul>
+
+      <h3>3.2 Layered model</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Contents</th>
+            <th>Responsibility</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Presentation</td>
+            <td>
+              Pages and components under <code>src/pages/*</code> and <code>src/components/*</code>;
+              hand-written CSS (<code>src/index.css</code> tokens + co-located sheets;
+              <code>src/dark.css</code>)
+            </td>
+            <td>
+              Render UI, queue board, orders, orgs, reports, settings, security; accessibility.
+            </td>
+          </tr>
+          <tr>
+            <td>Application</td>
+            <td>
+              <code>src/routes/AppRoutes.tsx</code>, guards,
+              <code>src/context/AuthContext.tsx</code>, <code>src/contexts/ThemeContext.tsx</code>,
+              composed hooks, forms (RHF + zod)
+            </td>
+            <td>Routing, authorization, session lifecycle, form state and validation.</td>
+          </tr>
+          <tr>
+            <td>State &amp; Data</td>
+            <td>
+              RTK Query store (<code>src/lib/redux/store.ts</code>), slices (<code>authSlice</code>,
+              <code>queueSlice</code>), zustand (<code>src/store/queueAdminStore.ts</code>),
+              Socket.IO client, legacy axios services
+            </td>
+            <td>Server-state cache, client state, realtime synchronization, HTTP transport.</td>
+          </tr>
+          <tr>
+            <td>API contract</td>
+            <td>
+              <code>src/utils/constant.ts</code> and endpoint modules (<code>authEndpoints</code>,
+              <code>queueOrganizationEndpoints</code>, <code>driverQueueEndpoints</code>,
+              <code>shipperRequestEndpoints</code>, <code>vehicleEndpoints</code>)
+            </td>
+            <td>Declare endpoints, methods, arguments, responses, and cache tags.</td>
+          </tr>
+          <tr>
+            <td>External</td>
+            <td>Backend REST <code>/api</code>, Socket.IO, optional Photon geocoder</td>
+            <td>Remote systems contracted through the API layer.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>3.3 Technology selection</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Technology</th>
+            <th>Version</th>
+            <th>Justification</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Vite</td>
+            <td>8</td>
+            <td>
+              Fast dev/build; env-driven base URL, dev proxy, dynamic-import route chunks, manual
+              chunking.
+            </td>
+          </tr>
+          <tr>
+            <td>React</td>
+            <td>19</td>
+            <td>SPA UI with concurrent rendering; StrictMode in <code>main.tsx</code>.</td>
+          </tr>
+          <tr>
+            <td>TypeScript</td>
+            <td>6</td>
+            <td>Type safety across store, endpoint contracts, components, and domain types.</td>
+          </tr>
+          <tr>
+            <td>react-router-dom</td>
+            <td>7 (BrowserRouter)</td>
+            <td>Client routing, redirects, lazy routes, guarded access.</td>
+          </tr>
+          <tr>
+            <td>Redux Toolkit + RTK Query</td>
+            <td>2</td>
+            <td>Predictable client state plus server-state caching, tags, and invalidation.</td>
+          </tr>
+          <tr>
+            <td>React Context</td>
+            <td>—</td>
+            <td>
+              Low-frequency global state: authentication (<code>AuthContext</code>) and theme.
+            </td>
+          </tr>
+          <tr>
+            <td>zustand</td>
+            <td>5</td>
+            <td>
+              Single persisted store for <code>selectedOrgId</code> and the socket-connected flag.
+            </td>
+          </tr>
+          <tr>
+            <td>react-hook-form + zod</td>
+            <td>7 / 4</td>
+            <td>Form state and schema validation with input sanitization helpers.</td>
+          </tr>
+          <tr>
+            <td>axios</td>
+            <td>1</td>
+            <td>
+              Shared instance for legacy services; <code>withCredentials</code> and 401 interceptor.
+            </td>
+          </tr>
+          <tr>
+            <td>socket.io-client</td>
+            <td>4</td>
+            <td>Realtime queue events; subscriptions and debounced cache invalidation.</td>
+          </tr>
+          <tr>
+            <td>sonner</td>
+            <td>2</td>
+            <td>User-facing toast notifications for operations and errors.</td>
+          </tr>
+          <tr>
+            <td>date-fns</td>
+            <td>4</td>
+            <td>Date formatting and comparison for queue/order dates.</td>
+          </tr>
+          <tr>
+            <td>i18next / react-i18next</td>
+            <td>26 / 17</td>
+            <td>English + Amharic localization with inline fallback strings.</td>
+          </tr>
+          <tr>
+            <td>lucide-react</td>
+            <td>—</td>
+            <td>Consistent icon set used across the UI.</td>
+          </tr>
+          <tr>
+            <td>Hand-written CSS</td>
+            <td>—</td>
+            <td>
+              Design tokens in <code>src/index.css</code> plus co-located sheets; no Tailwind.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>3.4 Level 2 architecture layers</h3>
+      <figure>
+        <img src="assets/l2.svg" alt="Level 2 architecture layers" />
+        <figcaption>
+          <b>Figure 3.1.</b> Level 2 — Architecture layers (presentation, application, state/data,
+          API contract, external) and data paths (per <code>assets/l2.mmd</code>).
+        </figcaption>
+      </figure>
+
+      <h3>3.5 Single-page routing and the guard stack</h3>
+      <p>
+        The application is a single <code>BrowserRouter</code> mounted in <code>src/main.tsx</code>.
+        Routes are declared in <code>src/routes/AppRoutes.tsx</code>; every page is
+        <code>React.lazy</code>-loaded and wrapped in a <code>Suspense</code> fallback
+        (<code>PageLoader</code>), so each route ships in its own dynamic-import chunk. Default
+        redirects send <code>/</code> and <code>*</code> to <code>/dashboard</code>.
+      </p>
+      <p>
+        Authorization is a two-stage guard stack. <code>ProtectedRoute</code> requires an
+        authenticated user (<code>auth.userData</code>); by default it also requires at least one
+        queue organization, redirecting to <code>/setup-org</code> when none exists (the
+        <code>/setup-org</code> route passes <code>requireOrg={false}</code>). Nested inside it,
+        <code>RoleGuard</code> admits only role ids <code>{11, 12, 3, 6}</code> and otherwise
+        redirects to <code>/login</code>. Client guards are a usability boundary only; the backend
+        re-checks every request.
+      </p>
+    </section>
+
+    <!-- ============ 4. FUNCTIONAL DECOMPOSITION ============ -->
+    <section>
+      <h1>4. Functional decomposition</h1>
+      <h3>4.1 Level 1 decomposition</h3>
+      <figure>
+        <img src="assets/l1.svg" alt="Level 1 functional decomposition" />
+        <figcaption>
+          <b>Figure 4.1.</b> Level 1 — Functional decomposition of console capabilities (per
+          <code>assets/l1.mmd</code>).
+        </figcaption>
+      </figure>
+
+      <h3>4.2 Key processes</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Process</th>
+            <th>Description</th>
+            <th>Key modules</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sign-in and session</td>
+            <td>
+              Phone number → OTP; the backend sets an httpOnly session cookie at
+              <code>POST /api/user/verifyUserByOTP</code>. <code>AuthContext</code> stores the
+              non-secret profile and connects the socket; logout calls
+              <code>/api/user/logout</code> and clears state.
+            </td>
+            <td>
+              <code>src/components/auth/*</code>, <code>src/hooks/useOtpVerification.ts</code>,
+              <code>src/context/AuthContext.tsx</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Loading-place approval</td>
+            <td>
+              Create/edit the Queue Organization profile and drive the platform approval workflow
+              (pending → approved / rejected / suspended). Admins (3/6) and queue-org admins (11)
+              act through <code>/queueOrganization/:id/approve</code>; <code>queueEnabled</code> is
+              toggled on approval.
+            </td>
+            <td>
+              <code>src/components/organization/SetupOrganization.tsx</code>,
+              <code>src/pages/queue-org-manage/QueueOrgManagePage.tsx</code>,
+              <code>src/components/queue-org-manage/*</code>
+            </td>
+          </tr>
+          <tr>
+            <td>FIFO queue lifecycle: check-in → queue → dispatch</td>
+            <td>
+              Operators manually check a vehicle-driver into the line
+              (<code>/queue/manualCheckin</code>); the returned <code>queueNumber</code> places the
+              driver in FIFO order per vehicle type. Dispatch assigns a queued entry to a shipper
+              request (<code>/queue/dispatch</code>).
+            </td>
+            <td>
+              <code>src/components/queue/CheckinModal.tsx</code>,
+              <code>src/components/queue/checkin/*</code>, <code>DispatchModal.tsx</code>,
+              <code>QueueBoard.tsx</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Check-in radius / Haversine gate</td>
+            <td>
+              A Queue Organization carries an optional <code>checkinRadiusKm</code>. The console
+              computes great-circle distance with a Haversine implementation
+              (<code>calculateDistanceKm</code>) for proximity cues; the authoritative geofence
+              decision for a GPS check-in is enforced server-side.
+            </td>
+            <td>
+              <code>src/utils/formatters.ts</code> (<code>calculateDistanceKm</code>),
+              <code>src/components/orders/bids/BidRow.tsx</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Override / remove with audit</td>
+            <td>
+              A dispatcher repositions an entry with a reason (<code
+                >PATCH /queue/entry/:queueUniqueId/override</code
+              >) or removes it (<code>DELETE /queue/entry/:queueUniqueId</code>); both are audited
+              in the backend queue audit trail.
+            </td>
+            <td>
+              <code>src/components/queue/OverrideModal.tsx</code>, <code>ConfirmCancel.tsx</code>,
+              <code>src/lib/redux/api/driverQueueEndpoints.ts</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Entry history</td>
+            <td>
+              Per-entry change log rendered from
+              <code>GET /queue/entry/:queueUniqueId/history</code> (column, old value, performed by,
+              performed at).
+            </td>
+            <td><code>src/components/queue/EntryHistoryModal.tsx</code></td>
+          </tr>
+          <tr>
+            <td>Bidding: approve → list → accept</td>
+            <td>
+              Approve or close bidding per order (<code>POST /queue/bidding/approve</code>), list
+              the authoritative driver bids cheapest-first (<code
+                >GET /queue/bidding/order/:shipperRequestUniqueId/bids</code
+              >), and accept a bid using explicit ids via
+              <code>PUT /shipper/acceptDriverOffer</code>. A missing id is a hard, visible failure —
+              no fuzzy reconstruction.
+            </td>
+            <td>
+              <code>src/components/orders/bids/*</code>,
+              <code>src/components/queue/ShipperRequestsModal.tsx</code>,
+              <code>DriverBidsModal.tsx</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Realtime subscribe / invalidate</td>
+            <td>
+              The console subscribes to a Queue Organization room (<code>queue:subscribe</code>)
+              and, on events, debounces and invalidates RTK Query tags (100&nbsp;ms for org events,
+              250&nbsp;ms for queue events) to trigger refetches.
+            </td>
+            <td><code>src/lib/socket.ts</code>, <code>src/hooks/useQueueSocket.ts</code></td>
+          </tr>
+          <tr>
+            <td>Reporting</td>
+            <td>
+              KPIs, donut/bar charts, and per-organization reports computed client-side from
+              organization, queue-status, and shipper-request queries.
+            </td>
+            <td>
+              <code>src/pages/reports/ReportsPage.tsx</code>,
+              <code>src/hooks/useReportsMetrics.ts</code>, <code>src/components/reports/*</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Security compliance dashboard</td>
+            <td>
+              Renders the INSA Secure Website Management Standard content (focus areas,
+              requirements, vulnerabilities, and a 102-item security test checklist) from
+              <code>src/data/insaStandard.ts</code>, with locally persisted pass/fail marks.
+            </td>
+            <td>
+              <code>src/pages/security/SecurityPage.tsx</code>,
+              <code>src/components/security/*</code>,
+              <code>src/hooks/useSecurityChecklist.ts</code>,
+              <code>src/utils/securityChecklist.ts</code>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 5. COMPONENT DESIGN ============ -->
+    <section>
+      <h1>5. Component design</h1>
+      <p>
+        Routes and guards are defined in <code>src/routes/AppRoutes.tsx</code>; guards live in
+        <code>src/components/auth/</code>. Pages compose feature components; feature components
+        consume RTK Query hooks from <code>src/lib/redux/api</code>.
+      </p>
+
+      <h3>5.1 Routing and authorization</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Component</th>
+            <th>Guard</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/login</code></td>
+            <td><code>Auth</code> (<code>initialStep="login"</code>)</td>
+            <td>Public</td>
+          </tr>
+          <tr>
+            <td><code>/register</code></td>
+            <td><code>Auth</code> (<code>initialStep="register"</code>)</td>
+            <td>Public</td>
+          </tr>
+          <tr>
+            <td><code>/setup-org</code></td>
+            <td><code>SetupOrganization</code></td>
+            <td><code>ProtectedRoute requireOrg={false}</code></td>
+          </tr>
+          <tr>
+            <td><code>/organizations</code></td>
+            <td><code>Navigate</code> → <code>/dashboard</code></td>
+            <td>— (redirect)</td>
+          </tr>
+          <tr>
+            <td><code>/dashboard</code></td>
+            <td><code>QueueDashboardPage</code></td>
+            <td><code>ProtectedRoute</code> + <code>RoleGuard</code></td>
+          </tr>
+          <tr>
+            <td><code>/orgs/:queueOrganizationUniqueId</code></td>
+            <td><code>QueueOrgManagePage</code></td>
+            <td><code>ProtectedRoute</code> + <code>RoleGuard</code></td>
+          </tr>
+          <tr>
+            <td><code>/orgs/:queueOrganizationUniqueId/orders</code></td>
+            <td><code>OrdersPage</code></td>
+            <td><code>ProtectedRoute</code> + <code>RoleGuard</code></td>
+          </tr>
+          <tr>
+            <td><code>/orders</code></td>
+            <td><code>OrdersPage</code></td>
+            <td><code>ProtectedRoute</code> + <code>RoleGuard</code></td>
+          </tr>
+          <tr>
+            <td><code>/reports</code></td>
+            <td><code>ReportsPage</code></td>
+            <td><code>ProtectedRoute</code> + <code>RoleGuard</code></td>
+          </tr>
+          <tr>
+            <td><code>/security</code></td>
+            <td><code>SecurityPage</code></td>
+            <td><code>ProtectedRoute</code> + <code>RoleGuard</code></td>
+          </tr>
+          <tr>
+            <td><code>/settings</code></td>
+            <td><code>SettingsPage</code></td>
+            <td><code>ProtectedRoute</code> + <code>RoleGuard</code></td>
+          </tr>
+          <tr>
+            <td><code>/</code>, <code>*</code></td>
+            <td><code>Navigate</code> → <code>/dashboard</code></td>
+            <td>— (redirect)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>5.2 Feature areas</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Components / Pages</th>
+            <th>Store / API</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Queue board, table, cards, modals</td>
+            <td>
+              <code>src/components/queue/QueueBoard.tsx</code>, <code>QueueBoardHeader.tsx</code>,
+              <code>QueueVehicleTypeCard.tsx</code>, <code>QueueAllDriversCard.tsx</code>,
+              <code>QueueCard.tsx</code>, <code>table/QueueDesktopTable.tsx</code>,
+              <code>table/QueueMobileTable.tsx</code>, <code>QueueBoardModals.tsx</code>,
+              <code>CheckinModal.tsx</code>, <code>DispatchModal.tsx</code>,
+              <code>OverrideModal.tsx</code>, <code>ConfirmCancel.tsx</code>,
+              <code>EntryHistoryModal.tsx</code>
+            </td>
+            <td>
+              <code>useGetQueueStatusQuery</code>, <code>useManualCheckinMutation</code>,
+              <code>useDispatchQueueMutation</code>, <code>useOverrideEntryMutation</code>,
+              <code>useRemoveEntryMutation</code>, <code>useGetEntryHistoryQuery</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Orders and bids</td>
+            <td>
+              <code>src/pages/orders/OrdersPage.tsx</code>, <code>OrdersTable.tsx</code>,
+              <code>OrdersCardsList.tsx</code>, <code>OrdersMobileCards.tsx</code>,
+              <code>orders/bids/*</code> (<code>BidRow</code>, <code>BidsToolbar</code>,
+              <code>BiddingBoardToggle</code>, <code>useAcceptDriverBid</code>),
+              <code>orders/DriverBidsModal.tsx</code>
+            </td>
+            <td>
+              <code>useGetShipperRequestsQuery</code>,
+              <code>useGetShipperRequestBatchesQuery</code>, <code>useGetBidsForOrderQuery</code>,
+              <code>useApproveBiddingMutation</code>,
+              <code>useAcceptDriverRequestMutation</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Queue organization management</td>
+            <td>
+              <code>src/pages/queue-org-manage/QueueOrgManagePage.tsx</code>,
+              <code>queue-org-manage/OrgProfileForm.tsx</code>, <code>MembersTable.tsx</code>,
+              <code>AdminApprovalActions.tsx</code>, <code>StatusBadge.tsx</code>,
+              <code>organization/SetupOrganization.tsx</code>
+            </td>
+            <td>
+              <code>useCreateQueueOrganizationMutation</code>,
+              <code>useUpdateQueueOrganizationMutation</code>,
+              <code>useApproveQueueOrganizationMutation</code>,
+              <code>useListQueueOrgMembersQuery</code>, member lifecycle mutations
+            </td>
+          </tr>
+          <tr>
+            <td>Dashboard</td>
+            <td>
+              <code>src/pages/dashboard/QueueDashboardPage.tsx</code>,
+              <code>src/components/dashboard/*</code> (ActiveOrgView, OrgStatusTable,
+              OrgListToolbar, OrgListState, OrgListPagination, OrgApprovalBanner)
+            </td>
+            <td>
+              <code>useOrgList</code>, <code>useActiveOrg</code>,
+              <code>useListQueueOrganizationsQuery</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Reports</td>
+            <td>
+              <code>src/pages/reports/ReportsPage.tsx</code>,
+              <code>src/components/reports/*</code> (KpiCards, DonutChart, MonthlyBarChart,
+              OrgReportsList, OrgReportRow)
+            </td>
+            <td><code>useReportsMetrics</code> over organizations/queue/requests queries</td>
+          </tr>
+          <tr>
+            <td>Security compliance</td>
+            <td>
+              <code>src/pages/security/SecurityPage.tsx</code>,
+              <code>src/components/security/*</code> (SecurityScoreCards, FocusAreaAccordion,
+              VulnerabilityTable, SecurityChecklist)
+            </td>
+            <td><code>useSecurityChecklist</code>, <code>src/data/insaStandard.ts</code></td>
+          </tr>
+          <tr>
+            <td>Settings and layout</td>
+            <td>
+              <code>src/pages/settings/SettingsPage.tsx</code>,
+              <code>src/components/settings/*</code>,
+              <code>src/components/layout/DashboardLayout.tsx</code>, <code>Sidebar.tsx</code>,
+              <code>src/components/common/MobileHeader.tsx</code>
+            </td>
+            <td><code>useTheme</code>, <code>useAuth</code>, <code>AppRoutes</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 6. DATA DESIGN ============ -->
+    <section>
+      <h1>6. Data design</h1>
+      <h3>6.1 Core entities and key attributes</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Entity</th>
+            <th>Key attributes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>User</td>
+            <td>
+              <code>userId</code>, <code>userUniqueId</code>, <code>fullName</code>,
+              <code>phoneNumber</code>, <code>email</code>, <code>roleId</code> (11, 12, 3, 6).
+              Non-secret profile persisted client-side.
+            </td>
+          </tr>
+          <tr>
+            <td>QueueOrganization</td>
+            <td>
+              <code>queueOrganizationUniqueId</code>, name, type enum
+              <code>customs | factory | cement | depot | mine | farm | port | other</code>,
+              <code>latitude</code>/<code>longitude</code>, <code>checkinRadiusKm</code>,
+              <code>approvalStatus</code> (<code>pending | approved | rejected | suspended</code>),
+              <code>queueEnabled</code>, <code>approvedBy</code>/<code>approvedAt</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>QueueOrganizationMembership</td>
+            <td>
+              <code>queueOrganizationMembershipUniqueId</code>, <code>userUniqueId</code>,
+              <code>roleId</code> (11/12), <code>isActive</code>, <code>membershipStartDate</code>.
+              Membership is the permission.
+            </td>
+          </tr>
+          <tr>
+            <td>DriverQueue</td>
+            <td>
+              <code>queueUniqueId</code>, <code>queueNumber</code>, <code>queueStatus</code> (<code
+                >waiting | offered | loaded | removed | completed</code
+              >), <code>queueRefusalCount</code>, <code>targetedShipperUserUUID</code>,
+              <code>vehicleDriverUniqueId</code>, <code>shipperRequestUniqueId</code>, timestamps.
+            </td>
+          </tr>
+          <tr>
+            <td>DriverQueueHistory</td>
+            <td>
+              <code>historyUniqueId</code>, <code>columnName</code>, <code>oldValue</code>,
+              <code>performedBy</code>, <code>performedAt</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>QueueAuditLog</td>
+            <td>
+              Backend audit trail for queue mutations (check-in, dispatch, override, remove),
+              including the override reason and the acting user; surfaced in the entry history view.
+            </td>
+          </tr>
+          <tr>
+            <td>ShipperRequest</td>
+            <td>
+              <code>shipperRequestUniqueId</code>, <code>shipperRequestBatchUniqueId</code>,
+              <code>requestMode</code> (<code>individual_target | company_target</code>),
+              origin/destination, <code>shippingCost</code>, <code>journeyStatusId</code>,
+              <code>queueOrganizationUniqueId</code>, <code>isBiddingApproved</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>ShipperRequestBatch</td>
+            <td>
+              <code>batchUniqueId</code>, <code>totalVehicles</code>, <code>requestMode</code>,
+              origin/destination, <code>bidSummary</code>, aggregated bids (fetched with
+              <code>includeBids=true</code>, <code>requestMode=company_target</code>).
+            </td>
+          </tr>
+          <tr>
+            <td>DriverBid</td>
+            <td>
+              <code>driverBidUniqueId</code>, <code>shipperRequestUniqueId</code>,
+              <code>driverUserUniqueId</code>, <code>bidAmount</code>, <code>bidNotes</code>,
+              <code>bidStatus</code> (<code
+                >pending | selected | not_selected | withdrawn | expired</code
+              >), <code>driverBidCreatedAt</code>.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>6.2 Client state and storage</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Store/Storage</th>
+            <th>Keys/Areas</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>RTK Query cache</td>
+            <td>
+              <code>api</code> reducer with tags QueueOrganizations, QueueOrgMembers, QueueStatus,
+              DriverQueue, DriverBids, DriverDirectory, Auth, VehicleTypes, ShipperRequests
+            </td>
+            <td>
+              <code>keepUnusedDataFor: 300</code>; tag-based invalidation; no focus/reconnect
+              refetch.
+            </td>
+          </tr>
+          <tr>
+            <td>Redux slices</td>
+            <td>
+              <code>authSlice</code> (auth profile + hydration),
+              <code>queueSlice</code> (<code>selectedOrgId</code>, <code>orgsCache</code>)
+            </td>
+            <td>Registered in <code>src/lib/redux/store.ts</code>.</td>
+          </tr>
+          <tr>
+            <td>zustand store</td>
+            <td>
+              <code>queueadmin:store</code> — persisted <code>selectedOrgId</code> plus
+              <code>socketConnected</code> (transient)
+            </td>
+            <td><code>src/store/queueAdminStore.ts</code>.</td>
+          </tr>
+          <tr>
+            <td>localStorage</td>
+            <td>
+              <code>queueadmin:user</code> (non-secret profile), <code>app_dark_mode</code>,
+              <code>app_language</code>
+            </td>
+            <td>
+              Never stores tokens; legacy <code>queueadmin:auth</code> token record is purged on
+              read.
+            </td>
+          </tr>
+          <tr>
+            <td>httpOnly cookie</td>
+            <td>Session cookie (backend-set)</td>
+            <td>
+              Set at <code>POST /api/user/verifyUserByOTP</code>; sent with
+              <code>credentials: "include"</code>.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>6.3 Data flow (high level)</h3>
+      <p>
+        UI actions invoke RTK Query hooks/mutations or legacy axios services. The base query
+        resolves the API prefix from <code>VITE_API_BASE_URL</code>/<code>VITE_API_URL</code>
+        (normalized to end in <code>/api</code>) and sends the httpOnly cookie via
+        <code>credentials: "include"</code>. Responses populate the RTK Query cache; socket events
+        (queue and organization) trigger debounced tag invalidation that refetches the affected
+        queries. Client state (auth profile, selected organization, theme, language, socket flag)
+        lives in Redux slices, zustand, React Context, and localStorage; no token is ever placed in
+        JavaScript-accessible storage.
+      </p>
+    </section>
+
+    <!-- ============ 7. INTERFACE DESIGN ============ -->
+    <section>
+      <h1>7. Interface design</h1>
+      <h3>7.1 REST API</h3>
+      <p>
+        Endpoint paths are centralized in <code>src/utils/constant.ts</code> (the single source of
+        truth); the API base resolves to <code>&lt;VITE_API_BASE_URL&gt;/api</code>. Methods below
+        reflect the injected endpoint modules. Frontend-callable surface:
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Method + path (<code>/api</code> prefix)</th>
+            <th>Purpose</th>
+            <th>Module</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>POST /user/loginUser</code></td>
+            <td>Request login OTP for a phone number.</td>
+            <td>auth</td>
+          </tr>
+          <tr>
+            <td><code>POST /user/verifyUserByOTP</code></td>
+            <td>Verify OTP; backend sets the session cookie.</td>
+            <td>auth</td>
+          </tr>
+          <tr>
+            <td><code>POST /user/createUser</code></td>
+            <td>Register a queue-org admin account.</td>
+            <td>auth</td>
+          </tr>
+          <tr>
+            <td><code>POST /user/logout</code></td>
+            <td>Clear the server session cookie.</td>
+            <td>auth</td>
+          </tr>
+          <tr>
+            <td><code>GET /user/getShipperRequest4allOrSingleUser</code></td>
+            <td>List shipper requests (all/single, scoped to the org).</td>
+            <td>shipper requests</td>
+          </tr>
+          <tr>
+            <td><code>GET /queueOrganization</code></td>
+            <td>List queue organizations for the user.</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>POST /queueOrganization</code></td>
+            <td>Create a loading place (approvalStatus pending).</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>GET /queueOrganization/:id</code></td>
+            <td>Get one organization.</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>PATCH /queueOrganization/:id</code></td>
+            <td>Update the organization profile.</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>DELETE /queueOrganization/:id</code></td>
+            <td>Delete (soft) the organization.</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>PATCH /queueOrganization/:id/approve</code></td>
+            <td>Approve / reject / suspend; toggles <code>queueEnabled</code>.</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>GET /queueOrganization/:id/members</code></td>
+            <td>List members (role 11/12, active flag).</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>POST /queueOrganization/:id/members</code></td>
+            <td>Add a member (<code>userUniqueId</code> in body).</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>PATCH /queueOrganization/:id/members/:membershipId/deactivate</code></td>
+            <td>Deactivate membership (revokes access immediately).</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>PATCH /queueOrganization/:id/members/:membershipId/reactivate</code></td>
+            <td>Reactivate membership.</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>DELETE /queueOrganization/:id/members/:membershipId</code></td>
+            <td>Remove membership.</td>
+            <td>queue organization</td>
+          </tr>
+          <tr>
+            <td><code>GET /queue/status</code></td>
+            <td>Queue snapshot by vehicle type for a date.</td>
+            <td>driver queue</td>
+          </tr>
+          <tr>
+            <td><code>POST /queue/manualCheckin</code></td>
+            <td>Check a vehicle-driver in; returns <code>queueNumber</code>.</td>
+            <td>driver queue</td>
+          </tr>
+          <tr>
+            <td><code>POST /queue/dispatch</code></td>
+            <td>Dispatch a queued entry to a shipper request.</td>
+            <td>driver queue</td>
+          </tr>
+          <tr>
+            <td><code>DELETE /queue/entry/:queueUniqueId</code></td>
+            <td>Remove a queue entry (audited).</td>
+            <td>driver queue</td>
+          </tr>
+          <tr>
+            <td><code>PATCH /queue/entry/:queueUniqueId/override</code></td>
+            <td>Override position with a reason (audited).</td>
+            <td>driver queue</td>
+          </tr>
+          <tr>
+            <td><code>GET /queue/entry/:queueUniqueId/history</code></td>
+            <td>Entry change history.</td>
+            <td>driver queue</td>
+          </tr>
+          <tr>
+            <td><code>GET /queue/driverDirectory</code></td>
+            <td>
+              Search active driver/vehicle assignments for manual check-in (queue staff only).
+            </td>
+            <td>vehicles</td>
+          </tr>
+          <tr>
+            <td><code>POST /queue/bidding/approve</code></td>
+            <td>
+              Open/close bidding per order (<code>shipperRequestUniqueIds</code>,
+              <code>approved</code>).
+            </td>
+            <td>driver queue / bids</td>
+          </tr>
+          <tr>
+            <td><code>GET /queue/bidding/order/:shipperRequestUniqueId/bids</code></td>
+            <td>Authoritative driver bids for an order (cheapest-first).</td>
+            <td>driver queue / bids</td>
+          </tr>
+          <tr>
+            <td><code>POST /shipperRequest/createRequest</code></td>
+            <td>Create a shipper request / batch order.</td>
+            <td>shipper requests</td>
+          </tr>
+          <tr>
+            <td><code>GET /shipperRequestBatch</code></td>
+            <td>List batches (<code>company_target</code>, <code>includeBids</code>).</td>
+            <td>shipper requests</td>
+          </tr>
+          <tr>
+            <td><code>PUT /shipper/acceptDriverOffer</code></td>
+            <td>Accept a driver bid with explicit ids.</td>
+            <td>driver queue / bids</td>
+          </tr>
+          <tr>
+            <td><code>GET /admin/vehicleTypes</code></td>
+            <td>Reference vehicle types (falls back to built-in defaults).</td>
+            <td>vehicles</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>7.2 Authentication / session contract</h3>
+      <ul>
+        <li>
+          Primary session is an httpOnly cookie set by the backend at
+          <code>POST /api/user/verifyUserByOTP</code>. The client never reads or stores a JWT (<code
+            >getToken()</code
+          >
+          returns <code>null</code>).
+        </li>
+        <li>
+          Every request sends the cookie with
+          <code>credentials: "include"</code> (<code>src/lib/redux/api/base.ts</code>,
+          <code>src/lib/api.ts</code>). No <code>Authorization</code> header is set.
+        </li>
+        <li>
+          There is no refresh-token flow: any <code>401</code> response in the RTK Query base query
+          dispatches <code>logout()</code> (<code>baseQueryWithReauth</code>); the axios instance
+          clears auth and routes to <code>/login</code>.
+        </li>
+        <li>
+          Session lifetime is role-based on the backend: roles 3/6 = 24h; role 11/12 and others =
+          365d.
+        </li>
+      </ul>
+
+      <h3>7.3 Socket.IO protocol</h3>
+      <p>
+        The client connects with <code>withCredentials</code> and an <code>auth</code> payload of
+        <code>{ user, phoneNumber }</code>. The socket identity is derived from the account role:
+        roles 3/6 map to <code>admin</code>; queue staff (roles 11 and 12) share a single
+        <code>queueOrgAdmin</code> identity, because the backend fan-out keys queue events under
+        that identity for both roles. Subscriptions use <code>queue:subscribe</code> /
+        <code>queue:unsubscribe</code> with a reference-counted room keyed by
+        <code>queueOrganizationUniqueId</code> (and optional <code>queueDate</code>); rooms are
+        re-subscribed automatically on (re)connect. Inbound queue events are parsed for a
+        <code>messageTypes</code> value; acknowledgements and ping/pong are ignored; organization
+        events invalidate <code>QueueOrganizations</code> after a 100&nbsp;ms debounce, and all
+        other queue events invalidate <code>QueueStatus</code>, <code>DriverQueue</code>, and
+        <code>ShipperRequests</code> after a 250&nbsp;ms debounce. A socket
+        <code>connect_error</code> whose message indicates <code>unauthorized</code>/<code
+          >token</code
+        >
+        disconnects and ends the session.
+      </p>
+
+      <h3>7.4 Third-party services</h3>
+      <p>
+        Place search for order origin/destination uses the Photon geocoder
+        (<code>VITE_PHOTON_URL</code>, default <code>https://photon.komoot.io/api/</code>), merged
+        with a built-in list of Ethiopian cities and with a local fallback if the external service
+        is unavailable. OpenStreetMap / Nominatim / OSRM are noted as optional external map services
+        and are not wired into this console asset.
+      </p>
+
+      <h3>7.5 Error-handling contract</h3>
+      <p>
+        <code>src/utils/parseError.ts</code> normalizes axios errors, RTK Query errors, serialized
+        errors, and generic throws into a single human-readable message; it reads server
+        <code>message</code>/<code>error</code>/<code>details</code>/<code>validation</code> fields
+        and maps HTTP status codes (400/401/403/404/409/429/5xx) to fallbacks. UI call sites surface
+        the result through <code>sonner</code> toasts. Status semantics are distinguished:
+        <code>401</code> means “session expired — log in again” and triggers logout;
+        <code>403</code> means “authenticated but not permitted” and is shown as a permission error
+        without logging out.
+      </p>
+    </section>
+
+    <!-- ============ 8. SECURITY DESIGN ============ -->
+    <section>
+      <h1>8. Security design</h1>
+      <h3>8.1 Authentication and authorization</h3>
+      <ul>
+        <li>
+          OTP login establishes an httpOnly cookie session; the client holds only the non-secret
+          profile. No JWT is stored or transmitted from JavaScript.
+        </li>
+        <li>
+          Route access is guarded by <code>ProtectedRoute</code> (authentication + organization
+          presence) and <code>RoleGuard</code> (roles <code>{11, 12, 3, 6}</code>). This is a
+          usability boundary; the backend independently enforces role and membership on every
+          request.
+        </li>
+        <li>
+          A single <code>401</code> handler in the base query logs the user out globally; a socket
+          <code>401</code>/unauthorized handshake also ends the session and stops reconnect
+          attempts.
+        </li>
+      </ul>
+
+      <h3>8.2 Cookie session and CSRF posture</h3>
+      <p>
+        Because the session is an httpOnly cookie sent with <code>credentials: "include"</code>, the
+        CSRF posture depends on backend controls (same-site cookie attributes and trusted-origin
+        checks) that are outside this client asset. The client does not add custom CSRF tokens and
+        does not store credentials in script-accessible storage. The console never sets
+        <code>document.cookie</code>.
+      </p>
+
+      <h3>8.3 Role enforcement boundary (client vs backend)</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Concern</th>
+            <th>Client</th>
+            <th>Backend (authority)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Route visibility</td>
+            <td>Guards hide/redirect unauthorized routes.</td>
+            <td>Re-checks role/membership per request.</td>
+          </tr>
+          <tr>
+            <td>Bidding approval</td>
+            <td>Toggle shown only to role 11 (queue-org admin).</td>
+            <td>Enforces approval permission server-side per order.</td>
+          </tr>
+          <tr>
+            <td>Membership = permission</td>
+            <td>Reflects active membership in the members table.</td>
+            <td>Requires an active membership row (role 11/12) on each request.</td>
+          </tr>
+          <tr>
+            <td>Check-in radius</td>
+            <td>Computes Haversine distance for proximity cues.</td>
+            <td>Authoritative geofence decision for GPS check-in.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>8.4 Input validation and sanitization</h3>
+      <p>
+        Forms use <code>react-hook-form</code> with <code>zod</code> schemas
+        (<code>src/schemas/queue.ts</code>) covering login, registration, organization setup and
+        profile, check-in, dispatch, order creation, and override. Schemas constrain types, lengths,
+        enums, UUIDs, coordinate ranges, and quantity limits, and include sanitizers that strip HTML
+        tags, control characters, and collapse whitespace (<code>sanitizeText</code>,
+        <code>sanitizeEmail</code>). React escapes rendered values by default, and i18n is
+        configured with <code>escapeValue: false</code> because React performs escaping.
+      </p>
+
+      <h3>8.5 Storage hygiene and build hardening</h3>
+      <ul>
+        <li>
+          localStorage holds only non-sensitive values (<code>queueadmin:user</code> profile,
+          <code>app_dark_mode</code>, <code>app_language</code>, persisted
+          <code>selectedOrgId</code>); tokens are never stored, and legacy token records are purged
+          on read.
+        </li>
+        <li>
+          Production source maps are disabled (<code
+            >sourcemap: process.env.NODE_ENV !== "production"</code
+          >).
+        </li>
+        <li>
+          <span class="fill">Honest note:</span> this repository does not configure a Content
+          Security Policy or other HTTP security headers. Header/CSP hardening is a server-level
+          responsibility of the hosting environment, which is outside the scope of this code asset;
+          the gap is recorded in §13 and treated as deferred/mitigated at the platform boundary.
+        </li>
+      </ul>
+
+      <h3>8.6 INSA compliance dashboard</h3>
+      <p>
+        The console includes a security-compliance dashboard that encodes the INSA Secure Website
+        Management Standard (Version 1.0, 2014 EC) as a self-assessment. Content is sourced from
+        <code>src/data/insaStandard.ts</code>: <strong>5 focus areas</strong> (requirement
+        gathering, design, implementation, hosting, operation &amp; management),
+        <strong>35 requirements</strong>, <strong>8 common vulnerabilities</strong> (Annex A), and a
+        <strong>102-item security test</strong>
+        checklist (Annex B). The checklist lets a reviewer mark each test pass/fail, with results
+        persisted locally (<code>useSecurityChecklist</code>) and scored by
+        <code>src/utils/securityChecklist.ts</code>.
+      </p>
+    </section>
+
+    <!-- ============ 9. DEPLOYMENT AND HOSTING ============ -->
+    <section>
+      <h1>9. Deployment and hosting</h1>
+      <h3>9.1 Build</h3>
+      <p>
+        Static build via Vite (<code>npm run build</code> =
+        <code>tsc -b &amp;&amp; vite build</code>), output to <code>dist/</code>. The Rollup output
+        splits vendor libraries: a <code>vendor</code> chunk (react, react-dom, react-router-dom), a
+        <code>redux</code> chunk (@reduxjs, react-redux, zustand), and an <code>icons</code> chunk
+        (lucide-react). Route components are separate dynamic-import chunks.
+      </p>
+
+      <h3>9.2 Environment and API base resolution</h3>
+      <p>
+        The API base is resolved at compile time from <code>VITE_API_BASE_URL</code>, falling back
+        to <code>VITE_API_URL</code> and then to <code>/api</code>; the value is normalized to end
+        in <code>/api</code> (<code>src/utils/baseUrl.ts</code>). In development, Vite proxies both
+        <code>/api</code> and <code>/socket.io</code> (with WebSocket upgrade) to
+        <code>VITE_API_BASE_URL</code> when set. The socket URL prefers
+        <code>VITE_WEBSOCKET_URL</code>/<code>VITE_SOCKET_URL</code>, falling back to the API base
+        or the page origin.
+      </p>
+
+      <h3>9.3 Hosting and SPA fallback</h3>
+      <p>
+        The built <code>dist/</code> is served as a static site over TLS at
+        <code>queue.dynamicsroute.tech</code>. Because routing is client-side, the host must serve
+        the SPA entry (<code>index.html</code>) for unmatched paths so deep links such as
+        <code>/orgs/:id</code> resolve; the in-app <code>*</code> route then redirects to
+        <code>/dashboard</code>. Session cookies must be delivered over HTTPS with backend-set
+        attributes.
+      </p>
+
+      <h3>9.4 Environments</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Env</th>
+            <th>SPA</th>
+            <th>API</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Production</td>
+            <td><code>https://queue.dynamicsroute.tech</code></td>
+            <td><code>https://app.dynamicsroute.tech</code></td>
+          </tr>
+          <tr>
+            <td>Development</td>
+            <td>local dev (Vite, port 5173)</td>
+            <td><code>https://dev.dynamicsroute.tech</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 10. CROSS-CUTTING DESIGN ============ -->
+    <section>
+      <h1>10. Cross-cutting design</h1>
+      <ul>
+        <li>
+          <strong>Internationalization:</strong> i18next/react-i18next with English and Amharic
+          resources (<code>src/i18n/en.ts</code>, <code>src/i18n/am.ts</code>); components use
+          inline fallback strings, and the language persists in <code>app_language</code>.
+        </li>
+        <li>
+          <strong>Theme:</strong> light/dark mode via
+          <code>ThemeContext</code> (<code>src/contexts/ThemeContext.tsx</code>), toggling the
+          <code>dark</code> class on the document root and applying <code>src/dark.css</code>;
+          preference persists in <code>app_dark_mode</code>.
+        </li>
+        <li>
+          <strong>Responsive/mobile:</strong> dedicated mobile views and headers
+          (<code>MobileHeader</code>, mobile queue/order cards, mobile settings) alongside desktop
+          layouts, driven by hand-written CSS breakpoints.
+        </li>
+        <li>
+          <strong>Accessibility:</strong> semantic elements, ARIA roles/labels on interactive
+          controls and modals (<code>useModalA11y</code>), keyboard handling (OTP inputs, custom
+          selects, sidebar items), and status regions.
+        </li>
+        <li>
+          <strong>Toasts:</strong> <code>sonner</code> renders operation and error feedback at the
+          application root.
+        </li>
+        <li>
+          <strong>Date handling:</strong> <code>date-fns</code> plus shared formatters for
+          queue/order dates.
+        </li>
+      </ul>
+      <div class="box warn">
+        <span class="t">Error boundaries</span>
+        <p>
+          This console does not currently declare a React error-boundary component; uncaught render
+          errors are not contained by an in-app boundary. This is recorded as a known limitation
+          (§13).
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 11. DESIGN DECISIONS AND TRADE-OFFS ============ -->
+    <section>
+      <h1>11. Design decisions and trade-offs</h1>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Decision</th>
+            <th>Rationale</th>
+            <th>Trade-off</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>RTK Query over react-query</td>
+            <td>
+              One store, tag-based cache invalidation, and a single 401 reauth slot fit the queue’s
+              shared cache.
+            </td>
+            <td>
+              <code>@tanstack/react-query</code> remains a dead dependency and should be removed.
+            </td>
+          </tr>
+          <tr>
+            <td>React Context for auth and theme</td>
+            <td>Small, low-frequency global state; avoids extra Redux plumbing.</td>
+            <td>
+              Context re-renders; unsuitable for high-frequency data (that lives in RTK Query).
+            </td>
+          </tr>
+          <tr>
+            <td>Cookie session over bearer token</td>
+            <td>Keeps the JWT out of JavaScript and removes token-handling code.</td>
+            <td>
+              Depends on backend cookie/CSRF controls; cross-site requests need
+              <code>credentials: "include"</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Hand-written CSS</td>
+            <td>Full control, no build/utility dependency, small footprint.</td>
+            <td>More manual consistency work than a design system or utility framework.</td>
+          </tr>
+          <tr>
+            <td>Single socket identity for both queue roles</td>
+            <td>
+              The backend fans queue events to the <code>queueOrgAdmin</code> key for roles 11 and
+              12; a separate dispatcher identity would silently receive nothing.
+            </td>
+            <td>
+              Client cannot distinguish role by socket identity; role checks stay per-request.
+            </td>
+          </tr>
+          <tr>
+            <td>Debounced full refreshes over per-event patching</td>
+            <td>
+              Event payloads vary and can be partial; invalidating authoritative tags is simpler and
+              safer.
+            </td>
+            <td>Extra network round-trips; a burst of events coalesces into one refetch.</td>
+          </tr>
+          <tr>
+            <td>Accept bids by explicit ids</td>
+            <td>
+              Prevents the race where fuzzy id reconstruction silently accepts a different driver.
+            </td>
+            <td>A missing id is a hard error the operator must resolve by reloading bids.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 12. REQUIREMENTS-TO-DESIGN TRACEABILITY ============ -->
+    <section>
+      <h1>12. Requirements-to-design traceability</h1>
+      <p>
+        Traceability maps SRS requirement families (FR-*/NFR-*) to design elements. Key mappings:
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>SRS family</th>
+            <th>Design reference</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>FR-AUTH</td>
+            <td>
+              <code>useOtpVerification</code>, <code>AuthContext</code>,
+              <code>services/auth.service.ts</code>, <code>base.ts</code>
+            </td>
+            <td>OTP login, cookie session, global 401 logout, socket 401 session end.</td>
+          </tr>
+          <tr>
+            <td>FR-ROLE/ACCESS</td>
+            <td><code>ProtectedRoute.tsx</code>, <code>RoleGuard.tsx</code></td>
+            <td>Roles {11, 12, 3, 6}; organization-presence requirement.</td>
+          </tr>
+          <tr>
+            <td>FR-ORG</td>
+            <td>
+              <code>SetupOrganization</code>, <code>QueueOrgManagePage</code>,
+              <code>OrgProfileForm</code>, membership mutations
+            </td>
+            <td>Create/edit profile, approval workflow, membership lifecycle.</td>
+          </tr>
+          <tr>
+            <td>FR-QUEUE</td>
+            <td>
+              <code>QueueBoard</code> and queue components, <code>driverQueueEndpoints.ts</code>
+            </td>
+            <td>Check-in → queue → dispatch, override/remove, entry history, FIFO number.</td>
+          </tr>
+          <tr>
+            <td>FR-BID</td>
+            <td>
+              <code>src/components/orders/bids/*</code>, <code>DriverBidsModal</code>,
+              <code>approveBidding</code>/<code>getBidsForOrder</code>/<code
+                >acceptDriverRequest</code
+              >
+            </td>
+            <td>Approve → list → accept via explicit ids.</td>
+          </tr>
+          <tr>
+            <td>FR-ORDER</td>
+            <td>
+              <code>OrdersPage</code>, <code>CreateOrderModal</code>, shipper request endpoints
+            </td>
+            <td>List/view shipper requests and batches; create request.</td>
+          </tr>
+          <tr>
+            <td>FR-REALTIME</td>
+            <td><code>src/lib/socket.ts</code>, <code>useQueueSocket</code></td>
+            <td>Subscribe/unsubscribe and debounced tag invalidation.</td>
+          </tr>
+          <tr>
+            <td>FR-REPORT</td>
+            <td><code>ReportsPage</code>, <code>useReportsMetrics</code></td>
+            <td>Client-side KPIs, charts, and per-org reports.</td>
+          </tr>
+          <tr>
+            <td>NFR-SEC</td>
+            <td>
+              <code>parseError</code>, zod schemas, <code>lib/auth.ts</code>,
+              <code>src/data/insaStandard.ts</code>
+            </td>
+            <td>Input validation, storage hygiene, INSA compliance self-assessment.</td>
+          </tr>
+          <tr>
+            <td>NFR-DEPLOY</td>
+            <td>
+              <code>vite.config.ts</code>, <code>baseUrl.ts</code>, hosting at
+              <code>queue.dynamicsroute.tech</code>
+            </td>
+            <td>Env-driven base URL, dev proxy, static SPA fallback.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 13. KNOWN LIMITATIONS AND FUTURE WORK ============ -->
+    <section>
+      <h1>13. Known limitations and future work</h1>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Status</th>
+            <th>Planned action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>No refresh-token flow</td>
+            <td><span class="tag open">Noted</span></td>
+            <td>
+              Any expiration ends the session (401 → logout); add refresh only if the backend offers
+              it.
+            </td>
+          </tr>
+          <tr>
+            <td>Settings: profile / notifications / 2FA disabled</td>
+            <td><span class="tag open">Noted</span></td>
+            <td>
+              No profile PATCH and no notification/2FA backend; controls are intentionally disabled
+              rather than faked.
+            </td>
+          </tr>
+          <tr>
+            <td>Dashboard counts computed client-side</td>
+            <td><span class="tag open">Noted</span></td>
+            <td>
+              Metrics are derived from fetched lists (limit 100) in the browser; move to server
+              aggregates for scale.
+            </td>
+          </tr>
+          <tr>
+            <td>Socket payloads trigger refetch only</td>
+            <td><span class="tag na">By design</span></td>
+            <td>Events invalidate tags; no per-event cache patching is applied.</td>
+          </tr>
+          <tr>
+            <td>Dead <code>@tanstack/react-query</code> dependency</td>
+            <td><span class="tag open">Open</span></td>
+            <td>Nothing imports it; remove from <code>package.json</code>.</td>
+          </tr>
+          <tr>
+            <td>Unreachable <code>/organizations</code> page</td>
+            <td><span class="tag open">Open</span></td>
+            <td>
+              The route redirects to <code>/dashboard</code>; the standalone page is not reachable
+              and should be deleted or re-wired.
+            </td>
+          </tr>
+          <tr>
+            <td>No CSP or HTTP security headers in this repo</td>
+            <td><span class="tag open">Deferred</span></td>
+            <td>
+              Server-level control, outside this code asset; mitigate at hosting/reverse-proxy
+              layer.
+            </td>
+          </tr>
+          <tr>
+            <td>Optional third-party map use</td>
+            <td><span class="tag na">Optional</span></td>
+            <td>Only Photon place search is wired; OSM/Nominatim/OSRM remain optional.</td>
+          </tr>
+          <tr>
+            <td>No in-app error boundary</td>
+            <td><span class="tag open">Open</span></td>
+            <td>Add a top-level React error boundary to contain render errors.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="box warn">
+        <span class="t">Placeholders</span>
+        <p>
+          <span class="fill">TBD</span> is used only where strictly unknown (submission entity,
+          contact, prepared/reviewed by, signatories, date). All technical details above reflect the
+          actual repository state.
+        </p>
+      </div>
+    </section>
+  </body>
+</html>
