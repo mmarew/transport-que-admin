@@ -15,6 +15,7 @@ import {
   formatShortName,
   formatTrimmedRoute,
   getConnectedJourneyStatus,
+  isDriverConnectedToOrder,
 } from "./OrdersTypes";
 import { renderVehicleType } from "./OrderPrimitives";
 
@@ -43,6 +44,7 @@ export function SingleOrderRow({
 
   const handleNavigateToDriver = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isDriverConnectedToOrder(order)) return;
     const targetId =
       order.id ||
       order.shipperRequestUniqueId ||
@@ -220,15 +222,32 @@ export function SingleOrderRow({
               <span>{t("orders.waiting", "Waiting")}</span>
             </button>
           )}
-          <button
-            type="button"
-            className="orders-action-btn orders-action-btn--view"
-            onClick={handleNavigateToDriver}
-            title={t("orders.viewDriverDetails", "View driver details")}
-            aria-label={t("orders.viewDriverDetails", "View driver details")}
-          >
-            <Eye size={17} strokeWidth={2} />
-          </button>
+          {(() => {
+            const isConnected = isDriverConnectedToOrder(order);
+            return (
+              <button
+                type="button"
+                className={`orders-action-btn orders-action-btn--view ${!isConnected ? "orders-action-btn--disabled" : ""}`}
+                onClick={(e) => {
+                  if (!isConnected) return;
+                  handleNavigateToDriver(e);
+                }}
+                disabled={!isConnected}
+                title={
+                  isConnected
+                    ? t("orders.viewDriverDetails", "View driver details")
+                    : t("orders.noDriverConnected", "No driver connected yet")
+                }
+                aria-label={
+                  isConnected
+                    ? t("orders.viewDriverDetails", "View driver details")
+                    : t("orders.noDriverConnected", "No driver connected yet")
+                }
+              >
+                <Eye size={17} strokeWidth={2} />
+              </button>
+            );
+          })()}
           <button
             type="button"
             className="orders-action-btn orders-action-btn--edit"

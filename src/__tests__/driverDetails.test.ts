@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildDriverDetailsModel } from "../pages/orders/driver-details/driverDetailsMapper";
 import type { OrderDisplayItem } from "../components/orders/OrdersTypes";
+import { isDriverConnectedToOrder } from "../components/orders/OrdersTypes";
 
 describe("Driver Details Mapper with Precise Real Data", () => {
   it("builds safe default driver details model when order is null without mock fallbacks", () => {
@@ -547,5 +548,47 @@ describe("Driver Details Mapper with Precise Real Data", () => {
     expect(model.licence.validUntil).toBe("01 Oct 2028");
     expect(model.licence.number).toBe("5678");
     expect(model.licence.isVerified).toBe(true);
+  });
+
+  it("correctly identifies whether driver is connected to order or not", () => {
+    // 1. Order waiting for bids/driver (journeyStatusId = 1, no accepted driver)
+    const waitingOrder: OrderDisplayItem = {
+      id: "ord-1",
+      shipper: "Test Shipper",
+      type: "Individual",
+      vehicleType: "Truck",
+      item: "Goods",
+      origin: "A",
+      destination: "B",
+      quintal: 10,
+      cost: 5000,
+      status: "ongoing",
+      journeyStatusId: 1,
+    };
+    expect(isDriverConnectedToOrder(waitingOrder)).toBe(false);
+
+    // 2. Order with accepted bid / driver
+    const acceptedOrder: OrderDisplayItem = {
+      ...waitingOrder,
+      journeyStatusId: 4,
+    };
+    expect(isDriverConnectedToOrder(acceptedOrder)).toBe(true);
+
+    // 3. Order in transit
+    const transitOrder: OrderDisplayItem = {
+      ...waitingOrder,
+      journeyStatusId: 8,
+    };
+    expect(isDriverConnectedToOrder(transitOrder)).toBe(true);
+
+    // 4. Completed order
+    const completedOrder: OrderDisplayItem = {
+      ...waitingOrder,
+      status: "complete",
+    };
+    expect(isDriverConnectedToOrder(completedOrder)).toBe(true);
+
+    // 5. Null or undefined
+    expect(isDriverConnectedToOrder(null)).toBe(false);
   });
 });

@@ -247,9 +247,20 @@ export function DriverDetailsPage() {
   );
 
   // Live queue status to access current queue vehicle assignments
-  const { data: queueStatusData, refetch: refetchQueueStatus } = useGetQueueStatusQuery(
+  const {
+    data: queueStatusData,
+    error: queueStatusError,
+    refetch: refetchQueueStatus,
+  } = useGetQueueStatusQuery(
     { queueOrganizationUniqueId: orgUniqueId },
     { skip: !orgUniqueId }
+  );
+
+  const isQueueStatusForbidden = Boolean(
+    queueStatusError &&
+      typeof queueStatusError === "object" &&
+      "status" in queueStatusError &&
+      (queueStatusError.status === 403 || queueStatusError.status === 401)
   );
 
   // 3. Live WebSocket subscription and refetch callback
@@ -262,13 +273,16 @@ export function DriverDetailsPage() {
     if (isReqUidValid) {
       refetchBids();
     }
-    refetchQueueStatus();
+    if (!isQueueStatusForbidden) {
+      refetchQueueStatus();
+    }
   }, [
     refetchOrders,
     refetchBatches,
     refetchBatchOrders,
     refetchBids,
     refetchQueueStatus,
+    isQueueStatusForbidden,
     isBatchUidValid,
     isReqUidValid,
   ]);

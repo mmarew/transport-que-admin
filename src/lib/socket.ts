@@ -117,6 +117,10 @@ export function connectSocket(
 ): Socket | null {
   const { phoneNumber, userType } = extractCredentials(user);
 
+  if (!phoneNumber) {
+    return null;
+  }
+
   if (socket) {
     socket.auth = {
       user: userType,
@@ -139,8 +143,8 @@ export function connectSocket(
     (typeof window !== "undefined" ? window.location.origin : "");
 
   socket = io(socketUrl, {
-    transports: ["polling", "websocket"],
-    tryAllTransports: true,
+    transports: ["websocket", "polling"],
+    upgrade: false,
     autoConnect: true,
     withCredentials: true,
     auth: {
@@ -149,8 +153,8 @@ export function connectSocket(
     },
     reconnection: true,
     reconnectionAttempts: 5,
-    reconnectionDelay: 1500,
-    reconnectionDelayMax: 5000,
+    reconnectionDelay: 2000,
+    reconnectionDelayMax: 10000,
     timeout: 20000,
   });
 
@@ -167,12 +171,12 @@ export function connectSocket(
   });
 
   socket.on("connect_error", (err) => {
-    console.warn("[WebSocket] Connection error:", err.message, err);
+    console.warn("[WebSocket] Connection error:", err.message);
     useQueueAdminStore.getState().setSocketConnected(false);
     // Session cookie invalid/expired: stop retrying and end the session.
     // An endless reconnect loop just hammers the backend and risks rate limits.
     const msg = `${err?.message || ""}`.toLowerCase();
-    if (msg.includes("unauthorized") || msg.includes("token")) {
+    if (msg.includes("unauthorized") || msg.includes("token") || msg.includes("forbidden")) {
       disconnectSocket();
       void clearSessionOnUnauthorizedSocket();
     }
