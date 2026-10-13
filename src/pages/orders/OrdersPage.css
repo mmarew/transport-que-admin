@@ -421,6 +421,23 @@
   color: #dc2626;
 }
 
+.order-card-action-btn:disabled,
+.order-card-action-btn--disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+.order-card-action-btn:disabled:hover,
+.order-card-action-btn--disabled:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  transform: none;
+}
+
 .order-card-action-btn--bids {
   width: auto;
   padding: 0 0.55rem;
@@ -1425,6 +1442,24 @@
   border-color: #fca5a5;
   color: #dc2626;
   transform: translateY(-1px);
+}
+
+.orders-action-btn:disabled,
+.orders-action-btn--disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  transform: none;
+}
+
+.orders-action-btn:disabled:hover,
+.orders-action-btn--disabled:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  transform: none;
 }
 
 .orders-btn-status {
