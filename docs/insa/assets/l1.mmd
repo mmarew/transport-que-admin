@@ -1,0 +1,17 @@
+flowchart TB
+    P1["1.1 Sign-in and registration<br/>phone + OTP, httpOnly cookie session"]
+    P2["1.2 Loading-place lifecycle<br/>create, profile, approve, members"]
+    P3["1.3 Queue operations<br/>check-in, dispatch, override, remove, entry history"]
+    P4["1.4 Orders and bidding<br/>shipper requests, batches, driver bids, accept"]
+    P5["1.5 Realtime synchronization<br/>queue:subscribe, event handling, cache invalidation"]
+    P6["1.6 Reporting and analytics<br/>KPIs, charts, org reports"]
+    P7["1.7 Settings and compliance<br/>theme, language, INSA security checklist"]
+    DATA[("Dynamics Backend<br/>REST + Socket.IO")]
+    P1 --> DATA
+    P2 --> DATA
+    P3 --> DATA
+    P4 --> DATA
+    P6 --> DATA
+    P5 -.-> P3
+    P5 -.-> P4
+    P7 -.-> DATA
