@@ -1,0 +1,37 @@
+INSA — Add Asset (Web Application) submission checklist
+Asset: Dynamics Queue Admin — INSA Secure Website Management Standard, 2014 EC
+
+=== General Asset Information ===
+- Enter asset name: Dynamics Queue Admin
+- Asset Type: Web Application
+- Asset Code: ASSET-DYN-QA-001        [confirm against the portal's numbering scheme]
+- Asset Version: 1.0.0
+- CPE (Optional): cpe:2.3:a:dynamicsroute:queue_admin_console:1.0.0:*:*:*:*:*:*:*
+- Asset Detail:
+  Dynamics Queue Admin is the dispatch-queue management console of the Dynamics
+  freight marketplace. It is a React single-page application served from
+  queue.dynamicsroute.tech that authenticates queue staff by phone + OTP (httpOnly
+  cookie session) and lets a loading place (Queue Organization) register and pass
+  platform approval, run a GPS-proven FIFO driver check-in queue with an immutable
+  audit trail, dispatch drivers, override and remove queue entries, view entry
+  history, bid on a shipper's freight on the shipper's behalf, manage members and
+  vehicle types, view queue reporting, and track its own INSA Secure Website
+  Management Standard compliance. It consumes the Dynamics backend REST + Socket.IO
+  API and does not store session tokens in the browser.
+
+=== Document Requirements (General Rules) ===
+- Only PDF and ZIP files are allowed.
+- If multiple required documents are combined into a single file, you may upload the same
+  file for each relevant input.
+- If you upload the same file for multiple inputs, you must ensure that all required
+  contents are included in that file.
+
+=== Document Upload Fields (map to files in docs/insa) ===
+- Requirements Documentation (SRS) — Required      -> SRS.pdf
+- System & Architecture Design Document (SDD) — Required -> SDD.pdf
+- Technical Specifications (TDD / LLD) — Required  -> TDD_LLD.pdf
+- User Documentation (User Guide) — Required       -> UserGuide.pdf
+- Security Documentation — Optional                -> INSA_Security_Submission.pdf
+
+A combined ZIP of all five PDFs is provided as DynamicsQueueAdmin-1.0.0-INSA.zip for the
+"upload the same file for each relevant input" case.

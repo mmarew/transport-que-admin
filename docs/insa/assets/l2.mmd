@@ -1,0 +1,36 @@
+flowchart TB
+    subgraph Presentation["Presentation Layer"]
+        A1["Pages and components<br/>queue board, orders, orgs, reports, settings, security"]
+        A2["Hand-written CSS<br/>index.css design tokens + co-located stylesheets"]
+    end
+    subgraph Application["Application Layer"]
+        B1["Routing and guards<br/>AppRoutes, ProtectedRoute, RoleGuard"]
+        B2["Auth context and hooks<br/>AuthContext, useAuth, useOtpVerification"]
+        B3["Composed hooks and forms<br/>useQueueSocket, useOrgList, RHF + zod"]
+    end
+    subgraph State["State and Data Layer"]
+        C1["RTK Query store<br/>base query with reauth (401 -> logout)"]
+        C2["Slices<br/>authSlice, queueSlice, zustand queueAdminStore"]
+        C3["Socket.IO client<br/>queue:subscribe, debounced invalidation"]
+        C4["Legacy axios services"]
+    end
+    subgraph Contracts["API Contract Layer"]
+        D1["Endpoint modules<br/>auth, organizations, driver queue, shipper requests, vehicles"]
+    end
+    subgraph External["External Systems"]
+        E1["Dynamics backend API<br/>REST /api"]
+        E2["Dynamics backend<br/>Socket.IO"]
+        E3["OpenStreetMap<br/>tiles, Nominatim, OSRM"]
+    end
+    A1 --> B1
+    A1 --> B2
+    A1 --> B3
+    B1 --> C1
+    B2 --> C2
+    B3 --> C3
+    C1 --> D1
+    C2 --> D1
+    C4 --> D1
+    D1 --> E1
+    C3 --> E2
+    B3 -.-> E3
