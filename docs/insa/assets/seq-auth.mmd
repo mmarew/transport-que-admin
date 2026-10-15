@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor U as Queue Org Admin
+    participant C as Console (SPA)
+    participant B as Backend API (transportBackEndNative)
+    participant DB as Database
+
+    Note over U,B: Registration (first-time user), role 11
+    U->>C: Enter full name, phone, email
+    C->>B: POST /api/user/createUser (role 11, status)
+    B->>DB: Persist pending account
+    B-->>C: 200 account created
+
+    Note over U,B: Sign-in by phone + OTP
+    U->>C: Enter phone number
+    C->>B: POST /api/user/loginUser (no roleId)
+    B->>DB: Resolve account role, issue OTP
+    B-->>U: SMS OTP (out of band)
+    B-->>C: 200 OTP dispatched
+    U->>C: Enter six-digit OTP
+    C->>B: POST /api/user/verifyUserByOTP (no roleId)
+    B->>DB: Validate OTP, open session
+    B-->>C: Set-Cookie: httpOnly, SameSite (JWT) + userData
+    Note over C: Persist only non-secret userData<br/>(localStorage["queueadmin:user"])
+
+    Note over U,B: Authenticated request
+    U->>C: Open queue board
+    C->>B: GET /api/queue/status (credentials: include)
+    B->>DB: Read queue snapshot
+    B-->>C: Entries grouped by vehicle type
+    C-->>U: Render FIFO board
+
+    Note over U,B: Session expiry
+    B-->>C: 401 Unauthorized
+    C-->>U: Global logout, return to sign-in

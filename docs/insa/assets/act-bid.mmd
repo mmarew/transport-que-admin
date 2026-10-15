@@ -1,0 +1,15 @@
+flowchart TD
+    START([Shipper request exists for the organisation]) --> OPEN["Open order in Orders view"]
+    OPEN --> TOGGLE{"Bidding approved<br/>for this order?<br/>(per order, not per batch)"}
+    TOGGLE -- No --> APPROVE["Approve bidding<br/>POST /api/queue/bidding/approve<br/>{ approved: true }"]
+    TOGGLE -- Yes --> BIDS["Fetch ranked driver bids<br/>GET /api/queue/bidding/order/:id/bids"]
+    APPROVE --> BIDS
+    BIDS --> NORMALIZE["Normalize heterogeneous payloads<br/>into single UI shape"]
+    NORMALIZE --> TABLE["Render cheapest-first<br/>with order summary card"]
+    TABLE --> FILTER{"Filter / refresh<br/>bids?"}
+    FILTER -- Yes --> BIDS
+    FILTER -- No --> DECIDE{"Close or keep<br/>bidding open?"}
+    DECIDE -- Keep open --> TABLE
+    DECIDE -- Close --> CLOSE["Close bidding<br/>POST /api/queue/bidding/approve<br/>{ approved: false }"]
+    CLOSE --> NOTE["Backend enforces permission;<br/>console holds no independent authority"]
+    NOTE --> END([Bidding gate closed])

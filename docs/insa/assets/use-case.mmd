@@ -1,0 +1,40 @@
+flowchart LR
+    ACT["Queue Org Admin<br/>(backend role 11)"]
+    DISP["Dispatcher<br/>(backend role 12)"]
+    ADMIN["Backend administrator<br/>(system of record owner)"]
+
+    subgraph CONSOLE["Dynamics Queue Admin console (queue.dynamicsroute.tech)"]
+        UC01(["UC-01 Register account"])
+        UC02(["UC-02 Sign in with phone + OTP"])
+        UC03(["UC-03 Set up / edit loading-place profile"])
+        UC04(["UC-04 Manage organisation members"])
+        UC05(["UC-05 Check a driver into the FIFO queue"])
+        UC06(["UC-06 Dispatch / override / remove a queue entry"])
+        UC07(["UC-07 Review entry history"])
+        UC08(["UC-08 Approve or close bidding for an order"])
+        UC09(["UC-09 Review driver bids"])
+        UC10(["UC-10 Create and manage shipper requests"])
+        UC11(["UC-11 View KPIs, charts and reports"])
+        UC12(["UC-12 Receive real-time queue events"])
+        UC13(["UC-13 Configure settings, profile and appearance"])
+        UC14(["UC-14 Review INSA security compliance"])
+    end
+
+    ACT --> UC02
+    ACT --> UC03
+    ACT --> UC04
+    ACT --> UC05
+    ACT --> UC06
+    ACT --> UC07
+    ACT --> UC08
+    ACT --> UC09
+    ACT --> UC10
+    ACT --> UC11
+    ACT --> UC12
+    ACT --> UC13
+    ACT --> UC14
+    DISP --> UC02
+    DISP --> UC05
+    DISP --> UC06
+    DISP --> UC07
+    ADMIN --> UC01

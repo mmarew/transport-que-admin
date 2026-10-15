@@ -267,6 +267,25 @@
         word-break: break-word;
       }
 
+      /* ---------- Figures ---------- */
+      figure {
+        margin: 0 0 5mm;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      figure img {
+        width: 100%;
+        border: 0.4pt solid var(--line);
+        background: #fff;
+        display: block;
+      }
+      figcaption {
+        font-size: 8.4pt;
+        color: var(--muted);
+        margin-top: 1.6mm;
+        text-align: center;
+      }
+
       .pagebreak {
         page-break-before: always;
         break-before: page;
@@ -328,7 +347,7 @@
           <td>
             This web console only. The Dynamics backend, the driver mobile application, the shipper
             application and the operations/administrator dashboards are separate systems; their
-            interfaces to this console are specified in §5 and §6.
+            interfaces to this console are specified in §5 and §7.
           </td>
         </tr>
         <tr>
@@ -342,23 +361,31 @@
         </tr>
         <tr>
           <td>Submitting entity</td>
-          <td class="fill">TBD</td>
+          <td>Dynamics Transport</td>
         </tr>
         <tr>
           <td>Contact person</td>
-          <td class="fill">TBD</td>
+          <td>Marew Masresha, General Manager &mdash; <code>mmarew@gmail.com</code>, <code>0983222221</code></td>
         </tr>
         <tr>
           <td>Prepared by</td>
-          <td class="fill">TBD</td>
+          <td>Marew Masresha, General Manager</td>
         </tr>
         <tr>
           <td>Reviewed by</td>
-          <td class="fill">TBD</td>
+          <td>Marew Masresha, General Manager</td>
+        </tr>
+        <tr>
+          <td>Approved by</td>
+          <td>Marew Masresha, General Manager</td>
+        </tr>
+        <tr>
+          <td>Date of preparation</td>
+          <td>15 October 2026</td>
         </tr>
         <tr>
           <td>Date of submission</td>
-          <td class="fill">TBD</td>
+          <td>15 October 2026</td>
         </tr>
       </table>
 
@@ -369,10 +396,9 @@
           Every requirement listed here is present in the shipped web application; no
           forward-looking features are specified. Where a capability is deliberately absent or
           dependent on an unimplemented backend service, that is stated honestly in the requirement
-          or its note (§7.5). Fields shown in <span class="fill">amber</span> are administrative
-          placeholders that the submitting entity completes before submission. Each requirement
-          carries a <span class="src">Source:</span> line pointing at the repository file that
-          implements it.
+          or its note (§8.5). Administrative fields (submitting entity, contact person, approval and
+          dates) are completed by the submitting entity. Each requirement carries a
+          <span class="src">Source:</span> line pointing at the repository file that implements it.
         </p>
       </div>
     </section>
@@ -403,15 +429,27 @@
         </tr>
         <tr>
           <td>6</td>
-          <td>Data requirements</td>
+          <td>Analysis models</td>
         </tr>
         <tr>
           <td>7</td>
-          <td>Business rules and status model</td>
+          <td>Data requirements</td>
         </tr>
         <tr>
           <td>8</td>
+          <td>Business rules and status model</td>
+        </tr>
+        <tr>
+          <td>9</td>
           <td>Requirements traceability and document control</td>
+        </tr>
+        <tr>
+          <td>A</td>
+          <td>Appendix A — Requirement identifier index</td>
+        </tr>
+        <tr>
+          <td>B</td>
+          <td>Appendix B — Revision history</td>
         </tr>
       </table>
 
@@ -419,7 +457,8 @@
       <p>
         §3 contains the numbered functional requirements (prefix <code>FR-</code>), grouped by
         application area, each with a priority and a <em>Source</em> citation to the file that
-        implements it. §4 contains the non-functional requirements (<code>NFR-</code>). §7 defines
+        implements it. §4 contains the non-functional requirements (<code>NFR-</code>). §6 presents
+        the analysis models — the system use-case model and sequence and activity diagrams. §8 defines
         the queue, bidding and status business rules that most functional requirements refer to, and
         states plainly which decisions are made by the console and which are enforced by the backend
         (<code>transportBackEndNative</code>) as the system of record. Requirement identifiers are
@@ -432,7 +471,7 @@
           Dynamics Queue Admin is a client of the Dynamics backend. Authentication state, queue
           ordering, geofence decisions, bidding gate state, bid ranking and offer acceptance are
           <strong>authoritative on the server</strong>. The console renders that state and issues
-          requests; it holds no independent authority over marketplace business data (§7.4).
+          requests; it holds no independent authority over marketplace business data (§8.4).
         </p>
       </div>
     </section>
@@ -451,7 +490,91 @@
         Standard (Version 1.0, 2014 EC).
       </p>
 
-      <h3>1.2 Scope</h3>
+      <h3>1.2 Document conventions</h3>
+      <ul>
+        <li>
+          <strong>Requirement identifiers.</strong> Functional requirements are identified
+          <code>FR-&lt;AREA&gt;-NN</code> and non-functional requirements <code>NFR-&lt;AREA&gt;-NN</code>
+          (for example <code>FR-QUE-09</code>, <code>NFR-SEC-06</code>). Identifiers are stable and
+          are not reused when a requirement is withdrawn.
+        </li>
+        <li>
+          <strong>Priority tags.</strong> <span class="tag done">M</span> denotes a <em>must-have</em>
+          requirement (the console is not releasable without it) and
+          <span class="tag open">S</span> a <em>should-have</em> requirement. Priority is assigned to
+          every requirement individually and is not inherited by groups.
+        </li>
+        <li>
+          <strong>Obligation keywords.</strong> "shall" states a binding requirement, "should" a
+          recommendation and "may" an option. All requirements in §3 and §4 are stated with "shall".
+        </li>
+        <li>
+          <strong>Source citations.</strong> Each requirement carries a
+          <span class="src">Source:</span> line naming the repository file (and, where useful, the
+          line) that implements it, giving a requirement-to-code link.
+        </li>
+        <li>
+          <strong>As-built meaning.</strong> "implemented" means present in the submitted release
+          1.0.0; no forward-looking feature is specified. "The backend" always means
+          <code>transportBackEndNative</code>, the system of record; "the console" means this
+          application.
+        </li>
+        <li>
+          <strong>Models.</strong> Diagrams in §6 are authored as Mermaid sources under
+          <code>docs/insa/assets/</code> and numbered <em>Figure 6.x</em>; each model is traceable to
+          the requirement families it elaborates.
+        </li>
+        <li>
+          <strong>Typographic conventions.</strong> <code>Monospace</code> marks identifiers, paths
+          and values. Amber <span class="fill">highlighted</span> text marks an honest limitation or
+          a server/hosting-owned control rather than a defect.
+        </li>
+      </ul>
+
+      <h3>1.3 Intended audience and reading suggestions</h3>
+      <p>
+        This document is written for the stakeholders of the INSA website review of Dynamics Queue
+        Admin 1.0.0 and for the parties who maintain the console. The table below suggests a reading
+        order by audience.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Reader</th>
+            <th>Interest</th>
+            <th>Suggested reading</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>INSA / security reviewer</td>
+            <td>Assess the console against the Secure Website Management Standard.</td>
+            <td>§1, §2, §4 (NFR-SEC), §7, §8, §9</td>
+          </tr>
+          <tr>
+            <td>Business owner / management</td>
+            <td>Confirm scope, obligations and approval.</td>
+            <td>§1, §2, §9.3</td>
+          </tr>
+          <tr>
+            <td>Developer / maintainer</td>
+            <td>Understand required behaviour and how it is realized.</td>
+            <td>§3, §6, §7, §8</td>
+          </tr>
+          <tr>
+            <td>Tester / QA</td>
+            <td>Derive verification from unambiguous requirements.</td>
+            <td>§3, §4, §9.2</td>
+          </tr>
+          <tr>
+            <td>Operator (Queue Org Admin / Dispatcher)</td>
+            <td>Confirm the console matches daily operations.</td>
+            <td>§2, §3, §8</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>1.4 Scope</h3>
       <p>
         Dynamics Queue Admin provides three jobs: (a) <strong>loading-place management</strong> —
         creating and administering a Queue Organization profile, its coordinates and optional
@@ -470,10 +593,10 @@
         and administrator dashboards. These are separate systems with separate requirements
         documents. All business logic of record — queue ordering, the check-in geofence, the bidding
         gate, journey status and offer acceptance — is held and enforced by the backend; this
-        console is a client of that record and holds no authority over it (§7.4).
+        console is a client of that record and holds no authority over it (§8.4).
       </p>
 
-      <h3>1.3 Definitions and acronyms</h3>
+      <h3>1.5 Definitions and acronyms</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -594,7 +717,7 @@
         </tbody>
       </table>
 
-      <h3>1.4 References</h3>
+      <h3>1.6 References</h3>
       <ul>
         <li>
           <code>src/utils/constant.ts</code> — single source of truth for REST endpoint paths.
@@ -621,19 +744,21 @@
           <code>package.json</code>, <code>vite.config.ts</code>, <code>.env.example</code> — build
           and environment model.
         </li>
-        <li><code>docs/queue-admin-gap-analysis.md</code> — known gaps referenced in §7.5.</li>
+        <li><code>docs/queue-admin-gap-analysis.md</code> — known gaps referenced in §8.5.</li>
       </ul>
 
-      <h3>1.5 Overview</h3>
+      <h3>1.7 Overview</h3>
       <p>
         §2 describes the product perspective, user classes, operating environment, constraints and
         dependencies. §3 enumerates the functional requirements in eleven families (FR-AUTH, FR-REG,
         FR-ORG, FR-MEM, FR-QUE, FR-BID, FR-ORD, FR-RPT, FR-NOTIF, FR-SET, FR-SECP). §4 enumerates
         non-functional requirements in seven families (NFR-SEC, NFR-PERF, NFR-USA, NFR-COMP,
         NFR-REL, NFR-MNT, NFR-PRIV). §5 specifies external interfaces (user, software, hardware,
-        communications). §6 specifies data requirements. §7 states the business rules, the queue and
-        journey status models, the client/backend authority boundary and the declared limitations.
-        §8 gives requirements traceability and document control.
+        communications). §6 presents the analysis models (system use case, sequence and activity).
+        §7 specifies data requirements. §8 states the business rules, the queue and journey status
+        models, the client/backend authority boundary and the declared limitations. §9 gives
+        requirements traceability and document control, followed by Appendix A (requirement
+        identifier index) and Appendix B (revision history).
       </p>
     </section>
 
@@ -653,7 +778,91 @@
         <code>queue.dynamicsroute.tech</code>.
       </p>
 
-      <h3>2.2 User classes and characteristics</h3>
+      <h3>2.2 Product features and functions</h3>
+      <p>
+        The console provides the following major feature groups. Each is elaborated as numbered
+        requirements in §3 and modelled in §6; the letters in brackets are the requirement prefixes.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Feature group</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>F1</td>
+            <td>Authentication and session (<code>FR-AUTH</code>)</td>
+            <td>
+              Registration with backend role 11, phone-number sign-in with OTP for roles 11 and 12,
+              httpOnly-cookie session, global 401 logout, resend-with-countdown.
+            </td>
+          </tr>
+          <tr>
+            <td>F2</td>
+            <td>Registration and onboarding (<code>FR-REG</code>)</td>
+            <td>Account creation, organization setup and first-run onboarding.</td>
+          </tr>
+          <tr>
+            <td>F3</td>
+            <td>Loading-place management (<code>FR-ORG</code>)</td>
+            <td>
+              Create and edit the Queue Organization profile (coordinates, optional check-in radius,
+              type), approval status and dashboard.
+            </td>
+          </tr>
+          <tr>
+            <td>F4</td>
+            <td>Membership management (<code>FR-MEM</code>)</td>
+            <td>Invite, list, change role and remove members (roles 11 and 12).</td>
+          </tr>
+          <tr>
+            <td>F5</td>
+            <td>FIFO driver queue (<code>FR-QUE</code>)</td>
+            <td>
+              Manual/GPS check-in, server-issued queue number, dispatch, override, remove with reason,
+              entry history, per-vehicle-type ordering.
+            </td>
+          </tr>
+          <tr>
+            <td>F6</td>
+            <td>Bidding on the shipper's behalf (<code>FR-BID</code>)</td>
+            <td>
+              Approve/close bidding per order, review ranked driver bids, accept on the shipper's
+              behalf using explicit identifiers.
+            </td>
+          </tr>
+          <tr>
+            <td>F7</td>
+            <td>Orders and shipper requests (<code>FR-ORD</code>)</td>
+            <td>Create, view and manage shipper requests and their journey status.</td>
+          </tr>
+          <tr>
+            <td>F8</td>
+            <td>Reporting (<code>FR-RPT</code>)</td>
+            <td>Operational KPIs, queue analytics and organization reports.</td>
+          </tr>
+          <tr>
+            <td>F9</td>
+            <td>Real-time and notifications (<code>FR-NOTIF</code>)</td>
+            <td>Socket.IO queue and organization events, in-app notifications and cache invalidation.</td>
+          </tr>
+          <tr>
+            <td>F10</td>
+            <td>Settings, profile and appearance (<code>FR-SET</code>)</td>
+            <td>Organization settings, profile, theme (dark mode), localization (English/Amharic).</td>
+          </tr>
+          <tr>
+            <td>F11</td>
+            <td>Security compliance dashboard (<code>FR-SECP</code>)</td>
+            <td>In-console view of the INSA standard content and the security checklist.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.3 User classes and characteristics</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -706,7 +915,7 @@
         backend re-checks role and membership on every request.
       </p>
 
-      <h3>2.3 Operating environment</h3>
+      <h3>2.4 Operating environment</h3>
       <ul>
         <li>
           <strong>Runtime:</strong> a modern evergreen browser executing a Vite-built React 19 SPA
@@ -728,12 +937,12 @@
         </li>
       </ul>
 
-      <h3>2.4 Design and implementation constraints</h3>
+      <h3>2.5 Design and implementation constraints</h3>
       <ul>
         <li>
           <strong>Backend authority:</strong> the console must not compute or invent authoritative
           identifiers (queue numbers, bid ids, membership ids); it must use values returned by the
-          backend and send them back explicitly (see FR-BID and §7.4).
+          backend and send them back explicitly (see FR-BID and §8.4).
         </li>
         <li>
           <strong>Cookie session:</strong> a JWT must not be placed in JavaScript-accessible
@@ -754,7 +963,32 @@
         </li>
       </ul>
 
-      <h3>2.5 Assumptions and dependencies</h3>
+      <h3>2.6 User documentation</h3>
+      <p>
+        The following user-facing documentation is delivered with, or generated from, the console:
+      </p>
+      <ul>
+        <li>
+          <strong>End User Guide</strong> — a task-oriented guide (<code>docs/insa/UserGuide.html</code>,
+          delivered as <code>UserGuide.pdf</code>) covering sign-in, loading-place setup, membership,
+          the FIFO queue, bidding, orders, reporting, settings and the security dashboard.
+        </li>
+        <li>
+          <strong>Contextual in-app help</strong> — labels, tooltips, inline validation messages
+          (driven by <code>zod</code> schemas) and empty-state guidance within the console itself.
+        </li>
+        <li>
+          <strong>Security compliance view</strong> — the INSA standard content and the security
+          checklist presented in-console (<code>src/data/insaStandard.ts</code>), so operators can
+          read the obligations they are expected to meet.
+        </li>
+      </ul>
+      <p>
+        Delivered formats are HTML (for review) and PDF (for submission). There is no printed manual;
+        the guide is maintained in the repository alongside this specification.
+      </p>
+
+      <h3>2.7 Assumptions and dependencies</h3>
       <ul>
         <li>The backend enforces authentication, role and membership on every request.</li>
         <li>
@@ -775,11 +1009,11 @@
         </li>
         <li>
           The hosting environment terminates TLS and, where the INSA standard requires it, applies
-          HTTP security headers (no CSP is configured in this repository; see §7.5).
+          HTTP security headers (no CSP is configured in this repository; see §8.5).
         </li>
       </ul>
 
-      <h3>2.6 Stakeholders and external actors</h3>
+      <h3>2.8 Stakeholders and external actors</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -2037,7 +2271,7 @@
             <td><code>FR-RPT-05</code></td>
             <td>
               Report metrics shall be computed client-side from the fetched organization, queue and
-              shipper-request lists; this is a declared limitation for scale (§7.5).
+              shipper-request lists; this is a declared limitation for scale (§8.5).
               <span class="src">Source: <code>src/hooks/useReportsMetrics.ts</code></span>
             </td>
             <td>M</td>
@@ -2477,7 +2711,7 @@
             <td>
               <span class="fill">Honest limitation:</span> this repository does not configure a
               Content Security Policy or other HTTP security headers; header hardening is a
-              server-level responsibility recorded in §7.5.
+              server-level responsibility recorded in §8.5.
               <span class="src"
                 >Source: <code>index.html</code> (no meta CSP),
                 <code>docs/queue-admin-gap-analysis.md</code></span
@@ -2754,7 +2988,7 @@
             <td>
               <span class="fill">Honest limitation:</span> the console does not declare a React
               error boundary; an uncaught render error is not contained in-app. This is recorded in
-              §7.5 as a known gap.
+              §8.5 as a known gap.
               <span class="src">Source: <code>src/main.tsx</code>, <code>src/App.tsx</code></span>
             </td>
             <td>S</td>
@@ -3215,11 +3449,253 @@
       </ul>
     </section>
 
-    <!-- ============ 6. DATA REQUIREMENTS ============ -->
+    <!-- ============ 6. ANALYSIS MODELS ============ -->
     <section>
-      <h1>6. Data requirements</h1>
+      <h1>6. Analysis models</h1>
+      <p>
+        This section presents the analysis models used to develop the specific requirements of §3 and
+        §4: a system use-case model (§6.1), sequence diagrams (§6.2) and activity diagrams (§6.3).
+        Each model carries a narrative description and is traceable to the requirement families it
+        elaborates (§6.4). The diagrams describe the console's own behaviour; the backend remains the
+        system of record and enforces every business rule of record (§8.4).
+      </p>
 
-      <h3>6.1 Core entities and key attributes</h3>
+      <h3>6.1 System use case model</h3>
+      <p>
+        The system use-case model shows the actors and the use cases the console delivers. The
+        <em>Queue Org Admin</em> (backend role 11) and <em>Queue Dispatcher</em> (role 12) are the
+        primary actors; <em>Admin</em> (3) and <em>Super Admin</em> (6) are secondary actors who
+        approve and oversee loading places. The backend REST API and Socket.IO channel, and the
+        optional Photon geocoder, are supporting systems rather than human actors.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Use case</th>
+            <th>Primary actor</th>
+            <th>Requirement family</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>UC-01</code></td>
+            <td>Register account</td>
+            <td>Queue Org Admin</td>
+            <td><code>FR-AUTH</code>, <code>FR-REG</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-02</code></td>
+            <td>Sign in with phone + OTP</td>
+            <td>Queue Org Admin, Dispatcher</td>
+            <td><code>FR-AUTH</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-03</code></td>
+            <td>Set up / edit loading-place profile</td>
+            <td>Queue Org Admin</td>
+            <td><code>FR-REG</code>, <code>FR-ORG</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-04</code></td>
+            <td>Manage organization members</td>
+            <td>Queue Org Admin</td>
+            <td><code>FR-MEM</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-05</code></td>
+            <td>Check a driver into the FIFO queue</td>
+            <td>Queue Org Admin, Dispatcher</td>
+            <td><code>FR-QUE</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-06</code></td>
+            <td>Dispatch / override / remove a queue entry</td>
+            <td>Queue Dispatcher</td>
+            <td><code>FR-QUE</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-07</code></td>
+            <td>Review entry history</td>
+            <td>Queue Dispatcher</td>
+            <td><code>FR-QUE</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-08</code></td>
+            <td>Approve or close bidding for an order</td>
+            <td>Queue Org Admin</td>
+            <td><code>FR-BID</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-09</code></td>
+            <td>Review driver bids</td>
+            <td>Queue Org Admin</td>
+            <td><code>FR-BID</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-10</code></td>
+            <td>Create and manage shipper requests</td>
+            <td>Queue Org Admin</td>
+            <td><code>FR-ORD</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-11</code></td>
+            <td>View KPIs, charts and reports</td>
+            <td>Queue Org Admin</td>
+            <td><code>FR-RPT</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-12</code></td>
+            <td>Receive real-time queue events</td>
+            <td>Queue Org Admin, Dispatcher</td>
+            <td><code>FR-NOTIF</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-13</code></td>
+            <td>Configure settings, profile and appearance</td>
+            <td>Queue Org Admin, Dispatcher</td>
+            <td><code>FR-SET</code></td>
+          </tr>
+          <tr>
+            <td><code>UC-14</code></td>
+            <td>Review INSA security compliance</td>
+            <td>Queue Org Admin</td>
+            <td><code>FR-SECP</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <figure>
+        <img
+          src="assets/use-case.svg"
+          alt="System use case diagram: Queue Org Admin and Dispatcher actors and the fourteen console use cases"
+        />
+        <figcaption>
+          Figure 6.1 — System use case model. Actors and the fourteen use cases of the console; the
+          backend REST API and Socket.IO channel are the supporting systems (per
+          <code>assets/use-case.mmd</code>).
+        </figcaption>
+      </figure>
+
+      <h3>6.2 Sequence diagrams</h3>
+      <p>
+        <strong>6.2.1 Registration, sign-in and session.</strong> A first-time Queue Org Admin is
+        registered by calling <code>POST /api/user/createUser</code> with backend role 11. A returning
+        user signs in with a phone number via <code>POST /api/user/loginUser</code>, which dispatches
+        an OTP; the OTP is verified with <code>POST /api/user/verifyUserByOTP</code>. Neither the
+        login nor the verify call sends a <code>roleId</code>, so the backend resolves the account's
+        own role and a role-12 dispatcher can sign in. On success the backend opens an httpOnly
+        SameSite session cookie; the console persists only the non-secret <code>userData</code>
+        profile. Any <code>401</code> later triggers a single global logout (FR-AUTH, NFR-SEC).
+      </p>
+      <figure>
+        <img
+          src="assets/seq-auth.svg"
+          alt="Sequence diagram: registration, phone plus OTP sign-in, session cookie, authenticated request and 401 logout"
+        />
+        <figcaption>
+          Figure 6.2 — Sequence: registration, OTP sign-in, cookie session and expiry (per
+          <code>assets/seq-auth.mmd</code>).
+        </figcaption>
+      </figure>
+      <p>
+        <strong>6.2.2 Queue check-in and real-time synchronization.</strong> The operator searches the
+        driver directory (<code>GET /api/queue/driverDirectory</code>), selects a driver and vehicle,
+        the input is validated with a <code>zod</code> schema, and the check-in is sent with explicit
+        identifiers to <code>POST /api/queue/manualCheckin</code>. The backend returns the
+        server-issued <code>queueNumber</code> that fixes the FIFO position; the console then
+        refetches the snapshot and, on a Socket.IO event, invalidates and refetches the affected
+        views. Dispatch, override and removal are sent as status actions (FR-QUE, FR-NOTIF).
+      </p>
+      <figure>
+        <img
+          src="assets/seq-queue.svg"
+          alt="Sequence diagram: manual check-in assigning a queue number, snapshot refetch, realtime event and queue actions"
+        />
+        <figcaption>
+          Figure 6.3 — Sequence: FIFO check-in, snapshot refresh and realtime invalidation (per
+          <code>assets/seq-queue.mmd</code>).
+        </figcaption>
+      </figure>
+
+      <h3>6.3 Activity diagrams</h3>
+      <p>
+        <strong>6.3.1 FIFO queue lifecycle.</strong> The queue activity begins with a snapshot fetch
+        for a date. Manual check-in is offered only when the organization is approved and the queue is
+        enabled; the backend assigns the authoritative FIFO position and the console preserves that
+        server order rather than reordering locally. Operator actions move an entry to dispatched,
+        overridden or removed, each writing an audit record (FR-QUE).
+      </p>
+      <figure>
+        <img
+          src="assets/act-queue.svg"
+          alt="Activity diagram: fetch snapshot, approval gate, check-in, server queue number, dispatch, override, remove and history"
+        />
+        <figcaption>
+          Figure 6.4 — Activity: FIFO queue lifecycle and operator actions (per
+          <code>assets/act-queue.mmd</code>).
+        </figcaption>
+      </figure>
+      <p>
+        <strong>6.3.2 Bidding gate.</strong> For a shipper request, the bidding gate is applied
+        <em>per order</em>: the operator approves or closes bidding via
+        <code>POST /api/queue/bidding/approve</code>, reviews the authoritative bids
+        (<code>GET /api/queue/bidding/order/:id/bids</code>) ranked cheapest-first, and the backend
+        independently enforces the approval permission. The console holds no independent authority
+        over the gate (FR-BID).
+      </p>
+      <figure>
+        <img
+          src="assets/act-bid.svg"
+          alt="Activity diagram: approve bidding gate, fetch ranked bids, normalize payloads and close bidding"
+        />
+        <figcaption>
+          Figure 6.5 — Activity: bidding approval and bid review (per
+          <code>assets/act-bid.mmd</code>).
+        </figcaption>
+      </figure>
+
+      <h3>6.4 Model-to-requirement traceability</h3>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Elaborates requirement families</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Figure 6.1 — use case model</td>
+            <td>
+              <code>FR-AUTH</code>, <code>FR-REG</code>, <code>FR-ORG</code>, <code>FR-MEM</code>,
+              <code>FR-QUE</code>, <code>FR-BID</code>, <code>FR-ORD</code>, <code>FR-RPT</code>,
+              <code>FR-NOTIF</code>, <code>FR-SET</code>, <code>FR-SECP</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Figure 6.2 — registration / session sequence</td>
+            <td><code>FR-AUTH</code>, <code>NFR-SEC</code></td>
+          </tr>
+          <tr>
+            <td>Figure 6.3 — queue check-in sequence</td>
+            <td><code>FR-QUE</code>, <code>FR-NOTIF</code>, <code>NFR-PERF</code></td>
+          </tr>
+          <tr>
+            <td>Figure 6.4 — FIFO queue activity</td>
+            <td><code>FR-QUE</code></td>
+          </tr>
+          <tr>
+            <td>Figure 6.5 — bidding activity</td>
+            <td><code>FR-BID</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 7. DATA REQUIREMENTS ============ -->
+    <section>
+      <h1>7. Data requirements</h1>
+
+      <h3>7.1 Core entities and key attributes</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -3306,7 +3782,7 @@
         </tbody>
       </table>
 
-      <h3>6.2 Client state and storage</h3>
+      <h3>7.2 Client state and storage</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -3364,7 +3840,7 @@
         </tbody>
       </table>
 
-      <h3>6.3 Data flow</h3>
+      <h3>7.3 Data flow</h3>
       <p>
         UI actions invoke RTK Query hooks/mutations or legacy axios services. The base query
         resolves the API prefix from <code>VITE_API_BASE_URL</code>/<code>VITE_API_URL</code>
@@ -3376,7 +3852,7 @@
         storage.
       </p>
 
-      <h3>6.4 Data validation constraints</h3>
+      <h3>7.4 Data validation constraints</h3>
       <ul>
         <li>Phone numbers are normalized to <code>+251</code> plus nine digits.</li>
         <li>Latitude is constrained to [-90, 90] and longitude to [-180, 180].</li>
@@ -3391,11 +3867,11 @@
       </ul>
     </section>
 
-    <!-- ============ 7. BUSINESS RULES AND STATUS MODEL ============ -->
+    <!-- ============ 8. BUSINESS RULES AND STATUS MODEL ============ -->
     <section>
-      <h1>7. Business rules and status model</h1>
+      <h1>8. Business rules and status model</h1>
 
-      <h3>7.1 Queue business rules</h3>
+      <h3>8.1 Queue business rules</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -3460,7 +3936,7 @@
         </tbody>
       </table>
 
-      <h3>7.2 Bidding business rules</h3>
+      <h3>8.2 Bidding business rules</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -3511,7 +3987,7 @@
         </tbody>
       </table>
 
-      <h3>7.3 Status models</h3>
+      <h3>8.3 Status models</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -3558,7 +4034,7 @@
         </tbody>
       </table>
 
-      <h3>7.4 Client authority boundary</h3>
+      <h3>8.4 Client authority boundary</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -3601,7 +4077,7 @@
         </tbody>
       </table>
 
-      <h3>7.5 Declared limitations</h3>
+      <h3>8.5 Declared limitations</h3>
       <p>
         The following are known, deliberate or deferred limitations of version 1.0.0, stated
         honestly for the reviewer. None of them is represented elsewhere in this document as a
@@ -3694,11 +4170,11 @@
       </table>
     </section>
 
-    <!-- ============ 8. TRACEABILITY AND DOCUMENT CONTROL ============ -->
+    <!-- ============ 9. TRACEABILITY AND DOCUMENT CONTROL ============ -->
     <section>
-      <h1>8. Requirements traceability and document control</h1>
+      <h1>9. Requirements traceability and document control</h1>
 
-      <h3>8.1 Requirement traceability</h3>
+      <h3>9.1 Requirement traceability</h3>
       <p>
         Each requirement family maps to implementing repository elements, and is elaborated by the
         companion SDD. The table below records the primary mapping.
@@ -3806,7 +4282,7 @@
         </tbody>
       </table>
 
-      <h3>8.2 Test evidence</h3>
+      <h3>9.2 Test evidence</h3>
       <p>
         An automated test suite covers the highest-risk logic: queue mutations, order mapping,
         journey-status mapping, phone formatting, the INSA standard content and the security
@@ -3815,7 +4291,7 @@
         requirement-to-code-to-test chain.
       </p>
 
-      <h3>8.3 Document control</h3>
+      <h3>9.3 Document control</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -3845,31 +4321,122 @@
             <td>INSA Secure Website Management Standard, Version 1.0, 2014 EC</td>
           </tr>
           <tr>
+            <td>Submitting entity</td>
+            <td>Dynamics Transport</td>
+          </tr>
+          <tr>
+            <td>Contact person</td>
+            <td>Marew Masresha, General Manager &mdash; <code>mmarew@gmail.com</code>, <code>0983222221</code></td>
+          </tr>
+          <tr>
             <td>Prepared by</td>
-            <td class="fill">TBD</td>
+            <td>Marew Masresha, General Manager</td>
           </tr>
           <tr>
             <td>Reviewed by</td>
-            <td class="fill">TBD</td>
+            <td>Marew Masresha, General Manager</td>
           </tr>
           <tr>
             <td>Approved by</td>
-            <td class="fill">TBD</td>
+            <td>Marew Masresha, General Manager</td>
+          </tr>
+          <tr>
+            <td>Date of preparation</td>
+            <td>15 October 2026</td>
           </tr>
           <tr>
             <td>Date of submission</td>
-            <td class="fill">TBD</td>
+            <td>15 October 2026</td>
           </tr>
         </tbody>
       </table>
 
-      <div class="box warn">
-        <span class="t">Placeholders</span>
+      <div class="box ok">
+        <span class="t">Approval</span>
         <p>
-          <span class="fill">TBD</span> is used only where the value is strictly unknown (submitting
-          entity, contact, prepared/reviewed/approved by, and dates). All technical details in this
-          document reflect the actual repository state of <code>queadmin-frontend</code> version
-          1.0.0.
+          The security requirements recorded in this specification are approved by the organization's
+          top management (Marew Masresha, General Manager), in line with §2.1-H of the INSA Secure
+          Website Management Standard. All technical details in this document reflect the actual
+          repository state of <code>queadmin-frontend</code> version 1.0.0.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ APPENDIX A ============ -->
+    <section>
+      <h1>Appendix A — Requirement identifier index</h1>
+      <p>
+        This index lists every requirement family, its prefix, its count and the section in which it
+        is specified, so a reviewer can locate and count the requirements without reading the whole
+        document.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Prefix</th>
+            <th>Family</th>
+            <th>Count</th>
+            <th>Specified in</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>FR-AUTH</code></td><td>Authentication, session and registration</td><td>15</td><td>§3.1</td></tr>
+          <tr><td><code>FR-REG</code></td><td>Registration and onboarding</td><td>8</td><td>§3.2</td></tr>
+          <tr><td><code>FR-ORG</code></td><td>Loading-place (organization) management</td><td>12</td><td>§3.3</td></tr>
+          <tr><td><code>FR-MEM</code></td><td>Membership management</td><td>8</td><td>§3.4</td></tr>
+          <tr><td><code>FR-QUE</code></td><td>FIFO driver queue</td><td>20</td><td>§3.5</td></tr>
+          <tr><td><code>FR-BID</code></td><td>Bidding on the shipper's behalf</td><td>12</td><td>§3.6</td></tr>
+          <tr><td><code>FR-ORD</code></td><td>Orders and shipper requests</td><td>8</td><td>§3.7</td></tr>
+          <tr><td><code>FR-RPT</code></td><td>Reporting</td><td>6</td><td>§3.8</td></tr>
+          <tr><td><code>FR-NOTIF</code></td><td>Real-time and notifications</td><td>10</td><td>§3.9</td></tr>
+          <tr><td><code>FR-SET</code></td><td>Settings, profile and appearance</td><td>8</td><td>§3.10</td></tr>
+          <tr><td><code>FR-SECP</code></td><td>Security compliance dashboard</td><td>5</td><td>§3.11</td></tr>
+          <tr><td><code>NFR-SEC</code></td><td>Security</td><td>10</td><td>§4.1</td></tr>
+          <tr><td><code>NFR-PERF</code></td><td>Performance and efficiency</td><td>6</td><td>§4.2</td></tr>
+          <tr><td><code>NFR-USA</code></td><td>Usability and accessibility</td><td>6</td><td>§4.3</td></tr>
+          <tr><td><code>NFR-COMP</code></td><td>Compatibility and portability</td><td>5</td><td>§4.4</td></tr>
+          <tr><td><code>NFR-REL</code></td><td>Reliability and availability</td><td>5</td><td>§4.5</td></tr>
+          <tr><td><code>NFR-MNT</code></td><td>Maintainability</td><td>5</td><td>§4.6</td></tr>
+          <tr><td><code>NFR-PRIV</code></td><td>Privacy and data protection</td><td>5</td><td>§4.7</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Counts are indicative of the requirement identifiers used in this release; where a family
+        grows, new identifiers are appended and existing ones are never renumbered.
+      </p>
+    </section>
+
+    <!-- ============ APPENDIX B ============ -->
+    <section>
+      <h1>Appendix B — Revision history</h1>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Date</th>
+            <th>Author</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1.0.0</td>
+            <td>15 October 2026</td>
+            <td>Marew Masresha, General Manager</td>
+            <td>
+              Initial as-built specification of Dynamics Queue Admin 1.0.0, including functional and
+              non-functional requirements, data requirements, business rules, analysis models and
+              traceability, prepared for the INSA website review.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="box">
+        <span class="t">End of document</span>
+        <p>
+          This is the Software Requirements Specification (SRS-1.0.0) for Dynamics Queue Admin,
+          submitted by Dynamics Transport in support of the INSA Secure Website Management Standard
+          review.
         </p>
       </div>
     </section>

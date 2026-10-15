@@ -1,0 +1,25 @@
+flowchart TD
+    START([Queue session for a date]) --> FETCH["Fetch queue snapshot<br/>GET /api/queue/status"]
+    FETCH --> APPROVED{"Organisation<br/>approved and<br/>queue enabled?"}
+    APPROVED -- No --> BANNER["Show approval banner;<br/>check-in disabled"]
+    APPROVED -- Yes --> SEARCH["Search driver directory<br/>GET /api/queue/driverDirectory"]
+    SEARCH --> MERGE["Merge with current queue<br/>(avoid duplicates)"]
+    MERGE --> FORM["Enter driver, vehicle, position"]
+    FORM --> VALID{"zod validation<br/>passes?"}
+    VALID -- No --> FORM
+    VALID -- Yes --> CHECKIN["Manual check-in<br/>POST /api/queue/manualCheckin"]
+    CHECKIN --> QN["Backend assigns queueNumber<br/>(authoritative FIFO position)"]
+    QN --> BOARD["Order entries by queueNumber<br/>within vehicle type"]
+    BOARD --> ACT{"Operator action"}
+    ACT -- Dispatch --> DISPATCH["Mark dispatched"]
+    ACT -- Override --> OVERRIDE["Apply override / priority"]
+    ACT -- Remove --> REMOVE["Remove from queue"]
+    ACT -- Reorder --> NOOP["No local reorder;<br/>server order preserved"]
+    ACT -- Wait --> EVENT{"Realtime event<br/>received?"}
+    EVENT -- Yes --> REFETCH["Invalidate cache and refetch"]
+    EVENT -- No --> BOARD
+    REFETCH --> BOARD
+    DISPATCH --> HISTORY["Entry written to history"]
+    OVERRIDE --> HISTORY
+    REMOVE --> HISTORY
+    HISTORY --> END([Entry lifecycle closed])
