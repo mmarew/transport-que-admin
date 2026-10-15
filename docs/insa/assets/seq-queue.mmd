@@ -1,0 +1,31 @@
+sequenceDiagram
+    autonumber
+    actor U as Queue Org Admin
+    participant C as Console (SPA)
+    participant B as Backend API
+    participant S as Socket.IO channel
+
+    U->>C: Open Check-in modal
+    C->>B: GET /api/queue/driverDirectory (queue staff)
+    B-->>C: Active driver / vehicle assignments
+    C-->>U: Search list (merged with current queue)
+
+    U->>C: Select driver, vehicle, position
+    C->>C: Validate with zod schema
+    C->>B: POST /api/queue/manualCheckin (ids explicit)
+    B-->>C: Server-issued queueNumber
+    Note over C: FIFO position fixed by backend
+    C->>B: GET /api/queue/status (refetch snapshot)
+    B-->>C: Updated queue
+    C-->>U: Entry appears in FIFO order
+
+    Note over B,S: Realtime change from another operator or the driver app
+    B->>S: queue event
+    S-->>C: Event (credentials: include)
+    C->>B: Invalidate + refetch affected views
+    C-->>U: Board updates without manual refresh
+
+    U->>C: Dispatch / override / remove entry
+    C->>B: POST /api/queue/... (status action)
+    B-->>C: New entry status
+    C-->>U: Toast confirmation + refreshed board
