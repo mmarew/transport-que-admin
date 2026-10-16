@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dynamics Queue Admin — Technical Design Document / Low-Level Design</title>
+    <title>Dynamics Queue Admin: Technical Design Document / Low-Level Design</title>
     <style>
       /* ---------- Print-first design ---------- */
       @page {
@@ -284,19 +284,19 @@
       <div class="cover-rule"></div>
       <div class="cover-title">Dynamics Queue Admin</div>
       <div class="cover-sub">
-        Technical Design Document / Low-Level Design — dispatch-queue management console
+        Technical Design Document / Low-Level Design: dispatch-queue management console
         (<code>queadmin-frontend</code>, SPA), version 1.0.0
       </div>
 
       <table class="meta">
         <tr>
           <td>Document</td>
-          <td><strong>TDD/LLD-1.0.0</strong> — Technical Design Document / Low-Level Design</td>
+          <td><strong>TDD/LLD-1.0.0</strong>, Technical Design Document / Low-Level Design</td>
         </tr>
         <tr>
           <td>Application</td>
           <td>
-            Dynamics Queue Admin (<em>Queue Admin</em>) — dispatch-queue management console of the
+            Dynamics Queue Admin (<em>Queue Admin</em>), the dispatch-queue management console of the
             Dynamics freight marketplace
           </td>
         </tr>
@@ -340,7 +340,7 @@
         </tr>
         <tr>
           <td>Contact person</td>
-          <td>Marew Masresha, General Manager &mdash; <code>mmarew@gmail.com</code>, <code>0983222221</code></td>
+          <td>Marew Masresha, General Manager: <code>mmarew@gmail.com</code>, <code>0983222221</code></td>
         </tr>
         <tr>
           <td>Prepared by</td>
@@ -367,13 +367,13 @@
       <div class="box">
         <span class="t">As-built document</span>
         <p>
-          This document describes the low-level design of the submitted release of the Dynamics
-          Queue Admin console as implemented in <code>queadmin-frontend</code>. It is the technical
-          counterpart to the SRS and the companion SDD, and is prepared for INSA Secure Website
-          Management Standard review. Where behaviour is enforced by the backend service
-          (<code>transportBackEndNative</code>) it is stated explicitly, so reviewers can
-          distinguish client responsibility from backend authority. Every control named here
-          resolves to a concrete file and symbol in the release tree.
+          This document covers the low-level design of the submitted release of the Dynamics
+          Queue Admin console as implemented in <code>queadmin-frontend</code>. It sits alongside
+          the SRS and the companion SDD and was prepared for review under the INSA Secure Website
+          Management Standard. Where the backend service (<code>transportBackEndNative</code>)
+          enforces a behaviour, we say so explicitly, so reviewers can tell what the client is
+          responsible for and what the backend actually decides. Every control named here points
+          at a concrete file and symbol in the release tree.
         </p>
       </div>
     </section>
@@ -475,9 +475,9 @@
           of the <code>queadmin-frontend</code> SPA. Identifier strings such as
           <code>FR-QUEUE</code>, <code>FR-BID</code> and <code>NFR-SEC</code> refer to requirement
           families defined in the companion <code>docs/insa/SDD.html</code> (Section 12) and the
-          SRS. Controls <code>C1&ndash;C36</code> are introduced by Section 15. Requirement families
-          are referenced only where they exist in that companion set; solely cross-cutting or
-          build-time controls carry a dash (&mdash;) in the &ldquo;derived from&rdquo; column.
+          SRS. Controls <code>C1&ndash;C36</code> are introduced by Section 15. We only cite a
+          requirement family where it exists in that companion set; controls that are solely
+          cross-cutting or build-time carry a dash in the &ldquo;derived from&rdquo; column.
         </p>
       </div>
     </section>
@@ -488,49 +488,49 @@
 
       <h3>1.1 Purpose</h3>
       <p>
-        This Technical Design Document / Low-Level Design (TDD/LLD) specifies <em>how</em> the
-        Dynamics Queue Admin console is built, at a granularity sufficient for an independent
-        engineer to locate, understand and modify each behaviour. It complements the SRS (which
-        states <em>what</em> the system must do) and the SDD (which states the system's structure
-        and architectural decisions). Where the SDD names a component, this document names the file,
-        the symbol and the control that implements it.
+        This Technical Design Document / Low-Level Design (TDD/LLD) spells out <em>how</em> the
+        Dynamics Queue Admin console is built, down to the level where another engineer can open
+        the right file and change a behaviour without guessing. It sits next to the SRS (which
+        says <em>what</em> the system has to do) and the SDD (which says what the system looks
+        like and why). Where the SDD names a component, this document names the file, the symbol
+        and the control that implements it.
       </p>
 
       <h3>1.2 Scope</h3>
       <p>
-        The scope is the <code>queadmin-frontend</code> single-page application (SPA) as built and
-        submitted: the browser-side console used by queue organization administrators
-        (role&nbsp;11), queue dispatchers (role&nbsp;12), transport-company administrators
-        (role&nbsp;3) and transport-company staff (role&nbsp;6) to manage dispatch queues,
-        organizations, members, shipper requests, bids and reports. The backend service
-        <code>transportBackEndNative</code> is out of build scope but is referenced wherever it is
-        the authoritative enforcement point; those references are labelled <em>Server</em> or
-        <em>backend</em>.
+        Scope is the <code>queadmin-frontend</code> single-page application (SPA) as built and
+        submitted: the browser console that queue organization administrators (role&nbsp;11),
+        queue dispatchers (role&nbsp;12), transport-company administrators (role&nbsp;3) and
+        transport-company staff (role&nbsp;6) use to manage dispatch queues, organizations,
+        members, shipper requests, bids and reports. The backend service
+        <code>transportBackEndNative</code> is out of build scope, but we reference it wherever it
+        is the point that actually enforces the rule; those spots are labelled
+        <em>Server</em> or <em>backend</em>.
       </p>
       <p>
-        Mobile clients, the transportCompany SPA, and infrastructure provisioning are out of scope
-        except as external actors of the console.
+        Mobile clients, the transportCompany SPA and infrastructure provisioning are out of scope,
+        except where they show up as external actors of the console.
       </p>
 
       <h3>1.3 Audience</h3>
       <p>
-        This document is written for (a) INSA evaluation reviewers assessing conformity to the
-        Secure Website Management Standard, (b) maintainers and reviewers of the
-        <code>queadmin-frontend</code> codebase, and (c) security assessors who need to distinguish
-        controls enforced in the browser from those enforced by the server. It assumes familiarity
-        with React, TypeScript and HTTP.
+        Three groups read this: INSA evaluation reviewers checking conformity to the Secure
+        Website Management Standard, maintainers and reviewers of the
+        <code>queadmin-frontend</code> codebase, and security assessors who need to separate the
+        controls the browser enforces from the ones the server enforces. It assumes you already
+        know React, TypeScript and HTTP.
       </p>
 
       <h3>1.4 Relationship to the SRS and SDD</h3>
       <p>
-        The SRS requirement families are the traceability anchor. The SDD (Section&nbsp;12) maps
-        those families to design elements: <code>FR-AUTH</code>, <code>FR-ROLE/ACCESS</code>,
+        The SRS requirement families are what traceability hangs off. The SDD (Section&nbsp;12)
+        maps those families to design elements: <code>FR-AUTH</code>, <code>FR-ROLE/ACCESS</code>,
         <code>FR-ORG</code>, <code>FR-QUEUE</code>, <code>FR-BID</code>, <code>FR-ORDER</code>,
         <code>FR-REALTIME</code>, <code>FR-REPORT</code>, plus the non-functional families
         <code>NFR-SEC</code> and <code>NFR-DEPLOY</code>. Section&nbsp;9 of this document drills
         each family down to the component and handler level, and Section&nbsp;15 maps derived
-        controls to file-and-symbol evidence. No requirement family is introduced here that is not
-        present in the companion set.
+        controls to file-and-symbol evidence. We don't introduce a requirement family here that
+        isn't already in the companion set.
       </p>
 
       <h3>1.5 Design principles and constraints</h3>
@@ -577,12 +577,11 @@
       <div class="box warn">
         <span class="t">Open finding carried into the design (C3)</span>
         <p>
-          The API contract comment and maintenance rule state that login and OTP verification send
-          <em>no</em> <code>roleId</code>, so the backend resolves the account's own role and a
-          role&nbsp;12 dispatcher can sign in. The as-built service still transmits
-          <code>roleId: 11</code> on both calls. This is recorded as an open finding
-          (Section&nbsp;4.1, C3) and is the only intentional client/contract divergence in the
-          release.
+          The API contract comment and the maintenance rule say that login and OTP verification
+          send <em>no</em> <code>roleId</code>, so the backend resolves the account's own role and
+          a role&nbsp;12 dispatcher can sign in. The service as built still transmits
+          <code>roleId: 11</code> on both calls. That's recorded as an open finding
+          (Section&nbsp;4.1, C3), and it is the only client/contract divergence in the release.
         </p>
       </div>
     </section>
@@ -590,22 +589,22 @@
     <section>
       <h1>2. Architecture-to-code map</h1>
       <p>
-        This section connects the architectural view of the SDD to concrete source locations. It
-        presents the system context (Level&nbsp;0), the logical layers (Level&nbsp;2) and the
-        runtime sequence that wires them together at boot.
+        This section ties the SDD's architectural view back to actual source files. It covers the
+        system context (Level&nbsp;0), the logical layers (Level&nbsp;2), and the boot sequence
+        that wires them together.
       </p>
 
       <h3>2.1 System context (Level 0)</h3>
       <p>
-        The console is a browser SPA that talks to a single backend service over HTTPS (REST) and
-        WSS (Socket.IO). It authenticates via an httpOnly cookie issued by the backend and reads or
-        mutates only backend-owned data. It has no direct database access and no third-party runtime
-        integrations.
+        The console is a browser SPA that talks to one backend service over HTTPS (REST) and WSS
+        (Socket.IO). It authenticates through an httpOnly cookie issued by the backend, and every
+        read or write touches backend-owned data. There is no direct database access and no
+        third-party runtime integration.
       </p>
       <figure>
         <img src="assets/l0.svg" alt="Level-0 context diagram for the Queue Admin console" />
         <figcaption>
-          Figure 2.1 — Level-0 context: the SPA, its backend service, and the operator roles.
+          Figure 2.1: level-0 context, with the SPA, its backend service, and the operator roles.
         </figcaption>
       </figure>
       <table class="grid">
@@ -647,13 +646,12 @@
 
       <h3>2.2 Logical layers (Level 2)</h3>
       <p>
-        The application is layered so that presentation, orchestration and transport concerns are
-        separable. The map below names each layer, its responsibility, and the directories that
-        implement it.
+        The app is layered so that presentation, orchestration and transport stay separable. The
+        table below names each layer, what it owns, and the directories that implement it.
       </p>
       <figure>
         <img src="assets/l2.svg" alt="Level-2 logical architecture layers" />
-        <figcaption>Figure 2.2 — Level-2 logical architecture layers.</figcaption>
+        <figcaption>Figure 2.2: level-2 logical architecture layers.</figcaption>
       </figure>
       <table class="grid">
         <thead>
@@ -758,8 +756,8 @@
 
       <h3>3.1 Package manifest</h3>
       <p>
-        The manifest is <code>package.json</code>. The runtime engine is Node
-        <code>&gt;=20.19.0</code>. The scripts that constitute the build and quality gates are:
+        The manifest is <code>package.json</code>, and the runtime engine is Node
+        <code>&gt;=20.19.0</code>. The build and quality gates run through these scripts:
       </p>
       <table class="grid">
         <thead>
@@ -886,9 +884,9 @@
         </tbody>
       </table>
       <p>
-        This resolves the <code>NFR-DEPLOY</code> concern that the same artifact can be pointed at
-        different environments without code edits, and documents the constraint that the values are
-        bake-in-at-build.
+        That answers the <code>NFR-DEPLOY</code> concern that one artifact can be pointed at
+        different environments without code edits, and it makes plain the constraint that the
+        values are baked in at build time.
       </p>
 
       <h3>3.5 Build and static gates summary</h3>
@@ -961,29 +959,28 @@
         </li>
       </ol>
       <div class="box warn">
-        <span class="t">Open finding C3 — role-omitted login contract vs. as-built body</span>
+        <span class="t">Open finding C3: role-omitted login contract vs. as-built body</span>
         <p>
           <code>src/utils/constant.ts:16-18</code> states, as a maintenance rule, that login and OTP
-          verification send <em>no</em> <code>roleId</code> so the backend resolves the account's
-          own role from <code>UserRole</code>. That is the intended contract and the reason the
-          console can admit both role&nbsp;11 and role&nbsp;12. However, the as-built
+          verification send <em>no</em> <code>roleId</code>, leaving the backend to resolve the
+          account's own role from <code>UserRole</code>. That is the contract we intended, and it
+          is why the console can admit both role&nbsp;11 and role&nbsp;12. But the as-built
           <code>requestLoginOtp</code> and <code>verifyOtp</code> in
           <code>src/services/auth.service.ts:19,27</code> still transmit
-          <code>roleId: QUEUE_ORG_ADMIN_ROLE</code> (11), contradicting their own docblock (<code
-            >lines 8-15</code
-          >) which repeats the role-omitted rule. Registration (<code>registerUser</code>) correctly
-          sends 11 because provisioning <em>is</em> the role being created. This divergence is
-          tracked as C3 and is the only known client/contract mismatch; it does not weaken the
-          session model but can cause role-12 login rejection if the backend honours the asserted
-          role.
+          <code>roleId: QUEUE_ORG_ADMIN_ROLE</code> (11), which contradicts their own docblock
+          (<code>lines 8-15</code>) repeating the same role-omitted rule. Registration
+          (<code>registerUser</code>) correctly sends 11, because provisioning <em>is</em> the role
+          being created. We track the mismatch as C3, the only known client/contract mismatch; it
+          doesn't weaken the session model, but it can reject a role-12 login if the backend honours
+          the asserted role.
         </p>
       </div>
 
       <h3>4.2 Where the session lives</h3>
       <p>
         The session credential is an httpOnly cookie named <code>token</code>, set by the backend
-        (<code>Utils/AuthCookie.js</code>) when the OTP is verified. Because it is httpOnly, no
-        JavaScript — including this console — can read it. The client carries it automatically
+        (<code>Utils/AuthCookie.js</code>) when the OTP is verified. Because it is httpOnly,
+        JavaScript (this console included) cannot read it. The client carries it automatically
         because every request is configured <code>withCredentials</code>/<code
           >credentials: "include"</code
         >
@@ -1031,18 +1028,18 @@
       <h3>4.3 Logout</h3>
       <p>
         Logout is centralised and defensive.
-        <code>AuthContext.logout()</code> (<code>src/context/AuthContext.tsx:38-44</code>) runs
+        <code>AuthContext.logout()</code> (<code>src/context/AuthContext.tsx:38-44</code>) walks
         three steps in order: disconnect the socket, fire a best-effort
         <code>POST /user/logout</code> to clear the server cookie, then clear local profile storage
-        and dispatch the Redux <code>logout</code> action — which sets <code>auth</code> to
-        <code>null</code> and always clears local storage (C9). Local state is cleared
-        unconditionally even if the server call fails, so a network error cannot strand the user in
-        a half-authenticated state.
+        and dispatch the Redux <code>logout</code> action, which sets <code>auth</code> to
+        <code>null</code> and always clears local storage (C9). Local state clears unconditionally
+        even if the server call fails, so a network error cannot strand the user halfway through
+        authentication.
       </p>
       <p>Two additional paths end the session:</p>
       <ul>
         <li>
-          <strong>Global REST 401</strong> — <code>baseQueryWithReauth</code>
+          <strong>Global REST 401</strong>: <code>baseQueryWithReauth</code>
           (<code>src/lib/redux/api/base.ts:61-67</code>) intercepts any 401 and dispatches
           <code>logout()</code>; the axios transport does the same in
           <code>src/lib/api.ts:15-26</code> (clear storage and redirect to <code>/login</code>).
@@ -1050,7 +1047,7 @@
           (C7).
         </li>
         <li>
-          <strong>Socket 401 handshake</strong> — <code>connect_error</code> whose message contains
+          <strong>Socket 401 handshake</strong>: <code>connect_error</code> whose message contains
           &ldquo;unauthorized&rdquo; or &ldquo;token&rdquo; disconnects and ends the session via a
           dynamically-imported dispatch, avoiding an endless reconnect loop (C8,
           <code>src/lib/socket.ts:168-178</code>).
@@ -1073,12 +1070,12 @@
       <h3>4.5 Session lifetime</h3>
       <p>
         Cookie and JWT lifetimes are role-based and server-set (<code>Utils/SessionPolicy.js</code>,
-        <code>Utils/AuthCookie.js</code>): system admins (roles&nbsp;3 and&nbsp;6) receive
-        <code>SESSION_TTL_ADMINS</code> (default 24h); all other roles — including queue org admins
-        (11) and dispatchers (12) — receive <code>SESSION_TTL_OTHERS</code> (default 365d). The
-        cookie lifetime matches the JWT lifetime it carries. The console has
-        <em>no refresh-token flow</em>: any expiry surfaces as a 401, which triggers logout, so
-        re-authentication means signing in again.
+        <code>Utils/AuthCookie.js</code>): system admins (roles&nbsp;3 and&nbsp;6) get
+        <code>SESSION_TTL_ADMINS</code> (default 24h); every other role, including queue org admins
+        (11) and dispatchers (12), gets <code>SESSION_TTL_OTHERS</code> (default 365d). The cookie
+        lifetime matches the JWT lifetime it carries. There is
+        <em>no refresh-token flow</em>: an expiry surfaces as a 401, that triggers logout, and the
+        user signs in again.
       </p>
     </section>
 
@@ -1208,9 +1205,9 @@
 
       <h3>6.1 Redux store shape</h3>
       <p>
-        <code>src/lib/redux/store.ts</code> configures the store with three reducers —
-        <code>auth</code>, <code>queue</code> and the RTK Query <code>api</code> reducer — and
-        appends <code>api.middleware</code> for cache/tag orchestration.
+        <code>src/lib/redux/store.ts</code> configures the store with three reducers,
+        <code>auth</code>, <code>queue</code> and the RTK Query <code>api</code> reducer, and
+        appends <code>api.middleware</code> for cache and tag orchestration.
       </p>
       <table class="grid">
         <thead>
@@ -1276,8 +1273,8 @@
         <code>src/lib/redux/api/base.ts</code> defines one API object with
         <code>reducerPath: "api"</code>, <code>refetchOnFocus: false</code>,
         <code>refetchOnReconnect: false</code> and <code>keepUnusedDataFor: 300</code> (seconds).
-        Disabling focus/reconnect refetch keeps realtime correctness with the socket-driven
-        invalidation described in Section&nbsp;8, avoiding redundant network churn. Nine tag types
+        Turning focus and reconnect refetch off lets the socket-driven invalidation of
+        Section&nbsp;8 drive freshness, which avoids redundant network churn. Nine tag types
         are registered: <code>QueueOrganizations</code>, <code>QueueOrgMembers</code>,
         <code>QueueStatus</code>, <code>DriverQueue</code>, <code>DriverBids</code>,
         <code>DriverDirectory</code>, <code>Auth</code>, <code>VehicleTypes</code> and
@@ -1298,11 +1295,11 @@
 
       <h3>7.1 Endpoint catalogue</h3>
       <p>
-        The console issues <strong>28</strong> operations defined across five endpoint modules, all
-        injected onto the single RTK Query API. Path fragments live in
-        <code>src/utils/constant.ts</code> (the stated single source of truth). Custom
-        <code>queryFn</code> endpoints are marked. Tag behaviour drives realtime cache coherence
-        (Section&nbsp;8).
+        The console issues <strong>28</strong> operations across five endpoint modules, all injected
+        onto the single RTK Query API. Path fragments live in
+        <code>src/utils/constant.ts</code>, the stated single source of truth. Custom
+        <code>queryFn</code> endpoints are marked. Tag behaviour is what keeps the realtime cache
+        coherent (Section&nbsp;8).
       </p>
       <table class="grid">
         <thead>
@@ -1565,8 +1562,8 @@
       </p>
       <p>
         The socket identity is computed by <code>extractCredentials()</code>: roles 3 and 6 map to
-        <code>"admin"</code>; every other role — including queue org admin (11) and dispatcher (12)
-        — maps to <code>"queueOrgAdmin"</code>. Role&nbsp;12 is deliberately <em>not</em> given its
+        <code>"admin"</code>; every other role, including queue org admin (11) and dispatcher (12),
+        maps to <code>"queueOrgAdmin"</code>. Role&nbsp;12 is deliberately <em>not</em> given its
         own identity: the backend keys sockets as <code>${userType}:${phone}</code> and queue
         fan-out selects <code>roleId IN (11,12)</code> under the <code>queueOrgAdmin</code> key, so
         a distinct dispatcher identity would silently receive no events (C24).
@@ -1642,7 +1639,7 @@
     <section>
       <h1>9. Feature-level LLD</h1>
       <p>
-        This section drills each requirement family from the companion SRS/SDD down to the
+        This section takes each requirement family from the companion SRS/SDD down to the
         components, handlers and schemas that implement it: <code>FR-AUTH</code>,
         <code>FR-ROLE/ACCESS</code>, <code>FR-ORG</code>, <code>FR-QUEUE</code>,
         <code>FR-BID</code>, <code>FR-ORDER</code>, <code>FR-REALTIME</code> and
@@ -1908,7 +1905,7 @@
         <code>useAcceptDriverBid.ts</code>, which submits explicit driver/user identifiers to
         <code>queue/bidding/approve</code> (and the shipper-side
         <code>shipper/acceptDriverOffer</code>). The handler accepts <em>only</em> the named
-        identifiers and fails loudly otherwise &mdash; there is no silent auto-fallback (C10).
+        identifiers and fails loudly otherwise; there is no silent auto-fallback (C10).
       </p>
 
       <h3>9.6 Orders and shipper requests (FR-ORDER)</h3>
@@ -1941,8 +1938,8 @@
 
       <h3>9.9 Security self-assessment (NFR-SEC, INSA)</h3>
       <p>
-        <code>pages/security/SecurityPage.tsx</code> renders four tabs &mdash; overview,
-        requirements, vulnerabilities and testing &mdash; from the embedded INSA standard data in
+        <code>pages/security/SecurityPage.tsx</code> renders four tabs (overview,
+        requirements, vulnerabilities and testing) from the embedded INSA standard data in
         <code>src/data/insaStandard.ts</code> (5 focus areas, 35 requirements, Annex&nbsp;A
         vulnerabilities 1&ndash;8, Annex&nbsp;B tests 1&ndash;102). Progress is tracked by
         <code>hooks/useSecurityChecklist.ts</code> and <code>utils/securityChecklist.ts</code> over
@@ -1960,9 +1957,9 @@
         Domain shapes are declared once in <code>src/types/queue.ts</code> (roles, organisation
         types <code>QUEUE_ORG_TYPES</code>, journey status, queue and member records) and consumed
         by the RTK Query layer. Argument and result shapes for the API hooks are declared in
-        <code>src/lib/redux/api/types.ts</code>. Because the backend is authoritative for business
-        objects, the client types are deliberately tolerant of absent optional fields rather than
-        asserting server data into existence (Section&nbsp;7.3, Section&nbsp;12.1).
+        <code>src/lib/redux/api/types.ts</code>. Because the backend owns the business objects, the
+        client types tolerate absent optional fields instead of asserting server data into
+        existence (Section&nbsp;7.3, Section&nbsp;12.1).
       </p>
 
       <h3>10.2 Client persistence map</h3>
@@ -1993,7 +1990,7 @@
             <td><code>queueadmin:auth</code> <em>(legacy)</em></td>
             <td>localStorage</td>
             <td>Purged on load by <code>purgeLegacyAuth</code></td>
-            <td>Old JWT &mdash; removed if present</td>
+            <td>Old JWT (removed if present)</td>
             <td>was High &rarr; eliminated (C12)</td>
           </tr>
           <tr>
@@ -2029,7 +2026,7 @@
             <td>httpOnly cookie</td>
             <td>Backend at <code>verifyUserByOTP</code></td>
             <td>Session JWT</td>
-            <td>High &mdash; not readable by JS (C11)</td>
+            <td>High; not readable by JS (C11)</td>
           </tr>
         </tbody>
       </table>
@@ -2207,8 +2204,8 @@
 
       <h3>11.5 Known gaps, assumptions and limitations</h3>
       <p>
-        The following behaviours are recorded so that reviewers can distinguish them from the
-        secured paths above. Each maps to an open finding in Section&nbsp;15.3.
+        We record the behaviours below so reviewers can tell them apart from the secured paths
+        above. Each one maps to an open finding in Section&nbsp;15.3.
       </p>
       <ul>
         <li>
@@ -2373,7 +2370,7 @@
       <p>
         Authentication is phone + one-time code; the session is a backend-issued httpOnly cookie set
         at <code>verifyUserByOTP</code>. JavaScript never receives, stores or transmits a bearer
-        token &mdash; the only persisted auth value is the non-sensitive profile, and the legacy
+        token; the only persisted auth value is the non-sensitive profile, and the legacy
         token key is actively purged (C11, C12). Requests carry cookies via
         <code>credentials: "include"</code>; there is no <code>Authorization</code> header. A 401 or
         an unauthorised socket error ends the session immediately (C8, C14), and logout performs a
@@ -2419,10 +2416,9 @@
 
       <h3>13.8 Control summary</h3>
       <p>
-        Each implementation decision above is carried as a numbered control C1&ndash;C36 in the
-        register of Section&nbsp;15.1, where it is mapped to the specific file and symbol that
-        provides the evidence. Open items and server-side dependencies are listed in
-        Section&nbsp;15.3.
+        Every implementation decision above is carried as a numbered control C1&ndash;C36 in the
+        register of Section&nbsp;15.1, mapped to the file and symbol that provides the evidence.
+        Open items and server-side dependencies are listed in Section&nbsp;15.3.
       </p>
     </section>
 
@@ -2513,8 +2509,8 @@
 
       <h3>15.1 Control register (C1&ndash;C36)</h3>
       <p>
-        Each control names a single verifiable statement, the INSA reference it derives from, and
-        the file-and-symbol evidence in the submitted tree. Status is
+        Each control names one verifiable statement, the INSA reference it derives from, and the
+        file-and-symbol evidence in the submitted tree. Status is
         <span class="tag done">Met</span> (implemented in the client),
         <span class="tag open">Open</span> (deficiency or outstanding work) or
         <span class="tag na">By design</span> (deliberately not a client control).
@@ -2557,7 +2553,7 @@
               not assert its own role.
             </td>
             <td>
-              <code>src/services/auth.service.ts</code> (sends <code>roleId: 11</code>) &mdash;
+              <code>src/services/auth.service.ts</code> (sends <code>roleId: 11</code>);
               deviation F1
             </td>
             <td><span class="tag open">Open</span></td>
@@ -2756,7 +2752,7 @@
             <td>C25</td>
             <td>2.5 OPM-N; B#16-18</td>
             <td>TLS certificate validity, HSTS and security headers are maintained by the host.</td>
-            <td>Hosting configuration (outside repository) &mdash; F5</td>
+            <td>Hosting configuration (outside repository); F5</td>
             <td><span class="tag na">By design</span></td>
           </tr>
           <tr>
@@ -2980,7 +2976,7 @@
               Settings (profile, notifications, 2FA, deletion) are display-only and not persisted.
             </td>
             <td>C28</td>
-            <td>By design &mdash; refused explicitly rather than faked.</td>
+            <td>By design; refused explicitly rather than faked.</td>
           </tr>
           <tr>
             <td>F5</td>
@@ -3001,7 +2997,7 @@
             <td>F7</td>
             <td>Check-in is not geofenced; <code>checkinRadiusKm</code> is not enforced.</td>
             <td>C16</td>
-            <td>By design &mdash; optional queue number with position estimate only.</td>
+            <td>By design; optional queue number with position estimate only.</td>
           </tr>
           <tr>
             <td>F8</td>
@@ -3297,16 +3293,16 @@
           vulnerabilities and Annex&nbsp;B test list).
         </li>
         <li>
-          <code>docs/insa/SRS.html</code> &mdash; Software Requirements Specification (requirement
+          <code>docs/insa/SRS.html</code>: Software Requirements Specification (requirement
           families).
         </li>
         <li>
-          <code>docs/insa/SDD.html</code> &mdash; System &amp; Architecture Design (Section&nbsp;12
+          <code>docs/insa/SDD.html</code>: System &amp; Architecture Design (Section&nbsp;12
           requirement map).
         </li>
-        <li><code>docs/insa/UserGuide.html</code> &mdash; User Documentation.</li>
+        <li><code>docs/insa/UserGuide.html</code>: User Documentation.</li>
         <li>
-          <code>docs/insa/INSA_Security_Submission.html</code> &mdash; consolidated security
+          <code>docs/insa/INSA_Security_Submission.html</code>: consolidated security
           submission.
         </li>
       </ul>
