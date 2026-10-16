@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dynamics Queue Admin — End User Guide (Dispatch-Queue Console)</title>
+    <title>Dynamics Queue Admin: End User Guide (Dispatch-Queue Console)</title>
     <style>
       /* ---------- Print-first design ---------- */
       @page {
@@ -288,21 +288,21 @@
       <div class="cover-rule"></div>
       <div class="cover-title">End User Guide</div>
       <div class="cover-sub">
-        Dynamics Queue Admin — how a queue organization registers a loading place, checks drivers
-        in, dispatches vehicles, manages orders and shipper requests, bids on behalf of shippers,
-        runs reports, tracks the real-time connection and completes security and settings tasks
-        (dispatch-queue web console, v1.0.0)
+        Dynamics Queue Admin: the console a queue organization uses to register a loading place,
+        check drivers in, dispatch vehicles, manage orders and shipper requests, bid on behalf of
+        shippers, run reports, watch the real-time connection, and finish its security and settings
+        tasks (dispatch-queue web console, v1.0.0)
       </div>
 
       <table class="meta">
         <tr>
           <td>Document</td>
-          <td><strong>UG-1.0.0</strong> — End User Guide (dispatch-queue console)</td>
+          <td><strong>UG-1.0.0</strong>: End User Guide (dispatch-queue console)</td>
         </tr>
         <tr>
           <td>Application</td>
           <td>
-            Dynamics Queue Admin — dispatch-queue web console, product version
+            Dynamics Queue Admin: dispatch-queue web console, product version
             <strong>1.0.0</strong>
           </td>
         </tr>
@@ -340,7 +340,7 @@
         </tr>
         <tr>
           <td>Contact person</td>
-          <td>Marew Masresha, General Manager &mdash; <code>mmarew@gmail.com</code>, <code>0983222221</code></td>
+          <td>Marew Masresha, General Manager, <code>mmarew@gmail.com</code>, <code>0983222221</code></td>
         </tr>
         <tr>
           <td>Date of preparation</td>
@@ -430,8 +430,8 @@
       <div class="box">
         <span class="t">How to read this guide</span>
         <p>
-          Each section covers one area of the console and uses numbered, step-by-step instructions
-          in the second person. Dashed boxes like <span class="fill">[Screenshot: …]</span> mark
+          Each section takes one part of the console and walks you through it with numbered steps.
+          Dashed boxes like <span class="fill">[Screenshot: …]</span> mark
           where a screenshot of the named screen should be inserted. On-screen labels are shown in
           the console's English wording; where the same feature is also known by another name, both
           are given (for example, the sidebar item labelled <strong>Live Queue</strong> is the queue
@@ -447,19 +447,19 @@
       <h3>1.1 What this guide is for</h3>
       <p>
         This guide explains how to use <strong>Dynamics Queue Admin</strong>, the web console that a
-        loading place — a queue organization such as a customs terminal, factory, cement yard,
-        depot, mine, farm or port — uses to run its vehicle dispatch queue on the Dynamics freight
-        marketplace. It takes you from creating the loading place and signing in, through checking
-        drivers in, dispatching vehicles to orders, managing orders and shipper requests, bidding on
-        behalf of shippers, reading reports, watching the live connection, using the security
-        compliance view, and adjusting settings, language and appearance.
+        loading place uses to run its vehicle dispatch queue on the Dynamics freight marketplace. A
+        loading place is a queue organization: a customs terminal, factory, cement yard, depot,
+        mine, farm or port. You start by creating the loading place and signing in, then move on to
+        checking drivers in, dispatching vehicles to orders, managing orders and shipper requests,
+        bidding on behalf of shippers, reading reports, watching the live connection, using the
+        security compliance view, and adjusting settings, language and appearance.
       </p>
 
       <h3>1.2 Who uses the console</h3>
       <p>
-        The console is used by staff of a registered queue organization. Two queue-staff roles are
-        defined for day-to-day work; platform administrators may also sign in for oversight and
-        approval.
+        Staff of a registered queue organization use the console for their day-to-day work. Two
+        queue-staff roles cover that work; platform administrators can also sign in when they need
+        to oversee things or approve an organization.
       </p>
       <table class="grid">
         <thead>
@@ -515,10 +515,11 @@
       <div class="box">
         <span class="t">What the console does not do</span>
         <p>
-          This console is one part of the Dynamics platform. It is not the driver mobile application
-          or the shipper application, it does not process payments, and it does not provide a live
-          GPS feed. Where a capability is absent or disabled, this guide says so plainly. See §14
-          (settings that are not enabled) and §16 (troubleshooting).
+          This console is one piece of the Dynamics platform. It is not the driver mobile
+          application and not the shipper application, it does not process payments, and it does not
+          give you a live GPS feed. When something is missing or switched off, this guide says so
+          instead of glossing over it. See §14 (settings that are not enabled) and §16
+          (troubleshooting).
         </p>
       </div>
 
@@ -543,9 +544,9 @@
 
       <h3>2.1 The screen layout</h3>
       <p>
-        After you sign in, the console presents a persistent left sidebar, a top bar and a main work
-        area. The sidebar is your primary navigation and groups everything the organization can do.
-        The exact sidebar wording is listed below.
+        Once you are signed in you get a left sidebar, a top bar and a main work area. The sidebar
+        is where you navigate; it groups everything the organization can do. The exact wording of
+        those sidebar items is listed below.
       </p>
       <table class="grid">
         <thead>
@@ -602,15 +603,15 @@
       <h3>2.2 The top bar</h3>
       <ul>
         <li>
-          <strong>Organization selector</strong> — switches which loading place the queue board and
+          <strong>Organization selector</strong>: switches which loading place the queue board and
           orders apply to.
         </li>
         <li>
-          <strong>Language selector</strong> — switches the interface between English and Amharic
+          <strong>Language selector</strong>: switches the interface between English and Amharic
           (§15).
         </li>
         <li>
-          <strong>Profile / Menu</strong> — opens your account area and the sign-out action (§14).
+          <strong>Profile / Menu</strong>: opens your account area and the sign-out action (§14).
         </li>
       </ul>
 
@@ -630,11 +631,11 @@
       </ol>
 
       <div class="box">
-        <span class="t">Responsive by design</span>
+        <span class="t">On a narrow screen</span>
         <p>
-          The console is desktop-first but responsive. On a narrow window the sidebar collapses to a
-          menu button, the queue board switches to cards, and panels stack vertically. All actions
-          described in this guide are the same on any screen size.
+          The console is built desktop-first, but it adapts. Shrink the window and the sidebar
+          collapses into a menu button, the queue board turns into cards, and panels stack on top of
+          each other. Every action described in this guide works the same way at any screen size.
         </p>
       </div>
     </section>
@@ -643,9 +644,9 @@
     <section>
       <h1>3. Signing in</h1>
       <p>
-        Access to the console is by phone number and a one-time code (OTP) sent to that phone. There
-        is no password and no role selection — the role is a property of your account. This keeps
-        access tied to the number registered to your organization.
+        You get in with your phone number and the one-time code (OTP) sent to it. There is no
+        password and no role picker: your role belongs to your account, so access stays tied to the
+        number registered to your organization.
       </p>
 
       <h3>3.1 Enter your phone number</h3>
@@ -757,8 +758,8 @@
       <div class="box warn">
         <span class="t">Keep your number current</span>
         <p>
-          The one-time code is sent to the mobile number on the account. If your number changes you
-          will not be able to sign in until it is updated on the account.
+          The code goes to the mobile number on your account. If you change that number, you will
+          not be able to sign in until the account has been updated to match.
         </p>
       </div>
     </section>
@@ -767,9 +768,9 @@
     <section>
       <h1>4. Creating and registering a loading place</h1>
       <p>
-        A loading place is a <em>queue organization</em> — the site whose vehicle queue you manage.
-        It must be created before the queue board is available, and it must be approved by an
-        administrator before drivers can be dispatched.
+        A loading place is a <em>queue organization</em>: the site whose vehicle queue you manage.
+        Create one before you touch the queue board, and get an administrator to approve it before
+        any driver can be dispatched.
       </p>
 
       <h3>4.1 Create the organization</h3>
@@ -785,8 +786,8 @@
         <li>Optionally enter a contact phone number for the loading place.</li>
         <li>
           Enter the address and select the matching suggestion from the address search. Selecting a
-          suggestion records the location's latitude and longitude — this location is the site
-          reference used by the queue and as the check-in gate.
+          suggestion records the location's latitude and longitude, and that is the site reference
+          the queue uses as well as the check-in gate.
         </li>
         <li>
           Select <strong>Create Organization</strong>. A new organization starts in
@@ -835,7 +836,7 @@
       </table>
 
       <h3>4.2 Organization types</h3>
-      <p>The console accepts one of the following loading-place types.</p>
+      <p>You can pick one of the following loading-place types.</p>
       <table class="grid">
         <thead>
           <tr>
@@ -882,17 +883,17 @@
       <div class="box">
         <span class="t">Check-in radius</span>
         <p>
-          The check-in gate uses a radius around the organization's location. The radius is a system
-          setting (default <strong>15 km</strong>) applied by the platform; it is not entered on the
-          create-organization form. If your operational radius needs to differ from the default,
-          raise it with the platform administrator.
+          The check-in gate works from a radius around the organization's location. That radius is
+          a platform setting, not something you type on the create-organization form, and it
+          defaults to <strong>15 km</strong>. If your operation needs a different radius, ask the
+          platform administrator to change it.
         </p>
       </div>
 
       <h3>4.3 Approval statuses</h3>
       <p>
-        Each organization has an approval status shown as a badge on the manage page and the
-        organization list.
+        Every organization carries an approval status. You will see it as a badge on the manage page
+        and in the organization list.
       </p>
       <table class="grid">
         <thead>
@@ -923,24 +924,24 @@
 
       <h3>4.4 Managing a loading place</h3>
       <p>
-        Open <strong>Organizations</strong> and select a loading place to open the manage page. It
-        contains the organization profile, the member list, and — for queue administrators — the
+        Open <strong>Organizations</strong> and pick a loading place to get to its manage page. You
+        get the organization profile, the member list and, if you are a queue administrator, the
         approval controls.
       </p>
       <ul>
         <li>
-          <strong>Profile</strong> — update name, type, phone and address/location. Saving a new
+          <strong>Profile</strong>: update name, type, phone and address/location. Saving a new
           address updates the site location.
         </li>
         <li>
-          <strong>Members</strong> — add a member by user identifier and role, and deactivate,
-          reactivate or remove members. Membership itself is the permission, so a lifecycle change
+          <strong>Members</strong>: add a member by user identifier and role, then deactivate,
+          reactivate or remove them. Membership itself is the permission, so a lifecycle change
           takes effect on the member's next request.
         </li>
         <li>
-          <strong>Approval (queue administrators only)</strong> — <strong>Approve</strong>,
-          <strong>Suspend</strong> or <strong>Reject</strong> the organization. Approving enables
-          the queue; suspending or rejecting disables it.
+          <strong>Approval (queue administrators only)</strong>: <strong>Approve</strong>,
+          <strong>Suspend</strong> or <strong>Reject</strong> the organization. Approving turns the
+          queue on; suspending or rejecting turns it off.
         </li>
       </ul>
 
@@ -952,9 +953,8 @@
       <div class="box ok">
         <span class="t">Approval is required before dispatch</span>
         <p>
-          Drivers can only be dispatched once the organization's status is
-          <strong>Approved</strong>. While it is pending, rejected or suspended, use the queue board
-          for preparation only.
+          No driver can be dispatched until the organization's status reads <strong>Approved</strong>.
+          While it is pending, rejected or suspended, treat the queue board as preparation only.
         </p>
       </div>
     </section>
@@ -963,23 +963,23 @@
     <section>
       <h1>5. The dashboard</h1>
       <p>
-        The dashboard is where you choose which loading place to work in and see your organization's
-        summary. It is the landing page after sign-in.
+        The dashboard is the first screen you land on after sign-in. Pick the loading place you
+        want to work in from here, and read your organization's summary figures off the same page.
       </p>
 
       <h3>5.1 The organization overview</h3>
       <ul>
         <li>
-          <strong>Organization cards</strong> — each loading place you can access is shown with its
+          <strong>Organization cards</strong>: each loading place you can access appears with its
           type, name and approval badge. Select one to open its live queue.
         </li>
         <li>
-          <strong>Create organization</strong> — opens the same create dialog described in §4 for
+          <strong>Create organization</strong>: opens the same create dialog described in §4, for
           accounts that can add another loading place.
         </li>
         <li>
-          <strong>Summary figures</strong> — the overview shows the organization's operating
-          figures, including drivers, waiting vehicles and orders.
+          <strong>Summary figures</strong>: the overview shows the organization's operating figures,
+          including drivers, waiting vehicles and orders.
         </li>
       </ul>
 
@@ -989,11 +989,11 @@
       </p>
 
       <div class="box">
-        <span class="t">Dashboard figures are computed in the console</span>
+        <span class="t">Where the dashboard figures come from</span>
         <p>
-          The summary figures shown on the dashboard and in Reports are calculated in the console
-          from the data it has loaded. They are suitable for operational monitoring; treat them as
-          working figures rather than an audited source of record. See §11.
+          The dashboard and Reports build their summary figures in the console from whatever data
+          has loaded. They are good enough for watching the day as it runs, but treat them as
+          working numbers rather than an audited record. See §11.
         </p>
       </div>
     </section>
@@ -1002,27 +1002,27 @@
     <section>
       <h1>6. The live queue board</h1>
       <p>
-        The live queue board (<strong>Live Queue</strong>) is the operational heart of the console.
-        It shows the vehicles currently in the queue for the selected loading place, grouped by
-        vehicle type, and lets you check drivers in and dispatch them.
+        The live queue board (<strong>Live Queue</strong>) is where the day's work actually
+        happens. It lists the vehicles sitting in the queue for the selected loading place, grouped
+        by vehicle type, and gives you the controls to check drivers in and dispatch them.
       </p>
 
       <h3>6.1 The board header</h3>
       <ul>
         <li>
-          <strong>Live / Connecting badge</strong> — a coloured badge next to the title shows
+          <strong>Live / Connecting badge</strong>: a coloured badge next to the title tells you
           whether the real-time connection is live. See §12.
         </li>
-        <li><strong>New Order</strong> — opens the create-order dialog (§9).</li>
+        <li><strong>New Order</strong>: opens the create-order dialog (§9).</li>
         <li>
-          <strong>Manual Check-in</strong> — opens the check-in dialog to add a driver to the queue
+          <strong>Manual Check-in</strong>: opens the check-in dialog to add a driver to the queue
           (§7).
         </li>
       </ul>
 
       <h3>6.2 Vehicle-type cards</h3>
       <p>
-        The board shows one card per vehicle type that has drivers in the queue, plus a card for all
+        You get one card per vehicle type that has drivers in the queue, plus a card for all
         drivers. Each vehicle-type card shows the number of waiting vehicles and a
         <strong>Dispatch</strong> button.
       </p>
@@ -1045,8 +1045,8 @@
 
       <h3>6.3 The queue table</h3>
       <p>
-        The queue table lists each driver in the queue with their assigned position. On narrow
-        screens the table is replaced by stacked cards that carry the same information.
+        Each driver in the queue appears in the table with the position they were given. On a
+        narrow screen the table turns into stacked cards carrying the same information.
       </p>
       <table class="grid">
         <thead>
@@ -1096,8 +1096,8 @@
     <section>
       <h1>7. Check-in</h1>
       <p>
-        Check-in adds a driver to the queue. Use the <strong>Manual Check-in</strong> action on the
-        queue board to open the check-in dialog.
+        Check-in is how a driver gets into the queue. On the queue board, select
+        <strong>Manual Check-in</strong> to open the dialog.
       </p>
 
       <h3>7.1 Checking a driver in</h3>
@@ -1109,9 +1109,9 @@
         </li>
         <li>Select the driver from the results.</li>
         <li>
-          Optionally enter a queue number to place the driver at a specific position. If you leave
-          it blank, the driver is appended to the end of the queue by the usual first-in, first-out
-          (FIFO) rule.
+          Leave the queue number blank and the driver goes to the end of the queue under the usual
+          first-in, first-out (FIFO) rule. Type a number only when you want them placed at a
+          specific position.
         </li>
         <li>Confirm the check-in. The driver appears on the queue board with their position.</li>
       </ol>
@@ -1124,9 +1124,9 @@
       <div class="box">
         <span class="t">Positions and the optional queue number</span>
         <p>
-          Leaving the queue number empty means the platform assigns the next FIFO position. Enter a
-          number only when you deliberately need to place a driver at a specific position; the
-          override action (§8.3) is available later if you need to correct a position.
+          Leave the queue number empty and the platform hands out the next FIFO position. Only type
+          a number when you deliberately want a driver at a particular spot. If you get it wrong,
+          the override action (§8.3) is there to fix the position later.
         </p>
       </div>
     </section>
@@ -1135,8 +1135,8 @@
     <section>
       <h1>8. Running the queue</h1>
       <p>
-        This section covers the day-to-day operations on the queue board: dispatching, overriding a
-        position, removing an entry, and reviewing an entry's history.
+        Here is the routine work on the queue board: dispatching, overriding a position, removing an
+        entry, and looking back at an entry's history.
       </p>
 
       <h3>8.1 Dispatching a vehicle</h3>
@@ -1149,7 +1149,7 @@
           In the dispatch dialog, choose the order to dispatch the front waiting vehicle to. The
           dialog shows a summary of the shipper request for the selected order.
         </li>
-        <li>Confirm. The vehicle is dispatched and its status changes accordingly.</li>
+        <li>Confirm. The vehicle is dispatched and its status updates to match.</li>
       </ol>
 
       <p class="fill">
@@ -1159,16 +1159,16 @@
 
       <h3>8.2 Dispatch is tied to waiting vehicles</h3>
       <p>
-        The <strong>Dispatch</strong> button on a vehicle-type card is disabled whenever that card's
-        waiting count is zero. To dispatch, first check a driver in (§7) or select a different
-        vehicle-type card that still has waiting vehicles.
+        When a vehicle-type card shows a waiting count of zero, its <strong>Dispatch</strong>
+        button is greyed out. Check a driver in first (§7), or move to a different vehicle-type
+        card that still has waiting vehicles.
       </p>
 
       <h3>8.3 Overriding a position</h3>
       <ol>
         <li>Open the row action for the driver and choose <strong>Override</strong>.</li>
         <li>Enter the new queue number and a reason for the change.</li>
-        <li>Confirm. The driver's position is updated and the change is recorded.</li>
+        <li>Confirm. The driver moves to the new position and the change is recorded.</li>
       </ol>
 
       <p class="fill">[Screenshot: Override dialog — new queue number and reason field]</p>
@@ -1178,25 +1178,24 @@
         <li>Open the row action for the driver and choose <strong>Remove</strong>.</li>
         <li>Enter a reason when prompted and confirm.</li>
         <li>
-          The driver is removed from the queue. The reason is communicated to the affected party
-          through the live connection.
+          The driver is removed from the queue, and the reason goes to the affected party over the
+          live connection.
         </li>
       </ol>
 
       <div class="box warn">
         <span class="t">Removal reasons</span>
         <p>
-          The removal dialog asks for a reason and the reason text is broadcast to the queue's live
-          listeners. Enter a clear, factual reason so the driver's app reflects an accurate
-          explanation.
+          Whatever you type as the reason is broadcast to the queue's live listeners. Keep it clear
+          and factual so the driver's app shows an accurate explanation.
         </p>
       </div>
 
       <h3>8.5 Entry history</h3>
       <p>
-        Each queue entry keeps an immutable history. Open the row action and choose
-        <strong>History</strong> to see the recorded before-and-after snapshots for the entry — for
-        example, its original position and any later override.
+        Every queue entry keeps a history you cannot edit. Open the row action and choose
+        <strong>History</strong> to see the recorded before-and-after snapshots for the entry, such
+        as its original position and any override applied later.
       </p>
 
       <p class="fill">
@@ -1240,8 +1239,8 @@
     <section>
       <h1>9. Orders and shipper requests</h1>
       <p>
-        The <strong>Orders</strong> area lists the orders and shipper requests for your loading
-        place, and is where you create new orders and review driver requests against a shipper's
+        The <strong>Orders</strong> area holds the orders and shipper requests for your loading
+        place. This is where you create new orders and check driver requests against a shipper's
         request.
       </p>
 
@@ -1323,24 +1322,24 @@
         <span class="t">Large orders default to company target and bidding</span>
         <p>
           When the number of vehicles for an individual order is set above nine, the console
-          automatically switches the request to a company target and turns on open bidding. This is
-          by design — very large volumes are offered to carriers rather than a single queue slot.
+          switches the request to a company target and turns on open bidding by itself. That is
+          deliberate: volumes that big are offered to carriers rather than a single queue slot.
         </p>
       </div>
 
       <h3>9.2 The orders list</h3>
       <p>
-        The orders list shows each order with its identifier, shipper, vehicle type, cargo, route,
-        quantity and cost. Multi-vehicle orders are grouped into a single batch row that summarises
-        the vehicles and their journey stages, and can be expanded to show each vehicle.
+        Every order appears with its identifier, shipper, vehicle type, cargo, route, quantity and
+        cost. Orders spanning several vehicles are grouped into a single batch row that summarises
+        the vehicles and their journey stages; expand it to see each vehicle.
       </p>
       <ul>
         <li>
-          <strong>Journey stage</strong> — each order shows its current stage (for example,
+          <strong>Journey stage</strong>: each order shows its current stage (for example,
           accepted, loading, in transit, completed). See §17 for the journey-status glossary.
         </li>
         <li>
-          <strong>Bidding indicator</strong> — orders that are open for bidding are marked as such.
+          <strong>Bidding indicator</strong>: orders that are open for bidding are marked as such.
         </li>
       </ul>
 
@@ -1376,20 +1375,20 @@
     <section>
       <h1>10. Bidding on behalf of shippers</h1>
       <p>
-        When an order is opened for bidding, carriers/drivers place offers. As the queue
-        organization you review the offers on the shipper's behalf and accept the driver you judge
-        best.
+        Once an order is open for bidding, carriers and drivers start sending offers. You review
+        those offers on the shipper's behalf and accept the driver you judge best for the job.
       </p>
 
       <h3>10.1 Who can open bidding</h3>
       <div class="box warn">
         <span class="t">Bidding is restricted</span>
         <p>
-          The bidding control is available only to the <strong>Queue Organization Admin</strong>
-          (role 11) for an order that belongs to their organization, and to the
-          <strong>Super Admin</strong> (role 6). A <strong>Queue Dispatcher</strong> (role 12) does
-          not see the control, and the platform refuses the action if attempted — a dispatcher can
-          still run the queue and orders, but cannot open bidding on a shipper's behalf.
+          Only the <strong>Queue Organization Admin</strong> (role 11) gets the bidding control,
+          and only for an order belonging to their own organization. The
+          <strong>Super Admin</strong> (role 6) gets it too. A <strong>Queue Dispatcher</strong>
+          (role 12) never sees the control, and the platform refuses the action if one is
+          attempted. Dispatchers can still run the queue and orders; they just cannot open bidding
+          on a shipper's behalf.
         </p>
       </div>
 
@@ -1411,8 +1410,8 @@
           <strong>sort</strong> order, and set a <strong>display limit</strong>.
         </li>
         <li>
-          Compare the offers. Each offer shows the driver's details, their offer, and — where
-          available — distance and vehicle information.
+          Compare the offers. Each one shows the driver's details, their offer and, where it is
+          available, distance and vehicle information.
         </li>
         <li>
           Select <strong>Accept</strong> on the offer you want. The console accepts that specific
@@ -1487,9 +1486,9 @@
       <div class="box">
         <span class="t">Accepting requires the exact bid</span>
         <p>
-          The console only accepts a bid when it can identify the specific driver and decision from
-          the loaded bid list. If those identifiers are not available it reports a clear error
-          instead of guessing which driver to accept. Reload the bids and try again if this occurs.
+          The console accepts a bid only when it can pin down the exact driver and decision from
+          the bid list it has loaded. When it cannot, you get a clear error instead of a guess
+          about which driver to take. Reload the bids and try again if that happens.
         </p>
       </div>
     </section>
@@ -1498,8 +1497,8 @@
     <section>
       <h1>11. Reporting and analytics</h1>
       <p>
-        The <strong>Reports</strong> area summarises activity for the loading place using key
-        figures and simple charts, plus a searchable list of organizations.
+        The <strong>Reports</strong> area sums up activity for the loading place with a few key
+        figures, a couple of simple charts, and a list of organizations you can search.
       </p>
 
       <h3>11.1 Key figures</h3>
@@ -1533,12 +1532,12 @@
       <h3>11.2 Charts and the organization list</h3>
       <ul>
         <li>
-          <strong>Donut chart</strong> — a proportional view of the current distribution (for
+          <strong>Donut chart</strong>: a proportional view of the current distribution (for
           example, waiting by category).
         </li>
-        <li><strong>Monthly bar chart</strong> — activity over recent months.</li>
+        <li><strong>Monthly bar chart</strong>: activity over recent months.</li>
         <li>
-          <strong>Organization report list</strong> — a list of organizations with search, sortable
+          <strong>Organization report list</strong>: a list of organizations with search, sortable
           columns and pagination (five rows per page).
         </li>
       </ul>
@@ -1551,10 +1550,11 @@
       <div class="box warn">
         <span class="t">How the figures are produced</span>
         <p>
-          The figures and charts on this page are computed in the console from the data it has
-          loaded, not from a dedicated analytics service. They are intended for operational
-          monitoring. A built-in PDF export of these reports is not confirmed; use your browser's
-          print function if a printable copy is required, and treat the figures as working values.
+          This page works out its figures and charts in the console from the data it has loaded;
+          there is no separate analytics service behind them. That makes them useful for
+          operational monitoring. A built-in PDF export of these reports is not confirmed, so use
+          your browser's print function if you need a printable copy, and keep treating the figures
+          as working values.
         </p>
       </div>
     </section>
@@ -1563,8 +1563,8 @@
     <section>
       <h1>12. Real-time notifications and connection status</h1>
       <p>
-        The console keeps a live connection to the platform so that queue changes — check-ins,
-        dispatches, removals, bids and organization updates — appear without a manual refresh.
+        The console holds a live connection to the platform, so queue changes such as check-ins,
+        dispatches, removals, bids and organization updates show up without you refreshing the page.
       </p>
 
       <h3>12.1 The live connection</h3>
@@ -1604,9 +1604,9 @@
       <div class="box">
         <span class="t">If the badge stays on Connecting</span>
         <p>
-          Check your network connection and try reloading the page. If your session has expired, the
-          connection is closed deliberately and you are signed out — sign in again with a one-time
-          code (§3). See §16 for more.
+          Check your network and reload the page. If your session has expired, the console closes
+          the connection on purpose and signs you out; sign in again with a one-time code (§3). See
+          §16 for more.
         </p>
       </div>
     </section>
@@ -1615,9 +1615,9 @@
     <section>
       <h1>13. Security compliance view</h1>
       <p>
-        The <strong>Security</strong> area presents the console's INSA security compliance
-        information. It is a reference and tracking view; it does not change the security of the
-        running system.
+        The <strong>Security</strong> area shows the console's INSA security compliance
+        information. Think of it as a reference and tracking view: opening it does not change how
+        secure the running system is.
       </p>
 
       <h3>13.1 The tabs</h3>
@@ -1651,8 +1651,8 @@
       <h3>13.2 Tabs, requirements and testing</h3>
       <ul>
         <li>
-          The standard is organised into five focus areas (numbered 2.1 to 2.5), with a set of
-          requirements and tests and a set of tracked vulnerabilities.
+          The standard is organised into five focus areas (numbered 2.1 to 2.5). Each one comes
+          with a set of requirements and tests, plus a set of tracked vulnerabilities.
         </li>
         <li>
           In the <strong>Testing</strong> tab you can mark each test as passed or failed. The counts
@@ -1663,11 +1663,11 @@
       <div class="box">
         <span class="t">Where test tracking is stored</span>
         <p>
-          Pass/fail marks you record in the Testing tab are saved in this browser (local storage).
-          They persist across reloads on the same browser and device, but they are not shared
-          between users, browsers or devices. Selecting a test's active status again clears it; a
-          test with no mark is shown as untested. Treat the marks as a local working checklist for
-          this submission.
+          Pass/fail marks you record in the Testing tab are saved in this browser's local storage.
+          They survive reloads on that same browser and device, but they are not shared with other
+          users, browsers or devices. Selecting a test's active status again clears it, and a test
+          with no mark reads as untested. Treat the marks as your own working checklist for this
+          submission.
         </p>
       </div>
 
@@ -1681,34 +1681,33 @@
     <section>
       <h1>14. Settings</h1>
       <p>
-        <strong>Settings</strong> is where you control your account, language and appearance for the
+        <strong>Settings</strong> is where you handle your account, language and appearance for the
         console.
       </p>
 
       <h3>14.1 What you can change</h3>
       <ul>
-        <li><strong>Language</strong> — switch the interface between English and Amharic (§15).</li>
-        <li><strong>Appearance</strong> — switch between light and dark theme (§15).</li>
-        <li><strong>Sign Out</strong> — end your session and return to the sign-in screen.</li>
+        <li><strong>Language</strong>: switch the interface between English and Amharic (§15).</li>
+        <li><strong>Appearance</strong>: switch between light and dark theme (§15).</li>
+        <li><strong>Sign Out</strong>: end your session and return to the sign-in screen.</li>
       </ul>
 
       <h3>14.2 Account options that are not enabled</h3>
       <div class="box warn">
         <span class="t">Disabled in this release</span>
         <p>
-          Profile editing, notification preferences and two-factor authentication appear in the
-          account area but are <strong>not enabled</strong> in this release, and are shown with an
-          explanatory label. There is no server-side endpoint behind them, so they do not save any
-          change. Do not rely on them to update your account; contact the platform administrator for
-          account changes.
+          Profile editing, notification preferences and two-factor authentication do appear in the
+          account area, but they are <strong>not enabled</strong> in this release and each carries
+          an explanatory label. Nothing sits behind them on the server, so no change you make there
+          is ever saved. Do not rely on them to update your account; ask the platform administrator
+          instead.
         </p>
       </div>
 
       <h3>14.3 Danger zone</h3>
       <p>
-        A danger zone provides an account-deletion action, protected by a confirmation dialog. This
-        is a destructive, account-level action; use it only when the account is genuinely to be
-        removed.
+        The danger zone holds an account-deletion action behind a confirmation dialog. It removes
+        the whole account, so reach for it only when you genuinely want the account gone.
       </p>
 
       <p class="fill">
@@ -1724,24 +1723,24 @@
       <h3>15.1 Language</h3>
       <ul>
         <li>
-          The console runs in <strong>English</strong> or <strong>Amharic</strong>. Use the language
-          selector on the sign-in screen or in <strong>Settings</strong>.
+          The console runs in <strong>English</strong> or <strong>Amharic</strong>. Pick your
+          language on the sign-in screen or in <strong>Settings</strong>.
         </li>
         <li>
-          Your choice is saved in the browser and applied on your next visit to the console on the
-          same browser and device.
+          Your choice is saved in the browser and applied the next time you open the console on
+          that same browser and device.
         </li>
       </ul>
 
       <h3>15.2 Appearance</h3>
       <ul>
         <li>
-          The console supports a <strong>light</strong> and a <strong>dark</strong> theme. The theme
-          control is in <strong>Settings</strong>.
+          There is a <strong>light</strong> and a <strong>dark</strong> theme. The theme control
+          lives in <strong>Settings</strong>.
         </li>
         <li>
-          Your theme choice is saved in the browser and applied on your next visit on the same
-          browser and device.
+          Your theme choice is saved in the browser and applied the next time you visit on that
+          same browser and device.
         </li>
       </ul>
 
@@ -1752,8 +1751,8 @@
       <div class="box">
         <span class="t">Saved per browser</span>
         <p>
-          Language and theme choices are stored in the browser, so they are specific to this browser
-          and device and do not follow your account to another device.
+          Language and theme choices are kept in the browser, so they belong to that browser and
+          device. They do not follow your account to another one.
         </p>
       </div>
     </section>
@@ -1820,8 +1819,8 @@
           <tr>
             <td>The reports figures look different from another screen.</td>
             <td>
-              Report figures are computed in the console from loaded data and are working values
-              (§11). Refresh to load the latest data.
+              The console works these figures out from whatever data it has loaded, so treat them
+              as working values (§11). Refresh to pull the latest data.
             </td>
           </tr>
         </tbody>
@@ -1870,11 +1869,11 @@
           </tr>
           <tr>
             <td>Queue Organization Admin</td>
-            <td>Role 11 — owns the loading place and can approve/suspend it.</td>
+            <td>Role 11: owns the loading place and can approve/suspend it.</td>
           </tr>
           <tr>
             <td>Queue Dispatcher</td>
-            <td>Role 12 — runs the queue but cannot manage bidding.</td>
+            <td>Role 12: runs the queue but cannot manage bidding.</td>
           </tr>
           <tr>
             <td>Check-in</td>
@@ -1883,7 +1882,7 @@
           <tr>
             <td>FIFO</td>
             <td>
-              First-in, first-out — the default order in which waiting vehicles are dispatched.
+              First-in, first-out: the default order in which waiting vehicles are dispatched.
             </td>
           </tr>
           <tr>
@@ -1943,7 +1942,7 @@
           </tr>
           <tr>
             <td>Escalation / account issues</td>
-            <td>Marew Masresha, General Manager, Dynamics Transport &mdash; <code>mmarew@gmail.com</code>, <code>0983222221</code></td>
+            <td>Marew Masresha, General Manager, Dynamics Transport, <code>mmarew@gmail.com</code>, <code>0983222221</code></td>
           </tr>
         </tbody>
       </table>
@@ -1953,9 +1952,9 @@
     <section>
       <h1>Document control</h1>
       <p>
-        This End User Guide (<strong>UG-1.0.0</strong>) describes Dynamics Queue Admin version
-        <strong>1.0.0</strong> as implemented in the submitted release. It is issued with the
-        Software Requirements Specification (SRS), the Software Design Description (SDD), the
+        This End User Guide (<strong>UG-1.0.0</strong>) covers Dynamics Queue Admin version
+        <strong>1.0.0</strong> as it is built in the submitted release. It goes out together with
+        the Software Requirements Specification (SRS), the Software Design Description (SDD), the
         Technical Design / Low-Level Design (TDD/LLD) and the Security Documentation.
       </p>
       <table class="grid">
@@ -1968,7 +1967,7 @@
         <tbody>
           <tr>
             <td>Document identifier</td>
-            <td>UG-1.0.0 — End User Guide (dispatch-queue console)</td>
+            <td>UG-1.0.0: End User Guide (dispatch-queue console)</td>
           </tr>
           <tr>
             <td>Product and version</td>
@@ -1996,7 +1995,7 @@
           </tr>
           <tr>
             <td>Revision</td>
-            <td>1.0.0 — initial issue</td>
+            <td>1.0.0, initial issue</td>
           </tr>
         </tbody>
       </table>

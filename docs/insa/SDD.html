@@ -364,12 +364,12 @@
       <div class="box">
         <span class="t">As-built document</span>
         <p>
-          This document describes the design of the submitted release of the Dynamics Queue Admin
-          console as implemented in <code>queadmin-frontend</code>. It is the design counterpart to
-          the SRS and is prepared for INSA Secure Website Management Standard review. Where
-          behaviour is server-enforced in the backend (<code>transportBackEndNative</code>) it is
-          stated explicitly, so reviewers can distinguish client responsibility from backend
-          authority.
+          What follows is the design of the Dynamics Queue Admin console release we are submitting,
+          as it actually exists in <code>queadmin-frontend</code>. It is the design side of the SRS
+          and was written for review under the INSA Secure Website Management Standard. Where the
+          backend (<code>transportBackEndNative</code>) is what really enforces a behaviour, we say
+          so in the text, so a reviewer can tell what the client is responsible for and what the
+          server decides.
         </p>
       </div>
     </section>
@@ -453,47 +453,52 @@
       <h1>1. Introduction</h1>
       <h3>1.1 Purpose</h3>
       <p>
-        This document describes the architecture and internal design of the Dynamics Queue Admin web
-        console (<code>queadmin-frontend</code>, SPA) as implemented. It defines the system context,
-        the layered architecture, the functional decomposition, the components, data, interfaces,
-        security posture, and deployment model of the console, and supports INSA submission review
-        against the Secure Website Management Standard (Version 1.0, 2014 EC).
+        This is the architecture and internal design of the Dynamics Queue Admin web console
+        (<code>queadmin-frontend</code>, SPA), written against the code as we built it. It covers
+        the system context, the layers, what the console breaks down into functionally, the
+        components, the data it holds, the interfaces it calls, how the thing is secured, and how it
+        is deployed. INSA reviews our submission against this document and the Secure Website
+        Management Standard (Version 1.0, 2014 EC).
       </p>
 
       <h3>1.2 Scope</h3>
       <p>
-        The scope is the client application (Web Application, asset code
+        In scope is the client application only (Web Application, asset code
         <strong>ASSET-DYN-QA-001</strong>, version 1.0.0). The backend service
-        (<code>transportBackEndNative</code>, REST + Socket.IO) is described only at the level of
-        the contracts this SPA depends on; its internal design is outside the scope of this
-        document. The console operates a single kind of tenant — a <em>loading place</em> or
-        <em>Queue Organization</em> — and provides three jobs: loading-place management, the FIFO
-        driver queue, and bidding on behalf of shippers.
+        (<code>transportBackEndNative</code>, REST + Socket.IO) appears here only where this SPA
+        depends on its contracts; its internal design belongs to a separate document. The console
+        runs a single kind of tenant, a <em>loading place</em> (a <em>Queue Organization</em>), and
+        it does three things for that tenant: manage the loading place, run the FIFO driver queue,
+        and handle bidding for shippers.
       </p>
 
       <h3>1.3 References</h3>
       <ul>
-        <li><code>src/utils/constant.ts</code> — single source of truth for REST endpoint paths</li>
-        <li><code>src/lib/redux/api/*.ts</code> — endpoint modules and RTK Query contract</li>
-        <li><code>src/lib/redux/api/base.ts</code> — base query, credentials, 401 → logout</li>
+        <li><code>src/utils/constant.ts</code>, the single source of truth for REST endpoint paths</li>
+        <li><code>src/lib/redux/api/*.ts</code>, the endpoint modules and the RTK Query contract</li>
+        <li><code>src/lib/redux/api/base.ts</code>, the base query, credentials, 401 → logout</li>
         <li>
-          <code>src/lib/socket.ts</code> — Socket.IO client, subscriptions, debounced invalidation
+          <code>src/lib/socket.ts</code>, the Socket.IO client with its subscriptions and debounced
+          invalidation
         </li>
-        <li><code>src/routes/AppRoutes.tsx</code> — route table and lazy loading</li>
+        <li><code>src/routes/AppRoutes.tsx</code>, the route table and lazy loading</li>
         <li>
           <code>src/components/auth/ProtectedRoute.tsx</code>,
           <code>src/components/auth/RoleGuard.tsx</code>
         </li>
         <li>
-          <code>src/types/queue.ts</code>, <code>src/lib/redux/api/types.ts</code> — domain types
+          <code>src/types/queue.ts</code> and <code>src/lib/redux/api/types.ts</code>, which hold
+          the domain types
         </li>
         <li>
-          <code>src/data/insaStandard.ts</code> — INSA standard content for the compliance dashboard
+          <code>src/data/insaStandard.ts</code>, the INSA standard content behind the compliance
+          dashboard
         </li>
         <li>
-          <code>vite.config.ts</code>, <code>.env.example</code> — build and environment model
+          <code>vite.config.ts</code> and <code>.env.example</code>, which describe the build and
+          the environment model
         </li>
-        <li><code>docs/insa/assets/*.mmd</code> and <code>*.svg</code> — figure sources</li>
+        <li><code>docs/insa/assets/*.mmd</code> and <code>*.svg</code>, the sources for the figures</li>
       </ul>
 
       <h3>1.4 Definitions</h3>
@@ -562,18 +567,20 @@
       <h1>2. System overview and context</h1>
       <p>
         Dynamics Queue Admin is the dispatch-queue management console of the Dynamics freight
-        marketplace. Display name “Queue Admin”. Asset type: Web Application. Asset code
-        <strong>ASSET-DYN-QA-001</strong>. Version 1.0.0. It is a single-page React application
-        served in production at <code>queue.dynamicsroute.tech</code>.
+        marketplace. Its display name is “Queue Admin”, its asset type is Web Application, its asset
+        code is <strong>ASSET-DYN-QA-001</strong>, and the version covered here is 1.0.0. Underneath
+        it is a single-page React application served in production at
+        <code>queue.dynamicsroute.tech</code>.
       </p>
       <p>
-        A Queue Organization is a physical loading place. Drivers who arrive at the place prove
-        presence by GPS check-in and join a FIFO line; dispatchers assign queued drivers to shipper
-        requests and can override or remove an entry with an audited reason; queue-org admins
-        administer the place’s profile and members and approve bidding per order; platform admins
-        approve origins and oversee all organizations. The backend
-        (<code>transportBackEndNative</code>) is the authority for all business rules; the console
-        is a presentation and orchestration layer over its REST and Socket.IO contracts.
+        A Queue Organization is a physical loading place. Drivers who get there prove they are
+        present with a GPS check-in and join a FIFO line. Dispatchers hand queued drivers out to
+        shipper requests, and can move an entry up the order or drop it entirely as long as they
+        give a reason that gets recorded. Queue-org admins look after the place’s profile and its
+        members and decide, order by order, whether bidding is open. Platform admins approve
+        origins and keep watch over every organization. All of those business rules are enforced by
+        the backend (<code>transportBackEndNative</code>); the console is the layer that renders
+        them and drives them through the REST and Socket.IO contracts.
       </p>
 
       <h3>2.1 External actors and systems</h3>
@@ -595,13 +602,16 @@
           <tr>
             <td>Driver / Vehicle Owner</td>
             <td>
-              GPS-proven check-in, FIFO queue position, bids, and journey status updates.
-              Represented by a vehicle-driver assignment.
+              Checks in with GPS, holds a place in the FIFO queue, bids, and updates journey
+              status. Every driver is represented by a vehicle-driver assignment.
             </td>
           </tr>
           <tr>
             <td>Queue Org Admin (11) / Queue Dispatcher (12)</td>
-            <td>Primary users of the console; operate the loading-place queue and bidding.</td>
+            <td>
+              The day-to-day operators of the console; they run the loading-place queue and the
+              bidding.
+            </td>
           </tr>
           <tr>
             <td>Admin (3) / Super Admin (6)</td>
@@ -656,29 +666,29 @@
       <h3>3.1 Architectural goals</h3>
       <ul>
         <li>
-          Single-page React SPA with strict, layered route authorization (<code
+          A single-page React SPA where route authorization is layered and strict (<code
             >ProtectedRoute</code
           >
           → <code>RoleGuard</code>).
         </li>
         <li>
-          Centralized API access: one RTK Query base <code>api</code> extended by feature endpoint
-          modules, plus a legacy axios instance for a small set of services.
+          API access goes through one place: a single RTK Query base <code>api</code> that feature
+          endpoint modules extend, plus a legacy axios instance for the few services still using it.
         </li>
         <li>
-          Cookie-based session with no token in JavaScript; a single 401 handler logs the user out
-          everywhere.
+          The session lives in a cookie, never in a token JavaScript can read, and one 401 handler
+          logs the user out everywhere at once.
         </li>
         <li>
-          Realtime synchronization through Socket.IO subscriptions with debounced cache
-          invalidation.
+          Queue updates arrive over Socket.IO subscriptions, and the cache invalidation they set off
+          is debounced so bursts settle into a single refetch.
         </li>
         <li>
-          Clear separation of concerns across presentation, application, state/data, API contract,
-          and external layers.
+          Presentation, application, state/data, API contract and external concerns each sit in
+          their own layer.
         </li>
         <li>
-          Hand-written CSS with design tokens for a lightweight, dependency-free visual system.
+          CSS is written by hand on top of design tokens, with no UI framework to carry around.
         </li>
       </ul>
 
@@ -848,20 +858,22 @@
 
       <h3>3.5 Single-page routing and the guard stack</h3>
       <p>
-        The application is a single <code>BrowserRouter</code> mounted in <code>src/main.tsx</code>.
-        Routes are declared in <code>src/routes/AppRoutes.tsx</code>; every page is
-        <code>React.lazy</code>-loaded and wrapped in a <code>Suspense</code> fallback
-        (<code>PageLoader</code>), so each route ships in its own dynamic-import chunk. Default
-        redirects send <code>/</code> and <code>*</code> to <code>/dashboard</code>.
+        One <code>BrowserRouter</code> is mounted in <code>src/main.tsx</code>, and every route is
+        declared in <code>src/routes/AppRoutes.tsx</code>. Pages load through
+        <code>React.lazy</code> behind a <code>Suspense</code> fallback
+        (<code>PageLoader</code>), which puts each route in its own dynamic-import chunk. Two
+        default redirects send <code>/</code> and <code>*</code> to <code>/dashboard</code>.
       </p>
       <p>
-        Authorization is a two-stage guard stack. <code>ProtectedRoute</code> requires an
-        authenticated user (<code>auth.userData</code>); by default it also requires at least one
-        queue organization, redirecting to <code>/setup-org</code> when none exists (the
-        <code>/setup-org</code> route passes <code>requireOrg={false}</code>). Nested inside it,
-        <code>RoleGuard</code> admits only role ids <code>{11, 12, 3, 6}</code> and otherwise
-        redirects to <code>/login</code>. Client guards are a usability boundary only; the backend
-        re-checks every request.
+        Authorization runs through two guards stacked on top of each other.
+        <code>ProtectedRoute</code> first checks that there is an authenticated user
+        (<code>auth.userData</code>), and by default that the account belongs to at least one queue
+        organization; when there is none it sends the user to <code>/setup-org</code>. That
+        <code>/setup-org</code> route passes <code>requireOrg={false}</code>. Sitting inside it,
+        <code>RoleGuard</code> lets
+        through only role ids <code>{11, 12, 3, 6}</code> and otherwise redirects to
+        <code>/login</code>. These guards are there to keep the interface honest for whoever is
+        using it; every request is re-checked by the backend anyway.
       </p>
     </section>
 
@@ -970,8 +982,8 @@
               the authoritative driver bids cheapest-first (<code
                 >GET /queue/bidding/order/:shipperRequestUniqueId/bids</code
               >), and accept a bid using explicit ids via
-              <code>PUT /shipper/acceptDriverOffer</code>. A missing id is a hard, visible failure —
-              no fuzzy reconstruction.
+              <code>PUT /shipper/acceptDriverOffer</code>. A missing id fails hard and stays
+              visible to the operator; nothing gets reconstructed by guesswork.
             </td>
             <td>
               <code>src/components/orders/bids/*</code>,
@@ -1021,9 +1033,10 @@
     <section>
       <h1>5. Component design</h1>
       <p>
-        Routes and guards are defined in <code>src/routes/AppRoutes.tsx</code>; guards live in
-        <code>src/components/auth/</code>. Pages compose feature components; feature components
-        consume RTK Query hooks from <code>src/lib/redux/api</code>.
+        Routes and guards are set up in <code>src/routes/AppRoutes.tsx</code>, with the guards
+        themselves living in <code>src/components/auth/</code>. Pages are assembled out of feature
+        components, and those components get their data from RTK Query hooks in
+        <code>src/lib/redux/api</code>.
       </p>
 
       <h3>5.1 Routing and authorization</h3>
@@ -1324,7 +1337,7 @@
           <tr>
             <td>zustand store</td>
             <td>
-              <code>queueadmin:store</code> — persisted <code>selectedOrgId</code> plus
+              <code>queueadmin:store</code>: persisted <code>selectedOrgId</code> plus
               <code>socketConnected</code> (transient)
             </td>
             <td><code>src/store/queueAdminStore.ts</code>.</td>
@@ -1353,14 +1366,15 @@
 
       <h3>6.3 Data flow (high level)</h3>
       <p>
-        UI actions invoke RTK Query hooks/mutations or legacy axios services. The base query
-        resolves the API prefix from <code>VITE_API_BASE_URL</code>/<code>VITE_API_URL</code>
-        (normalized to end in <code>/api</code>) and sends the httpOnly cookie via
-        <code>credentials: "include"</code>. Responses populate the RTK Query cache; socket events
-        (queue and organization) trigger debounced tag invalidation that refetches the affected
-        queries. Client state (auth profile, selected organization, theme, language, socket flag)
-        lives in Redux slices, zustand, React Context, and localStorage; no token is ever placed in
-        JavaScript-accessible storage.
+        When someone acts in the UI, the handler calls an RTK Query hook or mutation, or one of the
+        legacy axios services. The base query works out the API prefix from
+        <code>VITE_API_BASE_URL</code>/<code>VITE_API_URL</code> (trimmed so it always ends in
+        <code>/api</code>) and carries the httpOnly cookie with
+        <code>credentials: "include"</code>. Whatever comes back settles into the RTK Query cache.
+        Socket events for the queue and for organizations then invalidate tags after a short
+        debounce, which pulls the affected queries again. Client state (the auth profile, the
+        selected organization, theme, language, the socket flag) sits in Redux slices, zustand,
+        React Context and localStorage; no token is ever written where JavaScript can read it.
       </p>
     </section>
 
@@ -1369,9 +1383,10 @@
       <h1>7. Interface design</h1>
       <h3>7.1 REST API</h3>
       <p>
-        Endpoint paths are centralized in <code>src/utils/constant.ts</code> (the single source of
-        truth); the API base resolves to <code>&lt;VITE_API_BASE_URL&gt;/api</code>. Methods below
-        reflect the injected endpoint modules. Frontend-callable surface:
+        Endpoint paths are all declared in <code>src/utils/constant.ts</code>, so there is one
+        place to change them, and the API base resolves to
+        <code>&lt;VITE_API_BASE_URL&gt;/api</code>. The methods below come from the endpoint modules
+        we actually inject. This is everything the frontend can call:
       </p>
       <table class="grid">
         <thead>
@@ -1562,43 +1577,45 @@
 
       <h3>7.3 Socket.IO protocol</h3>
       <p>
-        The client connects with <code>withCredentials</code> and an <code>auth</code> payload of
-        <code>{ user, phoneNumber }</code>. The socket identity is derived from the account role:
-        roles 3/6 map to <code>admin</code>; queue staff (roles 11 and 12) share a single
-        <code>queueOrgAdmin</code> identity, because the backend fan-out keys queue events under
-        that identity for both roles. Subscriptions use <code>queue:subscribe</code> /
-        <code>queue:unsubscribe</code> with a reference-counted room keyed by
-        <code>queueOrganizationUniqueId</code> (and optional <code>queueDate</code>); rooms are
-        re-subscribed automatically on (re)connect. Inbound queue events are parsed for a
-        <code>messageTypes</code> value; acknowledgements and ping/pong are ignored; organization
-        events invalidate <code>QueueOrganizations</code> after a 100&nbsp;ms debounce, and all
-        other queue events invalidate <code>QueueStatus</code>, <code>DriverQueue</code>, and
-        <code>ShipperRequests</code> after a 250&nbsp;ms debounce. A socket
-        <code>connect_error</code> whose message indicates <code>unauthorized</code>/<code
+        The client connects with <code>withCredentials</code> plus an <code>auth</code> payload of
+        <code>{ user, phoneNumber }</code>. Which identity the socket takes depends on the account
+        role: roles 3/6 become <code>admin</code>, while queue staff (roles 11 and 12) both get the
+        one <code>queueOrgAdmin</code> identity, because that is the key the backend fans queue
+        events out under for either role. Subscribing happens over
+        <code>queue:subscribe</code> / <code>queue:unsubscribe</code> against a reference-counted
+        room keyed on <code>queueOrganizationUniqueId</code> (plus an optional
+        <code>queueDate</code>), and the room is re-subscribed for us whenever the socket
+        (re)connects. Queue events that arrive are read for a <code>messageTypes</code> value, while
+        acknowledgements and ping/pong are dropped. An organization event invalidates
+        <code>QueueOrganizations</code> after a 100&nbsp;ms debounce; any other queue event
+        invalidates <code>QueueStatus</code>, <code>DriverQueue</code> and
+        <code>ShipperRequests</code> after a 250&nbsp;ms one. If a <code>connect_error</code> comes
+        in with a message pointing at <code>unauthorized</code>/<code
           >token</code
-        >
-        disconnects and ends the session.
+        >, we disconnect and the session ends.
       </p>
 
       <h3>7.4 Third-party services</h3>
       <p>
-        Place search for order origin/destination uses the Photon geocoder
-        (<code>VITE_PHOTON_URL</code>, default <code>https://photon.komoot.io/api/</code>), merged
-        with a built-in list of Ethiopian cities and with a local fallback if the external service
-        is unavailable. OpenStreetMap / Nominatim / OSRM are noted as optional external map services
-        and are not wired into this console asset.
+        Searching for an order’s origin or destination goes through the Photon geocoder
+        (<code>VITE_PHOTON_URL</code>, default <code>https://photon.komoot.io/api/</code>). Those
+        results are merged with a built-in list of Ethiopian cities, and if the external service is
+        unavailable we fall back to that list locally. OpenStreetMap / Nominatim / OSRM are listed
+        as optional external map services but are not wired into this console asset.
       </p>
 
       <h3>7.5 Error-handling contract</h3>
       <p>
-        <code>src/utils/parseError.ts</code> normalizes axios errors, RTK Query errors, serialized
-        errors, and generic throws into a single human-readable message; it reads server
+        <code>src/utils/parseError.ts</code> takes whatever failure reaches it, whether it came
+        from axios, RTK Query, a serialized error or a plain throw, and turns it into one message a
+        person can read. It looks for the server’s
         <code>message</code>/<code>error</code>/<code>details</code>/<code>validation</code> fields
-        and maps HTTP status codes (400/401/403/404/409/429/5xx) to fallbacks. UI call sites surface
-        the result through <code>sonner</code> toasts. Status semantics are distinguished:
-        <code>401</code> means “session expired — log in again” and triggers logout;
-        <code>403</code> means “authenticated but not permitted” and is shown as a permission error
-        without logging out.
+        first and only falls back to its own wording for HTTP status codes
+        (400/401/403/404/409/429/5xx). Call sites in the UI show the result as a
+        <code>sonner</code> toast. Two statuses are deliberately treated differently: a
+        <code>401</code> means the session is gone and the person has to log in again, so it logs
+        them out, while a <code>403</code> means they are signed in but not allowed to do that, so
+        it is shown as a permission error and they stay logged in.
       </p>
     </section>
 
@@ -1626,11 +1643,11 @@
 
       <h3>8.2 Cookie session and CSRF posture</h3>
       <p>
-        Because the session is an httpOnly cookie sent with <code>credentials: "include"</code>, the
-        CSRF posture depends on backend controls (same-site cookie attributes and trusted-origin
-        checks) that are outside this client asset. The client does not add custom CSRF tokens and
-        does not store credentials in script-accessible storage. The console never sets
-        <code>document.cookie</code>.
+        Our session is an httpOnly cookie sent with <code>credentials: "include"</code>, so CSRF
+        protection has to come from the backend’s own controls, such as same-site cookie attributes
+        and trusted-origin checks. Those sit outside this client asset. The client does not mint its
+        own CSRF tokens and never puts credentials where scripts can read them, and the console
+        never writes to <code>document.cookie</code> at all.
       </p>
 
       <h3>8.3 Role enforcement boundary (client vs backend)</h3>
@@ -1668,13 +1685,13 @@
 
       <h3>8.4 Input validation and sanitization</h3>
       <p>
-        Forms use <code>react-hook-form</code> with <code>zod</code> schemas
-        (<code>src/schemas/queue.ts</code>) covering login, registration, organization setup and
-        profile, check-in, dispatch, order creation, and override. Schemas constrain types, lengths,
-        enums, UUIDs, coordinate ranges, and quantity limits, and include sanitizers that strip HTML
-        tags, control characters, and collapse whitespace (<code>sanitizeText</code>,
-        <code>sanitizeEmail</code>). React escapes rendered values by default, and i18n is
-        configured with <code>escapeValue: false</code> because React performs escaping.
+        Every form runs on <code>react-hook-form</code> against <code>zod</code> schemas in
+        <code>src/schemas/queue.ts</code>, covering login, registration, organization setup and
+        profile, check-in, dispatch, order creation and override. The schemas pin down types,
+        lengths, enums, UUIDs, coordinate ranges and quantity limits, and they carry sanitizers that
+        strip HTML tags and control characters and collapse whitespace
+        (<code>sanitizeText</code>, <code>sanitizeEmail</code>). React already escapes whatever it
+        renders, which is why i18n is configured with <code>escapeValue: false</code>.
       </p>
 
       <h3>8.5 Storage hygiene and build hardening</h3>
@@ -1700,15 +1717,15 @@
 
       <h3>8.6 INSA compliance dashboard</h3>
       <p>
-        The console includes a security-compliance dashboard that encodes the INSA Secure Website
-        Management Standard (Version 1.0, 2014 EC) as a self-assessment. Content is sourced from
-        <code>src/data/insaStandard.ts</code>: <strong>5 focus areas</strong> (requirement
-        gathering, design, implementation, hosting, operation &amp; management),
-        <strong>35 requirements</strong>, <strong>8 common vulnerabilities</strong> (Annex A), and a
-        <strong>102-item security test</strong>
-        checklist (Annex B). The checklist lets a reviewer mark each test pass/fail, with results
-        persisted locally (<code>useSecurityChecklist</code>) and scored by
-        <code>src/utils/securityChecklist.ts</code>.
+        The console ships a security-compliance dashboard that turns the INSA Secure Website
+        Management Standard (Version 1.0, 2014 EC) into something a reviewer can work through as a
+        self-assessment. All of its content comes from <code>src/data/insaStandard.ts</code>:
+        <strong>5 focus areas</strong> (requirement gathering, design, implementation, hosting,
+        operation &amp; management), <strong>35 requirements</strong>,
+        <strong>8 common vulnerabilities</strong> (Annex A), and a
+        <strong>102-item security test</strong> checklist (Annex B). The reviewer marks each test
+        pass or fail, the marks stay on that machine (<code>useSecurityChecklist</code>), and
+        <code>src/utils/securityChecklist.ts</code> turns them into a score.
       </p>
     </section>
 
@@ -1717,32 +1734,33 @@
       <h1>9. Deployment and hosting</h1>
       <h3>9.1 Build</h3>
       <p>
-        Static build via Vite (<code>npm run build</code> =
-        <code>tsc -b &amp;&amp; vite build</code>), output to <code>dist/</code>. The Rollup output
-        splits vendor libraries: a <code>vendor</code> chunk (react, react-dom, react-router-dom), a
-        <code>redux</code> chunk (@reduxjs, react-redux, zustand), and an <code>icons</code> chunk
-        (lucide-react). Route components are separate dynamic-import chunks.
+        The build is a plain Vite static build: <code>npm run build</code> runs
+        <code>tsc -b &amp;&amp; vite build</code> and writes everything into <code>dist/</code>.
+        Rollup pulls the heavier libraries out into chunks of their own, a <code>vendor</code> chunk
+        (react, react-dom, react-router-dom), a <code>redux</code> chunk (@reduxjs, react-redux,
+        zustand) and an <code>icons</code> chunk (lucide-react), while route components stay in
+        separate dynamic-import chunks.
       </p>
 
       <h3>9.2 Environment and API base resolution</h3>
       <p>
-        The API base is resolved at compile time from <code>VITE_API_BASE_URL</code>, falling back
-        to <code>VITE_API_URL</code> and then to <code>/api</code>; the value is normalized to end
-        in <code>/api</code> (<code>src/utils/baseUrl.ts</code>). In development, Vite proxies both
-        <code>/api</code> and <code>/socket.io</code> (with WebSocket upgrade) to
-        <code>VITE_API_BASE_URL</code> when set. The socket URL prefers
-        <code>VITE_WEBSOCKET_URL</code>/<code>VITE_SOCKET_URL</code>, falling back to the API base
+        The API base is decided at compile time: <code>VITE_API_BASE_URL</code> first, then
+        <code>VITE_API_URL</code>, then plain <code>/api</code>, with the result normalized so it
+        always ends in <code>/api</code> (<code>src/utils/baseUrl.ts</code>). While developing, Vite
+        proxies <code>/api</code> and <code>/socket.io</code> (WebSocket upgrade included) to
+        <code>VITE_API_BASE_URL</code> when that is set. For the socket we prefer
+        <code>VITE_WEBSOCKET_URL</code>/<code>VITE_SOCKET_URL</code> and otherwise use the API base
         or the page origin.
       </p>
 
       <h3>9.3 Hosting and SPA fallback</h3>
       <p>
-        The built <code>dist/</code> is served as a static site over TLS at
-        <code>queue.dynamicsroute.tech</code>. Because routing is client-side, the host must serve
-        the SPA entry (<code>index.html</code>) for unmatched paths so deep links such as
-        <code>/orgs/:id</code> resolve; the in-app <code>*</code> route then redirects to
-        <code>/dashboard</code>. Session cookies must be delivered over HTTPS with backend-set
-        attributes.
+        We serve the built <code>dist/</code> as a static site over TLS at
+        <code>queue.dynamicsroute.tech</code>. Routing happens in the browser, so the host has to
+        hand back the SPA entry (<code>index.html</code>) for any path it does not recognise;
+        otherwise a deep link like <code>/orgs/:id</code> would not load. Once the app is up, its
+        own <code>*</code> route redirects to <code>/dashboard</code>. Session cookies travel over
+        HTTPS and carry the attributes the backend sets on them.
       </p>
 
       <h3>9.4 Environments</h3>
@@ -1806,9 +1824,9 @@
       <div class="box warn">
         <span class="t">Error boundaries</span>
         <p>
-          This console does not currently declare a React error-boundary component; uncaught render
-          errors are not contained by an in-app boundary. This is recorded as a known limitation
-          (§13).
+          There is no React error-boundary component in this console yet, so a render error that
+          nothing catches will not be contained inside the app. We have logged it as a known
+          limitation (§13).
         </p>
       </div>
     </section>
@@ -1888,7 +1906,8 @@
     <section>
       <h1>12. Requirements-to-design traceability</h1>
       <p>
-        Traceability maps SRS requirement families (FR-*/NFR-*) to design elements. Key mappings:
+        This table maps the SRS requirement families (FR-*/NFR-*) onto the design elements that
+        answer them. The main ones are below:
       </p>
       <table class="grid">
         <thead>
@@ -2051,9 +2070,10 @@
       <div class="box ok">
         <span class="t">End of document</span>
         <p>
-          This is the System &amp; Architecture Design Document (SDD-1.0.0) for Dynamics Queue Admin,
-          submitted by Dynamics Transport. All technical details above reflect the actual repository
-          state of <code>queadmin-frontend</code> version 1.0.0.
+          That closes out the System &amp; Architecture Design Document (SDD-1.0.0) for Dynamics
+          Queue Admin, submitted by Dynamics Transport. Everything above was checked against the
+          repository as it stands in <code>queadmin-frontend</code> version 1.0.0, so what you read
+          here is what is built.
         </p>
       </div>
     </section>
