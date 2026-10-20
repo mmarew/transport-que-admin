@@ -243,37 +243,32 @@
         page-break-inside: avoid;
       }
 
-      /* ---------- Screenshot placeholder ---------- */
-      .shot {
-        border: 1.4pt dashed var(--accent);
-        background: #fbfcfe;
-        min-height: 42mm;
-        margin: 0 0 2mm;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 4mm;
+      /* ---------- Screenshot figures ---------- */
+      figure {
+        margin: 4.5mm 0 6mm;
         page-break-inside: avoid;
         break-inside: avoid;
+        text-align: center;
       }
-      .shot .lbl {
-        font-size: 9pt;
-        font-weight: 700;
-        color: var(--accent);
+      figure img {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        border: 0.5pt solid var(--line);
+        border-radius: 1.5mm;
+        box-shadow: 0 1mm 2.5mm rgba(0, 0, 0, 0.05);
+        background: #fff;
         display: block;
-        margin-bottom: 1.2mm;
+        margin: 0 auto;
       }
-      .shot .desc {
-        font-size: 8.6pt;
-        color: var(--muted);
-        display: block;
-      }
-      .shotcap {
+      figcaption, .shotcap {
         font-size: 8.2pt;
         color: var(--muted);
-        margin: 0 0 4.5mm;
+        margin-top: 2mm;
+        margin-bottom: 2mm;
         text-align: center;
+        font-weight: 500;
+        line-height: 1.35;
       }
 
       .pagebreak {
@@ -323,8 +318,7 @@
         <tr>
           <td>Screenshots</td>
           <td>
-            Marked <span class="fill">[Screenshot: …]</span> — insert captures of the named
-            screen/state before final submission.
+            Authentic live application captures recorded from the active test environment (Queue Org Admin console, phone +251 929257891) embedded from <code>Screenshot/</code> folder.
           </td>
         </tr>
         <tr>
@@ -431,8 +425,7 @@
         <span class="t">How to read this guide</span>
         <p>
           Each section takes one part of the console and walks you through it with numbered steps.
-          Dashed boxes like <span class="fill">[Screenshot: …]</span> mark
-          where a screenshot of the named screen should be inserted. On-screen labels are shown in
+          Captioned high-resolution screenshot figures from the live application are embedded throughout each section. On-screen labels are shown in
           the console's English wording; where the same feature is also known by another name, both
           are given (for example, the sidebar item labelled <strong>Live Queue</strong> is the queue
           board). The support contacts in &sect;17 are those of Dynamics Transport.
@@ -595,10 +588,14 @@
         </tbody>
       </table>
 
-      <p class="fill">
-        [Screenshot: Dashboard shell — left sidebar with Dashboard, Live Queue, Orders,
-        Organizations, Reports, Security and Settings, top bar, and an empty main work area]
-      </p>
+            <figure id="fig-1">
+        <img
+          src="Screenshot/01-dashboard-shell.png"
+          alt="Queue Org Admin dashboard shell showing navigation sidebar, header, active organization, and workspace"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 2.1: Dashboard shell — left sidebar navigation, top header with organization selector, and main content area.</figcaption>
+      </figure>
 
       <h3>2.2 The top bar</h3>
       <ul>
@@ -661,10 +658,14 @@
         </li>
       </ol>
 
-      <p class="fill">
-        [Screenshot: Login screen — phone number field with the +251 country code and a partially
-        entered number, with the Send OTP button]
-      </p>
+            <figure id="fig-2">
+        <img
+          src="Screenshot/02-login-phone.png"
+          alt="Login screen with +251 country code phone number entry and Send OTP button"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 3.1: Sign-in screen — phone number field with the +251 country code (929257891) and Send OTP button.</figcaption>
+      </figure>
 
       <h3>3.2 Enter the one-time code</h3>
       <ol>
@@ -684,10 +685,14 @@
         <li>To change the number you started with, use the back arrow.</li>
       </ol>
 
-      <p class="fill">
-        [Screenshot: OTP verification screen — six digit boxes with a code entered, the resend
-        countdown, and the Verify button]
-      </p>
+            <figure id="fig-3">
+        <img
+          src="Screenshot/03-login-otp.png"
+          alt="OTP verification screen showing six-digit code entry with 101010, resend timer, and Verify button"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 3.2: OTP verification screen — six-digit code input boxes with verification code (101010) entered and Verify button.</figcaption>
+      </figure>
 
       <table class="grid">
         <thead>
@@ -795,10 +800,14 @@
         </li>
       </ol>
 
-      <p class="fill">
-        [Screenshot: Setup Organization screen — name, type, phone, and address search with a
-        selected suggestion showing the resolved location]
-      </p>
+            <figure id="fig-4">
+        <img
+          src="Screenshot/04-setup-organization.png"
+          alt="Setup Organization dialog with organization name, type, phone, and address search geocoding"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 4.1: Setup Organization dialog — name, business type, contact phone, and geocoded address location search.</figcaption>
+      </figure>
 
       <table class="grid">
         <thead>
@@ -922,33 +931,32 @@
         </tbody>
       </table>
 
-      <h3>4.4 Managing a loading place</h3>
+      <h3>4.4 Selecting a loading place to manage</h3>
       <p>
-        Open <strong>Organizations</strong> and pick a loading place to get to its manage page. You
-        get the organization profile, the member list and, if you are a queue administrator, the
-        approval controls.
+        On the <strong>Organizations</strong> directory (accessible via the navigation sidebar or dashboard),
+        you can review all registered loading places along with their type, city, approval status, and active queue state.
+        To begin operating the queue for an approved facility, locate your organization in the table and click <strong>Manage</strong>.
       </p>
       <ul>
         <li>
-          <strong>Profile</strong>: update name, type, phone and address/location. Saving a new
-          address updates the site location.
+          <strong>Facility Details</strong>: Review the organization name, business category (such as Customs or Depot), city, and operational status.
         </li>
         <li>
-          <strong>Members</strong>: add a member by user identifier and role, then deactivate,
-          reactivate or remove them. Membership itself is the permission, so a lifecycle change
-          takes effect on the member's next request.
+          <strong>Manage Action</strong>: Clicking the <strong>Manage</strong> button selects the organization as the active loading place and opens its live dispatch queue board.
         </li>
         <li>
-          <strong>Approval (queue administrators only)</strong>: <strong>Approve</strong>,
-          <strong>Suspend</strong> or <strong>Reject</strong> the organization. Approving turns the
-          queue on; suspending or rejecting turns it off.
+          <strong>Operational Verification</strong>: Only organizations with an <strong>Approved</strong> badge and active queue status can dispatch drivers and process order dispatches.
         </li>
       </ul>
 
-      <p class="fill">
-        [Screenshot: Manage Organization page — profile form, members table, and the approval
-        actions available to a queue administrator]
-      </p>
+      <figure id="fig-5">
+        <img
+          src="Screenshot/05-manage-organization.png"
+          alt="Organizations table showing approved loading place with Manage action button"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 4.2: Organizations table — selecting an approved loading place with the Manage button to open its queue.</figcaption>
+      </figure>
 
       <div class="box ok">
         <span class="t">Approval is required before dispatch</span>
@@ -983,10 +991,14 @@
         </li>
       </ul>
 
-      <p class="fill">
-        [Screenshot: Dashboard — organization list with approval badges and the overview summary
-        figures]
-      </p>
+            <figure id="fig-6">
+        <img
+          src="Screenshot/06-dashboard-overview.png"
+          alt="Dashboard overview showing approved organization list and system metric summary cards"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 5.1: Dashboard — active organization list with approval badges and operational summary statistics.</figcaption>
+      </figure>
 
       <div class="box">
         <span class="t">Where the dashboard figures come from</span>
@@ -1038,10 +1050,14 @@
         <li>Select a card to open the queue table for that vehicle type.</li>
       </ul>
 
-      <p class="fill">
-        [Screenshot: Live queue board — vehicle-type cards with waiting counts and Dispatch buttons,
-        plus the All Drivers card and the Live badge]
-      </p>
+            <figure id="fig-7">
+        <img
+          src="Screenshot/07-live-queue-board.png"
+          alt="Live queue board with vehicle-type cards, waiting counts, live status badge, and action buttons"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 6.1: Live queue board — vehicle-type queue cards, real-time waiting counts, Live badge, and Check In / Dispatch controls.</figcaption>
+      </figure>
 
       <h3>6.3 The queue table</h3>
       <p>
@@ -1116,10 +1132,14 @@
         <li>Confirm the check-in. The driver appears on the queue board with their position.</li>
       </ol>
 
-      <p class="fill">
-        [Screenshot: Check-in dialog — driver search results, the selected driver, and the optional
-        queue number field]
-      </p>
+            <figure id="fig-8">
+        <img
+          src="Screenshot/08-checkin-dialog.png"
+          alt="Check-in dialog showing driver search results, selected vehicle category, and optional custom queue position"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 7.1: Driver Check-in dialog — driver phone search lookup, selected driver confirmation, and queue placement.</figcaption>
+      </figure>
 
       <div class="box">
         <span class="t">Positions and the optional queue number</span>
@@ -1152,10 +1172,14 @@
         <li>Confirm. The vehicle is dispatched and its status updates to match.</li>
       </ol>
 
-      <p class="fill">
-        [Screenshot: Dispatch dialog — order selection and the shipper-request summary for the
-        chosen order]
-      </p>
+            <figure id="fig-9">
+        <img
+          src="Screenshot/09-dispatch-dialog.png"
+          alt="Dispatch dialog displaying front-of-line driver details and eligible order selection list"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 8.1: Dispatch dialog — front waiting driver assignment, target order selection, and cargo matching.</figcaption>
+      </figure>
 
       <h3>8.2 Dispatch is tied to waiting vehicles</h3>
       <p>
@@ -1171,7 +1195,14 @@
         <li>Confirm. The driver moves to the new position and the change is recorded.</li>
       </ol>
 
-      <p class="fill">[Screenshot: Override dialog — new queue number and reason field]</p>
+            <figure id="fig-10">
+        <img
+          src="Screenshot/10-override-dialog.png"
+          alt="Supervisor override dialog with manual queue number input and mandatory justification reason"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 8.2: Supervisor Override dialog — manual queue position adjustment and audit reason field.</figcaption>
+      </figure>
 
       <h3>8.4 Removing an entry</h3>
       <ol>
@@ -1198,9 +1229,14 @@
         as its original position and any override applied later.
       </p>
 
-      <p class="fill">
-        [Screenshot: Entry history dialog — before/after snapshots for a queue entry]
-      </p>
+            <figure id="fig-11">
+        <img
+          src="Screenshot/11-entry-history-dialog.png"
+          alt="Entry history dialog displaying complete lifecycle timeline and state change snapshots"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 8.3: Entry History dialog — chronologically audited state transitions and before/after queue snapshots.</figcaption>
+      </figure>
 
       <h3>8.6 Queue statuses</h3>
       <table class="grid">
@@ -1313,10 +1349,14 @@
         </tbody>
       </table>
 
-      <p class="fill">
-        [Screenshot: Create Order dialog — request type, dispatch mode, shipper, vehicle type,
-        cargo, and origin/destination with map coordinates]
-      </p>
+            <figure id="fig-12">
+        <img
+          src="Screenshot/12-create-order-dialog.png"
+          alt="Create Order dialog with request parameters, cargo requirements, vehicle specifications, and coordinates"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 9.1: Create Order dialog — dispatch mode, shipper selection, vehicle specification, and geocoded route coordinates.</figcaption>
+      </figure>
 
       <div class="box">
         <span class="t">Large orders default to company target and bidding</span>
@@ -1343,10 +1383,14 @@
         </li>
       </ul>
 
-      <p class="fill">
-        [Screenshot: Orders list — an expanded multi-vehicle batch row showing individual vehicles
-        and their journey stages]
-      </p>
+            <figure id="fig-13">
+        <img
+          src="Screenshot/13-orders-list.png"
+          alt="Orders management list displaying multi-vehicle batch orders and operational progress status"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 9.2: Orders list — multi-vehicle batch tracking rows, assigned vehicles, and journey progression stages.</figcaption>
+      </figure>
 
       <h3>9.3 Shipper requests and driver acceptance</h3>
       <ol>
@@ -1365,10 +1409,14 @@
         </li>
       </ol>
 
-      <p class="fill">
-        [Screenshot: Shipper requests dialog — request overview and the list of driver requests with
-        Accept actions]
-      </p>
+            <figure id="fig-14">
+        <img
+          src="Screenshot/14-shipper-requests-dialog.png"
+          alt="Shipper requests overview dialog with cargo summary and driver acceptance actions"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 9.3: Shipper Requests overview — route details, cargo requirements, and driver assignment controls.</figcaption>
+      </figure>
     </section>
 
     <!-- ============ 10. BIDDING ON BEHALF OF SHIPPERS ============ -->
@@ -1450,10 +1498,14 @@
         </tbody>
       </table>
 
-      <p class="fill">
-        [Screenshot: Driver bids board — toolbar with search, sort and display limit, and the list
-        of driver offers with Accept actions]
-      </p>
+            <figure id="fig-15">
+        <img
+          src="Screenshot/15-driver-bids-board.png"
+          alt="Driver bids management board with filtering controls and pending driver bids"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 10.1: Driver Bids board — filter and sort toolbar, incoming driver bid offers, and acceptance controls.</figcaption>
+      </figure>
 
       <h3>10.4 Bid statuses</h3>
       <table class="grid">
@@ -1542,10 +1594,14 @@
         </li>
       </ul>
 
-      <p class="fill">
-        [Screenshot: Reports page — KPI cards, the donut and monthly bar charts, and the
-        organization report list]
-      </p>
+            <figure id="fig-16">
+        <img
+          src="Screenshot/16-reports-page.png"
+          alt="Reports and analytics view with summary KPI cards, donut distribution chart, and monthly bar chart"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 11.1: Reports page — operational KPI metrics, fleet distribution donut chart, and monthly volume bars.</figcaption>
+      </figure>
 
       <div class="box warn">
         <span class="t">How the figures are produced</span>
@@ -1588,10 +1644,14 @@
         </li>
       </ul>
 
-      <p class="fill">
-        [Screenshot: Live queue board showing the Connecting / disconnected state and the returning
-        Live badge]
-      </p>
+            <figure id="fig-17">
+        <img
+          src="Screenshot/17-queue-connecting-status.png"
+          alt="Live queue board displaying connection status badge and real-time connectivity monitor"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 12.1: Live Queue connection indicator — real-time WebSocket connection badge and live synchronization state.</figcaption>
+      </figure>
 
       <h3>12.2 What triggers a live update</h3>
       <ul>
@@ -1671,10 +1731,14 @@
         </p>
       </div>
 
-      <p class="fill">
-        [Screenshot: Security compliance view — the Testing tab with pass/fail controls and the
-        computed progress summary]
-      </p>
+            <figure id="fig-18">
+        <img
+          src="Screenshot/18-security-compliance.png"
+          alt="INSA Security Compliance audit view showing 102 testing checklist requirements and progress meters"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 13.1: Security Compliance view — Testing tab with 102 INSA checklist items, pass/fail controls, and audit score.</figcaption>
+      </figure>
     </section>
 
     <!-- ============ 14. SETTINGS ============ -->
@@ -1710,10 +1774,14 @@
         the whole account, so reach for it only when you genuinely want the account gone.
       </p>
 
-      <p class="fill">
-        [Screenshot: Settings page — language and appearance controls, Sign Out, the disabled
-        account options with their explanatory labels, and the danger zone]
-      </p>
+            <figure id="fig-19">
+        <img
+          src="Screenshot/19-settings-page.png"
+          alt="Settings page with profile information, language selection, dark mode switch, and danger zone"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 14.1: Settings page — language and appearance preferences, user session management, and organizational settings.</figcaption>
+      </figure>
     </section>
 
     <!-- ============ 15. LANGUAGE AND APPEARANCE ============ -->
@@ -1744,9 +1812,14 @@
         </li>
       </ul>
 
-      <p class="fill">
-        [Screenshot: The console in dark theme with the Amharic interface selected]
-      </p>
+            <figure id="fig-20">
+        <img
+          src="Screenshot/20-dark-theme-amharic.png"
+          alt="Console rendered in dark theme with full native Amharic interface translation"
+          loading="lazy"
+        />
+        <figcaption class="shotcap">Figure 15.1: Localization and theme — console displayed in dark theme with complete Amharic interface.</figcaption>
+      </figure>
 
       <div class="box">
         <span class="t">Saved per browser</span>
@@ -1988,9 +2061,7 @@
           <tr>
             <td>Items to complete before submission</td>
             <td>
-              Screenshots marked <span class="fill">[Screenshot: …]</span> must be captured and
-              inserted. Submitting entity, contact person, support contacts, escalation contact and
-              dates are completed.
+              All 20 authentic console screenshots captured and embedded with numbered captions from the <code>Screenshot/</code> folder. Submitting entity, contact person, support contacts, escalation contact and dates are completed.
             </td>
           </tr>
           <tr>

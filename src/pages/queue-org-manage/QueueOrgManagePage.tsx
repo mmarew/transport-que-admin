@@ -26,7 +26,7 @@ import {
   useDeleteQueueOrgMemberMutation,
 } from "../../lib/redux/api";
 import DashboardLayout from "../../components/layout/DashboardLayout";
-import { normalizeOrg } from "../../utils/formatters";
+import { normalizeOrg, extractCity } from "../../utils/formatters";
 import { StatusBadge } from "../../components/queue-org-manage/StatusBadge";
 import { OrgProfileForm } from "../../components/queue-org-manage/OrgProfileForm";
 import { MembersTable } from "../../components/queue-org-manage/MembersTable";
@@ -315,6 +315,9 @@ export function QueueOrgManagePage() {
           <div>
             <QueueBoard
               queueOrganizationUniqueId={org.queueOrganizationUniqueId}
+              orgName={org.queueOrganizationName}
+              orgType={org.queueOrganizationType}
+              city={extractCity(org.queueOrganizationAddress)}
               origin={{
                 latitude: org.latitude ? Number(org.latitude) : null,
                 longitude: org.longitude ? Number(org.longitude) : null,
