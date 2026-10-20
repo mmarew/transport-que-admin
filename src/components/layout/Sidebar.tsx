@@ -122,10 +122,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isOrdersActive =
     hasActiveOrg && (activeTab === "orders" || currentPath.startsWith("/orders"));
 
+  const isOrganizationsManage =
+    activeTab === "organizations" || currentPath.startsWith("/orgs/");
+
   const isLiveQueueActive =
     hasActiveOrg &&
     !isOrdersActive &&
-    (activeTab === "liveQueue" || Boolean(urlOrgId) || currentPath.startsWith("/orgs/"));
+    !isOrganizationsManage &&
+    (activeTab === "liveQueue" || Boolean(urlOrgId));
 
   const isReportsActive =
     activeTab === "reports" || currentPath.startsWith("/reports");

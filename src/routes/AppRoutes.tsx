@@ -17,11 +17,6 @@ const QueueDashboardPage = lazy(() =>
     default: m.QueueDashboardPage,
   })),
 );
-const QueueOrgManagePage = lazy(() =>
-  import("../pages/queue-org-manage/QueueOrgManagePage").then((m) => ({
-    default: m.QueueOrgManagePage,
-  })),
-);
 const ReportsPage = lazy(() =>
   import("../pages/reports/ReportsPage").then((m) => ({
     default: m.ReportsPage,
@@ -77,18 +72,6 @@ export function AppRoutes() {
         <Route
           path="/organizations"
           element={<Navigate to="/dashboard" replace />}
-        />
-
-        {/* Manage specific organization */}
-        <Route
-          path="/orgs/:queueOrganizationUniqueId"
-          element={
-            <ProtectedRoute>
-              <RoleGuard>
-                <QueueOrgManagePage />
-              </RoleGuard>
-            </ProtectedRoute>
-          }
         />
 
         {/* Live Queue Dashboard */}

@@ -48,10 +48,17 @@ const CANDIDATES =
         '/Applications/Chromium.app/Contents/MacOS/Chromium',
         '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
       ]
+    : process.platform === 'win32'
+    ? [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      ]
     : ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'];
 
 function findBrowser() {
-  return CANDIDATES.find(c => (c.includes('/') ? fs.existsSync(c) : true));
+  return CANDIDATES.find(c => (c.includes('/') || c.includes('\\') ? fs.existsSync(c) : true));
 }
 
 function renderOne(browser, src, out) {
@@ -62,13 +69,18 @@ function renderOne(browser, src, out) {
 
   // Chrome writes noisy display-link errors to stderr in headless mode; they are
   // harmless, so only the result line is surfaced.
+  const fileUrl =
+    process.platform === 'win32'
+      ? `file:///${path.resolve(src).replace(/\\/g, '/')}`
+      : `file://${path.resolve(src)}`;
+
   const args = [
     '--headless',
     '--disable-gpu',
     '--no-sandbox',
     '--no-pdf-header-footer',
     `--print-to-pdf=${out}`,
-    `file://${src}`,
+    fileUrl,
   ];
 
   const bin = process.env.CHROME_PATH || browser;
