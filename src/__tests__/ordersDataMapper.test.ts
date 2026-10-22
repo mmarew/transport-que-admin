@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { mapBackendOrdersToDisplayItems, parseBatchBids } from "../pages/orders/ordersDataMapper";
+import { groupOrdersByBatch } from "../components/orders/OrdersTypes";
 
 describe("ordersDataMapper", () => {
   const dummyT = ((key: string) => key) as any;
@@ -492,6 +493,135 @@ describe("ordersDataMapper", () => {
     expect(item.status).toBe("complete");
     expect(item.driverRequests).toHaveLength(1);
   });
+
+  it("returns empty proposals array for open Group batch when no company bids have been submitted", () => {
+    const mockOpenGroupBatch = {
+      batchId: 20,
+      batchUniqueId: "batch-20-uuid",
+      type: "Group",
+      totalVehicles: 6,
+      shippableItemName: "cement",
+      shippingCost: 6000,
+      journeyStatusId: 1,
+      status: "submitted",
+      companyBids: [],
+    };
+
+    const bids = parseBatchBids(mockOpenGroupBatch);
+    expect(bids).toEqual([]);
+  });
+
+  it("maps targeted company on newly submitted batch (status: submitted, journeyStatusId: 1) as requested, not submitted", () => {
+    const mockBatch = {
+      batchId: 21,
+      batchUniqueId: "batch-21-uuid",
+      targetCompanyName: "Beta Transport Co",
+      targetCompanyPhone: "+251911998877",
+      targetCompanyUniqueId: "company-beta-uuid",
+      journeyStatusId: 1,
+      status: "submitted",
+      companyBids: [],
+    };
+
+    const bids = parseBatchBids(mockBatch);
+    expect(bids).toHaveLength(1);
+    expect(bids[0].fullName).toBe("Beta Transport Co");
+    expect(bids[0].journeyStatusId).toBe(2);
+    expect(bids[0].journeyStatus).toBe("requested");
+    expect(bids[0].bidStatus).toBe("requested");
+    expect(bids[0].companyBidRequestUniqueId).toBeNull();
+  });
+
+  it("does not unshift synthetic placeholder when real company bids exist on batch", () => {
+    const mockBatch = {
+      batchId: 20,
+      batchUniqueId: "batch-20-uuid",
+      targetCompanyName: "Company",
+      targetCompanyUniqueId: "target-company-uuid",
+      companyBids: [
+        {
+          companyBidRequestUniqueId: "bid-uuid-real-999",
+          companyUniqueId: "bidder-company-uuid",
+          companyName: "Express Freight",
+          companyPhone: "+251922334455",
+          proposedTotalCost: 6500,
+          bidStatus: "submitted",
+        },
+      ],
+    };
+
+    const bids = parseBatchBids(mockBatch);
+    expect(bids).toHaveLength(1);
+    expect(bids[0].fullName).toBe("Express Freight");
+    expect(bids[0].companyBidRequestUniqueId).toBe("bid-uuid-real-999");
+    expect(bids[0].journeyStatusId).toBe(1);
+    expect(bids[0].journeyStatus).toBe("submitted");
+    expect(bids[0].bidStatus).toBe("submitted");
+    expect(bids[0].offerCost).toBe(6500);
+  });
+
+  it("integrates companyBidsData into batch orders and calculates bidsCount and companyBidsCount", () => {
+    const mockBatches = {
+      data: [
+        {
+          batchId: 19,
+          batchUniqueId: "batch-19-uuid",
+          totalVehicles: 6,
+          shippingCost: 5000,
+          shippableItemQtyInQuintal: 400,
+          vehicleTypeName: "Heavy Truck",
+          shippableItemName: "Cement",
+          originPlace: "Kombolcha",
+          destinationPlace: "Dessie",
+          journeyStatusId: 1,
+        },
+      ],
+    };
+
+    const mockCompanyBids = {
+      data: [
+        {
+          companyBidRequestUniqueId: "company-bid-uuid-19",
+          batchId: 19,
+          companyUniqueId: "company-abyssinia-uuid",
+          companyName: "Abyssinia Transport",
+          companyPhone: "+251911223344",
+          proposedTotalCost: 30000,
+          bidStatus: "submitted",
+          journeyStatusId: 1,
+        },
+      ],
+    };
+
+    Object.freeze(mockBatches);
+    Object.freeze(mockBatches.data);
+    Object.freeze(mockBatches.data[0]);
+    Object.freeze(mockCompanyBids);
+    Object.freeze(mockCompanyBids.data);
+    Object.freeze(mockCompanyBids.data[0]);
+
+    const displayItems = mapBackendOrdersToDisplayItems({
+      ordersData: { data: [] },
+      batchesData: mockBatches,
+      companyBidsData: mockCompanyBids,
+      deletedIds: new Set(),
+      editedOrders: {},
+      activeOrg: null,
+      t: ((k: string, f: string) => f || k) as any,
+    });
+
+    expect(displayItems.length).toBe(6);
+    expect(displayItems[0].driverRequests).toHaveLength(1);
+    expect(displayItems[0].driverRequests![0].fullName).toBe("Abyssinia Transport");
+    expect(displayItems[0].driverRequests![0].companyBidRequestUniqueId).toBe("company-bid-uuid-19");
+
+    const groups = groupOrdersByBatch(displayItems);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].bidsCount).toBe(1);
+    expect(groups[0].companyBidsCount).toBe(1);
+    expect(groups[0].waitingCount).toBe(6);
+  });
 });
+
 
 

@@ -18,7 +18,10 @@ import { CustomSelect } from "../ui/CustomSelect";
 import { Modal } from "../ui/Modal";
 import { RequestTypeSelect } from "./order-modal/RequestTypeSelect";
 import { VehicleTypeSelect } from "./order-modal/VehicleTypeSelect";
-import { getVehicleCapacity } from "../../utils/vehicleType";
+import {
+  getVehicleCapacity,
+  registerDynamicVehicleTypes,
+} from "../../utils/vehicleType";
 import { OrderDetailsFields } from "./order-modal/OrderDetailsFields";
 import {
   LocationSearchField,
@@ -101,6 +104,8 @@ export function CreateOrderModal({
     register,
     handleSubmit,
     setValue,
+    setError,
+    clearErrors,
     watch,
     trigger,
     formState: { errors, isSubmitting },
@@ -111,6 +116,11 @@ export function CreateOrderModal({
       isBiddingApproved: false,
       numberOfVehicles: 1,
       requestMode: "individual_target",
+      shipperPhoneNumber: "",
+      shippableItemName: "",
+      shippingDate: "",
+      deliveryDate: "",
+      vehicleTypeUniqueId: "",
       originDescription: origin?.description ?? "",
       originLatitude: origin?.latitude != null ? String(origin.latitude) : "",
       originLongitude: origin?.longitude != null ? String(origin.longitude) : "",
@@ -131,12 +141,47 @@ export function CreateOrderModal({
   const shippingDate = watch("shippingDate");
   const deliveryDate = watch("deliveryDate");
   const vehicleTypeUniqueId = watch("vehicleTypeUniqueId");
+  const currentQty = watch("shippableItemQtyInQuintal");
 
   const { data: apiVehicleTypes } = useListVehicleTypesQuery();
+
+  useEffect(() => {
+    if (apiVehicleTypes?.data) {
+      registerDynamicVehicleTypes(apiVehicleTypes.data);
+    }
+  }, [apiVehicleTypes?.data]);
 
   const vehicleCapacity = useMemo(() => {
     return getVehicleCapacity(vehicleTypeUniqueId, apiVehicleTypes?.data);
   }, [vehicleTypeUniqueId, apiVehicleTypes?.data]);
+
+  // Synchronize dynamic vehicle capacity error into React Hook Form state
+  useEffect(() => {
+    if (
+      vehicleCapacity?.maxQuintal &&
+      currentQty != null &&
+      !isNaN(Number(currentQty)) &&
+      Number(currentQty) > vehicleCapacity.maxQuintal
+    ) {
+      setError("shippableItemQtyInQuintal", {
+        type: "manual",
+        message: t("orders.quantityExceedsCapacity", {
+          max: vehicleCapacity.maxQuintal,
+          vehicle: vehicleCapacity.vehicleTypeName,
+          defaultValue: `Quantity per vehicle cannot exceed ${vehicleCapacity.maxQuintal} Quintals for ${vehicleCapacity.vehicleTypeName}`,
+        }),
+      });
+    } else if (errors.shippableItemQtyInQuintal?.type === "manual") {
+      clearErrors("shippableItemQtyInQuintal");
+    }
+  }, [
+    currentQty,
+    vehicleCapacity,
+    setError,
+    clearErrors,
+    t,
+    errors.shippableItemQtyInQuintal?.type,
+  ]);
 
   // When number of vehicles > 9 in individual mode, auto switch to company target and open for bidding by default
   useEffect(() => {
@@ -206,6 +251,16 @@ export function CreateOrderModal({
 
   const handleFormSubmit = async (values: CreateOrderFormValues) => {
     try {
+      if (!queueOrganizationUniqueId) {
+        toast.error(
+          t(
+            "orders.selectOrgRequired",
+            "Organization is missing or not selected. Please select an organization before creating an order.",
+          ),
+        );
+        return;
+      }
+
       if (values.shippingDate) {
         const cleanDate = values.shippingDate.slice(0, 10);
         if (cleanDate < todayStr) {
@@ -224,13 +279,16 @@ export function CreateOrderModal({
         capacity?.maxQuintal &&
         Number(values.shippableItemQtyInQuintal) > capacity.maxQuintal
       ) {
-        toast.error(
-          t("orders.quantityExceedsCapacity", {
-            max: capacity.maxQuintal,
-            vehicle: capacity.vehicleTypeName,
-            defaultValue: `Quantity per vehicle cannot exceed ${capacity.maxQuintal} Quintals for ${capacity.vehicleTypeName}`,
-          }),
-        );
+        const errorMsg = t("orders.quantityExceedsCapacity", {
+          max: capacity.maxQuintal,
+          vehicle: capacity.vehicleTypeName,
+          defaultValue: `Quantity per vehicle cannot exceed ${capacity.maxQuintal} Quintals for ${capacity.vehicleTypeName}`,
+        });
+        setError("shippableItemQtyInQuintal", {
+          type: "manual",
+          message: errorMsg,
+        });
+        toast.error(errorMsg);
         return;
       }
 
@@ -313,7 +371,7 @@ export function CreateOrderModal({
                 setValue("shipperPhoneNumber", val, { shouldValidate: true })
               }
               error={errors.shipperPhoneNumber?.message}
-              placeholder="9XX XXX XXX"
+              placeholder="9-XX-XX-XX-XX"
             />
 
             <VehicleTypeSelect
@@ -339,6 +397,7 @@ export function CreateOrderModal({
         <OrderDetailsFields
           register={register}
           errors={errors}
+          currentQty={currentQty}
           shippingDate={shippingDate}
           deliveryDate={deliveryDate}
           todayStr={todayStr}
@@ -376,7 +435,7 @@ export function CreateOrderModal({
             error={errors.originDescription?.message}
             coordError={Boolean(
               !errors.originDescription &&
-                (errors.originLatitude || errors.originLongitude),
+              (errors.originLatitude || errors.originLongitude),
             )}
           />
 
@@ -390,7 +449,7 @@ export function CreateOrderModal({
             error={errors.destinationDescription?.message}
             coordError={Boolean(
               !errors.destinationDescription &&
-                (errors.destinationLatitude || errors.destinationLongitude),
+              (errors.destinationLatitude || errors.destinationLongitude),
             )}
           />
         </div>

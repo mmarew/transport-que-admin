@@ -143,8 +143,7 @@ export function connectSocket(
     (typeof window !== "undefined" ? window.location.origin : "");
 
   socket = io(socketUrl, {
-    transports: ["websocket", "polling"],
-    upgrade: false,
+    transports: ["websocket"],
     autoConnect: true,
     withCredentials: true,
     auth: {
@@ -152,7 +151,7 @@ export function connectSocket(
       phoneNumber: phoneNumber || "",
     },
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10000,
     timeout: 20000,

@@ -28,7 +28,7 @@ export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
   const costDisplay = `${costVal.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })} ETB`;
+  })}\u00A0ETB`;
   const routeDisplay = formatTrimmedRoute(order.origin, order.destination);
   const fullRouteTitle =
     order.origin && order.destination

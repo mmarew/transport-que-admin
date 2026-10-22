@@ -27,6 +27,16 @@ export function BidActionButtons({
 }: BidActionButtonsProps) {
   const { t } = useTranslation();
 
+  const hasRealBid = Boolean(
+    driver.companyBidRequestUniqueId ||
+    driver.driverBidUniqueId ||
+    (driver as any).bidId ||
+    (driver as any).companyBidRequestId ||
+    (driver as any).rawDriver?.companyBidRequestUniqueId ||
+    (driver as any).rawDriver?.bidUniqueId ||
+    (driver as any).rawDriver?.driverBidUniqueId
+  );
+
   return (
     <div className="dbm-bid-actions">
       {isAccepted ? (
@@ -51,7 +61,7 @@ export function BidActionButtons({
         >
           {t("orders.notSelected", "Not Selected")}
         </span>
-      ) : isDriverRequested && !isDriverAccepted ? (
+      ) : (isDriverRequested || !hasRealBid) && !isDriverAccepted ? (
         <span
           className="dbm-btn-awaiting-driver"
           title={

@@ -95,8 +95,7 @@ export const createOrderSchema = z
     shippableItemName: z.string().trim().min(1, "Item name is required"),
     shippableItemQtyInQuintal: z
       .number({ message: "Quantity must be a number" })
-      .positive("Quantity must be greater than 0")
-      .max(10000, "Quantity per vehicle cannot exceed 10,000 Quintals"),
+      .positive("Quantity must be greater than 0"),
     shippingCost: z
       .number({ message: "Shipping cost must be a number" })
       .nonnegative("Shipping cost cannot be negative"),
@@ -107,6 +106,7 @@ export const createOrderSchema = z
       .int("Must be a whole number")
       .min(1, "At least 1 vehicle"),
     requestMode: z.enum(["individual_target", "company_target"]),
+    targetCompanyUniqueId: z.string().optional().or(z.literal("")),
     vehicleTypeUniqueId: z
       .string()
       .min(1, "Please select a vehicle type"),
@@ -141,17 +141,23 @@ export const createOrderSchema = z
         message: "Longitude must be between -180 and 180",
       }),
   })
-  .refine((v) => v.deliveryDate >= v.shippingDate, {
+  .refine((v) => !v.deliveryDate || !v.shippingDate || v.deliveryDate >= v.shippingDate, {
     message: "Delivery date cannot be before shipping date",
     path: ["deliveryDate"],
   })
   .superRefine((v, ctx) => {
-    if (v.vehicleTypeUniqueId && v.shippableItemQtyInQuintal > 0) {
-      const cap = getVehicleCapacity(v.vehicleTypeUniqueId);
+    if (v.shippableItemQtyInQuintal > 0) {
+      const cap = v.vehicleTypeUniqueId ? getVehicleCapacity(v.vehicleTypeUniqueId) : null;
       if (cap?.maxQuintal && v.shippableItemQtyInQuintal > cap.maxQuintal) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Quantity per vehicle cannot exceed ${cap.maxQuintal} Quintals for ${cap.vehicleTypeName}`,
+          path: ["shippableItemQtyInQuintal"],
+        });
+      } else if (!cap?.maxQuintal && v.shippableItemQtyInQuintal > 10000) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Quantity per vehicle cannot exceed 10,000 Quintals",
           path: ["shippableItemQtyInQuintal"],
         });
       }

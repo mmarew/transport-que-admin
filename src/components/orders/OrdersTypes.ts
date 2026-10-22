@@ -47,6 +47,8 @@ export interface OrderDisplayItem {
   targetCompanyName?: string | null;
   targetCompanyPhone?: string | null;
   plateNumber?: string | null;
+  bidsCount?: number;
+  companyBidsCount?: number;
   rawItem?: unknown;
 }
 
@@ -308,6 +310,8 @@ export interface OrderBatchGroup {
   completedCount: number;
   activeCount: number;
   waitingCount: number;
+  bidsCount?: number;
+  companyBidsCount?: number;
   statusStageLabel?: string;
   orders: OrderDisplayItem[];
   displayId: string;
@@ -416,6 +420,29 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
     );
     const waitingCount = waitingOrders.length;
     const acceptedCount = activeCount + completedCount;
+
+    // Calculate unique submitted bids and companies across batch orders
+    const uniqueBidIds = new Set<string | number>();
+    const uniqueCompanyIds = new Set<string | number>();
+    let bidsCount = 0;
+    for (const bo of batchOrders) {
+      for (const r of bo.driverRequests || []) {
+        const bidId = r.companyBidRequestUniqueId || r.driverRequestUniqueId || r.driverRequestId || r.userUniqueId;
+        if (bidId) {
+          if (!uniqueBidIds.has(bidId)) {
+            uniqueBidIds.add(bidId);
+            bidsCount++;
+          }
+        } else {
+          bidsCount++;
+        }
+        if (r.isCompany || r.companyBidRequestUniqueId) {
+          const compId = r.userUniqueId || r.fullName || bidId;
+          if (compId) uniqueCompanyIds.add(compId);
+        }
+      }
+    }
+    const companyBidsCount = uniqueCompanyIds.size;
 
     const displayId =
       isMultiVehicle && batchId
@@ -560,6 +587,8 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
       completedCount,
       activeCount,
       waitingCount,
+      bidsCount,
+      companyBidsCount,
       statusStageLabel,
       orders: batchOrders,
       displayId,

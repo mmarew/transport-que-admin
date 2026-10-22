@@ -213,6 +213,22 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       }
     });
 
+    it("should reject order with 3000001 quintals for 20ft Container Truck with 300 quintals message instead of 10,000", () => {
+      const payloadLargeQty = {
+        ...validOrderPayload,
+        vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742", // 20ft Container Truck (251–300 Quintal)
+        shippableItemQtyInQuintal: 3000001,
+      };
+      const result = createOrderSchema.safeParse(payloadLargeQty);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe(
+          "Quantity per vehicle cannot exceed 300 Quintals for 20ft Container Truck (251–300 Quintal)"
+        );
+        expect(result.error.issues[0].message).not.toContain("10,000");
+      }
+    });
+
     it("should accept order when quantity is within vehicle type capacity (e.g. 300 quintals for 20ft Container Truck)", () => {
       const validMaxPayload = {
         ...validOrderPayload,
@@ -683,6 +699,91 @@ describe("Queue Business Logic & Mutation Validation Suite", () => {
       // Company bid / request
       expect(getAcceptanceMessage(true)).toBe("Company request accepted successfully");
     });
+
+    it("should correctly identify accepted company bid when acceptedDriverIds contains company bid keys", () => {
+      const companyBid = {
+        companyBidRequestUniqueId: "bid-uuid-1234",
+        userUniqueId: "company-uuid-5678",
+        fullName: "Dynamics Transport Axion",
+        bidStatus: "submitted",
+        journeyStatus: "submitted",
+      };
+
+      const acceptedDriverIds = new Set(["bid-uuid-1234", "company-uuid-5678"]);
+
+      const isDriverAcceptedCheck = (driver: typeof companyBid, driverKey?: string) => {
+        if (driver.bidStatus === "accepted" || driver.bidStatus === "selected") return true;
+        if (driverKey && acceptedDriverIds.has(driverKey)) return true;
+        if (driver.companyBidRequestUniqueId && acceptedDriverIds.has(driver.companyBidRequestUniqueId)) return true;
+        if (driver.userUniqueId && acceptedDriverIds.has(driver.userUniqueId)) return true;
+        return false;
+      };
+
+      expect(isDriverAcceptedCheck(companyBid, "company-uuid-5678")).toBe(true);
+      expect(isDriverAcceptedCheck(companyBid, "bid-uuid-1234")).toBe(true);
+
+      const unacceptedCompany = {
+        companyBidRequestUniqueId: "other-bid-uuid",
+        userUniqueId: "other-company-uuid",
+        fullName: "Other Transport",
+        bidStatus: "submitted",
+        journeyStatus: "submitted",
+      };
+      expect(isDriverAcceptedCheck(unacceptedCompany, "other-company-uuid")).toBe(false);
+    });
+  });
+
+  describe("Create Order Schema Vehicle Capacity Validation (createOrderSchema)", () => {
+    const baseValidOrder = {
+      shipperPhoneNumber: "+251911223344",
+      shippableItemName: "Cement",
+      shippingCost: 5000,
+      shippingDate: "2026-10-25",
+      deliveryDate: "2026-10-26",
+      numberOfVehicles: 1,
+      requestMode: "individual_target" as const,
+      originDescription: "Addis Ababa, Ethiopia",
+      originLatitude: "9.0227",
+      originLongitude: "38.7469",
+      destinationDescription: "Adama, Ethiopia",
+      destinationLatitude: "8.5400",
+      destinationLongitude: "39.2700",
+      vehicleTypeUniqueId: "9b2e8446-e1b7-4659-89bd-3bbc4c0a6742", // 20ft Container Truck (251–300 Quintal)
+      shippableItemQtyInQuintal: 280,
+    };
+
+    it("should accept quantity within 20ft Container Truck capacity (251-300 Quintals)", () => {
+      const res = createOrderSchema.safeParse(baseValidOrder);
+      expect(res.success).toBe(true);
+    });
+
+    it("should reject quantity 33333 exceeding 20ft Container Truck capacity (300 Quintals)", () => {
+      const res = createOrderSchema.safeParse({
+        ...baseValidOrder,
+        shippableItemQtyInQuintal: 33333,
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        const qtyIssue = res.error.issues.find((i) => i.path.includes("shippableItemQtyInQuintal"));
+        expect(qtyIssue).toBeDefined();
+        expect(qtyIssue?.message).toContain("cannot exceed 300 Quintals for 20ft Container Truck (251–300 Quintal)");
+      }
+    });
+
+    it("should reject quantity 40 for Light Truck (up to 35 Quintal)", () => {
+      const res = createOrderSchema.safeParse({
+        ...baseValidOrder,
+        vehicleTypeUniqueId: "55060ed0-0000-0000-0000-000000000006", // Light Truck (up to 35 Quintal)
+        shippableItemQtyInQuintal: 40,
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        const qtyIssue = res.error.issues.find((i) => i.path.includes("shippableItemQtyInQuintal"));
+        expect(qtyIssue).toBeDefined();
+        expect(qtyIssue?.message).toContain("cannot exceed 35 Quintals for Light Truck (up to 35 Quintal)");
+      }
+    });
   });
 });
+
 

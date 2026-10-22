@@ -14,6 +14,7 @@ import type {
 export interface MapBackendOrdersParams {
   ordersData: unknown;
   batchesData: unknown;
+  companyBidsData?: unknown;
   deletedIds: Set<string>;
   editedOrders: Record<string, OrderDisplayItem>;
   activeOrg: any;
@@ -63,6 +64,7 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
   else if (Array.isArray(batch.bids) && batch.bids.length > 0) rawBids = batch.bids;
   else if (Array.isArray(batch.bids?.data) && batch.bids.data.length > 0) rawBids = batch.bids.data;
   else if (Array.isArray(batch.companyBids?.data) && batch.companyBids.data.length > 0) rawBids = batch.companyBids.data;
+  else if (Array.isArray(batch.proposals) && batch.proposals.length > 0) rawBids = batch.proposals;
   else if (Array.isArray(batch.offers) && batch.offers.length > 0) rawBids = batch.offers;
   else if (Array.isArray(batch.submittedBids) && batch.submittedBids.length > 0) rawBids = batch.submittedBids;
   else if (Array.isArray(batch.submittedOffers) && batch.submittedOffers.length > 0) rawBids = batch.submittedOffers;
@@ -95,6 +97,8 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
 
     const compName =
       b.companyName ??
+      b.company?.companyName ??
+      b.company?.name ??
       b.submittedByName ??
       b.fullName ??
       b.driverName ??
@@ -106,6 +110,8 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       b.companyPhone ??
       b.phoneNumber ??
       b.phone ??
+      b.company?.phoneNumber ??
+      b.company?.phone ??
       b.driverPhoneNumber ??
       batch.targetCompanyPhone ??
       null;
@@ -195,11 +201,16 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       d.bidStatus === "selected",
   );
 
+  const hasTargetCompany = Boolean(
+    batch.targetCompanyName ||
+    batch.targetCompany?.name ||
+    batch.targetCompanyUniqueId ||
+    batch.targetCompany?.uniqueId,
+  );
+
   if (
     batch.acceptedOffer ||
-    batch.targetCompanyName ||
-    batch.targetCompany ||
-    batch.companyName ||
+    hasTargetCompany ||
     batch.journeyStatusId === 4 ||
     batch.status === "accepted"
   ) {
@@ -218,7 +229,6 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       batch.targetCompanyName ??
       batch.targetCompany?.name ??
       batch.targetCompany?.companyName ??
-      batch.companyName ??
       offer.name ??
       (isActuallyAccepted
         ? (t ? t("orders.acceptedCompany", "Accepted Transport Company") : "Accepted Transport Company")
@@ -272,16 +282,11 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
           bidStatus: "selected",
         };
       }
-    } else if (!hasAccepted) {
+    } else if (!hasAccepted && parsed.length === 0) {
       const isSubmitted =
-        batch.status === "submitted" ||
-        batch.journeyStatus === "submitted" ||
-        batch.journeyStatusId === 1 ||
+        Boolean(realBidId) ||
         offer.bidStatus === "submitted" ||
-        offer.status === "submitted" ||
-        offer.journeyStatusId === 1 ||
-        String(batch.status || "").toLowerCase().includes("submit") ||
-        String(batch.journeyStatus || "").toLowerCase().includes("submit");
+        offer.status === "submitted";
 
       const resolvedStatusId = isActuallyAccepted ? 4 : isSubmitted ? 1 : 2;
       const resolvedJourneyStatus = isActuallyAccepted ? "accepted" : isSubmitted ? "submitted" : "requested";
@@ -357,18 +362,17 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
     }
   }
 
-  // If parsed is still empty for a company target batch, add a pending proposal placeholder with real batch details
+  // If parsed is still empty for an explicit company target batch, add a pending proposal placeholder with real batch details
   if (
     parsed.length === 0 &&
+    hasTargetCompany &&
     (batch.requestMode === "company_target" ||
-      String(batch.requestMode || "").toLowerCase().includes("company") ||
-      batch.type === "Group")
+      String(batch.requestMode || "").toLowerCase().includes("company"))
   ) {
     const compName =
       batch.targetCompanyName ??
       batch.targetCompany?.name ??
       batch.targetCompany?.companyName ??
-      batch.companyName ??
       (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal");
     const rawBidId =
       batch.companyBidRequestUniqueId ??
@@ -385,13 +389,7 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       batch.batchUniqueId ??
       bUniqueIdStr ??
       `company-target-${batch.batchId || 1}`;
-    const isSubmitted =
-      batch.status === "submitted" ||
-      batch.journeyStatus === "submitted" ||
-      batch.journeyStatusId === 1 ||
-      batch.bidStatus === "submitted" ||
-      String(batch.status || "").toLowerCase().includes("submit") ||
-      String(batch.journeyStatus || "").toLowerCase().includes("submit");
+    const isSubmitted = Boolean(realBidId);
 
     const resolvedStatusId = isSubmitted ? 1 : 2;
     const resolvedJourneyStatus = isSubmitted ? "submitted" : "requested";
@@ -475,6 +473,7 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
 export function mapBackendOrdersToDisplayItems({
   ordersData,
   batchesData,
+  companyBidsData,
   deletedIds,
   editedOrders,
   activeOrg,
@@ -484,6 +483,85 @@ export function mapBackendOrdersToDisplayItems({
   const rawList = (ordersData as any)?.data as unknown as ShipperRequestPayloadItem[] | undefined;
   let baseList: OrderDisplayItem[] = [];
 
+  // Index company bids from companyBidsData (GET /api/company/bids) by batch
+  const rawCompanyBids: any[] = Array.isArray(companyBidsData)
+    ? companyBidsData
+    : Array.isArray((companyBidsData as any)?.data)
+    ? (companyBidsData as any).data
+    : [];
+
+  const bidsByBatchId = new Map<string, any[]>();
+  const bidsByBatchUniqueId = new Map<string, any[]>();
+
+  for (const bid of rawCompanyBids) {
+    if (!bid) continue;
+    const bId =
+      bid.batchId != null
+        ? String(bid.batchId).trim()
+        : bid.shipperRequestBatchId != null && !String(bid.shipperRequestBatchId).includes("-")
+        ? String(bid.shipperRequestBatchId).trim()
+        : (bid as any).batch?.batchId != null
+        ? String((bid as any).batch.batchId).trim()
+        : (bid as any).shipperRequestBatch?.batchId != null
+        ? String((bid as any).shipperRequestBatch.batchId).trim()
+        : null;
+
+    if (bId) {
+      if (!bidsByBatchId.has(bId)) bidsByBatchId.set(bId, []);
+      bidsByBatchId.get(bId)!.push(bid);
+    }
+
+    const bUid =
+      bid.shipperRequestBatchUniqueId ||
+      (bid.shipperRequestBatchId && String(bid.shipperRequestBatchId).includes("-") ? bid.shipperRequestBatchId : null) ||
+      (bid as any).batch?.batchUniqueId ||
+      (bid as any).shipperRequestBatch?.batchUniqueId ||
+      null;
+
+    if (bUid) {
+      const cleanUid = String(bUid).trim();
+      if (!bidsByBatchUniqueId.has(cleanUid)) bidsByBatchUniqueId.set(cleanUid, []);
+      bidsByBatchUniqueId.get(cleanUid)!.push(bid);
+    }
+  }
+
+  const getBidsForBatch = (b: any): any[] => {
+    if (!b) return [];
+    const list: any[] = [];
+    const seen = new Set<string>();
+    const bId =
+      b.batchId != null
+        ? String(b.batchId).trim()
+        : b.shipperRequestBatchId != null && !String(b.shipperRequestBatchId).includes("-")
+        ? String(b.shipperRequestBatchId).trim()
+        : null;
+    const bUid =
+      b.batchUniqueId ||
+      b.shipperRequestBatchUniqueId ||
+      (b.shipperRequestBatchId && String(b.shipperRequestBatchId).includes("-") ? b.shipperRequestBatchId : null) ||
+      (b.uniqueId && String(b.uniqueId).includes("-") ? b.uniqueId : null);
+
+    if (bId && bidsByBatchId.has(bId)) {
+      for (const item of bidsByBatchId.get(bId)!) {
+        const key = item.companyBidRequestUniqueId || item.id || JSON.stringify(item);
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push(item);
+        }
+      }
+    }
+    if (bUid && bidsByBatchUniqueId.has(String(bUid).trim())) {
+      for (const item of bidsByBatchUniqueId.get(String(bUid).trim())!) {
+        const key = item.companyBidRequestUniqueId || item.id || JSON.stringify(item);
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push(item);
+        }
+      }
+    }
+    return list;
+  };
+
   // Pre-index batches from batchesData so step 1 rows can inherit numeric batchId,
   // batch totals, and bids/proposals
   const rawBatchList = (batchesData as any)?.data;
@@ -492,18 +570,29 @@ export function mapBackendOrdersToDisplayItems({
   if (Array.isArray(rawBatchList)) {
     for (const b of rawBatchList) {
       if (!b) continue;
+      const matchedCompBids = getBidsForBatch(b);
+      const batchObj =
+        matchedCompBids.length > 0
+          ? {
+              ...b,
+              companyBids: [
+                ...(Array.isArray(b.companyBids) ? b.companyBids : []),
+                ...matchedCompBids,
+              ],
+            }
+          : b;
       const uid = String(
-        b.shipperRequestBatchUniqueId ||
-        b.batchUniqueId ||
-        (b as any).batch_unique_id ||
-        (b as any).uniqueId ||
+        batchObj.shipperRequestBatchUniqueId ||
+        batchObj.batchUniqueId ||
+        (batchObj as any).batch_unique_id ||
+        (batchObj as any).uniqueId ||
         ""
       ).trim();
       if (uid) {
-        batchUniqueIdToBatch.set(uid, b);
+        batchUniqueIdToBatch.set(uid, batchObj);
       }
-      if (b.batchId != null) {
-        batchIdToBatch.set(String(b.batchId), b);
+      if (batchObj.batchId != null) {
+        batchIdToBatch.set(String(batchObj.batchId), batchObj);
       }
     }
   }
@@ -650,7 +739,7 @@ export function mapBackendOrdersToDisplayItems({
         rawDecisions ||
         [];
 
-      const isBiddingApproved = Boolean(
+      let isBiddingApproved = Boolean(
         req.isBiddingApproved ||
         (req as any).is_bidding_approved ||
         (req as any).biddingApproved ||
@@ -1036,20 +1125,47 @@ export function mapBackendOrdersToDisplayItems({
           ? Number(String(matchedBatch.shippableItemQtyInQuintal).replace(/[^0-9.]/g, "")) * matchedTotalVehicles
           : undefined;
 
-      const batchBids = matchedBatch ? parseBatchBids(matchedBatch, t) : [];
+      const compBids = matchedBatch ? getBidsForBatch(matchedBatch) : [];
+      const effectiveBatch = matchedBatch
+        ? (compBids.length > 0 && !matchedBatch.companyBids
+            ? {
+                ...matchedBatch,
+                companyBids: compBids,
+              }
+            : matchedBatch)
+        : null;
+
+      const itemCompBids = getBidsForBatch(item);
+      const reqCompBids = getBidsForBatch(req);
+      const directCompBids = [...itemCompBids, ...reqCompBids];
+      const effectiveItem = directCompBids.length > 0
+        ? {
+            ...(item as any),
+            companyBids: [
+              ...(Array.isArray((item as any).companyBids) ? (item as any).companyBids : []),
+              ...directCompBids,
+            ],
+          }
+        : item;
+
+      const batchBids = effectiveBatch ? parseBatchBids(effectiveBatch, t) : [];
       let finalDriverRequests = driverRequests;
 
       if (mode === "Group" || String(rawMode).toLowerCase().includes("company")) {
         if (finalDriverRequests.length === 0 && batchBids.length > 0) {
           finalDriverRequests = batchBids;
         } else if (finalDriverRequests.length === 0) {
-          const itemBids = parseBatchBids(item as any, t);
+          const itemBids = parseBatchBids(effectiveItem as any, t);
           if (itemBids.length > 0) {
             finalDriverRequests = itemBids;
           }
         }
       } else if (finalDriverRequests.length === 0 && batchBids.length > 0) {
         finalDriverRequests = batchBids;
+      }
+
+      if (finalDriverRequests.length > 0) {
+        isBiddingApproved = true;
       }
 
       const resolvedPlateNumber =
@@ -1222,29 +1338,11 @@ export function mapBackendOrdersToDisplayItems({
             rawItem: item,
           },
         ];
-      } else if (
-        finalDriverRequests.length === 0 &&
-        ((req as any).targetCompanyName ||
-          matchedBatch?.targetCompanyName ||
-          (req as any).targetCompanyUniqueId ||
-          matchedBatch?.targetCompanyUniqueId)
-      ) {
-        const companyOrDriverName =
-          matchedBatch?.targetCompanyName ||
-          (req as any).targetCompanyName ||
-          (item as any).targetCompanyName ||
-          (req as any).companyName ||
-          (item as any).companyName ||
-          (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal");
-
+      } else {
         const compId =
           (req as any).targetCompanyUniqueId ||
           (item as any).targetCompanyUniqueId ||
           matchedBatch?.targetCompanyUniqueId;
-
-        const targetUid =
-          compId ||
-          "company-target";
 
         const rawBidId =
           matchedBatch?.companyBidRequestUniqueId ??
@@ -1255,21 +1353,27 @@ export function mapBackendOrdersToDisplayItems({
 
         const safeBidId = rawBidId && rawBidId !== compId ? rawBidId : null;
 
-        const isSubmitted =
-          (req as any).status === "submitted" ||
-          (req as any).journeyStatus === "submitted" ||
-          (item as any).status === "submitted" ||
-          (item as any).journeyStatus === "submitted" ||
-          matchedBatch?.status === "submitted" ||
-          matchedBatch?.journeyStatus === "submitted" ||
-          resolvedJourneyStatusId === 1 ||
-          String((req as any).status || "").toLowerCase().includes("submit") ||
-          String(matchedBatch?.status || "").toLowerCase().includes("submit");
+        if (
+          finalDriverRequests.length === 0 &&
+          Boolean(safeBidId) &&
+          ((req as any).targetCompanyName ||
+            matchedBatch?.targetCompanyName ||
+            Boolean(compId))
+        ) {
+          const companyOrDriverName =
+            matchedBatch?.targetCompanyName ||
+            (req as any).targetCompanyName ||
+            (item as any).targetCompanyName ||
+            (req as any).companyName ||
+            (item as any).companyName ||
+            (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal");
 
-        const resolvedStatusId = isSubmitted ? 1 : 2;
-        const resolvedJourneyStatus = isSubmitted ? "submitted" : "requested";
-        const resolvedBidStatus = isSubmitted ? "submitted" : "requested";
-        const effectiveBidId = safeBidId || `company-proposal-${(req as any).batchId || matchedBatch?.batchId || 1}`;
+          const targetUid = compId || "company-target";
+          const isSubmitted = Boolean(safeBidId);
+          const resolvedStatusId = isSubmitted ? 1 : 2;
+          const resolvedJourneyStatus = isSubmitted ? "submitted" : "requested";
+          const resolvedBidStatus = isSubmitted ? "submitted" : "requested";
+          const effectiveBidId = safeBidId || `company-proposal-${(req as any).batchId || matchedBatch?.batchId || 1}`;
 
         finalDriverRequests = [
           {
@@ -1291,6 +1395,7 @@ export function mapBackendOrdersToDisplayItems({
             vehicleTypeName: vehicleTypeName,
           },
         ];
+        }
       }
 
       const originPlace =
@@ -1503,8 +1608,20 @@ export function mapBackendOrdersToDisplayItems({
         (batch as any).loading_order ??
         null;
 
+      const matchedCompBids = getBidsForBatch(batch);
+      const effectiveBatch =
+        matchedCompBids.length > 0
+          ? {
+              ...batch,
+              companyBids: [
+                ...(Array.isArray(batch.companyBids) ? batch.companyBids : []),
+                ...matchedCompBids,
+              ],
+            }
+          : batch;
+
       // Parse bids / driverRequests from batch
-      let driverRequests: any[] = parseBatchBids(batch, t);
+      let driverRequests: any[] = parseBatchBids(effectiveBatch, t);
 
       if (
         driverRequests.length === 0 &&

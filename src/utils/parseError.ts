@@ -24,10 +24,28 @@ interface ErrorHandlerOptions {
 }
 
 const resolveServerMsg = (data?: unknown): string | null => {
-  if (!data || typeof data !== "object") return null;
+  if (!data) return null;
+  if (typeof data === "string" && data.trim()) return data;
+
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const msg = resolveServerMsg(item);
+      if (msg) return msg;
+    }
+    return null;
+  }
+
+  if (typeof data !== "object") return null;
   const d = data as Record<string, unknown>;
 
-  if (typeof d.message === "string" && d.message.trim() && d.message.toLowerCase() !== "error" && d.message.toLowerCase() !== "success") {
+  const isGenericMessage =
+    typeof d.message === "string" &&
+    (d.message.toLowerCase() === "error" ||
+      d.message.toLowerCase() === "validation error" ||
+      d.message.toLowerCase() === "bad request" ||
+      d.message.toLowerCase() === "success");
+
+  if (!isGenericMessage && typeof d.message === "string" && d.message.trim()) {
     return d.message;
   }
   if (typeof d.error === "string" && d.error.trim() && d.error.toLowerCase() !== "error") {
@@ -41,17 +59,15 @@ const resolveServerMsg = (data?: unknown): string | null => {
   }
   if (d.details && typeof d.details === "object") {
     if (Array.isArray(d.details) && d.details.length > 0) {
-      const first = d.details[0];
-      if (typeof first === "string") return first;
-      if (typeof first === "object" && first !== null) {
-        const f = first as Record<string, unknown>;
-        if (typeof f.message === "string" && f.message.trim()) return f.message;
-        if (typeof f.detail === "string" && f.detail.trim()) return f.detail;
-        if (typeof f.error === "string" && f.error.trim()) return f.error;
+      for (const item of d.details) {
+        const m = resolveServerMsg(item);
+        if (m) return m;
       }
     } else {
-      const firstVal = Object.values(d.details as Record<string, unknown>)[0];
-      if (typeof firstVal === "string") return firstVal;
+      for (const val of Object.values(d.details as Record<string, unknown>)) {
+        const m = resolveServerMsg(val);
+        if (m) return m;
+      }
     }
   }
   if (d.validation && typeof d.validation === "object") {
@@ -63,24 +79,20 @@ const resolveServerMsg = (data?: unknown): string | null => {
   }
   if (d.errors && typeof d.errors === "object") {
     if (Array.isArray(d.errors) && d.errors.length > 0) {
-      const first = d.errors[0];
-      if (typeof first === "string") return first;
-      if (typeof first === "object" && first !== null && typeof (first as Record<string, unknown>).message === "string") {
-        return (first as Record<string, unknown>).message as string;
+      for (const item of d.errors) {
+        const m = resolveServerMsg(item);
+        if (m) return m;
       }
     } else {
-      const errMap = d.errors as Record<string, unknown>;
-      const firstVal = Object.values(errMap)[0];
-      if (Array.isArray(firstVal) && firstVal.length > 0 && typeof firstVal[0] === "string") {
-        return firstVal[0];
+      for (const val of Object.values(d.errors as Record<string, unknown>)) {
+        const m = resolveServerMsg(val);
+        if (m) return m;
       }
-      if (typeof firstVal === "string") return firstVal;
     }
   }
   if (typeof d.error === "object" && d.error !== null) {
-    const errObj = d.error as Record<string, unknown>;
-    if (typeof errObj.message === "string") return errObj.message;
-    if (typeof errObj.detail === "string") return errObj.detail;
+    const m = resolveServerMsg(d.error);
+    if (m) return m;
   }
   if (typeof d.data === "string" && d.data.trim()) return d.data;
   if (typeof d.data === "object" && d.data !== null) {
@@ -88,7 +100,6 @@ const resolveServerMsg = (data?: unknown): string | null => {
     if (innerMsg) return innerMsg;
   }
   if (typeof d.message === "string" && d.message.trim()) return d.message;
-  if (typeof d.error === "string" && d.error.trim()) return d.error;
   return null;
 };
 

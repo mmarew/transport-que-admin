@@ -8,6 +8,7 @@ import {
   useListQueueOrganizationsQuery,
   useGetShipperRequestsQuery,
   useGetShipperRequestBatchesQuery,
+  useGetCompanyBidsQuery,
   api,
 } from "../../lib/redux/api";
 import { useAppDispatch } from "../../lib/redux/hooks";
@@ -112,6 +113,11 @@ export function OrdersPage() {
   } = useGetShipperRequestBatchesQuery(shipperBatchesArgs, {
     skip: !orgUniqueId,
   });
+
+  const {
+    data: companyBidsData,
+    refetch: refetchCompanyBids,
+  } = useGetCompanyBidsQuery({ limit: 100 }, { skip: !orgUniqueId });
 
   const dispatch = useAppDispatch();
 
@@ -264,11 +270,12 @@ export function OrdersPage() {
       refetchOrders();
     }
     refetchBatches();
+    refetchCompanyBids();
     if (expandedBatchKey) {
       const uid = findBatchUid(expandedBatchKey);
       if (uid && isUUID(uid)) fetchBatchDetails(uid, true);
     }
-  }, [refetchOrders, refetchBatches, targetBatchId, expandedBatchKey, findBatchUid, fetchBatchDetails]);
+  }, [refetchOrders, refetchBatches, refetchCompanyBids, targetBatchId, expandedBatchKey, findBatchUid, fetchBatchDetails]);
 
   // Live WebSocket subscription for orders
   const { socketConnected, isLive } = useQueueSocket(orgUniqueId, refetchAll);
@@ -341,13 +348,14 @@ export function OrdersPage() {
       mapBackendOrdersToDisplayItems({
         ordersData: mergedOrdersData,
         batchesData: scopedBatchesData,
+        companyBidsData: companyBidsData?.data,
         deletedIds,
         editedOrders,
         activeOrg,
         targetOrgId,
         t,
       }),
-    [mergedOrdersData, scopedBatchesData, deletedIds, editedOrders, activeOrg, targetOrgId, t]
+    [mergedOrdersData, scopedBatchesData, companyBidsData, deletedIds, editedOrders, activeOrg, targetOrgId, t]
   );
 
   // Extracted orders view pipeline (tabs, filters, sorts, pagination)
@@ -593,6 +601,7 @@ export function OrdersPage() {
           currentViewingOrder={effectiveViewingOrder}
           driverRequests={viewingDriverRequests}
           activeOrg={activeOrg}
+          orgUniqueId={orgUniqueId}
           onCloseViewing={handleCloseViewing}
           onRefresh={refetchAll}
           viewingTotalVehicles={viewingTotalVehicles}

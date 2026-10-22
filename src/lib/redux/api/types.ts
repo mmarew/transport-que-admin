@@ -421,6 +421,7 @@ export type GetCompanyBidsArgs = {
   companyUniqueId?: string;
   shipperRequestBatchId?: string;
   shipperRequestBatchUniqueId?: string;
+  batchId?: number | string;
   target?: string;
   bidStatus?: string;
   page?: number;

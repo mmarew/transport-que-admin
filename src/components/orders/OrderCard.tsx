@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronDown, ChevronUp, Pencil, Trash2, Eye } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Eye, Gavel } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, OrderBatchGroup } from "./OrdersTypes";
 import {
@@ -102,6 +102,14 @@ export function OrderCard({
 
   const hasConnectedJourney = group.statusSummary?.isConnected;
 
+  // Calculate submitted bids / proposals count
+  const isCompanyOrder = group.type === "Group";
+  const totalBids =
+    group.bidsCount ??
+    group.orders.reduce((acc, o) => acc + (o.driverRequests?.length || 0), 0);
+  const companyCount = group.companyBidsCount ?? totalBids;
+  const bidsDisplayCount = isCompanyOrder && companyCount > 0 ? companyCount : totalBids;
+
   return (
     <div
       id={`order-card-${group.batchKey}`}
@@ -185,6 +193,35 @@ export function OrderCard({
               <span>
                 {waitingCount} {t("orders.waitingLower", "waiting")}
               </span>
+            </button>
+          )}
+
+          {/* Submitted Bids Badge */}
+          {totalBids > 0 && group.statusSummary?.type !== "completed" && (
+            <button
+              type="button"
+              className="order-card-badge-bids"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewRequests?.(group.orders[0]);
+              }}
+              title={
+                isCompanyOrder
+                  ? (bidsDisplayCount === 1
+                      ? t("orders.singleCompanyBid", "1 Company Bid")
+                      : t("orders.multipleCompanyBids", "{{count}} Company Bids", { count: bidsDisplayCount }))
+                  : (bidsDisplayCount === 1
+                      ? t("orders.singleBid", "1 Bid")
+                      : t("orders.multipleBids", "{{count}} Bids", { count: bidsDisplayCount }))
+              }
+              aria-label={
+                isCompanyOrder
+                  ? `${bidsDisplayCount} ${bidsDisplayCount === 1 ? "Company Bid" : "Company Bids"}`
+                  : `${bidsDisplayCount} ${bidsDisplayCount === 1 ? "Bid" : "Bids"}`
+              }
+            >
+              <Gavel size={12} className="order-card-badge-bids-icon" />
+              <span>{bidsDisplayCount}</span>
             </button>
           )}
 

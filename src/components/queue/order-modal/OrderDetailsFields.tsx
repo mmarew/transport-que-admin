@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { UseFormRegister, FieldErrors } from "react-hook-form";
 import type { CreateOrderFormValues } from "@/schemas/queue";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 export interface OrderDetailsFieldsProps {
   register: UseFormRegister<CreateOrderFormValues>;
   errors: FieldErrors<CreateOrderFormValues>;
+  currentQty?: number;
   shippingDate?: string;
   deliveryDate?: string;
   todayStr: string;
@@ -27,6 +29,7 @@ export interface OrderDetailsFieldsProps {
 export function OrderDetailsFields({
   register,
   errors,
+  currentQty,
   shippingDate,
   deliveryDate,
   todayStr,
@@ -35,6 +38,31 @@ export function OrderDetailsFields({
   onDeliveryDateChange,
 }: OrderDetailsFieldsProps) {
   const { t } = useTranslation();
+  const [localQty, setLocalQty] = useState<number | undefined>(currentQty);
+
+  useEffect(() => {
+    setLocalQty(currentQty);
+  }, [currentQty]);
+
+  const effectiveQty = localQty !== undefined ? localQty : currentQty;
+
+  const capacityError = useMemo(() => {
+    if (
+      vehicleCapacity?.maxQuintal &&
+      effectiveQty != null &&
+      !isNaN(effectiveQty) &&
+      effectiveQty > vehicleCapacity.maxQuintal
+    ) {
+      return t("orders.quantityExceedsCapacity", {
+        max: vehicleCapacity.maxQuintal,
+        vehicle: vehicleCapacity.vehicleTypeName,
+        defaultValue: `Quantity per vehicle cannot exceed ${vehicleCapacity.maxQuintal} Quintals for ${vehicleCapacity.vehicleTypeName}`,
+      });
+    }
+    return null;
+  }, [vehicleCapacity, effectiveQty, t]);
+
+  const qtyErrorMessage = errors.shippableItemQtyInQuintal?.message || capacityError;
 
   return (
     <div>
@@ -65,19 +93,6 @@ export function OrderDetailsFields({
           {(() => {
             const qtyRegister = register("shippableItemQtyInQuintal", {
               valueAsNumber: true,
-              validate: (val) => {
-                if (
-                  vehicleCapacity?.maxQuintal &&
-                  Number(val) > vehicleCapacity.maxQuintal
-                ) {
-                  return t("orders.quantityExceedsCapacity", {
-                    max: vehicleCapacity.maxQuintal,
-                    vehicle: vehicleCapacity.vehicleTypeName,
-                    defaultValue: `Quantity per vehicle cannot exceed ${vehicleCapacity.maxQuintal} Quintals for ${vehicleCapacity.vehicleTypeName}`,
-                  });
-                }
-                return true;
-              },
             });
             return (
               <input
@@ -94,28 +109,33 @@ export function OrderDetailsFields({
                 }
                 {...qtyRegister}
                 onChange={(e) => {
+                  const rawVal = e.target.value;
+                  const num = rawVal === "" ? undefined : parseFloat(rawVal);
+                  setLocalQty(num);
                   qtyRegister.onChange(e);
-                  if (vehicleCapacity?.maxQuintal) {
-                    const num = parseFloat(e.target.value);
-                    if (!isNaN(num) && num > vehicleCapacity.maxQuintal) {
-                      toast.error(
-                        t("orders.quantityExceedsCapacity", {
-                          max: vehicleCapacity.maxQuintal,
-                          vehicle: vehicleCapacity.vehicleTypeName,
-                          defaultValue: `Quantity per vehicle cannot exceed ${vehicleCapacity.maxQuintal} Quintals for ${vehicleCapacity.vehicleTypeName}`,
-                        }),
-                        { id: "quantity-exceeds-capacity" },
-                      );
-                    }
+                  if (
+                    vehicleCapacity?.maxQuintal &&
+                    num != null &&
+                    !isNaN(num) &&
+                    num > vehicleCapacity.maxQuintal
+                  ) {
+                    toast.error(
+                      t("orders.quantityExceedsCapacity", {
+                        max: vehicleCapacity.maxQuintal,
+                        vehicle: vehicleCapacity.vehicleTypeName,
+                        defaultValue: `Quantity per vehicle cannot exceed ${vehicleCapacity.maxQuintal} Quintals for ${vehicleCapacity.vehicleTypeName}`,
+                      }),
+                      { id: "quantity-exceeds-capacity" },
+                    );
                   }
                 }}
-                className={`com-input ${errors.shippableItemQtyInQuintal ? "com-input-error" : ""}`}
+                className={`com-input ${qtyErrorMessage ? "com-input-error" : ""}`}
               />
             );
           })()}
-          {errors.shippableItemQtyInQuintal && (
+          {qtyErrorMessage && (
             <p className="com-error-text">
-              {errors.shippableItemQtyInQuintal.message}
+              {qtyErrorMessage}
             </p>
           )}
         </div>

@@ -44,6 +44,14 @@
   padding: 0 10px;
 }
 
+@media (max-width: 768px) {
+  .com-modal .cpi-box {
+    height: 42px;
+    min-height: 42px;
+    border-radius: 8px;
+  }
+}
+
 .cpi-box:focus-within {
   border-color: var(--primary, #0B4D6D);
   box-shadow: 0 0 0 3px rgba(11, 77, 109, 0.12);
@@ -71,6 +79,7 @@
 .cpi-input {
   flex: 1;
   width: 100%;
+  min-width: 0;
   border: none;
   outline: none;
   background: transparent;

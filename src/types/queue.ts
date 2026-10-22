@@ -227,6 +227,7 @@ export interface CreateOrderPayload {
     description: string;
   };
   isBiddingApproved?: boolean;
+  targetCompanyUniqueId?: string;
 }
 
 export interface CreateOrderResponse {

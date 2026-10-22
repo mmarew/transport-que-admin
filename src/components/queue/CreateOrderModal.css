@@ -552,6 +552,14 @@
     margin-bottom: 6px;
   }
 
+  @media (max-width: 540px) {
+    .com-grid-2 {
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+  }
+
   .com-field-group {
     gap: 4px;
   }

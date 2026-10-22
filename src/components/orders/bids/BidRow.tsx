@@ -50,6 +50,16 @@ export function BidRow({
 }: BidRowProps) {
   const { t } = useTranslation();
 
+  const hasRealBid = Boolean(
+    driver.companyBidRequestUniqueId ||
+    driver.driverBidUniqueId ||
+    (driver as any).bidId ||
+    (driver as any).companyBidRequestId ||
+    (driver as any).rawDriver?.companyBidRequestUniqueId ||
+    (driver as any).rawDriver?.bidUniqueId ||
+    (driver as any).rawDriver?.driverBidUniqueId
+  );
+
   const statusId = extractJourneyStatusId(
     driver.journeyStatusId ?? driver.journeyStatus ?? (driver as any).status,
   );
@@ -58,7 +68,9 @@ export function BidRow({
     typeof statusId === "number" && statusId >= 4 && statusId <= 9;
   const isDriverRequested =
     statusId === 2 ||
-    ((driver.journeyStatus === "requested" || driver.bidStatus === "requested") && statusId !== 1);
+    driver.journeyStatus === "requested" ||
+    driver.bidStatus === "requested" ||
+    !hasRealBid;
 
   const rawOrder = asRecord((order as any).rawItem || order);
   const rawShipperReq = asRecord(rawOrder.shipperRequest);
@@ -108,9 +120,10 @@ export function BidRow({
           : directCost;
 
   const hasDriverOffer = Boolean(
-    (driverOfferVal != null && driverOfferVal > 0) ||
+    hasRealBid &&
+    ((driverOfferVal != null && driverOfferVal > 0) ||
       isDriverAccepted ||
-      isShipperAccepted,
+      isShipperAccepted),
   );
 
   const offerVal = Number(
@@ -155,11 +168,13 @@ export function BidRow({
             >
               {displayName}
             </span>
-            {statusId != null && (
-              <span className={`dbm-status-badge status-${statusId}`}>
-                {driver.bidStatus === "submitted"
+            {(statusId != null || isAccepted) && (
+              <span className={`dbm-status-badge status-${isAccepted ? 4 : (hasRealBid && driver.bidStatus === "submitted" ? 1 : 2)}`}>
+                {isAccepted
+                  ? t("orders.accepted", "Accepted")
+                  : hasRealBid && driver.bidStatus === "submitted"
                   ? t("orders.submitted", "Submitted")
-                  : formatJourneyStatusLabel(statusId)}
+                  : formatJourneyStatusLabel(2)}
               </span>
             )}
           </div>

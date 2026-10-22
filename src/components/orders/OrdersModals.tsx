@@ -14,6 +14,7 @@ export interface OrdersModalsProps {
     longitude?: number | string | null;
     queueOrganizationAddress?: string | null;
   } | null;
+  orgUniqueId?: string;
   onCloseViewing: () => void;
   onRefresh: () => void;
   viewingTotalVehicles?: number;
@@ -36,6 +37,7 @@ export function OrdersModals({
   currentViewingOrder,
   driverRequests,
   activeOrg,
+  orgUniqueId,
   onCloseViewing,
   onRefresh,
   viewingTotalVehicles,
@@ -90,7 +92,9 @@ export function OrdersModals({
       {/* ── Create Modal ── */}
       {showCreateModal && (
         <CreateOrderModal
-          queueOrganizationUniqueId={activeOrg?.queueOrganizationUniqueId || ""}
+          queueOrganizationUniqueId={
+            orgUniqueId || activeOrg?.queueOrganizationUniqueId || ""
+          }
           origin={origin}
           onClose={onCloseCreate}
           onCreated={() => {

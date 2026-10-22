@@ -162,13 +162,13 @@ export function useAcceptDriverBid(
     const rawEffectiveBidId =
       companyBidRequestUniqueId ||
       (driver.companyBidRequestUniqueId && !companyUUIDs.includes(driver.companyBidRequestUniqueId)
-        ? extractUUID(driver.companyBidRequestUniqueId)
+        ? (extractUUID(driver.companyBidRequestUniqueId) || driver.companyBidRequestUniqueId)
         : undefined) ||
       (driver.driverBidUniqueId && !companyUUIDs.includes(driver.driverBidUniqueId)
-        ? extractUUID(driver.driverBidUniqueId)
+        ? (extractUUID(driver.driverBidUniqueId) || driver.driverBidUniqueId)
         : undefined) ||
       (driver.bidUniqueId && !companyUUIDs.includes(driver.bidUniqueId)
-        ? extractUUID(driver.bidUniqueId)
+        ? (extractUUID(driver.bidUniqueId) || driver.bidUniqueId)
         : undefined);
 
     const effectiveBidId =
@@ -238,7 +238,17 @@ export function useAcceptDriverBid(
         queueUniqueId: (rawDriver.queueUniqueId ?? rawDriver.driverQueueUniqueId) as any,
       }).unwrap();
 
-      setAcceptedDriverIds((prev) => new Set([...prev, driverKey]));
+      setAcceptedDriverIds((prev) => {
+        const next = new Set(prev);
+        if (driverKey) next.add(driverKey);
+        if (driver.userUniqueId) next.add(String(driver.userUniqueId));
+        if (driver.companyBidRequestUniqueId) next.add(String(driver.companyBidRequestUniqueId));
+        if (driver.driverBidUniqueId) next.add(String(driver.driverBidUniqueId));
+        if (driver.driverRequestUniqueId) next.add(String(driver.driverRequestUniqueId));
+        if (driver.phoneNumber) next.add(String(driver.phoneNumber));
+        if (effectiveBidId) next.add(String(effectiveBidId));
+        return next;
+      });
       toast.success(
         isCompanyOrder
           ? t("orders.companyRequestAccepted", "Company request accepted successfully")

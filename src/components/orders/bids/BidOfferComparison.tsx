@@ -26,7 +26,7 @@ export function BidOfferComparison({
           : t("orders.targetCostLabel", "Shipper Target Cost")}
       </span>
       <span className="dbm-offer-amount">
-        {offerVal.toLocaleString()}{" "}
+        {offerVal.toLocaleString()}&nbsp;
         <small className="dbm-offer-currency">ETB</small>
       </span>
     </div>

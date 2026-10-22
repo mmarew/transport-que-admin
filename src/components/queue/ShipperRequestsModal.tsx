@@ -49,6 +49,7 @@ export interface ShipperRequestDriverInfo {
   queueNumber?: number | string | null;
   loadingOrderNumber?: number | string | null;
   entry?: any;
+  rawDriver?: any;
 }
 
 export interface ShipperRequestDetail {

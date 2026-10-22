@@ -180,6 +180,7 @@ export const {
         { type: "QueueStatus", id: `${queueOrganizationUniqueId}|today` },
         { type: "DriverQueue", id: queueOrganizationUniqueId },
         { type: "DriverBids", id: shipperRequestUniqueId as string },
+        "DriverBids",
         "ShipperRequests",
       ],
     }),
@@ -293,11 +294,34 @@ export const {
               batchObj.batchUniqueId ||
               null,
             batchId: item.batchId ?? batchObj.batchId ?? null,
-            companyUniqueId: item.companyUniqueId ?? offer.companyUniqueId ?? null,
-            companyName: item.companyName ?? offer.companyName ?? null,
+            companyUniqueId:
+              item.companyUniqueId ??
+              offer.companyUniqueId ??
+              item.company?.uniqueId ??
+              offer.company?.uniqueId ??
+              null,
+            companyName:
+              item.companyName ??
+              offer.companyName ??
+              item.company?.companyName ??
+              item.company?.name ??
+              offer.company?.companyName ??
+              offer.company?.name ??
+              item.submittedByName ??
+              offer.submittedByName ??
+              null,
             proposedCostPerVehicle:
-              offer.proposedCostPerVehicle ?? offer.costPerVehicle ?? item.proposedCostPerVehicle ?? null,
-            proposedTotalCost: offer.proposedTotalCost ?? item.proposedTotalCost ?? null,
+              offer.proposedCostPerVehicle ??
+              offer.costPerVehicle ??
+              item.proposedCostPerVehicle ??
+              item.costPerVehicle ??
+              null,
+            proposedTotalCost:
+              offer.proposedTotalCost ??
+              item.proposedTotalCost ??
+              offer.totalCost ??
+              item.totalCost ??
+              null,
             bidStatus: offer.bidStatus || item.bidStatus || "submitted",
             journeyStatusId: (() => {
               const rawStatus = String(offer.bidStatus || item.bidStatus || "submitted").toLowerCase();
@@ -316,7 +340,16 @@ export const {
               return offer.journeyStatusId ?? 1;
             })(),
             vehicleTypeName: item.vehicleTypeName ?? offer.vehicleTypeName ?? null,
-            companyPhone: item.companyPhone ?? offer.companyPhone ?? item.phoneNumber ?? offer.phoneNumber ?? null,
+            companyPhone:
+              item.companyPhone ??
+              offer.companyPhone ??
+              item.phoneNumber ??
+              offer.phoneNumber ??
+              item.phone ??
+              offer.phone ??
+              item.company?.phoneNumber ??
+              offer.company?.phoneNumber ??
+              null,
           };
         });
 

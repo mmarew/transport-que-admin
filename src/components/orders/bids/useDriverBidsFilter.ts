@@ -11,6 +11,8 @@ export interface UseDriverBidsFilterArgs {
   sortBy: BidsSortOption;
   displayLimit: number;
   acceptedDriverIds: Set<string>;
+  totalVehicles?: number;
+  isCompany?: boolean;
 }
 
 export function useDriverBidsFilter({
@@ -20,6 +22,8 @@ export function useDriverBidsFilter({
   sortBy,
   displayLimit,
   acceptedDriverIds,
+  totalVehicles,
+  isCompany,
 }: UseDriverBidsFilterArgs) {
   const filteredAndSortedDrivers = useMemo(() => {
     let list = [...driverRequests];
@@ -120,9 +124,9 @@ export function useDriverBidsFilter({
   }, [filteredAndSortedDrivers, displayLimit]);
 
   const hasAnyAcceptedDriver = useMemo(() => {
-    return (
-      acceptedDriverIds.size > 0 ||
-      driverRequests.some((d) => {
+    const acceptedCount =
+      acceptedDriverIds.size +
+      driverRequests.filter((d) => {
         const rawBidStatus = String(d.bidStatus || "").toLowerCase();
         if (
           rawBidStatus === "submitted" ||
@@ -142,9 +146,15 @@ export function useDriverBidsFilter({
           d.bidStatus === "accepted" ||
           d.bidStatus === "accepted_by_shipper"
         );
-      })
-    );
-  }, [acceptedDriverIds, driverRequests]);
+      }).length;
+
+    // For company orders or single-vehicle orders, 1 accepted bid fills the order.
+    // For multi-vehicle driver batches, only considered filled when acceptedCount >= totalVehicles.
+    if (isCompany || !totalVehicles || totalVehicles <= 1) {
+      return acceptedCount > 0;
+    }
+    return acceptedCount >= totalVehicles;
+  }, [acceptedDriverIds, driverRequests, isCompany, totalVehicles]);
 
   return {
     filteredAndSortedDrivers,
