@@ -50,8 +50,10 @@ export const SetupOrganization: React.FC = () => {
   } = useListQueueOrganizationsQuery();
 
   const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
+    void (async () => {
+      await logout();
+      navigate("/login", { replace: true });
+    })();
   };
 
   useEffect(() => {

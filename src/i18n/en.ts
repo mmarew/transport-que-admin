@@ -238,6 +238,37 @@ export const en = {
       "Profile management, notification preferences, and alert thresholds will appear here.",
     langSwitched: "Language switched to {{language}}",
     screenAria: "Settings screen",
+    activeDevices: {
+      title: "Active Devices",
+      description:
+        "These devices are signed in to your account. Revoke any device you do not recognise.",
+      refresh: "Refresh devices",
+      loading: "Loading devices...",
+      loadError: "Could not load your devices.",
+      retry: "Try again",
+      empty: "No active devices found.",
+      thisDevice: "This device",
+      lastSeen: "Last seen {{when}}",
+      revokeDevice: "Sign this device out",
+      revokeOthers: "Sign out other devices",
+      revokedOne: "Device signed out.",
+      revokedOthers: "Signed out {{count}} other device(s).",
+      revokedCurrent: "You have been signed out.",
+      actionError: "Could not update your devices. Please try again.",
+      confirmTitle: "Sign out this device?",
+      confirmDesc:
+        "The device will be signed out immediately and must log in again.",
+      confirmOthersTitle: "Sign out other devices?",
+      confirmOthersDesc:
+        "Every other device will be signed out. This device stays signed in.",
+      confirmButton: "Sign out",
+      platform: {
+        ios: "iOS",
+        android: "Android",
+        web: "Web",
+        unknown: "Unknown",
+      },
+    },
   },
   dashboard: {
     title: "Organizations",
