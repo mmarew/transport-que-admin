@@ -16,6 +16,7 @@ import {
   formatTrimmedRoute,
   getConnectedJourneyStatus,
   isDriverConnectedToOrder,
+  isSubmittedBid,
 } from "./OrdersTypes";
 import { renderVehicleType } from "./OrderPrimitives";
 
@@ -177,8 +178,7 @@ export function SingleOrderRow({
             </button>
           ) : onViewRequests &&
             order.isBiddingApproved &&
-            order.driverRequests &&
-            order.driverRequests.length > 0 ? (
+            (order.driverRequests?.filter(isSubmittedBid).length || 0) > 0 ? (
             <button
               type="button"
               className="orders-btn-bids orders-btn-bids--active"
@@ -189,7 +189,7 @@ export function SingleOrderRow({
               <Gavel size={13} />
               <span>{t("orders.bids", "Bids")}</span>
               <span className="orders-bids-count">
-                {order.driverRequests.length}
+                {order.driverRequests?.filter(isSubmittedBid).length}
               </span>
             </button>
           ) : (

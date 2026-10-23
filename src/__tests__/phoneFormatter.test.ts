@@ -5,6 +5,7 @@ import {
   toE164,
   fromE164,
   isValidPhoneDigits,
+  maskPhoneNumber,
 } from "../utils/phoneFormatter";
 
 describe("phoneFormatter utility suite", () => {
@@ -77,6 +78,31 @@ describe("phoneFormatter utility suite", () => {
       expect(isValidPhoneDigits("0911223344")).toBe(true);
       expect(isValidPhoneDigits("91122334")).toBe(false);
       expect(isValidPhoneDigits("")).toBe(false);
+    });
+  });
+
+  describe("maskPhoneNumber", () => {
+    it("masks Ethiopian E.164 number revealing prefix and last 2 digits", () => {
+      expect(maskPhoneNumber("+251911223344")).toBe("+2519******44");
+      expect(maskPhoneNumber("+251922241180")).toBe("+2519******80");
+    });
+
+    it("masks Safaricom Ethiopian number preserving +2517 and last 2 digits", () => {
+      expect(maskPhoneNumber("+251711223344")).toBe("+2517******44");
+    });
+
+    it("masks local 09... and 9... formats correctly", () => {
+      expect(maskPhoneNumber("0911223344")).toBe("+2519******44");
+      expect(maskPhoneNumber("911223344")).toBe("+2519******44");
+    });
+
+    it("allows custom visible end digits when specified", () => {
+      expect(maskPhoneNumber("+251911223344", 4)).toBe("+2519****3344");
+    });
+
+    it("handles empty or short input gracefully", () => {
+      expect(maskPhoneNumber("")).toBe("");
+      expect(maskPhoneNumber("123")).toBe("123");
     });
   });
 });

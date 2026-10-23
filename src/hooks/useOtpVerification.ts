@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { verifyOtp, requestLoginOtp } from "../services/auth.service";
 import parseError from "../utils/parseError";
+import { maskPhoneNumber } from "../utils/phoneFormatter";
 
 export const OTP_LENGTH = 6;
 export const RESEND_COOLDOWN_SECONDS = 60;
@@ -197,9 +198,7 @@ export function useOtpVerification({
     focusBox(Math.min(pasted.length, OTP_LENGTH - 1));
   };
 
-  const maskedPhone = phoneNumber
-    ? phoneNumber.substring(0, 5) + "********"
-    : "";
+  const maskedPhone = maskPhoneNumber(phoneNumber);
 
   return {
     digits,

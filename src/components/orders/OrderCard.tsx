@@ -9,6 +9,7 @@ import {
   formatCost,
   getConnectedJourneyStatus,
   isDriverConnectedToOrder,
+  isSubmittedBid,
 } from "./OrdersTypes";
 
 export interface OrderCardProps {
@@ -88,12 +89,9 @@ export function OrderCard({
 
   // Calculate waiting count & status badge
   const waitingCount =
-    group.waitingCount != null && group.waitingCount > 0
+    group.waitingCount != null
       ? group.waitingCount
-      : group.orders.filter((o) => !getConnectedJourneyStatus(o).isConnected).length ||
-        group.totalVehicles ||
-        group.orders.length ||
-        1;
+      : group.orders.filter((o) => !getConnectedJourneyStatus(o).isConnected).length;
 
   const vehicleNoun = getVehicleNoun(
     group.vehicleType,
@@ -102,13 +100,33 @@ export function OrderCard({
 
   const hasConnectedJourney = group.statusSummary?.isConnected;
 
-  // Calculate submitted bids / proposals count
-  const isCompanyOrder = group.type === "Group";
+  // Determine if this order/batch explicitly targets companies
+  const isCompanyOrder = Boolean(
+    (group.companyBidsCount != null && group.companyBidsCount > 0) ||
+    group.orders.some(
+      (o) =>
+        Boolean(o.targetCompanyUniqueId) ||
+        Boolean((o.rawItem as any)?.targetCompanyUniqueId) ||
+        String((o.rawItem as any)?.requestMode || (o.rawItem as any)?.shipperRequest?.requestMode || "").toLowerCase().includes("company") ||
+        o.driverRequests?.some((r) => r.isCompany)
+    )
+  );
+
   const totalBids =
     group.bidsCount ??
-    group.orders.reduce((acc, o) => acc + (o.driverRequests?.length || 0), 0);
-  const companyCount = group.companyBidsCount ?? totalBids;
-  const bidsDisplayCount = isCompanyOrder && companyCount > 0 ? companyCount : totalBids;
+    group.orders.reduce(
+      (acc, o) => acc + (o.driverRequests?.filter(isSubmittedBid).length || 0),
+      0
+    );
+  const companyCount =
+    group.companyBidsCount ??
+    group.orders.reduce(
+      (acc, o) =>
+        acc +
+        (o.driverRequests?.filter((r) => isSubmittedBid(r) && (r.isCompany || r.companyBidRequestUniqueId)).length || 0),
+      0
+    );
+  const bidsDisplayCount = isCompanyOrder ? companyCount : totalBids;
 
   return (
     <div
@@ -184,7 +202,7 @@ export function OrderCard({
                 onViewRequests?.(group.orders[0]);
               }}
               title={
-                group.type === "Group"
+                isCompanyOrder
                   ? t("orders.companyBidsTitle", "Company Bids & Proposals")
                   : t("orders.driverBidsTitle", "Driver Bids & Proposals")
               }
@@ -197,7 +215,7 @@ export function OrderCard({
           )}
 
           {/* Submitted Bids Badge */}
-          {totalBids > 0 && group.statusSummary?.type !== "completed" && (
+          {bidsDisplayCount > 0 && !hasConnectedJourney && (
             <button
               type="button"
               className="order-card-badge-bids"

@@ -35,13 +35,29 @@ export function useDriverBidsData({
     [order],
   );
 
+  // If an individual (non-company) driver is already accepted on this order,
+  // override any company-target flag — the bid was won by a real driver.
+  const hasAcceptedIndividualDriver = order.driverRequests?.some((r) => {
+    if (r.isCompany) return false;
+    const bidStatus = String(r.bidStatus || "").toLowerCase();
+    const sid = r.journeyStatusId != null ? Number(r.journeyStatusId) : undefined;
+    return (
+      bidStatus === "selected" ||
+      bidStatus === "accepted" ||
+      bidStatus === "accepted_by_shipper" ||
+      (typeof sid === "number" && sid >= 3 && sid <= 9) ||
+      sid === 14
+    );
+  });
+
   const isCompanyTargetBatch =
-    order.type === "Group" ||
-    targetCompanyUUIDs.length > 0 ||
-    Boolean(order.targetCompanyUniqueId) ||
-    Boolean((order.rawItem as any)?.targetCompanyUniqueId) ||
-    String((order.rawItem as any)?.requestMode || "").toLowerCase().includes("company") ||
-    String((order.rawItem as any)?.shipperRequest?.requestMode || "").toLowerCase().includes("company");
+    !hasAcceptedIndividualDriver && (
+      Boolean(order.targetCompanyUniqueId) ||
+      Boolean((order.rawItem as any)?.targetCompanyUniqueId) ||
+      String((order.rawItem as any)?.requestMode || "").toLowerCase().includes("company") ||
+      String((order.rawItem as any)?.shipperRequest?.requestMode || "").toLowerCase().includes("company") ||
+      order.driverRequests?.some((r) => r.isCompany)
+    );
 
   // The authoritative list of who actually bid. Exclude company UUIDs so we never query the driver-bid endpoint with a company UUID.
   const shipperRequestUniqueId = useMemo(() => {
@@ -111,7 +127,7 @@ export function useDriverBidsData({
   const cleanBatchUUID = rawBatchCandidate ? extractUUID(rawBatchCandidate) : undefined;
 
   // Company bids query: fetch bids submitted via POST /api/company/bids
-  const shouldFetchCompanyBids = Boolean(isCompanyTargetBatch || targetCompanyId || rawBatchId || cleanBatchUUID);
+  const shouldFetchCompanyBids = Boolean(isCompanyTargetBatch);
   const {
     data: companyBidsData,
     isLoading: isCompanyBidsLoading,
@@ -158,14 +174,29 @@ export function useDriverBidsData({
     return bidsToMap.map((b, idx) => {
       const rawBidStatus = String(b.bidStatus || (b as any).status || "").toLowerCase();
       const rawStatus = String((b as any).status || "").toLowerCase();
-      const isPending =
-        rawBidStatus === "submitted" ||
-        rawBidStatus === "pending" ||
+      const hasCompanyProposal = Boolean(
+        b.proposedTotalCost != null ||
+        b.proposedCostPerVehicle != null ||
+        (b as any).offerCost != null ||
+        (b as any).bidAmount != null ||
+        b.numberOfVehiclesOffered != null
+      );
+      const isRequested =
         rawBidStatus === "requested" ||
-        rawStatus === "submitted" ||
-        rawStatus === "pending";
+        rawStatus === "requested" ||
+        b.journeyStatusId === 2 ||
+        (!hasCompanyProposal && rawBidStatus !== "submitted" && rawBidStatus !== "accepted" && rawStatus !== "accepted");
+
+      const isPending =
+        !isRequested &&
+        (rawBidStatus === "submitted" ||
+          rawBidStatus === "pending" ||
+          rawStatus === "submitted" ||
+          rawStatus === "pending" ||
+          hasCompanyProposal);
 
       const isAccepted =
+        !isRequested &&
         !isPending &&
         (rawBidStatus === "selected" ||
           rawBidStatus === "accepted" ||
@@ -220,9 +251,9 @@ export function useDriverBidsData({
         userUniqueId: b.companyUniqueId || (b as any).company?.uniqueId || targetCompanyId || `company-${idx + 1}`,
         fullName: compName,
         phoneNumber: phone,
-        journeyStatusId: isAccepted ? 4 : 1,
-        journeyStatus: isAccepted ? "accepted" : "submitted",
-        bidStatus: isAccepted ? "selected" : "submitted",
+        journeyStatusId: isAccepted ? 4 : isRequested ? 2 : 1,
+        journeyStatus: isAccepted ? "accepted" : isRequested ? "requested" : "submitted",
+        bidStatus: isAccepted ? "selected" : isRequested ? "requested" : "submitted",
         offerCost: offeredCost,
         proposedCost: offeredCost,
         bidAmount: offeredCost,
@@ -240,7 +271,7 @@ export function useDriverBidsData({
     [bidsData],
   );
 
-  const isCompany = isCompanyTargetBatch || realCompanyBids.length > 0;
+  const isCompany = Boolean(isCompanyTargetBatch);
 
   const isDriverAccepted = (driver: ShipperRequestDriverInfo) => {
     const bidStatus = String(driver.bidStatus || "").toLowerCase();
@@ -258,13 +289,15 @@ export function useDriverBidsData({
     const sid = extractJourneyStatusId(
       driver.journeyStatusId ?? driver.journeyStatus ?? (driver as any).status,
     );
-    if (sid === 1 || sid === 2 || sid === 3) {
+    if (sid === 1 || sid === 2) {
       return false;
     }
     return (
-      (typeof sid === "number" && sid >= 4 && sid <= 9) ||
+      (typeof sid === "number" && sid >= 3 && sid <= 9) ||
       sid === 14 ||
       journeyStatus === "acceptedbyshipper" ||
+      journeyStatus === "acceptedbydriver" ||
+      journeyStatus === "accepted" ||
       bidStatus === "selected" ||
       bidStatus === "accepted" ||
       bidStatus === "accepted_by_shipper"
@@ -272,7 +305,7 @@ export function useDriverBidsData({
   };
 
   const driverRequests: ShipperRequestDriverInfo[] = useMemo(() => {
-    if (realCompanyBids.length > 0) {
+    if (isCompanyTargetBatch && realCompanyBids.length > 0) {
       return realCompanyBids;
     }
 
@@ -425,7 +458,18 @@ export function useDriverBidsData({
             order.id ||
             "company-proposal";
 
-          const isSubmitted = Boolean(realBidIdClean);
+          const rawBidStatus = String((order as any).bidStatus || order.status || "").toLowerCase();
+          const hasOfferCost = Boolean(
+            (asRecord(raw.acceptedOffer).proposedTotalCost != null) ||
+            (asRecord(raw.acceptedOffer).proposedCostPerVehicle != null) ||
+            (asRecord(raw.acceptedOffer).offerCost != null) ||
+            (asRecord(raw.acceptedOffer).bidAmount != null)
+          );
+          const isSubmitted =
+            rawBidStatus !== "requested" &&
+            (rawBidStatus === "submitted" ||
+              rawBidStatus === "offered" ||
+              hasOfferCost);
 
           const resolvedStatusId = isAcceptedOrder
             ? (sid ?? order.journeyStatusId ?? 4)

@@ -45,3 +45,35 @@ export const fromE164 = (e164: string): string => cleanDigits(e164);
 export const isValidPhoneDigits = (digits: string): boolean =>
   cleanDigits(digits).length === 9;
 
+/**
+ * Masks a phone number for display on verification/OTP screens.
+ * Preserves the prefix (+2519 / +2517) and reveals the last digits (default: 2),
+ * masking the middle digits with '*'.
+ *
+ * Example:
+ *   "+251912345678" -> "+2519******78"
+ *   "0912345678"    -> "+2519******78"
+ */
+export const maskPhoneNumber = (phone: string, visibleEndDigits = 2): string => {
+  if (!phone) return "";
+
+  const cleaned = cleanDigits(phone);
+  if (cleaned.length === PHONE_MAX_DIGITS) {
+    const prefix = `+251${cleaned.slice(0, 1)}`;
+    const safeEndDigits = Math.max(1, Math.min(visibleEndDigits, 4));
+    const suffix = cleaned.slice(-safeEndDigits);
+    const maskLen = cleaned.length - 1 - safeEndDigits;
+    return `${prefix}${"*".repeat(Math.max(0, maskLen))}${suffix}`;
+  }
+
+  const trimmed = phone.trim();
+  if (trimmed.length <= visibleEndDigits + 4) {
+    return trimmed;
+  }
+  const startLen = trimmed.startsWith("+") ? 5 : 4;
+  const start = trimmed.slice(0, startLen);
+  const end = trimmed.slice(-visibleEndDigits);
+  const maskCount = Math.max(3, trimmed.length - startLen - visibleEndDigits);
+  return `${start}${"*".repeat(maskCount)}${end}`;
+};
+

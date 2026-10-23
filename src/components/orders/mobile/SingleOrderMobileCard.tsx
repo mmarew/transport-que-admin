@@ -9,7 +9,7 @@ import {
   Clock,
 } from "lucide-react";
 import type { OrderDisplayItem } from "../OrdersTypes";
-import { getConnectedJourneyStatus } from "../OrdersTypes";
+import { getConnectedJourneyStatus, isSubmittedBid } from "../OrdersTypes";
 import { OrderMobileRoute } from "./OrderMobileRoute";
 
 export interface SingleOrderMobileCardProps {
@@ -104,8 +104,7 @@ export function SingleOrderMobileCard({
             </button>
           ) : onViewRequests &&
             order.isBiddingApproved &&
-            order.driverRequests &&
-            order.driverRequests.length > 0 ? (
+            (order.driverRequests?.filter(isSubmittedBid).length || 0) > 0 ? (
             <button
               type="button"
               className="orders-m-btn-requests orders-m-btn-requests--active"
@@ -114,7 +113,7 @@ export function SingleOrderMobileCard({
             >
               <Gavel size={12} />
               <span>
-                {t("orders.bids", "Bids")} ({order.driverRequests.length})
+                {t("orders.bids", "Bids")} ({order.driverRequests?.filter(isSubmittedBid).length})
               </span>
             </button>
           ) : (

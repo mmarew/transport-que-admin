@@ -718,9 +718,10 @@ describe("Journey Status utility", () => {
     const ongoingBatches = groupOrdersByBatch(ongoingOrders);
     expect(ongoingBatches).toHaveLength(1);
     expect(ongoingBatches[0].batchId).toBe("557");
-    // 14 accepted-but-idle trucks have no working driver, so no active summary.
-    expect(ongoingBatches[0].statusSummary.isConnected).toBe(false);
-    expect(ongoingBatches[0].statusSummary.label).toBe("");
+    // 14 accepted-but-idle trucks have drivers assigned (status 4 = Accepted).
+    // They should show isConnected=true with an Accepted label, not "waiting".
+    expect(ongoingBatches[0].statusSummary.isConnected).toBe(true);
+    expect(ongoingBatches[0].statusSummary.label).toBe("14 Accepted");
     expect(ongoingBatches[0].orders).toHaveLength(14);
     expect(ongoingBatches[0].orders.every((o) => o.status === "ongoing")).toBe(true);
 
@@ -772,6 +773,52 @@ describe("Journey Status utility", () => {
     expect(batches[0].waitingCount).toBe(3);
     expect(batches[0].statusSummary.isConnected).toBe(false);
     expect(batches[0].isBiddingApproved).toBe(true);
+  });
+
+  it("correctly identifies working journey for a truck where driver is in driverRequests with status 6 (Going to Pickup / Loading)", () => {
+    const truckWithDriver: OrderDisplayItem = {
+      id: "req-1-truck-5",
+      shipperRequestId: 5,
+      batchId: "1",
+      displayId: "#1/5",
+      shipper: "+251910101010",
+      origin: "Kombolcha",
+      destination: "Semera",
+      cost: 1000,
+      quintal: 250,
+      vehicleType: "20ft Container Truck (251–300 Quintal)",
+      item: "cement",
+      type: "Group",
+      status: "ongoing",
+      journeyStatusId: 1, // Order level might be 1
+      totalVehicles: 5,
+      batchTotalCost: 5000,
+      batchTotalQuintal: 1250,
+      driverRequests: [
+        {
+          driverRequestId: 6,
+          fullName: "Marew Masresha Abate",
+          phoneNumber: "+251911889404",
+          plateNumber: "3Bcfu",
+          vehicleTypeName: "Light Truck (up to 35 Quintal)",
+          journeyStatusId: 6, // Loading / Going to Pickup
+          journeyStatus: "loading",
+          bidStatus: "selected",
+        },
+      ],
+    };
+
+    const batches = groupOrdersByBatch([truckWithDriver]);
+    expect(batches).toHaveLength(1);
+    expect(batches[0].totalVehicles).toBe(5);
+    expect(batches[0].totalCost).toBe(5000);
+    expect(batches[0].totalQuintal).toBe(1250);
+    expect(batches[0].activeCount).toBe(1);
+    expect(batches[0].waitingCount).toBe(0);
+    expect(batches[0].statusSummary.isConnected).toBe(true);
+    expect(batches[0].statusSummary.statusId).toBe(6);
+    expect(batches[0].statusSummary.type).toBe("loading");
+    expect(batches[0].statusSummary.label).toBe("1 Loading");
   });
 });
 

@@ -322,22 +322,57 @@ export const {
               offer.totalCost ??
               item.totalCost ??
               null,
-            bidStatus: offer.bidStatus || item.bidStatus || "submitted",
+            bidStatus: (() => {
+              const explicit = offer.bidStatus || item.bidStatus || offer.status || item.status;
+              if (explicit) return explicit;
+              const hasProposal = Boolean(
+                offer.proposedCostPerVehicle != null ||
+                offer.proposedTotalCost != null ||
+                offer.proposedCost != null ||
+                offer.offerCost != null ||
+                offer.cost != null ||
+                offer.bidAmount != null ||
+                item.proposedCostPerVehicle != null ||
+                item.proposedTotalCost != null ||
+                item.proposedCost != null ||
+                item.offerCost != null ||
+                item.cost != null ||
+                item.bidAmount != null
+              );
+              return hasProposal ? "submitted" : "requested";
+            })(),
             journeyStatusId: (() => {
-              const rawStatus = String(offer.bidStatus || item.bidStatus || "submitted").toLowerCase();
+              const explicit = String(offer.bidStatus || item.bidStatus || offer.status || item.status || "").toLowerCase();
               const isAccepted =
-                rawStatus === "selected" ||
-                rawStatus === "accepted" ||
-                rawStatus === "accepted_by_shipper" ||
+                explicit === "selected" ||
+                explicit === "accepted" ||
+                explicit === "accepted_by_shipper" ||
                 offer.status === "accepted" ||
                 item.status === "accepted";
               if (isAccepted) {
                 return offer.journeyStatusId ?? item.journeyStatusId ?? 4;
               }
-              if (rawStatus === "submitted" || rawStatus === "pending" || rawStatus === "requested") {
+              if (explicit === "requested" || explicit === "awaiting" || offer.journeyStatusId === 2 || item.journeyStatusId === 2) {
+                return 2;
+              }
+              if (explicit === "submitted" || explicit === "pending" || explicit === "offered") {
                 return 1;
               }
-              return offer.journeyStatusId ?? 1;
+              const hasProposal = Boolean(
+                offer.proposedCostPerVehicle != null ||
+                offer.proposedTotalCost != null ||
+                offer.proposedCost != null ||
+                offer.offerCost != null ||
+                offer.cost != null ||
+                offer.bidAmount != null ||
+                item.proposedCostPerVehicle != null ||
+                item.proposedTotalCost != null ||
+                item.proposedCost != null ||
+                item.offerCost != null ||
+                item.cost != null ||
+                item.bidAmount != null
+              );
+              return hasProposal ? 1 : 2;
             })(),
             vehicleTypeName: item.vehicleTypeName ?? offer.vehicleTypeName ?? null,
             companyPhone:

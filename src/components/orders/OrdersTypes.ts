@@ -187,10 +187,32 @@ export interface ConnectedJourneyInfo {
 }
 
 export function getConnectedJourneyStatus(order: OrderDisplayItem): ConnectedJourneyInfo {
-  const sid = extractJourneyStatusId(order.journeyStatusId ?? order.journeyStatus);
+  const directSid = extractJourneyStatusId(order.journeyStatusId ?? order.journeyStatus);
 
-  if (sid === 9 || sid === 14) {
-    return { isConnected: true, statusId: sid, label: "Completed", type: "completed" };
+  const acceptedDriver = order.driverRequests?.find((d) => {
+    const dsid = extractJourneyStatusId(d.journeyStatusId ?? d.journeyStatus ?? (d as any).status);
+    return (
+      (typeof dsid === "number" && dsid >= 3 && dsid <= 9) ||
+      dsid === 14 ||
+      d.journeyStatus === "acceptedByShipper" ||
+      d.journeyStatus === "acceptedByDriver" ||
+      d.bidStatus === "selected" ||
+      d.bidStatus === "accepted"
+    );
+  });
+  const driverSid = acceptedDriver
+    ? extractJourneyStatusId(acceptedDriver.journeyStatusId ?? acceptedDriver.journeyStatus ?? (acceptedDriver as any).status)
+    : undefined;
+
+  const sid =
+    directSid != null && driverSid != null
+      ? Math.max(directSid, driverSid)
+      : directSid != null
+      ? directSid
+      : driverSid;
+
+  if (sid === 9 || sid === 14 || order.status === "complete") {
+    return { isConnected: true, statusId: sid ?? 9, label: "Completed", type: "completed" };
   }
   if (sid === 8) {
     return { isConnected: true, statusId: 8, label: "Journey Started", type: "journey-started" };
@@ -209,46 +231,6 @@ export function getConnectedJourneyStatus(order: OrderDisplayItem): ConnectedJou
   }
   if (sid === 3) {
     return { isConnected: true, statusId: 3, label: "Driver Accepted", type: "accepted" };
-  }
-
-  if (order.status === "complete") {
-    return {
-      isConnected: true,
-      statusId: 9,
-      label: "Completed",
-      type: "completed",
-    };
-  }
-
-  const acceptedDriver = order.driverRequests?.find((d) => {
-    const dsid = extractJourneyStatusId(d.journeyStatusId ?? d.journeyStatus ?? (d as any).status);
-    return (typeof dsid === "number" && dsid >= 3 && dsid <= 9) || d.journeyStatus === "acceptedByShipper";
-  });
-
-  if (acceptedDriver) {
-    const dsid = extractJourneyStatusId(acceptedDriver.journeyStatusId ?? acceptedDriver.journeyStatus ?? (acceptedDriver as any).status) ?? 4;
-    if (dsid === 9 || dsid === 14) {
-      return { isConnected: true, statusId: dsid, label: "Completed", type: "completed" };
-    }
-    if (dsid === 8) {
-      return { isConnected: true, statusId: dsid, label: "Journey Started", type: "journey-started" };
-    }
-    if (dsid === 7) {
-      return { isConnected: true, statusId: dsid, label: "Loaded", type: "loaded" };
-    }
-    if (dsid === 6) {
-      return { isConnected: true, statusId: dsid, label: "Loading", type: "loading" };
-    }
-    if (dsid === 5) {
-      return { isConnected: true, statusId: dsid, label: "Heading to Load", type: "loading" };
-    }
-    if (dsid === 4) {
-      return { isConnected: true, statusId: dsid, label: "Accepted", type: "accepted" };
-    }
-    if (dsid === 3) {
-      return { isConnected: true, statusId: dsid, label: "Driver Accepted", type: "accepted" };
-    }
-    return { isConnected: true, statusId: dsid, label: "Accepted", type: "accepted" };
   }
 
   return { isConnected: false, label: "", type: "none" };
@@ -285,6 +267,94 @@ export function isDriverConnectedToOrder(order?: OrderDisplayItem | null): boole
 }
 
 /**
+ * Checks whether a driver or company request item represents an actual submitted bid/proposal,
+ * rather than an unsubmitted invitation/request in "awaiting response" state.
+ */
+export function isSubmittedBid(r: ShipperRequestDriverInfo | any): boolean {
+  if (!r) return false;
+
+  const raw = r.rawDriver || (r as any).raw || r;
+  const bidStatus = String(r.bidStatus || raw.bidStatus || "").toLowerCase();
+  const journeyStatus = String(r.journeyStatus || raw.journeyStatus || "").toLowerCase();
+  const status = String(r.status || raw.status || "").toLowerCase();
+  const statusId = extractJourneyStatusId(r.journeyStatusId ?? raw.journeyStatusId ?? r.journeyStatus ?? status);
+
+  // If explicitly requested or status is 2 (Requested), it is an unsubmitted request
+  if (
+    bidStatus === "requested" ||
+    journeyStatus === "requested" ||
+    status === "requested" ||
+    bidStatus === "awaiting" ||
+    status === "awaiting" ||
+    statusId === 2
+  ) {
+    return false;
+  }
+
+  // Accepted bids are always submitted & accepted
+  const isAccepted =
+    bidStatus === "selected" ||
+    bidStatus === "accepted" ||
+    bidStatus === "accepted_by_shipper" ||
+    journeyStatus === "acceptedbyshipper" ||
+    journeyStatus === "accepted" ||
+    status === "accepted" ||
+    (typeof statusId === "number" && ((statusId >= 3 && statusId <= 9) || statusId === 14));
+
+  if (isAccepted) return true;
+
+  const isCompany = Boolean(r.isCompany || r.companyBidRequestUniqueId || raw.companyBidRequestUniqueId);
+
+  if (isCompany) {
+    // For company bid requests, the record exists in company_bid_requests even when unsubmitted.
+    // A company has ONLY submitted a bid if they offered a price/vehicles or have explicit submitted status
+    const hasExplicitProposal = Boolean(
+      raw.proposedTotalCost != null ||
+      raw.proposedCostPerVehicle != null ||
+      raw.numberOfVehiclesOffered != null ||
+      raw.proposedCost != null ||
+      (raw.offerCost != null && bidStatus !== "requested" && statusId !== 2) ||
+      (raw.bidAmount != null && bidStatus !== "requested" && statusId !== 2)
+    );
+
+    const isSubmittedStatus =
+      bidStatus === "submitted" ||
+      status === "submitted" ||
+      journeyStatus === "submitted" ||
+      bidStatus === "offered" ||
+      journeyStatus === "offered";
+
+    if (!hasExplicitProposal && !isSubmittedStatus) {
+      return false;
+    }
+
+    return hasExplicitProposal || isSubmittedStatus;
+  }
+
+  // For driver bids: must have a real driver bid ID
+  const hasDriverBidId = Boolean(
+    r.driverBidUniqueId ||
+    raw.driverBidUniqueId ||
+    raw.bidUniqueId ||
+    (r as any).bidId
+  );
+
+  if (hasDriverBidId) {
+    return bidStatus !== "requested" && status !== "requested" && statusId !== 2;
+  }
+
+  return (
+    bidStatus === "submitted" ||
+    bidStatus === "pending" ||
+    bidStatus === "offered" ||
+    journeyStatus === "submitted" ||
+    journeyStatus === "offered" ||
+    status === "submitted" ||
+    statusId === 1
+  );
+}
+
+/**
  * True when a truck has a driver actively working the load: Heading to Load (5)
  * through Journey Completed (9), plus admin-completed (14). Accepted-but-idle
  * statuses (3 = driver accepted, 4 = shipper accepted) mean the driver is NOT
@@ -295,9 +365,10 @@ export function isWorkingJourneySid(sid: number | undefined): boolean {
 }
 
 export function hasWorkingJourney(order: OrderDisplayItem): boolean {
-  return isWorkingJourneySid(
-    extractJourneyStatusId(order.journeyStatusId ?? order.journeyStatus),
-  );
+  const directSid = extractJourneyStatusId(order.journeyStatusId ?? order.journeyStatus);
+  if (isWorkingJourneySid(directSid)) return true;
+  const connected = getConnectedJourneyStatus(order);
+  return connected.isConnected && isWorkingJourneySid(connected.statusId);
 }
 
 export interface OrderBatchGroup {
@@ -388,14 +459,15 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
       });
     }
 
-    const totalVehicles = batchOrders.length;
+    const totalVehicles =
+      first.totalVehicles && first.totalVehicles > 0 ? first.totalVehicles : batchOrders.length;
     const totalQuintal =
-      batchOrders.length === (first.totalVehicles || batchOrders.length) && first.batchTotalQuintal != null
-        ? first.batchTotalQuintal
+      first.batchTotalQuintal != null && Number(first.batchTotalQuintal) > 0
+        ? Number(first.batchTotalQuintal)
         : batchOrders.reduce((sum, o) => sum + (o.quintal || 0), 0);
     const totalCost =
-      batchOrders.length === (first.totalVehicles || batchOrders.length) && first.batchTotalCost != null
-        ? first.batchTotalCost
+      first.batchTotalCost != null && Number(first.batchTotalCost) > 0
+        ? Number(first.batchTotalCost)
         : batchOrders.reduce((sum, o) => sum + (o.cost || 0), 0);
 
     const completedOrders = batchOrders.filter(
@@ -403,11 +475,6 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
     );
     const completedCount = completedOrders.length;
 
-    // A truck is only "committed" when a driver is actually working it
-    // (Heading to Load / Loading / Loaded / Journey Started / Completed).
-    // Status 3/4 ("Accepted") means the driver hasn't started yet, so those
-    // trucks still count as waiting — matching the caller's rule for the
-    // counter (1 working truck out of 4 is 1/4, never 4/4).
     const activeOrders = batchOrders.filter(
       (o) =>
         hasWorkingJourney(o) &&
@@ -427,7 +494,8 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
     let bidsCount = 0;
     for (const bo of batchOrders) {
       for (const r of bo.driverRequests || []) {
-        const bidId = r.companyBidRequestUniqueId || r.driverRequestUniqueId || r.driverRequestId || r.userUniqueId;
+        if (!isSubmittedBid(r)) continue;
+        const bidId = r.companyBidRequestUniqueId || r.driverBidUniqueId || r.driverRequestUniqueId || r.userUniqueId;
         if (bidId) {
           if (!uniqueBidIds.has(bidId)) {
             uniqueBidIds.add(bidId);
@@ -563,8 +631,45 @@ export function groupOrdersByBatch(orders: OrderDisplayItem[]): OrderBatchGroup[
           type: primaryStage.type,
         };
       } else {
-        // All waiting, no driver accepted
-        statusSummary = { isConnected: false, label: "", type: "none" };
+        // Check if the "waiting" trucks all actually have drivers assigned (status 3/4 accepted)
+        // but not yet moving. If so, show their status instead of "N waiting".
+        const trulyUnassigned = waitingOrders.filter(
+          (o) => !getConnectedJourneyStatus(o).isConnected
+        );
+        const assignedButIdle = waitingOrders.filter(
+          (o) => getConnectedJourneyStatus(o).isConnected
+        );
+
+        if (trulyUnassigned.length === 0 && assignedButIdle.length > 0) {
+          // All remaining trucks have drivers — show their accepted/assigned status
+          const stageMap = new Map<number, { label: string; count: number; type: JourneyBadgeType; statusId: number }>();
+          for (const order of assignedButIdle) {
+            const journey = getConnectedJourneyStatus(order);
+            const sid = journey.statusId ?? 4;
+            const label = journey.label || "Accepted";
+            const type = journey.type || "accepted";
+            if (!stageMap.has(sid)) {
+              stageMap.set(sid, { label, count: 0, type, statusId: sid });
+            }
+            stageMap.get(sid)!.count++;
+          }
+          const sortedStages = Array.from(stageMap.values()).sort((a, b) => b.statusId - a.statusId);
+          const primaryStage = sortedStages[0];
+          statusStageLabel = primaryStage.label;
+          const fullLabel =
+            sortedStages.length === 1
+              ? `${sortedStages[0].count} ${sortedStages[0].label}`
+              : sortedStages.map((s) => `${s.count} ${s.label}`).join(" · ");
+          statusSummary = {
+            isConnected: true,
+            statusId: primaryStage.statusId,
+            label: fullLabel,
+            type: primaryStage.type,
+          };
+        } else {
+          // Some trucks genuinely have no driver — show waiting
+          statusSummary = { isConnected: false, label: "", type: "none" };
+        }
       }
     } else {
       // Single-truck order

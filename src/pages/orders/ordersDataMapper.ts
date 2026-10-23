@@ -117,12 +117,29 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       null;
 
     const rawBidStatus = String(b.bidStatus || b.status || "").toLowerCase();
+    const hasCompanyProposal = Boolean(
+      b.proposedTotalCost != null ||
+      b.proposedCostPerVehicle != null ||
+      b.offerCost != null ||
+      b.bidAmount != null ||
+      b.proposedCost != null ||
+      b.numberOfVehiclesOffered != null
+    );
+
+    const isRequested =
+      rawBidStatus === "requested" ||
+      rawBidStatus === "awaiting" ||
+      b.journeyStatusId === 2 ||
+      (!hasCompanyProposal && rawBidStatus !== "submitted" && rawBidStatus !== "accepted");
+
     const isPending =
-      rawBidStatus === "submitted" ||
-      rawBidStatus === "pending" ||
-      rawBidStatus === "requested";
+      !isRequested &&
+      (rawBidStatus === "submitted" ||
+        rawBidStatus === "pending" ||
+        (hasCompanyProposal && rawBidStatus !== "rejected" && rawBidStatus !== "cancelled"));
 
     const isAccepted =
+      !isRequested &&
       !isPending &&
       (b.status === "accepted" ||
         b.bidStatus === "selected" ||
@@ -132,31 +149,30 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
         (batch.acceptedOffer && b === batch.acceptedOffer) ||
         (batch.journeyStatusId === 4 && rawBids.length === 1 && !isPending));
 
-    const cost =
-      Number(
-        b.proposedTotalCost ??
-        b.proposedCostPerVehicle ??
-        b.offerCost ??
-        b.bidAmount ??
-        b.proposedCost ??
-        b.cost ??
-        batch.batchShippingCost ??
-        batch.shippingCost ??
-        batch.batchTotalCost
-      ) || null;
+    const cost = hasCompanyProposal
+      ? Number(
+          b.proposedTotalCost ??
+          b.proposedCostPerVehicle ??
+          b.offerCost ??
+          b.bidAmount ??
+          b.proposedCost ??
+          b.cost
+        ) || null
+      : null;
 
     return {
       driverRequestId: b.driverRequestId ?? b.bidId ?? bIdx + 1,
       driverRequestUniqueId: bidUid,
       companyBidRequestUniqueId: isRealBidId ? String(rawBidUid) : null,
       driverBidUniqueId: isRealBidId ? String(rawBidUid) : null,
+      isCompany: true,
       userUniqueId: b.userUniqueId ?? b.bidderUserUniqueId ?? b.companyUniqueId ?? `company-${bIdx + 1}`,
       journeyDecisionUniqueId: b.journeyDecisionUniqueId ?? null,
       fullName: compName,
       phoneNumber: phone,
-      journeyStatusId: isAccepted ? 4 : (isPending ? 1 : (b.journeyStatusId ?? 1)),
-      journeyStatus: isAccepted ? "accepted" : (b.journeyStatus || "submitted"),
-      bidStatus: isAccepted ? "selected" : (b.bidStatus || "submitted"),
+      journeyStatusId: isAccepted ? 4 : isRequested ? 2 : (isPending ? 1 : (b.journeyStatusId ?? 2)),
+      journeyStatus: isAccepted ? "accepted" : isRequested ? "requested" : (b.journeyStatus || "submitted"),
+      bidStatus: isAccepted ? "selected" : isRequested ? "requested" : (b.bidStatus || "submitted"),
       shipperRequestUniqueId: b.shipperRequestUniqueId ?? (bUniqueIdStr || batch.batchUniqueId),
       offerCost: cost,
       proposedCost: cost,
@@ -283,10 +299,20 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
         };
       }
     } else if (!hasAccepted && parsed.length === 0) {
+      const hasOfferCost = Boolean(
+        offer.proposedTotalCost != null ||
+        offer.proposedCostPerVehicle != null ||
+        offer.offerCost != null ||
+        offer.bidAmount != null ||
+        offer.numberOfVehiclesOffered != null
+      );
+      const rawOfferStatus = String(offer.bidStatus || offer.status || "").toLowerCase();
       const isSubmitted =
-        Boolean(realBidId) ||
-        offer.bidStatus === "submitted" ||
-        offer.status === "submitted";
+        rawOfferStatus !== "requested" &&
+        rawOfferStatus !== "awaiting" &&
+        (rawOfferStatus === "submitted" ||
+          rawOfferStatus === "offered" ||
+          hasOfferCost);
 
       const resolvedStatusId = isActuallyAccepted ? 4 : isSubmitted ? 1 : 2;
       const resolvedJourneyStatus = isActuallyAccepted ? "accepted" : isSubmitted ? "submitted" : "requested";
@@ -298,6 +324,7 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
         driverRequestUniqueId: effectiveBidId,
         companyBidRequestUniqueId: realBidId || null,
         driverBidUniqueId: realBidId || null,
+        isCompany: true,
         userUniqueId: targetUid,
         journeyDecisionUniqueId: null,
         fullName: companyName,
@@ -389,7 +416,16 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       batch.batchUniqueId ??
       bUniqueIdStr ??
       `company-target-${batch.batchId || 1}`;
-    const isSubmitted = Boolean(realBidId);
+    const rawBatchBidStatus = String(batch.bidStatus || batch.status || "").toLowerCase();
+    const hasBatchCompanyProposal = Boolean(
+      batch.proposedTotalCost != null ||
+      batch.proposedCostPerVehicle != null ||
+      batch.numberOfVehiclesOffered != null
+    );
+    const isSubmitted =
+      rawBatchBidStatus !== "requested" &&
+      rawBatchBidStatus !== "awaiting" &&
+      (rawBatchBidStatus === "submitted" || rawBatchBidStatus === "offered" || hasBatchCompanyProposal);
 
     const resolvedStatusId = isSubmitted ? 1 : 2;
     const resolvedJourneyStatus = isSubmitted ? "submitted" : "requested";
@@ -401,6 +437,7 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       driverRequestUniqueId: effectiveBidId,
       companyBidRequestUniqueId: realBidId || null,
       driverBidUniqueId: realBidId || null,
+      isCompany: true,
       userUniqueId: targetUid,
       journeyDecisionUniqueId: null,
       fullName: compName,
@@ -1151,7 +1188,26 @@ export function mapBackendOrdersToDisplayItems({
       const batchBids = effectiveBatch ? parseBatchBids(effectiveBatch, t) : [];
       let finalDriverRequests = driverRequests;
 
-      if (mode === "Group" || String(rawMode).toLowerCase().includes("company")) {
+      // Check if an individual driver (not a company) has already been accepted for this order.
+      // If so, this is NOT a company-target order even if the batch was originally company-targeted.
+      const hasIndividualDriverAccepted = Boolean(
+        (item as any).journey?.driver?.fullName ||
+        (item as any).journey?.driver?.phoneNumber ||
+        (item as any).journey?.driverName ||
+        (req as any).journey?.driver?.fullName ||
+        (req as any).journey?.driverName ||
+        (item as any).driverName ||
+        (item as any).driver?.fullName
+      );
+
+      const isCompanyTargetOrder = !hasIndividualDriverAccepted && Boolean(
+        String(rawMode).toLowerCase().includes("company") ||
+        req.targetCompanyUniqueId ||
+        (item as any).targetCompanyUniqueId ||
+        matchedBatch?.targetCompanyUniqueId
+      );
+
+      if (isCompanyTargetOrder) {
         if (finalDriverRequests.length === 0 && batchBids.length > 0) {
           finalDriverRequests = batchBids;
         } else if (finalDriverRequests.length === 0) {
@@ -1160,8 +1216,6 @@ export function mapBackendOrdersToDisplayItems({
             finalDriverRequests = itemBids;
           }
         }
-      } else if (finalDriverRequests.length === 0 && batchBids.length > 0) {
-        finalDriverRequests = batchBids;
       }
 
       if (finalDriverRequests.length > 0) {
@@ -1212,133 +1266,90 @@ export function mapBackendOrdersToDisplayItems({
       if (
         finalDriverRequests.length === 0 &&
         (resolvedJourneyStatusId === 4 ||
-          (resolvedJourneyStatusId != null && resolvedJourneyStatusId >= 5 && resolvedJourneyStatusId <= 9) ||
+          (resolvedJourneyStatusId != null && resolvedJourneyStatusId >= 3 && resolvedJourneyStatusId <= 9) ||
           resolvedJourneyStatusId === 14 ||
           String(req.journeyStatus || (item as any).journeyStatus || req.status || (item as any).status || "").toLowerCase() === "accepted" ||
-          String(req.journeyStatus || (item as any).journeyStatus || req.status || (item as any).status || "").toLowerCase() === "acceptedbyshipper")
-      ) {
-        const companyOrDriverName =
-          matchedBatch?.targetCompanyName ||
-          (req as any).targetCompanyName ||
-          (item as any).targetCompanyName ||
-          (req as any).companyName ||
-          (item as any).companyName ||
-          (req as any).driverName ||
-          (item as any).driverName ||
-          (req as any).fullName ||
-          (item as any).fullName ||
-          (mode === "Group"
-            ? (t ? t("orders.acceptedCompany", "Accepted Transport Company") : "Accepted Transport Company")
-            : (t ? t("orders.acceptedDriver", "Accepted Driver") : "Accepted Driver"));
-
-        const compId =
-          (req as any).targetCompanyUniqueId ||
-          (item as any).targetCompanyUniqueId ||
-          matchedBatch?.targetCompanyUniqueId;
-
-        const rawBidId =
-          matchedBatch?.companyBidRequestUniqueId ??
-          matchedBatch?.bidUniqueId ??
-          (req as any).companyBidRequestUniqueId ??
-          (item as any).companyBidRequestUniqueId ??
-          undefined;
-
-        const safeBidId = rawBidId && rawBidId !== compId ? rawBidId : null;
-
-        const targetUid =
-          (req as any).targetCompanyUniqueId ||
-          (item as any).targetCompanyUniqueId ||
-          matchedBatch?.targetCompanyUniqueId ||
-          resolvedBatchUniqueId ||
-          resolvedShipperRequestUniqueId ||
-          "accepted-bid";
-
-        finalDriverRequests = [
-          {
-            driverRequestId: 1,
-            driverRequestUniqueId: safeBidId || targetUid,
-            companyBidRequestUniqueId: safeBidId,
-            driverBidUniqueId: safeBidId,
-            fullName: companyOrDriverName,
-            phoneNumber:
-              (req as any).targetCompanyPhone ||
-              (item as any).targetCompanyPhone ||
-              matchedBatch?.shipperPhone ||
-              null,
-            journeyStatusId: resolvedJourneyStatusId ?? 4,
-            journeyStatus: "accepted",
-            bidStatus: "selected",
-            offerCost: (mode === "Group" && matchedBatchTotalCost) ? matchedBatchTotalCost : costNum,
-            vehicleTypeName: vehicleTypeName,
-            plateNumber: resolvedPlateNumber,
-            rawDriver: (item as any).journey || (req as any).journey || null,
-            rawItem: item,
-          },
-        ];
-      } else if (
-        finalDriverRequests.length === 0 &&
-        (resolvedJourneyStatusId === 3 ||
+          String(req.journeyStatus || (item as any).journeyStatus || req.status || (item as any).status || "").toLowerCase() === "acceptedbyshipper" ||
           String(req.journeyStatus || (item as any).journeyStatus || req.status || (item as any).status || "").toLowerCase() === "acceptedbydriver")
       ) {
+        const resolvedDriverName =
+          (item as any).journey?.driver?.fullName ??
+          (item as any).journey?.driverName ??
+          (req as any).journey?.driver?.fullName ??
+          (req as any).journey?.driverName ??
+          (item as any).driver?.fullName ??
+          (item as any).driverName ??
+          (req as any).driverName ??
+          (req as any).driver?.fullName ??
+          entryObj?.driverName ??
+          entryObj?.fullName ??
+          (Array.isArray(rawDecisions) && rawDecisions[0]?.driverName) ??
+          (Array.isArray(rawDecisions) && rawDecisions[0]?.fullName) ??
+          null;
+
+        const resolvedDriverPhone =
+          (item as any).journey?.driver?.phoneNumber ??
+          (item as any).journey?.phoneNumber ??
+          (req as any).journey?.driver?.phoneNumber ??
+          (req as any).journey?.phoneNumber ??
+          (item as any).driver?.phoneNumber ??
+          (item as any).driverPhoneNumber ??
+          (req as any).driverPhoneNumber ??
+          entryObj?.driverPhoneNumber ??
+          entryObj?.phoneNumber ??
+          (Array.isArray(rawDecisions) && rawDecisions[0]?.driverPhoneNumber) ??
+          (Array.isArray(rawDecisions) && rawDecisions[0]?.phoneNumber) ??
+          null;
+
+        const resolvedDriverVehicleType =
+          (item as any).journey?.vehicle?.vehicleTypeName ??
+          (item as any).journey?.vehicleType ??
+          entryObj?.vehicleTypeName ??
+          entryObj?.vehicleType ??
+          vehicleTypeName;
+
         const companyOrDriverName =
-          matchedBatch?.targetCompanyName ||
-          (req as any).targetCompanyName ||
-          (item as any).targetCompanyName ||
-          (req as any).companyName ||
-          (item as any).companyName ||
-          (req as any).driverName ||
-          (item as any).driverName ||
-          (req as any).fullName ||
-          (item as any).fullName ||
-          (mode === "Group"
-            ? (t ? t("orders.waitingCompany", "Company Proposal") : "Company Proposal")
-            : (t ? t("orders.waitingDriver", "Driver") : "Driver"));
+          resolvedDriverName ||
+          (isCompanyTargetOrder
+            ? (matchedBatch?.targetCompanyName || (req as any).targetCompanyName || (t ? t("orders.acceptedCompany", "Accepted Transport Company") : "Accepted Transport Company"))
+            : (t ? t("orders.acceptedDriver", "Accepted Driver") : "Accepted Driver"));
 
-        const compId =
-          (req as any).targetCompanyUniqueId ||
-          (item as any).targetCompanyUniqueId ||
-          matchedBatch?.targetCompanyUniqueId;
+        const compId = isCompanyTargetOrder
+          ? ((req as any).targetCompanyUniqueId || (item as any).targetCompanyUniqueId || matchedBatch?.targetCompanyUniqueId)
+          : null;
 
-        const rawBidId =
-          matchedBatch?.companyBidRequestUniqueId ??
-          matchedBatch?.bidUniqueId ??
-          (req as any).companyBidRequestUniqueId ??
-          (item as any).companyBidRequestUniqueId ??
-          undefined;
+        const rawBidId = isCompanyTargetOrder
+          ? (matchedBatch?.companyBidRequestUniqueId ?? matchedBatch?.bidUniqueId ?? (req as any).companyBidRequestUniqueId ?? (item as any).companyBidRequestUniqueId ?? undefined)
+          : undefined;
 
         const safeBidId = rawBidId && rawBidId !== compId ? rawBidId : null;
 
         const targetUid =
-          (req as any).targetCompanyUniqueId ||
-          (item as any).targetCompanyUniqueId ||
-          matchedBatch?.targetCompanyUniqueId ||
-          resolvedBatchUniqueId ||
+          (item as any).journey?.journeyUniqueId ||
+          (req as any).journey?.journeyUniqueId ||
           resolvedShipperRequestUniqueId ||
-          "driver-offer";
+          "accepted-driver";
 
         finalDriverRequests = [
           {
-            driverRequestId: 1,
+            driverRequestId: (req as any).driverRequestId || (item as any).driverRequestId || 1,
             driverRequestUniqueId: safeBidId || targetUid,
-            companyBidRequestUniqueId: safeBidId,
-            driverBidUniqueId: safeBidId,
+            companyBidRequestUniqueId: isCompanyTargetOrder ? safeBidId : null,
+            driverBidUniqueId: isCompanyTargetOrder ? null : (safeBidId || targetUid),
+            isCompany: isCompanyTargetOrder,
             fullName: companyOrDriverName,
-            phoneNumber:
-              (req as any).targetCompanyPhone ||
-              (item as any).targetCompanyPhone ||
-              matchedBatch?.shipperPhone ||
-              null,
-            journeyStatusId: 3,
-            journeyStatus: "acceptedByDriver",
-            bidStatus: "pending",
+            phoneNumber: resolvedDriverPhone || (isCompanyTargetOrder ? ((req as any).targetCompanyPhone || (item as any).targetCompanyPhone) : null),
+            journeyStatusId: resolvedJourneyStatusId ?? 4,
+            journeyStatus: getJourneyStatusName(resolvedJourneyStatusId ?? 4),
+            bidStatus: "selected",
             offerCost: (mode === "Group" && matchedBatchTotalCost) ? matchedBatchTotalCost : costNum,
-            vehicleTypeName: vehicleTypeName,
+            vehicleTypeName: resolvedDriverVehicleType,
             plateNumber: resolvedPlateNumber,
             rawDriver: (item as any).journey || (req as any).journey || null,
             rawItem: item,
           },
         ];
-      } else {
+      } else if (isCompanyTargetOrder) {
         const compId =
           (req as any).targetCompanyUniqueId ||
           (item as any).targetCompanyUniqueId ||
@@ -1375,26 +1386,27 @@ export function mapBackendOrdersToDisplayItems({
           const resolvedBidStatus = isSubmitted ? "submitted" : "requested";
           const effectiveBidId = safeBidId || `company-proposal-${(req as any).batchId || matchedBatch?.batchId || 1}`;
 
-        finalDriverRequests = [
-          {
-            driverRequestId: 1,
-            driverRequestUniqueId: effectiveBidId,
-            companyBidRequestUniqueId: safeBidId,
-            driverBidUniqueId: safeBidId,
-            userUniqueId: targetUid,
-            fullName: companyOrDriverName,
-            phoneNumber:
-              (req as any).targetCompanyPhone ||
-              (item as any).targetCompanyPhone ||
-              matchedBatch?.shipperPhone ||
-              null,
-            journeyStatusId: resolvedStatusId,
-            journeyStatus: resolvedJourneyStatus,
-            bidStatus: resolvedBidStatus,
-            offerCost: (mode === "Group" && matchedBatchTotalCost) ? matchedBatchTotalCost : costNum,
-            vehicleTypeName: vehicleTypeName,
-          },
-        ];
+          finalDriverRequests = [
+            {
+              driverRequestId: 1,
+              driverRequestUniqueId: effectiveBidId,
+              companyBidRequestUniqueId: safeBidId,
+              driverBidUniqueId: safeBidId,
+              isCompany: true,
+              userUniqueId: targetUid,
+              fullName: companyOrDriverName,
+              phoneNumber:
+                (req as any).targetCompanyPhone ||
+                (item as any).targetCompanyPhone ||
+                matchedBatch?.shipperPhone ||
+                null,
+              journeyStatusId: resolvedStatusId,
+              journeyStatus: resolvedJourneyStatus,
+              bidStatus: resolvedBidStatus,
+              offerCost: (mode === "Group" && matchedBatchTotalCost) ? matchedBatchTotalCost : costNum,
+              vehicleTypeName: vehicleTypeName,
+            },
+          ];
         }
       }
 
@@ -1625,9 +1637,9 @@ export function mapBackendOrdersToDisplayItems({
 
       if (
         driverRequests.length === 0 &&
-        ((batch.bidSummary?.total || 0) > 0 || (batch.bidSummary?.submitted || 0) > 0)
+        ((batch.bidSummary?.submitted || 0) > 0)
       ) {
-        const count = batch.bidSummary?.submitted || batch.bidSummary?.total || 1;
+        const count = batch.bidSummary.submitted;
         driverRequests = Array.from({ length: count }, (_, idx) => ({
           driverRequestId: idx + 1,
           driverRequestUniqueId: `bid-${bUniqueIdStr || batch.batchUniqueId}-${idx + 1}`,

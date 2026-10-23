@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { mapBackendOrdersToDisplayItems, parseBatchBids } from "../pages/orders/ordersDataMapper";
-import { groupOrdersByBatch } from "../components/orders/OrdersTypes";
+import { groupOrdersByBatch, isSubmittedBid } from "../components/orders/OrdersTypes";
 
 describe("ordersDataMapper", () => {
   const dummyT = ((key: string) => key) as any;
@@ -619,6 +619,108 @@ describe("ordersDataMapper", () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].bidsCount).toBe(1);
     expect(groups[0].companyBidsCount).toBe(1);
+    expect(groups[0].waitingCount).toBe(6);
+  });
+
+  it("does not count unsubmitted (requested/awaiting) companies as bids in bidsCount or companyBidsCount", () => {
+    const mockBatches = {
+      data: [
+        {
+          batchId: 20,
+          batchUniqueId: "batch-20-uuid",
+          totalVehicles: 6,
+          shippingCost: 6000,
+          vehicleTypeName: "20ft Container Truck (251–300 Quintal)",
+          shippableItemName: "cement",
+          originPlace: "Kombolcha",
+          destinationPlace: "Dessie",
+          journeyStatusId: 1,
+          targetCompanyName: "Company",
+          targetCompanyPhone: "+251929257890",
+        },
+      ],
+    };
+
+    const displayItems = mapBackendOrdersToDisplayItems({
+      ordersData: { data: [] },
+      batchesData: mockBatches,
+      companyBidsData: { data: [] },
+      deletedIds: new Set(),
+      editedOrders: {},
+      activeOrg: null,
+      t: ((k: string, f: string) => f || k) as any,
+    });
+
+    expect(displayItems.length).toBe(6);
+    expect(displayItems[0].driverRequests).toHaveLength(1);
+    expect(displayItems[0].driverRequests![0].journeyStatus).toBe("requested");
+
+    const groups = groupOrdersByBatch(displayItems);
+    expect(groups).toHaveLength(1);
+    // Crucial: bidsCount and companyBidsCount must be 0 because no bid has been submitted!
+    expect(groups[0].bidsCount).toBe(0);
+    expect(groups[0].companyBidsCount).toBe(0);
+    expect(groups[0].waitingCount).toBe(6);
+  });
+
+  it("verifies isSubmittedBid correctly distinguishes submitted vs requested", () => {
+    expect(isSubmittedBid({ bidStatus: "requested", journeyStatus: "requested", journeyStatusId: 2 })).toBe(false);
+    expect(isSubmittedBid({ journeyStatus: "requested" })).toBe(false);
+    expect(isSubmittedBid({ status: "requested", isCompany: true, companyBidRequestUniqueId: "req-1" })).toBe(false);
+    expect(isSubmittedBid({ bidStatus: "submitted", companyBidRequestUniqueId: "bid-1" })).toBe(true);
+    expect(isSubmittedBid({ driverBidUniqueId: "driver-bid-1" })).toBe(true);
+    expect(isSubmittedBid({ journeyStatusId: 4, journeyStatus: "accepted" })).toBe(true);
+    expect(isSubmittedBid(null)).toBe(false);
+  });
+
+  it("does not count company requests with companyBidRequestUniqueId as submitted bids when awaiting company", () => {
+    const mockBatches = {
+      data: [
+        {
+          batchId: 20,
+          batchUniqueId: "batch-20-uuid",
+          totalVehicles: 6,
+          shippingCost: 6000,
+          vehicleTypeName: "20ft Container Truck (251–300 Quintal)",
+          shippableItemName: "cement",
+          originPlace: "Kombolcha",
+          destinationPlace: "Dessie",
+          journeyStatusId: 1,
+          requestMode: "company_target",
+          companyBidRequestUniqueId: "comp-bid-req-20",
+          targetCompanyName: "Company",
+          targetCompanyPhone: "+251929257890",
+        },
+      ],
+    };
+
+    const mockCompanyBids = {
+      data: [
+        {
+          companyBidRequestUniqueId: "comp-bid-req-20",
+          batchId: 20,
+          shipperRequestBatchUniqueId: "batch-20-uuid",
+          companyName: "Company",
+          bidStatus: "requested",
+          journeyStatusId: 2,
+        },
+      ],
+    };
+
+    const displayItems = mapBackendOrdersToDisplayItems({
+      ordersData: { data: [] },
+      batchesData: mockBatches,
+      companyBidsData: mockCompanyBids,
+      deletedIds: new Set(),
+      editedOrders: {},
+      activeOrg: null,
+      t: ((k: string, f: string) => f || k) as any,
+    });
+
+    const groups = groupOrdersByBatch(displayItems);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].bidsCount).toBe(0);
+    expect(groups[0].companyBidsCount).toBe(0);
     expect(groups[0].waitingCount).toBe(6);
   });
 });
