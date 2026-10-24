@@ -5,7 +5,7 @@ import {
   Trash2,
   Truck,
   Tag,
-  Gavel,
+  MessagesSquare,
   Clock,
 } from "lucide-react";
 import type { OrderDisplayItem } from "../OrdersTypes";
@@ -111,7 +111,7 @@ export function SingleOrderMobileCard({
               onClick={() => onViewRequests(order)}
               title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
             >
-              <Gavel size={12} />
+              <MessagesSquare size={12} />
               <span>
                 {t("orders.bids", "Bids")} ({order.driverRequests?.filter(isSubmittedBid).length})
               </span>

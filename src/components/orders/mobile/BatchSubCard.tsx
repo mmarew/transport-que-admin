@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Gavel, Clock, Pencil, Trash2 } from "lucide-react";
+import { MessagesSquare, Clock, Pencil, Trash2 } from "lucide-react";
 import type { OrderDisplayItem } from "../OrdersTypes";
 import { getConnectedJourneyStatus } from "../OrdersTypes";
 
@@ -83,7 +83,7 @@ export function BatchSubCard({
                 : t("orders.driverBidsTitle", "Driver Bids & Proposals")
             }
           >
-            <Gavel size={12} />
+            <MessagesSquare size={12} />
             <span>
               {t("orders.bids", "Bids")} ({childOrder.driverRequests?.length})
             </span>

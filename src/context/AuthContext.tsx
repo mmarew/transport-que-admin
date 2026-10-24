@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useDispatch } from "react-redux";
 import { clearAuth, getStoredAuth, storeAuth, type StoredAuth } from "../lib/auth";
 import { api } from "../lib/api";
@@ -30,20 +30,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [auth]);
 
-  const setAuth = (value: StoredAuth) => {
+  const setAuth = useCallback((value: StoredAuth) => {
     storeAuth(value);
     dispatch(setReduxAuth(value));
-  };
+  }, [dispatch]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     disconnectSocket();
     // Best-effort server-side logout to clear the httpOnly cookie.
     void api.post(appAPIs.logoutAPI).catch(() => {});
     clearAuth();
     dispatch(logoutRedux());
-  };
+  }, [dispatch]);
 
-  return <AuthContext.Provider value={{ auth, setAuth, logout }}>{children}</AuthContext.Provider>;
+  const contextValue = useMemo(
+    () => ({ auth, setAuth, logout }),
+    [auth, setAuth, logout]
+  );
+
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

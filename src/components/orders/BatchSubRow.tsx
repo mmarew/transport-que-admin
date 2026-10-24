@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Pencil, Trash2, Gavel, Clock, Eye } from "lucide-react";
+import { Pencil, Trash2, MessagesSquare, Clock, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem } from "./OrdersTypes";
 import {
@@ -134,7 +134,7 @@ export function BatchSubRow({
                   : t("orders.driverBidsTitle", "Driver Bids & Proposals")
               }
             >
-              <Gavel size={13} />
+              <MessagesSquare size={13} />
               <span>{t("orders.bids", "Bids")}</span>
               <span className="orders-bids-count">
                 {childOrder.driverRequests?.length}

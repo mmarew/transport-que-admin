@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
-import { Gavel, Clock } from "lucide-react";
+import { MessagesSquare, Clock } from "lucide-react";
 import type { OrderBatchGroup, OrderDisplayItem } from "../OrdersTypes";
 import { getConnectedJourneyStatus } from "../OrdersTypes";
 
@@ -65,7 +65,7 @@ export function BatchMobileStatus({
         onClick={() => onViewRequests?.(firstBiddable)}
         title={t("orders.viewDriverProposals", "View driver proposals")}
       >
-        <Gavel size={11} />
+        <MessagesSquare size={11} />
         <span>
           {t("orders.bids", "Bids")} ({totalBids})
         </span>

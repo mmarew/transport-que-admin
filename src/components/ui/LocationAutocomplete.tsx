@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { usePhotonSearch, type PhotonPlace } from "@/hooks/usePhotonSearch";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import "./LocationAutocomplete.css";
 
 export interface LocationAutocompleteProps {
   id?: string;
@@ -71,51 +72,57 @@ export function LocationAutocomplete({
         </label>
       )}
 
-      <div className={`${inputWrapClass} ${error ? (isCom ? "com-input-wrap--error" : "input-wrapper--error") : ""}`}>
-        <input
-          id={id}
-          value={value}
-          onChange={handleInputChange}
-          placeholder={placeholder}
-          disabled={disabled}
-          autoComplete="off"
-          className={`${inputBaseClass} ${inputClassName}`}
-          onFocus={() => {
-            if (suggestions.length > 0) setShowDropdown(true);
-          }}
-        />
-        {isSearching && (
-          <span
-            style={{
-              position: "absolute",
-              right: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#888",
-              display: "flex",
-              alignItems: "center",
+      <div style={{ position: "relative", width: "100%" }}>
+        <div className={`${inputWrapClass} ${error ? (isCom ? "com-input-wrap--error" : "input-wrapper--error") : ""}`}>
+          <input
+            id={id}
+            name="address_terminal_location"
+            value={value}
+            onChange={handleInputChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            autoComplete="new-password"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            spellCheck={false}
+            className={`${inputBaseClass} ${inputClassName}`}
+            onFocus={() => {
+              if (suggestions.length > 0) setShowDropdown(true);
             }}
-          >
-            <Loader2 size={16} className="animate-spin" />
-          </span>
+          />
+          {isSearching && (
+            <span
+              style={{
+                position: "absolute",
+                right: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#888",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Loader2 size={16} className="animate-spin" />
+            </span>
+          )}
+        </div>
+
+        {showDropdown && suggestions.length > 0 && (
+          <ul className={listClass} style={{ zIndex: 10000 }}>
+            {suggestions.map((place, idx) => (
+              <li
+                key={`${place.lat}-${place.lng}-${idx}`}
+                className={itemClass}
+                onMouseDown={() => handleSelect(place)}
+              >
+                <span>{place.label}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
       {error && <p className={errorTextClass}>{error}</p>}
-
-      {showDropdown && suggestions.length > 0 && (
-        <ul className={listClass} style={{ zIndex: 1000 }}>
-          {suggestions.map((place, idx) => (
-            <li
-              key={`${place.lat}-${place.lng}-${idx}`}
-              className={itemClass}
-              onMouseDown={() => handleSelect(place)}
-            >
-              <span>{place.label}</span>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

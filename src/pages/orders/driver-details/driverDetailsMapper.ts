@@ -49,6 +49,10 @@ export interface DriverDetailsModel {
   transportCost: number;
   handlingCost: number;
   costDisplay: string;
+  singleCost: number;
+  singleTransportCost: number;
+  singleHandlingCost: number;
+  singleCostDisplay: string;
   totalDistanceKm: number;
   completedDistanceKm: number;
   remainingDistanceKm: number;
@@ -213,11 +217,43 @@ export function buildDriverDetailsModel(
   }
 
   // 6. Costs
-  const rawCost = order?.batchTotalCost || order?.cost || Number(rawReq.shippingCost) || 0;
-  const totalCost = Number(rawCost) || 10000;
+  const rawBatchCost = order?.batchTotalCost;
+  const rawSingleCost = order?.cost;
+  const numVehicles = totalVehicles > 0 ? totalVehicles : 1;
+
+  let totalCost: number;
+  let singleCost: number;
+
+  if (rawBatchCost && rawBatchCost > 0) {
+    totalCost = rawBatchCost;
+    if (rawSingleCost && rawSingleCost > 0 && rawSingleCost < rawBatchCost) {
+      singleCost = rawSingleCost;
+    } else {
+      singleCost = Math.round(totalCost / numVehicles);
+    }
+  } else if (rawSingleCost && rawSingleCost > 0) {
+    singleCost = rawSingleCost;
+    totalCost = numVehicles > 1 ? singleCost * numVehicles : singleCost;
+  } else if (Number(rawReq.shippingCost) > 0) {
+    const sc = Number(rawReq.shippingCost);
+    if (numVehicles > 1) {
+      totalCost = sc;
+      singleCost = Math.round(sc / numVehicles);
+    } else {
+      totalCost = sc;
+      singleCost = sc;
+    }
+  } else {
+    totalCost = 10000;
+    singleCost = Math.round(totalCost / numVehicles);
+  }
+
   const transportCost = Math.round(totalCost * 0.95);
   const handlingCost = totalCost - transportCost;
+  const singleTransportCost = Math.round(singleCost * 0.95);
+  const singleHandlingCost = singleCost - singleTransportCost;
   const costDisplay = `${totalCost.toLocaleString()} ETB`;
+  const singleCostDisplay = `${singleCost.toLocaleString()} ETB`;
 
   // 7. Vehicle & Licence Specs
   const candidateVehicles = poolCandidateVehicles(
@@ -326,6 +362,10 @@ export function buildDriverDetailsModel(
     transportCost,
     handlingCost,
     costDisplay,
+    singleCost,
+    singleTransportCost,
+    singleHandlingCost,
+    singleCostDisplay,
     totalDistanceKm,
     completedDistanceKm,
     remainingDistanceKm,

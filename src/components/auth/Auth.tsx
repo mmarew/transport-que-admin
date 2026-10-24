@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Login, { type LoginFormData } from "./Login";
 import Register from "./Register";
@@ -16,35 +16,38 @@ export const Auth: React.FC<AuthProps> = ({ initialStep = "login" }) => {
   const [previousStep, setPreviousStep] = useState<"login" | "register">("login");
   const [submittedData, setSubmittedData] = useState<LoginFormData | null>(null);
 
-  const handleOtpRequested = (
-    data: LoginFormData,
-    from: "login" | "register" = "login"
-  ) => {
-    setPreviousStep(from);
-    setSubmittedData(data);
-    setStep("otp");
-  };
+  const handleOtpRequested = useCallback(
+    (data: LoginFormData, from: "login" | "register" = "login") => {
+      setPreviousStep(from);
+      setSubmittedData(data);
+      setStep("otp");
+    },
+    [],
+  );
 
-  const switchToRegister = () => {
+  const switchToRegister = useCallback(() => {
     setStep("register");
     navigate("/register", { replace: true });
-  };
+  }, [navigate]);
 
-  const switchToLogin = () => {
+  const switchToLogin = useCallback(() => {
     setStep("login");
     navigate("/login", { replace: true });
-  };
+  }, [navigate]);
 
   /** Called by VerifyOtp after a successful OTP verification */
-  const handleOtpVerified = (from: "login" | "register") => {
-    if (from === "register") {
-      // After registration: go to /setup-org (ProtectedRoute will enforce it)
-      navigate("/setup-org", { replace: true });
-    } else {
-      // After login: go to dashboard
-      navigate("/dashboard", { replace: true });
-    }
-  };
+  const handleOtpVerified = useCallback(
+    (from: "login" | "register") => {
+      if (from === "register") {
+        // After registration: go to /setup-org (ProtectedRoute will enforce it)
+        navigate("/setup-org", { replace: true });
+      } else {
+        // After login: go to dashboard
+        navigate("/dashboard", { replace: true });
+      }
+    },
+    [navigate],
+  );
 
   // ── OTP verification ─────────────────────────────────────────────────────
   if (step === "otp" && submittedData) {

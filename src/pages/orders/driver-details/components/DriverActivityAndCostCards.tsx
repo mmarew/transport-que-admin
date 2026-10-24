@@ -49,33 +49,79 @@ export const DriverActivityAndCostCards: React.FC<DriverActivityAndCostCardsProp
         <div className="driver-cost-card-header">
           <h3 className="driver-cost-card-title">Cost & dispatch</h3>
           <p className="driver-cost-card-sub">
-            Order #{model.orderNumber} · Quoted total for {model.totalVehicles}{" "}
-            {model.totalVehicles === 1 ? "truck" : "trucks"}
+            Order #{model.orderNumber} ·{" "}
+            {model.totalVehicles > 1
+              ? `Single truck (${model.totalVehicles} trucks in batch)`
+              : "Single truck order"}
           </p>
         </div>
 
         <div className="driver-cost-breakdown">
-          <div className="driver-cost-row">
-            <span className="driver-cost-label">Transport</span>
-            <span className="driver-cost-val">
-              {model.transportCost.toLocaleString()} ETB
-            </span>
-          </div>
-          <div className="driver-cost-row">
-            <span className="driver-cost-label">Handling</span>
-            <span className="driver-cost-val">
-              {model.handlingCost.toLocaleString()} ETB
-            </span>
-          </div>
+          {model.totalVehicles > 1 ? (
+            <>
+              <div className="driver-cost-section-header">
+                <span className="driver-cost-section-title">
+                  This Truck (1 of {model.totalVehicles})
+                </span>
+              </div>
+              <div className="driver-cost-row">
+                <span className="driver-cost-label">Transport</span>
+                <span className="driver-cost-val">
+                  {model.singleTransportCost.toLocaleString()} ETB
+                </span>
+              </div>
+              <div className="driver-cost-row">
+                <span className="driver-cost-label">Handling</span>
+                <span className="driver-cost-val">
+                  {model.singleHandlingCost.toLocaleString()} ETB
+                </span>
+              </div>
+              <div className="driver-cost-row driver-cost-row--single-total">
+                <span className="driver-cost-label">Single truck cost</span>
+                <span className="driver-cost-val">
+                  {model.singleCost.toLocaleString()} ETB
+                </span>
+              </div>
 
-          <div className="driver-cost-divider" />
+              <div className="driver-cost-divider" />
 
-          <div className="driver-cost-total-row">
-            <span className="driver-cost-total-label">Total cost</span>
-            <span className="driver-cost-total-val">
-              {model.totalCost.toLocaleString()} ETB
-            </span>
-          </div>
+              <div className="driver-cost-total-row">
+                <div className="driver-cost-total-label-wrap">
+                  <span className="driver-cost-total-label">Total batch cost</span>
+                  <span className="driver-cost-total-sub">
+                    Quoted for {model.totalVehicles} trucks
+                  </span>
+                </div>
+                <span className="driver-cost-total-val">
+                  {model.totalCost.toLocaleString()} ETB
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="driver-cost-row">
+                <span className="driver-cost-label">Transport</span>
+                <span className="driver-cost-val">
+                  {model.transportCost.toLocaleString()} ETB
+                </span>
+              </div>
+              <div className="driver-cost-row">
+                <span className="driver-cost-label">Handling</span>
+                <span className="driver-cost-val">
+                  {model.handlingCost.toLocaleString()} ETB
+                </span>
+              </div>
+
+              <div className="driver-cost-divider" />
+
+              <div className="driver-cost-total-row">
+                <span className="driver-cost-total-label">Total cost</span>
+                <span className="driver-cost-total-val">
+                  {model.totalCost.toLocaleString()} ETB
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="driver-cost-badge-wrap">

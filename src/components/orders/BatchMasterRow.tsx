@@ -6,7 +6,7 @@ import {
   Pencil,
   Trash2,
   Tag,
-  Gavel,
+  MessagesSquare,
   Clock,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -240,7 +240,7 @@ export function BatchMasterRow({
                     title={t("orders.companyBidsTitle", "Company Bids & Proposals")}
                     aria-label={t("orders.companyBidsTitle", "Company Bids & Proposals")}
                   >
-                    <Gavel size={13} />
+                    <MessagesSquare size={13} />
                     <span>{t("orders.bids", "Bids")}</span>
                     <span className="orders-bids-count">{totalBids}</span>
                   </button>

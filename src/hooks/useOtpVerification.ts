@@ -34,6 +34,9 @@ export function useOtpVerification({
 
   const boxRefs = useRef<(HTMLInputElement | null)[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isVerifyingRef = useRef(false);
+  const hasSucceededRef = useRef(false);
+  const lastSubmittedOtpRef = useRef<string>("");
 
   const clearCountdown = useCallback(() => {
     if (timerRef.current !== null) {
@@ -48,6 +51,7 @@ export function useOtpVerification({
   }, []);
 
   const resetDigits = useCallback(() => {
+    lastSubmittedOtpRef.current = "";
     setDigits(Array(OTP_LENGTH).fill(""));
     setTimeout(() => focusBox(0), 0);
   }, [focusBox]);
@@ -57,7 +61,6 @@ export function useOtpVerification({
       boxRefs.current[0]?.focus();
     }, 80);
 
-    setResendTimer(RESEND_COOLDOWN_SECONDS);
     clearCountdown();
     timerRef.current = setInterval(() => {
       setResendTimer((prev) => {
@@ -81,13 +84,15 @@ export function useOtpVerification({
   const handleVerify = useCallback(
     async (e?: React.FormEvent) => {
       e?.preventDefault();
-      if (!isComplete || isLoading) return;
+      if (!isComplete || isVerifyingRef.current || hasSucceededRef.current) return;
 
+      isVerifyingRef.current = true;
       setIsLoading(true);
       setOtpError(null);
 
       try {
         const response = await verifyOtp(phoneNumber, otpValue);
+        hasSucceededRef.current = true;
         const { userData } = response.data;
 
         setAuth({ userData });
@@ -101,17 +106,19 @@ export function useOtpVerification({
           navigate(fromPath, { replace: true });
         }
       } catch (err: unknown) {
+        hasSucceededRef.current = false;
+        lastSubmittedOtpRef.current = "";
         const msg = parseError(err);
         toast.error(msg);
         setOtpError(msg);
         resetDigits();
       } finally {
+        isVerifyingRef.current = false;
         setIsLoading(false);
       }
     },
     [
       isComplete,
-      isLoading,
       phoneNumber,
       otpValue,
       setAuth,
@@ -125,13 +132,22 @@ export function useOtpVerification({
   );
 
   useEffect(() => {
-    if (isComplete) {
+    if (
+      isComplete &&
+      otpValue !== lastSubmittedOtpRef.current &&
+      !hasSucceededRef.current &&
+      !isVerifyingRef.current
+    ) {
+      lastSubmittedOtpRef.current = otpValue;
       void handleVerify();
     }
-  }, [isComplete, handleVerify]);
+  }, [isComplete, otpValue, handleVerify]);
 
   const handleResend = async () => {
     if (resendTimer > 0 || isResending) return;
+    hasSucceededRef.current = false;
+    isVerifyingRef.current = false;
+    lastSubmittedOtpRef.current = "";
     setIsResending(true);
     setOtpError(null);
     resetDigits();

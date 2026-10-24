@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronDown, ChevronUp, Pencil, Trash2, Eye, Gavel } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Eye, MessagesSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { OrderDisplayItem, OrderBatchGroup } from "./OrdersTypes";
 import {
@@ -238,7 +238,7 @@ export function OrderCard({
                   : `${bidsDisplayCount} ${bidsDisplayCount === 1 ? "Bid" : "Bids"}`
               }
             >
-              <Gavel size={12} className="order-card-badge-bids-icon" />
+              <MessagesSquare size={12} className="order-card-badge-bids-icon" />
               <span>{bidsDisplayCount}</span>
             </button>
           )}

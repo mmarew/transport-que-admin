@@ -1147,6 +1147,50 @@
   margin: 0.25rem 0;
 }
 
+.driver-cost-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.15rem;
+  margin-top: -0.1rem;
+}
+
+.driver-cost-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0b4d6d;
+}
+
+.driver-cost-row--single-total {
+  padding-top: 0.35rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.driver-cost-row--single-total .driver-cost-label {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.driver-cost-row--single-total .driver-cost-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0b4d6d;
+}
+
+.driver-cost-total-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.driver-cost-total-sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
 .driver-cost-total-row {
   display: flex;
   align-items: center;

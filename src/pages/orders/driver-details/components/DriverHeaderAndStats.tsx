@@ -152,10 +152,12 @@ export const DriverHeaderAndStats: React.FC<DriverHeaderAndStatsProps> = ({
             <span className="driver-metric-label">ORDER COST</span>
             <CreditCard size={18} className="driver-metric-icon" />
           </div>
-          <div className="driver-metric-value">{model.costDisplay}</div>
+          <div className="driver-metric-value">
+            {model.totalVehicles > 1 ? model.singleCostDisplay : model.costDisplay}
+          </div>
           <div className="driver-metric-sub">
-            {model.orderType === "Group"
-              ? `Group total · ${model.totalVehicles} trucks`
+            {model.orderType === "Group" && model.totalVehicles > 1
+              ? `Per truck · ${model.costDisplay} total (${model.totalVehicles} trucks)`
               : "Single vehicle order"}
           </div>
         </div>

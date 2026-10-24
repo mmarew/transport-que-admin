@@ -82,6 +82,10 @@ describe("Driver Details Mapper with Precise Real Data", () => {
     expect(model.costDisplay).toBe("45,000 ETB");
     expect(model.transportCost).toBe(42750);
     expect(model.handlingCost).toBe(2250);
+    expect(model.singleCost).toBe(15000);
+    expect(model.singleCostDisplay).toBe("15,000 ETB");
+    expect(model.singleTransportCost).toBe(14250);
+    expect(model.singleHandlingCost).toBe(750);
     expect(model.weightDisplay).toBe("30 ton (300 quintal)");
     expect(model.dispatch.orgName).toBe("Cement Factory");
     expect(model.dispatch.orgCity).toBe("Addis Ababa");

@@ -5,7 +5,7 @@ import {
   Pencil,
   Trash2,
   Tag,
-  Gavel,
+  MessagesSquare,
   Clock,
   Eye,
 } from "lucide-react";
@@ -186,7 +186,7 @@ export function SingleOrderRow({
               title={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
               aria-label={t("orders.driverBidsTitle", "Driver Bids & Proposals")}
             >
-              <Gavel size={13} />
+              <MessagesSquare size={13} />
               <span>{t("orders.bids", "Bids")}</span>
               <span className="orders-bids-count">
                 {order.driverRequests?.filter(isSubmittedBid).length}

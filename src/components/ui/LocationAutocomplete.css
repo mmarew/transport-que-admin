@@ -1,0 +1,93 @@
+/* ── Location Autocomplete Suggestions Dropdown ── */
+
+.suggestions-dropdown,
+.com-suggestions-list,
+.setup-org-suggestions-dropdown {
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 10000 !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  max-height: 180px !important;
+  overflow-y: auto !important;
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  padding: 4px 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+  list-style-type: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Custom Scrollbar matching standard UI */
+.suggestions-dropdown::-webkit-scrollbar,
+.com-suggestions-list::-webkit-scrollbar,
+.setup-org-suggestions-dropdown::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-track,
+.com-suggestions-list::-webkit-scrollbar-track,
+.setup-org-suggestions-dropdown::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 4px !important;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb,
+.com-suggestions-list::-webkit-scrollbar-thumb,
+.setup-org-suggestions-dropdown::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border-radius: 4px !important;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb:hover,
+.com-suggestions-list::-webkit-scrollbar-thumb:hover,
+.setup-org-suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #64748b !important;
+}
+
+/* Individual Suggestion Item */
+.suggestion-item,
+.com-suggestion-item,
+.setup-org-suggestion-item {
+  width: 100% !important;
+  text-align: left !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  color: #334155 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  list-style: none !important;
+  list-style-type: none !important;
+  margin: 0 !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.suggestion-item:last-child,
+.com-suggestion-item:last-child,
+.setup-org-suggestion-item:last-child {
+  border-bottom: none !important;
+}
+
+.suggestion-item:hover,
+.com-suggestion-item:hover,
+.setup-org-suggestion-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0b4d6d !important;
+}
+
+.suggestion-item span,
+.com-suggestion-item span,
+.setup-org-suggestion-item span {
+  display: block !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+}

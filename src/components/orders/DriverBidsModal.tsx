@@ -79,10 +79,10 @@ export function DriverBidsModal({
     acceptedVehicles != null && acceptedVehicles > 0
       ? Math.max(acceptedVehicles, acceptedKeys.size)
       : acceptedKeys.size > 0
-      ? acceptedKeys.size
-      : isOrderShipperAccepted
-      ? requiredVehicles || 1
-      : 0;
+        ? acceptedKeys.size
+        : isOrderShipperAccepted
+          ? requiredVehicles || 1
+          : 0;
 
   const { filteredAndSortedDrivers, visibleDrivers, hasAnyAcceptedDriver } =
     useDriverBidsFilter({
@@ -115,13 +115,13 @@ export function DriverBidsModal({
           <p className="dbm-subtitle">
             {isCompany
               ? t(
-                  "orders.companyBidsSubtitle",
-                  "Review proposals from transport companies and accept one for this order.",
-                )
+                "orders.companyBidsSubtitle",
+                "Review proposals from transport companies and accept one for this order.",
+              )
               : t(
-                  "orders.driverBidsSubtitle",
-                  "Review proposals from drivers and accept one for this order.",
-                )}
+                "orders.driverBidsSubtitle",
+                "Review proposals from drivers and accept one for this order.",
+              )}
           </p>
         </div>
         <button
