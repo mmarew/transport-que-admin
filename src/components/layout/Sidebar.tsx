@@ -114,8 +114,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [batchesData, effectiveOrgId, t]);
 
   const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
+    void (async () => {
+      await logout();
+      navigate("/login", { replace: true });
+    })();
   };
 
   // Active state calculations

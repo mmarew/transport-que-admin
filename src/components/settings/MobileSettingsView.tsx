@@ -6,6 +6,7 @@ import { MobileProfileView } from "./MobileProfileView";
 import { MobileAccountSection } from "./MobileAccountSection";
 import { MobilePreferencesSection } from "./MobilePreferencesSection";
 import { MobileMoreSection } from "./MobileMoreSection";
+import { ActiveDevicesSection } from "./ActiveDevicesSection";
 
 export interface MobileSettingsViewProps {
   showMobileProfile: boolean;
@@ -112,6 +113,11 @@ export function MobileSettingsView({
         currentLang={currentLang}
         onLanguageChange={onLanguageChange}
       />
+
+      {/* Active devices (server-side sessions) */}
+      <div className="settings-section">
+        <ActiveDevicesSection />
+      </div>
 
       {/* Action Buttons */}
       <div className="settings-actions">

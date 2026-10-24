@@ -10,7 +10,8 @@ import { useAppSelector } from "../lib/redux/hooks";
 export interface AuthContextValue {
   auth: StoredAuth | null;
   setAuth: (auth: StoredAuth) => void;
-  logout: () => void;
+  /** Revokes the server session (bounded), then clears local auth state. */
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -35,10 +36,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch(setReduxAuth(value));
   }, [dispatch]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     disconnectSocket();
-    // Best-effort server-side logout to clear the httpOnly cookie.
-    void api.post(appAPIs.logoutAPI).catch(() => {});
+    // Give the server a short window to revoke the session and clear the
+    // httpOnly cookie before local state is torn down. A dead network must not
+    // trap the user, hence the bound.
+    try {
+      await Promise.race([
+        api.post(appAPIs.logoutAPI),
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, 2000);
+        }),
+      ]);
+    } catch {
+      // Logout is idempotent; clearing local state below is the fallback.
+    }
     clearAuth();
     dispatch(logoutRedux());
   }, [dispatch]);
@@ -58,7 +70,7 @@ export function useAuth(): AuthContextValue {
     return {
       auth: stored,
       setAuth: () => {},
-      logout: () => {},
+      logout: () => Promise.resolve(),
     };
   }
   return ctx;

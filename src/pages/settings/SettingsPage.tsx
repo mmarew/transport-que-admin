@@ -17,6 +17,7 @@ import {
   type SettingsProfileFormData,
 } from "../../components/settings/DesktopProfileSection";
 import { DesktopPreferences } from "../../components/settings/DesktopPreferences";
+import { ActiveDevicesSection } from "../../components/settings/ActiveDevicesSection";
 import { DangerZone } from "../../components/settings/DangerZone";
 import { DeleteAccountModal } from "../../components/settings/DeleteAccountModal";
 import { MobileSettingsView } from "../../components/settings/MobileSettingsView";
@@ -152,9 +153,11 @@ export function SettingsPage() {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate("/login");
-    toast.success(t("common.logout"));
+    void (async () => {
+      await logout();
+      navigate("/login");
+      toast.success(t("common.logout"));
+    })();
   };
 
   // Honest about not being implemented, which D3 credits as the right call —
@@ -231,6 +234,8 @@ export function SettingsPage() {
               onLanguageChange={handleLanguageChange}
               disabledReason={notAvailableReason}
             />
+
+            <ActiveDevicesSection />
 
             <DangerZone
               onLogout={handleLogout}

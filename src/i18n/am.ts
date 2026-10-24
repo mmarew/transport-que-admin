@@ -229,6 +229,37 @@ export const am = {
     comingSoon: "የመገለጫ አስተዳደር፣ የማሳወቂያ ምርጫዎች እና የደወል ገደቦች እዚህ ይታያሉ።",
     langSwitched: "ቋንቋ ወደ {{language}} ተቀይሯል",
     screenAria: "የቅንብሮች ማያ ገጽ",
+    activeDevices: {
+      title: "ንቁ መሣሪያዎች",
+      description:
+        "እነዚህ መሣሪያዎች በመለያዎ ላይ ገብተዋል። የማያውቁትን መሣሪያ ያስወግዱ።",
+      refresh: "መሣሪያዎችን አድስ",
+      loading: "መሣሪያዎች በመጫን ላይ...",
+      loadError: "መሣሪያዎችዎን መጫን አልተቻለም።",
+      retry: "እንደገና ሞክር",
+      empty: "ንቁ መሣሪያዎች አልተገኙም።",
+      thisDevice: "ይህ መሣሪያ",
+      lastSeen: "መጨረሻ የታየው {{when}}",
+      revokeDevice: "ይህን መሣሪያ ውጣ",
+      revokeOthers: "ሌሎች መሣሪያዎችን ውጣ",
+      revokedOne: "መሣሪያው ወጥቷል።",
+      revokedOthers: "{{count}} ሌሎች መሣሪያዎች ወጥተዋል።",
+      revokedCurrent: "ከመለያዎ ወጥተዋል።",
+      actionError: "መሣሪያዎችዎን ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
+      confirmTitle: "ይህን መሣሪያ ውጣ?",
+      confirmDesc:
+        "መሣሪያው ወዲያውኑ ይወጣል እና እንደገና መግባት ይኖርበታል።",
+      confirmOthersTitle: "ሌሎች መሣሪያዎችን ውጣ?",
+      confirmOthersDesc:
+        "ሁሉም ሌሎች መሣሪያዎች ይወጣሉ። ይህ መሣሪያ ግን ገብቶ ይቆያል።",
+      confirmButton: "ውጣ",
+      platform: {
+        ios: "iOS",
+        android: "Android",
+        web: "ድር",
+        unknown: "ያልታወቀ",
+      },
+    },
   },
   dashboard: {
     title: "ድርጅቶች",
