@@ -35,7 +35,7 @@ export const DriverPhonePopover: React.FC<DriverPhonePopoverProps> = ({
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const popoverWidth = 300;
+    const popoverWidth = 350;
     const estimatedHeight = 120;
     const margin = 8;
 

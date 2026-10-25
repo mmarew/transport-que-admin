@@ -91,7 +91,7 @@ export const DriverPhoneModal: React.FC<DriverPhoneModalProps> = ({
         className="driver-phone-popover"
         style={{
           position: "relative",
-          width: "320px",
+          width: "350px",
           maxWidth: "100%",
         }}
         onClick={(e) => e.stopPropagation()}

@@ -6,7 +6,7 @@
 .driver-phone-popover {
   position: fixed;
   z-index: 99999;
-  width: 300px;
+  width: 350px;
   max-width: calc(100vw - 24px);
   background: #ffffff;
   border: 1px solid #bfdbfe;
@@ -131,10 +131,11 @@
 .driver-phone-popover-driver-row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 12px;
   font-size: 0.85rem;
   color: #0f172a;
   justify-content: space-between;
+  flex-wrap: nowrap;
 }
 
 .driver-phone-popover-driver-info {
@@ -142,12 +143,15 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
+  flex: 1;
+  white-space: nowrap;
 }
 
 .driver-phone-popover-label {
   font-weight: 700;
   color: #334155;
-  margin-right: 4px;
+  margin-right: 2px;
+  flex-shrink: 0;
 }
 
 .driver-phone-popover-phone {
@@ -156,6 +160,9 @@
   font-size: 0.95rem;
   user-select: all;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .driver-phone-popover-copy-btn {
@@ -165,14 +172,15 @@
   background-color: #0B4D6D;
   color: #ffffff;
   border: none;
-  border-radius: 5px;
-  padding: 3px 7px;
-  font-size: 0.72rem;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 .driver-phone-popover-copy-btn:hover {
