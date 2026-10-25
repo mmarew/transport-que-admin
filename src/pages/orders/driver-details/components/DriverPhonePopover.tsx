@@ -36,7 +36,7 @@ export const DriverPhonePopover: React.FC<DriverPhonePopoverProps> = ({
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const popoverWidth = 350;
-    const estimatedHeight = 120;
+    const estimatedHeight = 100;
     const margin = 8;
 
     // Check space below vs above
@@ -165,12 +165,6 @@ export const DriverPhonePopover: React.FC<DriverPhonePopoverProps> = ({
 
       {/* Header */}
       <div className="driver-phone-popover-header">
-        <div className="driver-phone-popover-title-row">
-          <div className="driver-phone-popover-badge">
-            <Phone size={12} strokeWidth={2.5} />
-          </div>
-          <span className="driver-phone-popover-title">Driver Contact</span>
-        </div>
         <button
           type="button"
           className="driver-phone-popover-close"

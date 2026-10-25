@@ -97,13 +97,8 @@ export const DriverPhoneModal: React.FC<DriverPhoneModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
+        {/* Header */}
         <div className="driver-phone-popover-header">
-          <div className="driver-phone-popover-title-row">
-            <div className="driver-phone-popover-badge">
-              <Phone size={12} strokeWidth={2.5} />
-            </div>
-            <span className="driver-phone-popover-title">Driver Contact</span>
-          </div>
           <button
             type="button"
             className="driver-phone-popover-close"

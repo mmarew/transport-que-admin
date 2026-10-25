@@ -58,9 +58,9 @@
 .driver-phone-popover-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .driver-phone-popover-title-row {

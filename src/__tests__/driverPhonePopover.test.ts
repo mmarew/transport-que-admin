@@ -32,7 +32,7 @@ describe("Driver Phone Popover Contact Behavior", () => {
   });
 
   it("calculates top or bottom placement based on viewport space", () => {
-    const calculatePlacement = (rectBottom: number, viewportHeight: number, popoverHeight = 120, margin = 8) => {
+    const calculatePlacement = (rectBottom: number, viewportHeight: number, popoverHeight = 100, margin = 8) => {
       const spaceBelow = viewportHeight - rectBottom;
       const isAbove = spaceBelow < popoverHeight + margin;
       return isAbove ? "placement-top" : "placement-bottom";
