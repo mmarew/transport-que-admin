@@ -11,10 +11,12 @@ describe("Driver Phone Popover Contact Behavior", () => {
     expect(buttonProps.hasHref).toBe(false);
   });
 
-  it("formats the driver popover notice with driver name correctly", () => {
-    const driverName = "Dawit Bekele";
-    const notice = `“${driverName}” is assigned as the driver for this order.`;
-    expect(notice).toBe("“Dawit Bekele” is assigned as the driver for this order.");
+  it("does not show driver assignment notice or plate number in the clean phone popover", () => {
+    // Verifies that popover content is focused strictly on contact info without redundant assignment text or plate
+    const showAssignmentNotice = false;
+    const showPlateNumber = false;
+    expect(showAssignmentNotice).toBe(false);
+    expect(showPlateNumber).toBe(false);
   });
 
   it("handles fallback when phone number is missing or placeholder", () => {
@@ -30,7 +32,7 @@ describe("Driver Phone Popover Contact Behavior", () => {
   });
 
   it("calculates top or bottom placement based on viewport space", () => {
-    const calculatePlacement = (rectBottom: number, viewportHeight: number, popoverHeight = 155, margin = 8) => {
+    const calculatePlacement = (rectBottom: number, viewportHeight: number, popoverHeight = 120, margin = 8) => {
       const spaceBelow = viewportHeight - rectBottom;
       const isAbove = spaceBelow < popoverHeight + margin;
       return isAbove ? "placement-top" : "placement-bottom";

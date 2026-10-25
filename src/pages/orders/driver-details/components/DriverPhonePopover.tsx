@@ -39,7 +39,7 @@ export const DriverPhonePopover: React.FC<DriverPhonePopoverProps> = ({
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const popoverWidth = 300;
-    const estimatedHeight = 155;
+    const estimatedHeight = 120;
     const margin = 8;
 
     // Check space below vs above
@@ -121,7 +121,6 @@ export const DriverPhonePopover: React.FC<DriverPhonePopoverProps> = ({
 
   const safePhone = phone || "";
   const displayPhone = safePhone && safePhone !== "—" ? safePhone : "Not available";
-  const safeName = driverName?.trim() || "The driver";
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -186,11 +185,6 @@ export const DriverPhonePopover: React.FC<DriverPhonePopoverProps> = ({
         </button>
       </div>
 
-      {/* Body Notice */}
-      <p className="driver-phone-popover-body">
-        &ldquo;{safeName}&rdquo; is assigned as the driver for this order.
-      </p>
-
       {/* Driver Contact Card (matches pending approval card in design) */}
       <div className="driver-phone-popover-card">
         <div className="driver-phone-popover-driver-row">
@@ -227,18 +221,11 @@ export const DriverPhonePopover: React.FC<DriverPhonePopoverProps> = ({
           Call or message the driver if you need dispatch coordination.
         </p>
 
-        {(companyName || driverId || plateNumber) && (
+        {companyName && (
           <div className="driver-phone-popover-meta">
-            {companyName && (
-              <span>
-                Company: <strong className="driver-phone-popover-meta-val">{companyName}</strong>
-              </span>
-            )}
-            {plateNumber && (
-              <span>
-                Plate: <strong className="driver-phone-popover-meta-val">{plateNumber}</strong>
-              </span>
-            )}
+            <span>
+              Company: <strong className="driver-phone-popover-meta-val">{companyName}</strong>
+            </span>
           </div>
         )}
       </div>
