@@ -289,6 +289,13 @@ export const am = {
     approvalPending: "ማጽደቅ በመጠባበቅ ላይ",
     approvalPendingDesc:
       "ይህ ድርጅት በአስተዳዳሪ ማጽደቅ በመጠባበቅ ላይ ነው። የቀጥታ ተራ ሰሌዳ ከፀደቀ በኋላ ይገኛል።",
+    pendingStageTitle: "ማጽደቅ በመጠባበቅ ላይ",
+    pendingStageNotice: "ይህ ድርጅት በአሁኑ ወቅት በመጠባበቅ ደረጃ ላይ ይገኛል።",
+    pendingOrgNamedNotice: '"{{name}}" በአሁኑ ወቅት በመጠባበቅ ደረጃ ላይ ይገኛል።',
+    pendingAdminContact: "አስተዳዳሪ፦ {{phone}}",
+    pendingCallAdminHelp: "ተጨማሪ እርዳታ ከፈለጉ አስተዳዳሪውን ይደውሉ።",
+    callAdminAction: "ለአስተዳዳሪው ይደውሉ ({{phone}})",
+    adminLabel: "አስተዳዳሪ",
     orgRejected: "ድርጅቱ ውድቅ ተደርጓል",
     orgRejectedDesc:
       "ይህ ድርጅት ውድቅ ተደርጓል እና የቀጥታ ተራ መስራት አይችልም።",

@@ -1,0 +1,299 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PENDING ORGANIZATION INFO TOOLTIP & POPOVER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.org-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  vertical-align: middle;
+}
+
+/* Info "i" trigger button */
+.org-pending-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background-color: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  outline: none;
+}
+
+.org-pending-info-btn:hover,
+.org-pending-info-btn:focus-visible,
+.org-pending-info-btn.active {
+  background-color: #ea580c;
+  color: #ffffff;
+  border-color: #ea580c;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
+  transform: scale(1.08);
+}
+
+.org-pending-info-btn:focus-visible {
+  ring: 2px solid #ea580c;
+}
+
+/* Floating Popover Container */
+.org-pending-popover {
+  position: fixed;
+  z-index: 99999;
+  width: 280px;
+  max-width: calc(100vw - 24px);
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.15),
+              0 8px 16px -6px rgba(0, 0, 0, 0.08);
+  padding: 14px;
+  color: #1e293b;
+  font-family: inherit;
+  box-sizing: border-box;
+  animation: orgPendingPopoverIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes orgPendingPopoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Arrow pointer */
+.org-pending-popover-arrow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.org-pending-popover-arrow.placement-bottom {
+  top: -6px;
+  border-bottom: none;
+  border-right: none;
+}
+
+.org-pending-popover-arrow.placement-top {
+  bottom: -6px;
+  border-top: none;
+  border-left: none;
+}
+
+/* Header */
+.org-pending-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.org-pending-popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.org-pending-popover-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background-color: #fff7ed;
+  color: #ea580c;
+  flex-shrink: 0;
+}
+
+.org-pending-popover-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #c2410c;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.org-pending-popover-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.org-pending-popover-close:hover {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+/* Body explanation */
+.org-pending-popover-body {
+  font-size: 0.81rem;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+}
+
+/* Admin Contact Card */
+.org-pending-popover-card {
+  background-color: #fffaf5;
+  border: 1px solid #ffedd5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.org-pending-popover-admin {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.83rem;
+  color: #0f172a;
+}
+
+.org-pending-popover-admin strong {
+  color: #334155;
+}
+
+.org-pending-popover-phone {
+  font-weight: 700;
+  color: #0B4D6D;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.org-pending-popover-phone:hover {
+  color: #002B44;
+  text-decoration: underline;
+}
+
+.org-pending-popover-help {
+  font-size: 0.77rem;
+  color: #64748b;
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK THEME SUPPORT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dark .org-pending-info-btn {
+  background-color: rgba(234, 88, 12, 0.18);
+  border-color: rgba(234, 88, 12, 0.4);
+  color: #fb923c;
+}
+
+.dark .org-pending-info-btn:hover,
+.dark .org-pending-info-btn:focus-visible,
+.dark .org-pending-info-btn.active {
+  background-color: #ea580c;
+  color: #ffffff;
+  border-color: #ea580c;
+}
+
+.dark .org-pending-popover {
+  background: #1e293b;
+  border-color: #374151;
+  color: #f1f5f9;
+  box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.6),
+              0 8px 12px -6px rgba(0, 0, 0, 0.4);
+}
+
+.dark .org-pending-popover-arrow {
+  background: #1e293b;
+  border-color: #374151;
+}
+
+.dark .org-pending-popover-close:hover {
+  background-color: #334155;
+  color: #e2e8f0;
+}
+
+.dark .org-pending-popover-body {
+  color: #cbd5e1;
+}
+
+.dark .org-pending-popover-card {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+.dark .org-pending-popover-admin {
+  color: #f8fafc;
+}
+
+.dark .org-pending-popover-admin strong {
+  color: #cbd5e1;
+}
+
+.dark .org-pending-popover-phone {
+  color: #38bdf8;
+}
+
+.dark .org-pending-popover-phone:hover {
+  color: #7dd3fc;
+}
+
+.dark .org-pending-popover-help {
+  color: #94a3b8;
+}
+
+/* ── Org Approval Banner Admin Line ── */
+.org-approval-banner-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background-color: #fffaf5;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+.org-approval-admin-link {
+  font-weight: 700;
+  color: #0B4D6D;
+  text-decoration: none;
+}
+
+.org-approval-admin-link:hover {
+  text-decoration: underline;
+}
+
+.dark .org-approval-banner-admin {
+  background-color: #0f172a;
+  border-color: #374151;
+  color: #cbd5e1;
+}
+
+.dark .org-approval-admin-link {
+  color: #38bdf8;
+}

@@ -5,6 +5,7 @@ import { useGetQueueStatusQuery } from "@/lib/redux/api";
 import type { QueueOrganization } from "@/types/queue";
 import { extractCity } from "@/utils/formatters";
 import { isDriverWaiting } from "@/utils/journeyStatus";
+import { PendingOrgTooltip } from "../dashboard/PendingOrgTooltip";
 
 export interface OrgReportRowProps {
   org: QueueOrganization;
@@ -66,7 +67,13 @@ export function OrgReportRow({ org, onViewDetails }: OrgReportRowProps) {
           <span className="rep-org-name">{org.queueOrganizationName}</span>
           <span className="rep-org-city">{displayLocation}</span>
           <span className={`rep-org-status ${statusClass}`}>
-            {displayStatus}
+            <span>{displayStatus}</span>
+            {isPending && (
+              <PendingOrgTooltip
+                adminPhone="0983222221"
+                orgName={org.queueOrganizationName}
+              />
+            )}
           </span>
         </div>
       </div>

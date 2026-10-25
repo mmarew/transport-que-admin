@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, ArrowLeft, Clock } from "lucide-react";
+import { AlertCircle, ArrowLeft, Clock, Phone } from "lucide-react";
 
 export type OrgApprovalStatus = "pending" | "rejected" | "suspended";
 
@@ -43,6 +43,22 @@ export function OrgApprovalBanner({ status, onBack }: OrgApprovalBannerProps) {
       <div className="org-approval-banner-content">
         <h3>{t(config.titleKey)}</h3>
         <p>{t(config.descKey)}</p>
+        {status === "pending" && (
+          <div className="org-approval-banner-admin">
+            <Phone size={14} style={{ color: "#ea580c", flexShrink: 0 }} />
+            <span>
+              <strong>{t("dashboard.adminLabel", "Admin")}:</strong>{" "}
+              <a href="tel:0983222221" className="org-approval-admin-link">
+                0983222221
+              </a>
+              {" — "}
+              {t(
+                "dashboard.pendingCallAdminHelp",
+                "Call the admin if you need more help.",
+              )}
+            </span>
+          </div>
+        )}
       </div>
       <button type="button" className="org-approval-back-btn" onClick={onBack}>
         <ArrowLeft size={16} /> {t("queue.backToOrgs")}

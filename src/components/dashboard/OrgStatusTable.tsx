@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import type { QueueOrgListItem, QueueOrganization } from "../../types/queue";
 import { extractCity } from "../../utils/formatters";
 import type { OrgSortField } from "./OrgListToolbar";
+import { PendingOrgTooltip } from "./PendingOrgTooltip";
 
 interface OrgStatusTableProps {
   orgs: QueueOrgListItem[];
@@ -66,7 +67,15 @@ export function OrgStatusTable({
                 <td className="org-cell-type">{org.queueOrganizationType}</td>
                 <td className="org-cell-city">{city}</td>
                 <td>
-                  <span className={`org-status-text ${status}`}>{statusLabel}</span>
+                  <div className="org-status-cell">
+                    <span className={`org-status-text ${status}`}>{statusLabel}</span>
+                    {status === "pending" && (
+                      <PendingOrgTooltip
+                        adminPhone="0983222221"
+                        orgName={org.queueOrganizationName}
+                      />
+                    )}
+                  </div>
                 </td>
                 <td>{isEnabled}</td>
                 <td className="org-td-action">

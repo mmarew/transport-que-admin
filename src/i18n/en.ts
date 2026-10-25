@@ -298,6 +298,13 @@ export const en = {
     approvalPending: "Approval Pending",
     approvalPendingDesc:
       "This organization is awaiting administrator approval. The live queue board will be available once approved.",
+    pendingStageTitle: "Pending Approval",
+    pendingStageNotice: "This company is currently in the pending stage.",
+    pendingOrgNamedNotice: '"{{name}}" is currently in the pending stage.',
+    pendingAdminContact: "Admin: {{phone}}",
+    pendingCallAdminHelp: "Call the admin if you need more help.",
+    callAdminAction: "Call Admin ({{phone}})",
+    adminLabel: "Admin",
     orgRejected: "Organization Rejected",
     orgRejectedDesc: "This organization was rejected and cannot operate a live queue.",
     orgSuspended: "Organization Suspended",
