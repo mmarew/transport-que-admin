@@ -19,10 +19,7 @@ export const DriverPhonePopover: React.FC<DriverPhonePopoverProps> = ({
   onClose,
   triggerRef,
   phone,
-  driverName,
   companyName,
-  driverId,
-  plateNumber,
 }) => {
   const popoverRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
