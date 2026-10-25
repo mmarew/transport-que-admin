@@ -39,7 +39,8 @@
 }
 
 .org-pending-info-btn:focus-visible {
-  ring: 2px solid #ea580c;
+  outline: 2px solid #ea580c;
+  outline-offset: 1px;
 }
 
 /* Floating Popover Container */
