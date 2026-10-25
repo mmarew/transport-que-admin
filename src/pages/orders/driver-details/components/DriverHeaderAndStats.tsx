@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Phone,
   Truck,
@@ -7,6 +7,9 @@ import {
   Clock,
   Navigation,
   CreditCard,
+  Copy,
+  Check,
+  X,
 } from "lucide-react";
 import type { DriverDetailsModel } from "../driverDetailsMapper";
 
@@ -17,6 +20,56 @@ interface DriverHeaderAndStatsProps {
 export const DriverHeaderAndStats: React.FC<DriverHeaderAndStatsProps> = ({
   model,
 }) => {
+  const [isPhonePopupOpen, setIsPhonePopupOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCopyPhone = () => {
+    if (!model.driverPhone) return;
+    navigator.clipboard.writeText(model.driverPhone).then(
+      () => {
+        setCopied(true);
+        if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+        copyTimeoutRef.current = setTimeout(() => {
+          setCopied(false);
+        }, 2000);
+      },
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    );
+  };
+
+  useEffect(() => {
+    if (!isPhonePopupOpen) return;
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (popupRef.current && !popupRef.current.contains(target)) {
+        setIsPhonePopupOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsPhonePopupOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, [isPhonePopupOpen]);
+
   return (
     <div className="driver-header-stats-section">
       {/* ── Driver Profile Card ── */}
@@ -63,16 +116,19 @@ export const DriverHeaderAndStats: React.FC<DriverHeaderAndStatsProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="driver-profile-actions">
+          <div className="driver-profile-actions" ref={popupRef}>
             {model.driverPhone && model.driverPhone !== "—" ? (
-              <a
-                href={`tel:${model.driverPhone}`}
-                className="driver-btn-call"
-                title={`Call ${model.driverName}`}
+              <button
+                type="button"
+                className={`driver-btn-call ${isPhonePopupOpen ? "active" : ""}`}
+                onClick={() => setIsPhonePopupOpen((prev) => !prev)}
+                aria-expanded={isPhonePopupOpen}
+                aria-haspopup="dialog"
+                title={`View phone number for ${model.driverName}`}
               >
                 <Phone size={16} fill="currentColor" />
                 <span>Call driver</span>
-              </a>
+              </button>
             ) : (
               <button
                 type="button"
@@ -83,6 +139,74 @@ export const DriverHeaderAndStats: React.FC<DriverHeaderAndStatsProps> = ({
                 <Phone size={16} fill="currentColor" />
                 <span>Call driver</span>
               </button>
+            )}
+
+            {isPhonePopupOpen && model.driverPhone && (
+              <div
+                className="driver-phone-popup"
+                role="dialog"
+                aria-modal="false"
+                aria-label="Driver Contact Information"
+              >
+                <div className="driver-phone-popup-header">
+                  <div className="driver-phone-popup-badge">
+                    <Phone size={14} />
+                  </div>
+                  <div className="driver-phone-popup-title-wrap">
+                    <h4 className="driver-phone-popup-title">Driver Phone</h4>
+                    <span className="driver-phone-popup-name">{model.driverName}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="driver-phone-popup-close"
+                    onClick={() => setIsPhonePopupOpen(false)}
+                    aria-label="Close"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <div className="driver-phone-popup-card">
+                  <div className="driver-phone-display">
+                    <span className="driver-phone-number">{model.driverPhone}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="driver-phone-copy-btn"
+                    onClick={handleCopyPhone}
+                    title="Copy phone number"
+                  >
+                    {copied ? (
+                      <>
+                        <Check size={14} />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {(model.companyName || model.driverId) && (
+                  <div className="driver-phone-popup-meta">
+                    {model.companyName && (
+                      <div className="driver-phone-meta-item">
+                        <span className="driver-phone-meta-label">Company:</span>
+                        <span className="driver-phone-meta-val">{model.companyName}</span>
+                      </div>
+                    )}
+                    {model.driverId && (
+                      <div className="driver-phone-meta-item">
+                        <span className="driver-phone-meta-label">Driver ID:</span>
+                        <span className="driver-phone-meta-val">{model.driverId}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
