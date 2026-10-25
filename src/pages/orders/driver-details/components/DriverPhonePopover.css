@@ -1,0 +1,268 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRIVER PHONE POPOVER (MATCHING PENDING APPROVAL POPOVER BALLOON)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Floating Popover Container */
+.driver-phone-popover {
+  position: fixed;
+  z-index: 99999;
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(11, 77, 109, 0.18),
+              0 8px 16px -6px rgba(0, 0, 0, 0.08);
+  padding: 14px;
+  color: #1e293b;
+  font-family: inherit;
+  box-sizing: border-box;
+  animation: driverPhonePopoverIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes driverPhonePopoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Arrow pointer */
+.driver-phone-popover-arrow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.driver-phone-popover-arrow.placement-bottom {
+  top: -6px;
+  border-bottom: none;
+  border-right: none;
+}
+
+.driver-phone-popover-arrow.placement-top {
+  bottom: -6px;
+  border-top: none;
+  border-left: none;
+}
+
+/* Header */
+.driver-phone-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.driver-phone-popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.driver-phone-popover-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background-color: rgba(11, 77, 109, 0.1);
+  color: #0B4D6D;
+  flex-shrink: 0;
+}
+
+.driver-phone-popover-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0B4D6D;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.driver-phone-popover-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.driver-phone-popover-close:hover {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+/* Body explanation */
+.driver-phone-popover-body {
+  font-size: 0.81rem;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+}
+
+/* Inner Driver Card (Matching Screenshot Card) */
+.driver-phone-popover-card {
+  background-color: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.driver-phone-popover-driver-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85rem;
+  color: #0f172a;
+  justify-content: space-between;
+}
+
+.driver-phone-popover-driver-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.driver-phone-popover-label {
+  font-weight: 700;
+  color: #334155;
+  margin-right: 4px;
+}
+
+.driver-phone-popover-phone {
+  font-weight: 700;
+  color: #0B4D6D;
+  font-size: 0.95rem;
+  user-select: all;
+  letter-spacing: 0.02em;
+}
+
+.driver-phone-popover-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #0B4D6D;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+.driver-phone-popover-copy-btn:hover {
+  background-color: #083b54;
+}
+
+.driver-phone-popover-copy-btn.copied {
+  background-color: #16a34a;
+}
+
+.driver-phone-popover-help {
+  font-size: 0.77rem;
+  color: #64748b;
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* Extra meta info inside card */
+.driver-phone-popover-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px dashed #bae6fd;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.driver-phone-popover-meta-val {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK THEME SUPPORT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dark .driver-phone-popover {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+  box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.6),
+              0 8px 12px -6px rgba(0, 0, 0, 0.4);
+}
+
+.dark .driver-phone-popover-arrow {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark .driver-phone-popover-badge {
+  background-color: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.dark .driver-phone-popover-title {
+  color: #38bdf8;
+}
+
+.dark .driver-phone-popover-close:hover {
+  background-color: #334155;
+  color: #e2e8f0;
+}
+
+.dark .driver-phone-popover-body {
+  color: #94a3b8;
+}
+
+.dark .driver-phone-popover-card {
+  background-color: #0f172a;
+  border-color: #1e293b;
+}
+
+.dark .driver-phone-popover-label {
+  color: #cbd5e1;
+}
+
+.dark .driver-phone-popover-phone {
+  color: #38bdf8;
+}
+
+.dark .driver-phone-popover-help {
+  color: #94a3b8;
+}
+
+.dark .driver-phone-popover-meta {
+  border-top-color: #334155;
+  color: #94a3b8;
+}
+
+.dark .driver-phone-popover-meta-val {
+  color: #f1f5f9;
+}

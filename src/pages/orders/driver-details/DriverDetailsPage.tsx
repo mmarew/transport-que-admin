@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useCallback } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, ChevronRight } from "lucide-react";
@@ -25,6 +25,7 @@ import { DriverLocationMap } from "./components/DriverLocationMap";
 import { DriverCurrentOrderCard } from "./components/DriverCurrentOrderCard";
 import { DriverVehicleLicenceCards } from "./components/DriverVehicleLicenceCards";
 import { DriverActivityAndCostCards } from "./components/DriverActivityAndCostCards";
+import { DriverPhonePopover } from "./components/DriverPhonePopover";
 import MobileHeader from "../../../components/common/MobileHeader";
 import "./DriverDetailsPage.css";
 
@@ -32,6 +33,8 @@ export function DriverDetailsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMobilePhonePopoverOpen, setIsMobilePhonePopoverOpen] = useState(false);
+  const mobilePhoneBtnRef = useRef<HTMLButtonElement>(null);
   const {
     orderId: paramOrderId,
     queueOrganizationUniqueId: paramOrgId,
@@ -148,13 +151,13 @@ export function DriverDetailsPage() {
     const list1 = Array.isArray((backendOrdersData as any)?.data)
       ? (backendOrdersData as any).data
       : Array.isArray(backendOrdersData)
-      ? backendOrdersData
-      : [];
+        ? backendOrdersData
+        : [];
     const list2 = Array.isArray((backendBatchOrdersData as any)?.data)
       ? (backendBatchOrdersData as any).data
       : Array.isArray(backendBatchOrdersData)
-      ? backendBatchOrdersData
-      : [];
+        ? backendBatchOrdersData
+        : [];
     if (!list2.length) return backendOrdersData;
     const existing = new Set(
       list1.map((r: any) => r?.shipperRequest?.shipperRequestUniqueId || r?.shipperRequestUniqueId || r?.uniqueId)
@@ -258,9 +261,9 @@ export function DriverDetailsPage() {
 
   const isQueueStatusForbidden = Boolean(
     queueStatusError &&
-      typeof queueStatusError === "object" &&
-      "status" in queueStatusError &&
-      (queueStatusError.status === 403 || queueStatusError.status === 401)
+    typeof queueStatusError === "object" &&
+    "status" in queueStatusError &&
+    (queueStatusError.status === 403 || queueStatusError.status === 401)
   );
 
   // 3. Live WebSocket subscription and refetch callback
@@ -413,13 +416,35 @@ export function DriverDetailsPage() {
               Order #{activeModel.orderNumber}
             </Link>
             <ChevronRight size={13} className="driver-mobile-meta-separator" />
-            <a
-              href={`tel:${activeModel.driverPhone}`}
-              className="driver-mobile-phone-link"
-            >
-              {activeModel.driverPhone}
-            </a>
+            {activeModel.driverPhone && activeModel.driverPhone !== "—" ? (
+              <button
+                ref={mobilePhoneBtnRef}
+                type="button"
+                onClick={() => setIsMobilePhonePopoverOpen((prev) => !prev)}
+                className={`driver-mobile-phone-link driver-mobile-phone-btn ${isMobilePhonePopoverOpen ? "active" : ""}`}
+                title="View driver phone contact"
+                aria-expanded={isMobilePhonePopoverOpen}
+                aria-haspopup="dialog"
+              >
+                {activeModel.driverPhone}
+              </button>
+            ) : (
+              <span className="driver-mobile-phone-link">
+                {activeModel.driverPhone}
+              </span>
+            )}
           </div>
+
+          <DriverPhonePopover
+            isOpen={isMobilePhonePopoverOpen}
+            onClose={() => setIsMobilePhonePopoverOpen(false)}
+            triggerRef={mobilePhoneBtnRef}
+            phone={activeModel.driverPhone}
+            driverName={activeModel.driverName}
+            companyName={activeModel.companyName}
+            driverId={activeModel.driverId}
+            plateNumber={activeModel.vehicle?.plateNumber}
+          />
         </div>
 
         {/* ── Top Navigation & Breadcrumbs (Desktop) ── */}

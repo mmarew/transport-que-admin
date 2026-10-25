@@ -185,7 +185,6 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  position: relative;
 }
 
 .driver-btn-call {
@@ -194,7 +193,6 @@
   gap: 0.5rem;
   background: #0B4D6D;
   color: #ffffff;
-  border: none;
   padding: 0.625rem 1.25rem;
   border-radius: 10px;
   font-size: 0.875rem;
@@ -203,243 +201,12 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(11, 77, 109, 0.25);
-  font-family: inherit;
 }
 
 .driver-btn-call:hover {
   background: #00567A;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(11, 77, 109, 0.3);
-}
-
-.driver-btn-call.active {
-  background: #00364d;
-  box-shadow: 0 0 0 2px rgba(11, 77, 109, 0.35);
-}
-
-.driver-btn-call--disabled {
-  background: #94a3b8 !important;
-  cursor: not-allowed;
-  opacity: 0.7;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* ── Driver Phone Popup ──────────────────────────────────────────────── */
-.driver-phone-popup {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 295px;
-  max-width: calc(100vw - 32px);
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
-  padding: 14px;
-  z-index: 100;
-  color: #1e293b;
-  box-sizing: border-box;
-  animation: driverPhonePopupFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes driverPhonePopupFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.driver-phone-popup-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.driver-phone-popup-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: rgba(11, 77, 109, 0.1);
-  color: #0B4D6D;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.driver-phone-popup-title-wrap {
-  flex: 1;
-  min-width: 0;
-}
-
-.driver-phone-popup-title {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #0f172a;
-  line-height: 1.2;
-}
-
-.driver-phone-popup-name {
-  display: block;
-  font-size: 0.75rem;
-  color: #64748b;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.driver-phone-popup-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.15s ease;
-}
-
-.driver-phone-popup-close:hover {
-  background: #f1f5f9;
-  color: #334155;
-}
-
-.driver-phone-popup-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-
-.driver-phone-display {
-  flex: 1;
-  min-width: 0;
-}
-
-.driver-phone-number {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #0B4D6D;
-  letter-spacing: 0.02em;
-  font-family: inherit;
-  display: block;
-  user-select: all;
-}
-
-.driver-phone-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: #0B4D6D;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 11px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-  font-family: inherit;
-}
-
-.driver-phone-copy-btn:hover {
-  background: #00567A;
-}
-
-.driver-phone-popup-meta {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid #f1f5f9;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.driver-phone-meta-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.75rem;
-}
-
-.driver-phone-meta-label {
-  color: #64748b;
-}
-
-.driver-phone-meta-val {
-  font-weight: 600;
-  color: #334155;
-}
-
-/* Dark theme support */
-.dark .driver-phone-popup {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f8fafc;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-}
-
-.dark .driver-phone-popup-badge {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-}
-
-.dark .driver-phone-popup-title {
-  color: #f8fafc;
-}
-
-.dark .driver-phone-popup-name {
-  color: #94a3b8;
-}
-
-.dark .driver-phone-popup-close:hover {
-  background: #334155;
-  color: #e2e8f0;
-}
-
-.dark .driver-phone-popup-card {
-  background: #0f172a;
-  border-color: #334155;
-}
-
-.dark .driver-phone-number {
-  color: #38bdf8;
-}
-
-.dark .driver-phone-copy-btn {
-  background: #0284c7;
-}
-
-.dark .driver-phone-copy-btn:hover {
-  background: #0369a1;
-}
-
-.dark .driver-phone-popup-meta {
-  border-top-color: #334155;
-}
-
-.dark .driver-phone-meta-label {
-  color: #94a3b8;
-}
-
-.dark .driver-phone-meta-val {
-  color: #e2e8f0;
 }
 
 .driver-btn-edit {
@@ -828,9 +595,17 @@
 }
 
 @keyframes pulsePin {
-  0% { box-shadow: 0 0 0 0 rgba(11, 77, 109, 0.5); }
-  70% { box-shadow: 0 0 0 8px rgba(11, 77, 109, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(11, 77, 109, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(11, 77, 109, 0.5);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(11, 77, 109, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(11, 77, 109, 0);
+  }
 }
 
 .driver-map-badge-disclaimer {
