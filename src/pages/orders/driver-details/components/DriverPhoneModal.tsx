@@ -71,32 +71,15 @@ export const DriverPhoneModal: React.FC<DriverPhoneModalProps> = ({
   return createPortal(
     <div
       className="driver-phone-modal-overlay"
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(15, 23, 42, 0.45)",
-        backdropFilter: "blur(2px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 99999,
-        padding: "16px",
-      }}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label="Driver Contact"
     >
       <div
-        className="driver-phone-popover"
-        style={{
-          position: "relative",
-          width: "350px",
-          maxWidth: "100%",
-        }}
+        className="driver-phone-popover driver-phone-modal-dialog"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         {/* Header */}
         <div className="driver-phone-popover-header">
           <button
@@ -114,7 +97,7 @@ export const DriverPhoneModal: React.FC<DriverPhoneModalProps> = ({
         <div className="driver-phone-popover-card">
           <div className="driver-phone-popover-driver-row">
             <div className="driver-phone-popover-driver-info">
-              <Phone size={13} style={{ color: "#0B4D6D", flexShrink: 0 }} />
+              <Phone size={13} className="driver-phone-popover-icon" />
               <span className="driver-phone-popover-label">Driver:</span>
               <span className="driver-phone-popover-phone">{displayPhone}</span>
             </div>

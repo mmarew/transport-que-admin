@@ -100,7 +100,7 @@ export function CompanySelect({
     <div className="com-field-group">
       <label className="com-label">
         {t("orders.targetCompany", "Target Company")}{" "}
-        <span style={{ fontWeight: 400, color: "#64748b", fontSize: "11px" }}>
+        <span className="com-label-optional">
           ({t("common.optional", "Optional")})
         </span>
       </label>

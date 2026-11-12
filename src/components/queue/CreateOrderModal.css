@@ -139,6 +139,10 @@
   gap: 12px;
 }
 
+.com-grid-titles {
+  margin-bottom: -4px;
+}
+
 .com-field-group {
   display: flex;
   flex-direction: column;
@@ -150,6 +154,12 @@
   font-size: 12.5px;
   font-weight: 500;
   color: #1e293b;
+}
+
+.com-label-optional {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 11px;
 }
 
 .com-input-wrap {

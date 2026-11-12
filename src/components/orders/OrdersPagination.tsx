@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface OrdersPaginationProps {
@@ -31,6 +31,18 @@ export function OrdersPagination({
         })}
       </span>
       <div className="orders-pagination">
+        {totalPages > 1 && (
+          <button
+            type="button"
+            className="orders-page-btn"
+            disabled={currentPage <= 1}
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+            title={t("common.prevPage", "Previous page")}
+            aria-label={t("common.prevPage", "Previous page")}
+          >
+            <ChevronLeft size={15} />
+          </button>
+        )}
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
           <button
             key={page}
@@ -47,8 +59,8 @@ export function OrdersPagination({
             className="orders-page-btn"
             disabled={currentPage >= totalPages}
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-            title={t("common.nextPage")}
-            aria-label={t("common.nextPage")}
+            title={t("common.nextPage", "Next page")}
+            aria-label={t("common.nextPage", "Next page")}
           >
             <ChevronRight size={15} />
           </button>

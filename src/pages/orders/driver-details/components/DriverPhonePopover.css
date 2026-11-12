@@ -147,6 +147,11 @@
   white-space: nowrap;
 }
 
+.driver-phone-popover-icon {
+  color: #0B4D6D;
+  flex-shrink: 0;
+}
+
 .driver-phone-popover-label {
   font-weight: 700;
   color: #334155;
@@ -274,3 +279,23 @@
 .dark .driver-phone-popover-meta-val {
   color: #f1f5f9;
 }
+
+/* Modal overlay & dialog */
+.driver-phone-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 16px;
+}
+
+.driver-phone-modal-dialog {
+  position: relative;
+  width: 350px;
+  max-width: 100%;
+}
+

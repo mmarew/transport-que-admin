@@ -595,7 +595,7 @@ export function OrdersPage() {
         <OrdersPagination
           isLoading={isLoadingOrders || isLoadingBatches}
           totalFiltered={allBatches.length}
-          totalShown={paginatedOrders.length}
+          totalShown={currentBatches.length}
           currentPage={safeCurrentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}

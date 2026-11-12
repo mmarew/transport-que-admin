@@ -473,7 +473,7 @@ export function CreateOrderModal({
         />
 
         {/* Origin & Destination Titles */}
-        <div className="com-grid-2" style={{ marginBottom: "-4px" }}>
+        <div className="com-grid-2 com-grid-titles">
           <h3 className="com-section-title">
             {t("orders.origin", "Origin")}
           </h3>
