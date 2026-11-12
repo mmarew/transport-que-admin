@@ -225,6 +225,22 @@ export const {
      */
     getCompanyBids: builder.query<GetCompanyBidsResponse, GetCompanyBidsArgs>({
       queryFn: async (params, _queryApi, _extraOptions, baseQuery) => {
+        // If no scoping parameter is provided (batch or company), don't fire an invalid unscoped request
+        // that triggers 400 on the backend.
+        if (
+          !params?.shipperRequestBatchUniqueId &&
+          !params?.shipperRequestBatchId &&
+          !params?.batchId &&
+          !params?.companyUniqueId
+        ) {
+          return {
+            data: {
+              message: "No company bids found",
+              data: [],
+            } as GetCompanyBidsResponse,
+          };
+        }
+
         const res = await baseQuery({
           url: appAPIs.companyBidsAPI,
           params: {

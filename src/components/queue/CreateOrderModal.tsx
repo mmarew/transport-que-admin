@@ -18,6 +18,7 @@ import { CustomSelect } from "../ui/CustomSelect";
 import { Modal } from "../ui/Modal";
 import { RequestTypeSelect } from "./order-modal/RequestTypeSelect";
 import { VehicleTypeSelect } from "./order-modal/VehicleTypeSelect";
+import { CompanySelect } from "./order-modal/CompanySelect";
 import {
   getVehicleCapacity,
   registerDynamicVehicleTypes,
@@ -64,8 +65,7 @@ function buildOrderPayload(
   values: CreateOrderFormValues,
   queueOrganizationUniqueId: string,
 ): CreateOrderPayload {
-  return {
-    isBiddingApproved: Boolean(values.isBiddingApproved),
+  const payload: CreateOrderPayload = {
     queueOrganizationUniqueId,
     shipperPhoneNumber: values.shipperPhoneNumber,
     shipperRequestBatchUniqueId: newBatchId(),
@@ -91,6 +91,18 @@ function buildOrderPayload(
       description: values.originDescription,
     },
   };
+
+  // Only include isBiddingApproved when explicitly true AND not targeting a specific company
+  // (Direct company target is offered to that company, not an open bidding job)
+  if (values.isBiddingApproved && !values.targetCompanyUniqueId?.trim()) {
+    payload.isBiddingApproved = true;
+  }
+
+  if (values.requestMode === "company_target" && values.targetCompanyUniqueId?.trim()) {
+    payload.targetCompanyUniqueId = values.targetCompanyUniqueId.trim();
+  }
+
+  return payload;
 }
 
 export function CreateOrderModal({
@@ -116,6 +128,7 @@ export function CreateOrderModal({
       isBiddingApproved: false,
       numberOfVehicles: 1,
       requestMode: "individual_target",
+      targetCompanyUniqueId: "",
       shipperPhoneNumber: "",
       shippableItemName: "",
       shippingDate: "",
@@ -131,6 +144,7 @@ export function CreateOrderModal({
   });
 
   const requestMode = watch("requestMode");
+  const targetCompanyUniqueId = watch("targetCompanyUniqueId");
   const numberOfVehicles = watch("numberOfVehicles");
   const originDesc = watch("originDescription");
   const originLat = watch("originLatitude");
@@ -193,8 +207,11 @@ export function CreateOrderModal({
   }, [numberOfVehicles, requestMode, setValue]);
 
   const handleRequestModeChange = (mode: "individual_target" | "company_target") => {
-    if (mode === "individual_target" && Number(numberOfVehicles) > 9) {
-      setValue("numberOfVehicles", 1, { shouldValidate: true });
+    if (mode === "individual_target") {
+      if (Number(numberOfVehicles) > 9) {
+        setValue("numberOfVehicles", 1, { shouldValidate: true });
+      }
+      setValue("targetCompanyUniqueId", "", { shouldValidate: true });
     }
     setValue("requestMode", mode, { shouldValidate: true });
     // In company mode, default to open for bidding
@@ -331,32 +348,74 @@ export function CreateOrderModal({
           onChange={handleRequestModeChange}
         />
 
-        {/* Dispatch Mode Dropdown */}
-        <div className="com-field-group">
-          <label className="com-label">
-            {t("orders.dispatchMode", "Dispatch Mode")}
-          </label>
-          <CustomSelect
-            value={watch("isBiddingApproved") ? "true" : "false"}
-            onChange={(val) => setValue("isBiddingApproved", val === "true")}
-            options={[
-              {
-                value: "false",
-                label: t(
-                  "orders.fifoQueueOption",
-                  "FIFO Queue (Auto-offer to front waiting driver)",
-                ),
-              },
-              {
-                value: "true",
-                label: t(
-                  "orders.openBiddingOption",
-                  "Open for Bidding (Biddable job for carriers)",
-                ),
-              },
-            ]}
-          />
-        </div>
+        {/* Dispatch Mode & Target Company (Company Target Mode Only) */}
+        {requestMode === "company_target" ? (
+          <div className="com-grid-2">
+            <div className="com-field-group">
+              <label className="com-label">
+                {t("orders.dispatchMode", "Dispatch Mode")}
+              </label>
+              <CustomSelect
+                value={watch("isBiddingApproved") ? "true" : "false"}
+                onChange={(val) => setValue("isBiddingApproved", val === "true")}
+                options={[
+                  {
+                    value: "false",
+                    label: t(
+                      "orders.fifoQueueOption",
+                      "FIFO Queue (Auto-offer to front waiting driver)",
+                    ),
+                  },
+                  {
+                    value: "true",
+                    label: t(
+                      "orders.openBiddingOption",
+                      "Open for Bidding (Biddable job for carriers)",
+                    ),
+                  },
+                ]}
+              />
+            </div>
+
+            <CompanySelect
+              value={targetCompanyUniqueId || ""}
+              onChange={(val) => {
+                setValue("targetCompanyUniqueId", val, { shouldValidate: true });
+                if (val) {
+                  // Direct target to a specific company -> not an open bidding job
+                  setValue("isBiddingApproved", false, { shouldValidate: true });
+                }
+              }}
+              error={errors.targetCompanyUniqueId?.message}
+            />
+          </div>
+        ) : (
+          <div className="com-field-group">
+            <label className="com-label">
+              {t("orders.dispatchMode", "Dispatch Mode")}
+            </label>
+            <CustomSelect
+              value={watch("isBiddingApproved") ? "true" : "false"}
+              onChange={(val) => setValue("isBiddingApproved", val === "true")}
+              options={[
+                {
+                  value: "false",
+                  label: t(
+                    "orders.fifoQueueOption",
+                    "FIFO Queue (Auto-offer to front waiting driver)",
+                  ),
+                },
+                {
+                  value: "true",
+                  label: t(
+                    "orders.openBiddingOption",
+                    "Open for Bidding (Biddable job for carriers)",
+                  ),
+                },
+              ]}
+            />
+          </div>
+        )}
 
         {/* Shipper Section */}
         <div>

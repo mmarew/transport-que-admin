@@ -117,7 +117,12 @@ export function OrdersPage() {
   const {
     data: companyBidsData,
     refetch: refetchCompanyBids,
-  } = useGetCompanyBidsQuery({ limit: 100 }, { skip: !orgUniqueId });
+  } = useGetCompanyBidsQuery(
+    targetBatchId && isUUID(targetBatchId)
+      ? { shipperRequestBatchUniqueId: targetBatchId, limit: 100 }
+      : { limit: 100 },
+    { skip: !orgUniqueId || !targetBatchId || !isUUID(targetBatchId) },
+  );
 
   const dispatch = useAppDispatch();
 

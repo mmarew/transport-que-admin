@@ -83,6 +83,7 @@ export const api = createApi({
     "Auth",
     "VehicleTypes",
     "ShipperRequests",
+    "Companies",
   ],
   // HOW ENDPOINTS GET "LINKED" (injectEndpoints)
   // ----------------------------------------------

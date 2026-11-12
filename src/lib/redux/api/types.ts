@@ -431,3 +431,20 @@ export type GetCompanyBidsArgs = {
 export type GetCompanyBidsResponse = ApiData<CompanyBidItem[]> & {
   pagination?: PaginationMeta;
 };
+
+export interface CompanyItem {
+  companyUniqueId: string;
+  companyName: string;
+  approvalStatus?: string | null;
+  phoneNumber?: string | null;
+  [key: string]: unknown;
+}
+
+export interface ListCompaniesArgs {
+  approvalStatus?: string;
+  limit?: number;
+  [key: string]: unknown;
+}
+
+export type ListCompaniesResponse = ApiData<CompanyItem[]>;
+

@@ -23,83 +23,122 @@ interface ErrorHandlerOptions {
   silent?: boolean;
 }
 
+const isGenericMessageString = (s?: unknown): boolean => {
+  if (typeof s !== "string") return false;
+  const l = s.trim().toLowerCase();
+  return (
+    l === "error" ||
+    l === "validation error" ||
+    l === "bad request" ||
+    l === "bad request." ||
+    l === "internal server error" ||
+    l === "failed" ||
+    l === "success"
+  );
+};
+
 const resolveServerMsg = (data?: unknown): string | null => {
   if (!data) return null;
-  if (typeof data === "string" && data.trim()) return data;
+  if (typeof data === "string" && data.trim()) {
+    return isGenericMessageString(data) ? null : data.trim();
+  }
 
   if (Array.isArray(data)) {
+    const list: string[] = [];
     for (const item of data) {
       const msg = resolveServerMsg(item);
-      if (msg) return msg;
+      if (msg && !isGenericMessageString(msg)) {
+        list.push(msg);
+      }
     }
-    return null;
+    return list.length > 0 ? list.join("; ") : null;
   }
 
   if (typeof data !== "object") return null;
   const d = data as Record<string, unknown>;
 
-  const isGenericMessage =
-    typeof d.message === "string" &&
-    (d.message.toLowerCase() === "error" ||
-      d.message.toLowerCase() === "validation error" ||
-      d.message.toLowerCase() === "bad request" ||
-      d.message.toLowerCase() === "success");
+  // 1. Check array message (NestJS / class-validator style: { message: ["..."] })
+  if (Array.isArray(d.message)) {
+    const list = d.message
+      .map((m) => (typeof m === "string" ? m : resolveServerMsg(m)))
+      .filter((m): m is string => Boolean(m && !isGenericMessageString(m)));
+    if (list.length > 0) return list.join("; ");
+  }
 
-  if (!isGenericMessage && typeof d.message === "string" && d.message.trim()) {
-    return d.message;
-  }
-  if (typeof d.error === "string" && d.error.trim() && d.error.toLowerCase() !== "error") {
-    return d.error;
-  }
-  if (typeof d.msg === "string" && d.msg.trim()) {
-    return d.msg;
-  }
-  if (typeof d.detail === "string" && d.detail.trim()) {
-    return d.detail;
-  }
-  if (d.details && typeof d.details === "object") {
-    if (Array.isArray(d.details) && d.details.length > 0) {
-      for (const item of d.details) {
-        const m = resolveServerMsg(item);
-        if (m) return m;
+  // 2. Specific field error collections (Express validator, Joi, etc.)
+  for (const key of ["errors", "details"]) {
+    const col = d[key];
+    if (col && typeof col === "object") {
+      const items = Array.isArray(col) ? col : Object.values(col);
+      const list: string[] = [];
+      for (const item of items) {
+        if (typeof item === "string" && item.trim() && !isGenericMessageString(item)) {
+          list.push(item.trim());
+        } else if (typeof item === "object" && item !== null) {
+          const obj = item as Record<string, unknown>;
+          const msg =
+            (typeof obj.message === "string" && obj.message) ||
+            (typeof obj.msg === "string" && obj.msg) ||
+            (typeof obj.error === "string" && obj.error) ||
+            (typeof obj.detail === "string" && obj.detail) ||
+            resolveServerMsg(obj);
+          if (msg && !isGenericMessageString(msg)) {
+            const prefix = typeof obj.field === "string" ? `${obj.field}: ` : typeof obj.path === "string" ? `${obj.path}: ` : "";
+            list.push(`${prefix}${msg}`);
+          }
+        }
       }
-    } else {
-      for (const val of Object.values(d.details as Record<string, unknown>)) {
-        const m = resolveServerMsg(val);
-        if (m) return m;
-      }
+      if (list.length > 0) return list.join("; ");
     }
   }
+
+  // 3. Validation object
   if (d.validation && typeof d.validation === "object") {
     const v = d.validation as Record<string, unknown>;
+    if (typeof v.message === "string" && !isGenericMessageString(v.message)) {
+      return v.message;
+    }
     if (Array.isArray(v.keys) && v.keys.length > 0) {
       return `Validation failed for: ${v.keys.join(", ")}`;
     }
-    if (typeof v.message === "string") return v.message;
   }
-  if (d.errors && typeof d.errors === "object") {
-    if (Array.isArray(d.errors) && d.errors.length > 0) {
-      for (const item of d.errors) {
-        const m = resolveServerMsg(item);
-        if (m) return m;
-      }
-    } else {
-      for (const val of Object.values(d.errors as Record<string, unknown>)) {
-        const m = resolveServerMsg(val);
-        if (m) return m;
-      }
+
+  // 4. Specific string message
+  if (typeof d.message === "string" && d.message.trim() && !isGenericMessageString(d.message)) {
+    return d.message.trim();
+  }
+
+  // 5. Check msg / detail / description
+  for (const key of ["msg", "detail", "description"]) {
+    const val = d[key];
+    if (typeof val === "string" && val.trim() && !isGenericMessageString(val)) {
+      return val.trim();
     }
   }
+
+  if (typeof d.error === "string" && d.error.trim() && !isGenericMessageString(d.error)) {
+    return d.error.trim();
+  }
+
   if (typeof d.error === "object" && d.error !== null) {
-    const m = resolveServerMsg(d.error);
-    if (m) return m;
+    const nested = resolveServerMsg(d.error);
+    if (nested) return nested;
   }
-  if (typeof d.data === "string" && d.data.trim()) return d.data;
+
+  // 6. Check data inner object
+  if (typeof d.data === "string" && d.data.trim() && !isGenericMessageString(d.data)) {
+    return d.data.trim();
+  }
   if (typeof d.data === "object" && d.data !== null) {
-    const innerMsg = resolveServerMsg(d.data);
-    if (innerMsg) return innerMsg;
+    const inner = resolveServerMsg(d.data);
+    if (inner) return inner;
   }
-  if (typeof d.message === "string" && d.message.trim()) return d.message;
+
+  // Fallback: if message was generic string but nothing better found
+  if (typeof d.message === "string" && d.message.trim()) {
+    return d.message.trim();
+  }
+
   return null;
 };
 

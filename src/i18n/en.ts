@@ -432,8 +432,10 @@ export const en = {
     createOrderSubtitle:
       "Generate a new transport load order to automatically dispatch to the queue.",
     requestMode: "Request Mode",
-    targetCompany: "Target Company Unique ID",
-    targetCompanyPlaceholder: "Enter transport company unique ID",
+    targetCompany: "Target Company",
+    targetCompanyPlaceholder: "Select target transport company",
+    selectTargetCompany: "Select target company (optional)",
+    allApprovedCompanies: "All Approved Companies (Optional)",
     individual: "Individual Request",
     broadcast: "Broadcast Request",
     shipperPhone: "Phone Number",

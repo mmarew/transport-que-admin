@@ -47,3 +47,4 @@ export * from "./queueOrganizationEndpoints";
 export * from "./driverQueueEndpoints";
 export * from "./shipperRequestEndpoints";
 export * from "./vehicleEndpoints";
+export * from "./companyEndpoints";

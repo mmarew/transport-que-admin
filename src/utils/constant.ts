@@ -64,5 +64,6 @@ const appAPIs = {
 
     // ── Reference data ────────────────────────────────────────────────────
     listVehicleTypesAPI: "/admin/vehicleTypes",
+    companiesAPI: "/company/companies",
 }
 export default appAPIs
