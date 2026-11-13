@@ -219,19 +219,21 @@
 
 /* ── Card Header ── */
 .order-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "left route right";
+  align-items: center;
+  gap: 0 0.875rem;
   width: 100%;
 }
 
 .order-card-header-left {
+  grid-area: left;
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  min-width: 0;
-  flex: 1;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
 }
 
 .order-card-chevron-btn {
@@ -246,7 +248,6 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
-  margin-top: 2px;
   flex-shrink: 0;
 }
 
@@ -256,26 +257,20 @@
   color: #0b4d6d;
 }
 
-.order-card-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
-}
-
-.order-card-title-top {
-  display: flex;
-  align-items: baseline;
-  gap: 0.625rem;
-  flex-wrap: wrap;
-}
-
 .order-card-id {
   font-size: 0.9375rem;
   font-weight: 700;
   color: #0284c7;
   letter-spacing: -0.01em;
   font-family: inherit;
+}
+
+.order-card-route-wrap {
+  grid-area: route;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
 .order-card-route {
@@ -2073,6 +2068,61 @@
     font-size: 0.72rem;
     color: #64748b;
     font-weight: 400;
+  }
+
+  /* ── Order Card Mobile Layout (Location Uses Full Available Width) ── */
+  .order-card {
+    padding: 1rem 1rem;
+    gap: 0.875rem;
+  }
+
+  .order-card-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "left  right"
+      "route route";
+    row-gap: 0.55rem;
+    column-gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+  }
+
+  .order-card-header-left {
+    grid-area: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .order-card-header-right {
+    grid-area: right;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .order-card-route-wrap {
+    grid-area: route;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .order-card-route {
+    font-size: 1.0625rem;
+    line-height: 1.35;
+    width: 100%;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .order-card-phone {
+    font-size: 0.8125rem;
   }
 
   /* Hide desktop table on mobile */

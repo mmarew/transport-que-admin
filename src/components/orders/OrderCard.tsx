@@ -160,22 +160,7 @@ export function OrderCard({
             </button>
           ) : null}
 
-          <div className="order-card-title-group">
-            <div className="order-card-title-top">
-              <span className="order-card-id">{displayId}</span>
-              <h3
-                className="order-card-route"
-                title={`${group.origin} → ${group.destination}`}
-              >
-                {routeText}
-              </h3>
-            </div>
-            {phone ? (
-              <span className="order-card-phone" title={group.shipper}>
-                {phone}
-              </span>
-            ) : null}
-          </div>
+          <span className="order-card-id">{displayId}</span>
         </div>
 
         <div className="order-card-header-right">
@@ -300,6 +285,21 @@ export function OrderCard({
               <Trash2 size={15} />
             </button>
           </div>
+        </div>
+
+        {/* ── Route & Shipper Phone (full-width on mobile to use all marked space) ── */}
+        <div className="order-card-route-wrap">
+          <h3
+            className="order-card-route"
+            title={`${group.origin} → ${group.destination}`}
+          >
+            {routeText}
+          </h3>
+          {phone ? (
+            <span className="order-card-phone" title={group.shipper}>
+              {phone}
+            </span>
+          ) : null}
         </div>
       </div>
 
