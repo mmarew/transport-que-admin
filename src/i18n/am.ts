@@ -1,6 +1,7 @@
 export const am = {
   common: {
     loading: "በመጫን ላይ...",
+    required: "(አስፈላጊ)",
     cancel: "ይቅር",
     save: "አስቀምጥ",
     submit: "አስገባ",
@@ -480,6 +481,8 @@ export const am = {
     dispatchMode: "የማሰማሪያ ዘዴ (Dispatch Mode)",
     fifoQueueOption: "በቅደም ተከተል (FIFO - ለቀዳሚው አሽከርካሪ የሚላክ)",
     openBiddingOption: "ክፍት ጨረታ (ለአጓጓዦች ክፍት የሆነ)",
+    specificCompanyOption: "የተወሰነ ድርጅት መመደብ",
+    selectCompany: "ድርጅት ይምረጡ",
     shipperSection: "ላኪ (Shipper)",
     orderDetails: "የትዕዛዝ ዝርዝር",
     enterQuantity: "መጠን ያስገቡ",
