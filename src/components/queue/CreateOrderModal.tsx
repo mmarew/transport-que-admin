@@ -125,6 +125,7 @@ export function CreateOrderModal({
     resolver: zodResolver(createOrderSchema),
     mode: "onChange",
     defaultValues: {
+      dispatchMode: "fifo",
       isBiddingApproved: false,
       numberOfVehicles: 1,
       requestMode: "individual_target",
@@ -144,6 +145,7 @@ export function CreateOrderModal({
   });
 
   const requestMode = watch("requestMode");
+  const dispatchMode = watch("dispatchMode");
   const targetCompanyUniqueId = watch("targetCompanyUniqueId");
   const numberOfVehicles = watch("numberOfVehicles");
   const originDesc = watch("originDescription");
@@ -202,23 +204,43 @@ export function CreateOrderModal({
     const num = Number(numberOfVehicles);
     if (num > 9 && requestMode === "individual_target") {
       setValue("requestMode", "company_target", { shouldValidate: true });
+      setValue("dispatchMode", "open_bidding", { shouldValidate: true });
       setValue("isBiddingApproved", true, { shouldValidate: true });
     }
   }, [numberOfVehicles, requestMode, setValue]);
 
   const handleRequestModeChange = (mode: "individual_target" | "company_target") => {
+    setValue("targetCompanyUniqueId", "", { shouldValidate: true });
     if (mode === "individual_target") {
       if (Number(numberOfVehicles) > 9) {
         setValue("numberOfVehicles", 1, { shouldValidate: true });
       }
-      setValue("targetCompanyUniqueId", "", { shouldValidate: true });
+      setValue("dispatchMode", "fifo", { shouldValidate: true });
     }
     setValue("requestMode", mode, { shouldValidate: true });
     // In company mode, default to open for bidding
     if (mode === "company_target") {
+      setValue("dispatchMode", "open_bidding", { shouldValidate: true });
       setValue("isBiddingApproved", true, { shouldValidate: true });
     } else {
       setValue("isBiddingApproved", false, { shouldValidate: true });
+    }
+  };
+
+  const handleDispatchModeChange = (mode: string) => {
+    if (mode !== "fifo" && mode !== "open_bidding" && mode !== "specific_company") {
+      return;
+    }
+
+    setValue("dispatchMode", mode, { shouldValidate: true });
+    setValue("isBiddingApproved", mode === "open_bidding", {
+      shouldValidate: true,
+    });
+
+    if (mode === "specific_company") {
+      setValue("requestMode", "company_target", { shouldValidate: true });
+    } else {
+      setValue("targetCompanyUniqueId", "", { shouldValidate: true });
     }
   };
 
@@ -348,74 +370,53 @@ export function CreateOrderModal({
           onChange={handleRequestModeChange}
         />
 
-        {/* Dispatch Mode & Target Company (Company Target Mode Only) */}
-        {requestMode === "company_target" ? (
-          <div className="com-grid-2">
-            <div className="com-field-group">
-              <label className="com-label">
-                {t("orders.dispatchMode", "Dispatch Mode")}
-              </label>
-              <CustomSelect
-                value={watch("isBiddingApproved") ? "true" : "false"}
-                onChange={(val) => setValue("isBiddingApproved", val === "true")}
-                options={[
-                  {
-                    value: "false",
-                    label: t(
-                      "orders.fifoQueueOption",
-                      "FIFO Queue (Auto-offer to front waiting driver)",
-                    ),
-                  },
-                  {
-                    value: "true",
-                    label: t(
-                      "orders.openBiddingOption",
-                      "Open for Bidding (Biddable job for carriers)",
-                    ),
-                  },
-                ]}
-              />
-            </div>
-
-            <CompanySelect
-              value={targetCompanyUniqueId || ""}
-              onChange={(val) => {
-                setValue("targetCompanyUniqueId", val, { shouldValidate: true });
-                if (val) {
-                  // Direct target to a specific company -> not an open bidding job
-                  setValue("isBiddingApproved", false, { shouldValidate: true });
-                }
-              }}
-              error={errors.targetCompanyUniqueId?.message}
-            />
-          </div>
-        ) : (
+        {/* Dispatch Mode & Target Company */}
+        <div className={dispatchMode === "specific_company" ? "com-grid-2" : ""}>
           <div className="com-field-group">
             <label className="com-label">
               {t("orders.dispatchMode", "Dispatch Mode")}
             </label>
             <CustomSelect
-              value={watch("isBiddingApproved") ? "true" : "false"}
-              onChange={(val) => setValue("isBiddingApproved", val === "true")}
+              value={dispatchMode}
+              onChange={handleDispatchModeChange}
               options={[
                 {
-                  value: "false",
+                  value: "fifo",
                   label: t(
                     "orders.fifoQueueOption",
                     "FIFO Queue (Auto-offer to front waiting driver)",
                   ),
                 },
                 {
-                  value: "true",
+                  value: "open_bidding",
                   label: t(
                     "orders.openBiddingOption",
                     "Open for Bidding (Biddable job for carriers)",
                   ),
                 },
+                {
+                  value: "specific_company",
+                  label: t(
+                    "orders.specificCompanyOption",
+                    "Assign a Specific Company",
+                  ),
+                },
               ]}
             />
           </div>
-        )}
+
+          {dispatchMode === "specific_company" && (
+            <CompanySelect
+              value={targetCompanyUniqueId || ""}
+              onChange={(val) => {
+                setValue("targetCompanyUniqueId", val, { shouldValidate: true });
+                setValue("isBiddingApproved", false, { shouldValidate: true });
+              }}
+              error={errors.targetCompanyUniqueId?.message}
+              required
+            />
+          )}
+        </div>
 
         {/* Shipper Section */}
         <div>
@@ -472,45 +473,45 @@ export function CreateOrderModal({
           }
         />
 
-        {/* Origin & Destination Titles */}
-        <div className="com-grid-2 com-grid-titles">
-          <h3 className="com-section-title">
-            {t("orders.origin", "Origin")}
-          </h3>
-          <h3 className="com-section-title">
-            {t("orders.destination", "Destination")}
-          </h3>
-        </div>
-
         {/* Origin & Destination Autocomplete Inputs */}
         <div className="com-grid-2">
-          <LocationSearchField
-            value={originDesc}
-            placeholder={t("orders.originPlaceholder", "Search pickup location")}
-            onChange={(val) =>
-              setValue("originDescription", val, { shouldValidate: true })
-            }
-            onSelectPlace={(place) => handleSelectPlace(place, true)}
-            error={errors.originDescription?.message}
-            coordError={Boolean(
-              !errors.originDescription &&
-              (errors.originLatitude || errors.originLongitude),
-            )}
-          />
+          <div>
+            <h3 className="com-section-title">
+              {t("orders.origin", "Origin")}
+            </h3>
+            <LocationSearchField
+              value={originDesc}
+              placeholder={t("orders.originPlaceholder", "Search pickup location")}
+              onChange={(val) =>
+                setValue("originDescription", val, { shouldValidate: true })
+              }
+              onSelectPlace={(place) => handleSelectPlace(place, true)}
+              error={errors.originDescription?.message}
+              coordError={Boolean(
+                !errors.originDescription &&
+                (errors.originLatitude || errors.originLongitude),
+              )}
+            />
+          </div>
 
-          <LocationSearchField
-            value={destDesc}
-            placeholder={t("orders.destPlaceholder", "Search delivery location")}
-            onChange={(val) =>
-              setValue("destinationDescription", val, { shouldValidate: true })
-            }
-            onSelectPlace={(place) => handleSelectPlace(place, false)}
-            error={errors.destinationDescription?.message}
-            coordError={Boolean(
-              !errors.destinationDescription &&
-              (errors.destinationLatitude || errors.destinationLongitude),
-            )}
-          />
+          <div>
+            <h3 className="com-section-title">
+              {t("orders.destination", "Destination")}
+            </h3>
+            <LocationSearchField
+              value={destDesc}
+              placeholder={t("orders.destPlaceholder", "Search delivery location")}
+              onChange={(val) =>
+                setValue("destinationDescription", val, { shouldValidate: true })
+              }
+              onSelectPlace={(place) => handleSelectPlace(place, false)}
+              error={errors.destinationDescription?.message}
+              coordError={Boolean(
+                !errors.destinationDescription &&
+                (errors.destinationLatitude || errors.destinationLongitude),
+              )}
+            />
+          </div>
         </div>
 
         {/* Coordinates Row (Desktop Only) */}

@@ -8,17 +8,19 @@ export interface CompanySelectProps {
   onChange: (val: string) => void;
   error?: string;
   disabled?: boolean;
+  required?: boolean;
 }
 
 /**
  * CompanySelect handles fetching approved companies from GET /api/company/companies?approvalStatus=APPROVED,
- * deduplicating entries, and presenting a CustomSelect for optional company targeting.
+ * deduplicating entries, and presenting a CustomSelect for company targeting.
  */
 export function CompanySelect({
   value,
   onChange,
   error,
   disabled,
+  required = false,
 }: CompanySelectProps) {
   const { t } = useTranslation();
   const { data: apiCompanies, isLoading } = useListCompaniesQuery({
@@ -79,10 +81,12 @@ export function CompanySelect({
   }, [apiCompanies?.data]);
 
   const options = [
-    {
-      value: "",
-      label: t("orders.allApprovedCompanies", "All Approved Companies (Optional)"),
-    },
+    ...(required
+      ? [{ value: "", label: t("orders.selectCompany", "Select a company") }]
+      : [{
+          value: "",
+          label: t("orders.allApprovedCompanies", "All Approved Companies (Optional)"),
+        }]),
     ...companiesList.map((c) => ({
       value: c.companyUniqueId,
       label: c.companyName,
@@ -101,7 +105,9 @@ export function CompanySelect({
       <label className="com-label">
         {t("orders.targetCompany", "Target Company")}{" "}
         <span className="com-label-optional">
-          ({t("common.optional", "Optional")})
+          {required
+            ? t("common.required", "(Required)")
+            : t("common.optional", "(Optional)")}
         </span>
       </label>
       <CustomSelect
@@ -110,7 +116,9 @@ export function CompanySelect({
         placeholder={
           isLoading
             ? t("common.loading", "Loading companies...")
-            : t("orders.selectTargetCompany", "Select target company (optional)")
+            : required
+              ? t("orders.selectCompany", "Select a company")
+              : t("orders.selectTargetCompany", "Select target company (optional)")
         }
         error={!!error}
         disabled={disabled}

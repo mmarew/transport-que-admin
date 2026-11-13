@@ -139,10 +139,6 @@
   gap: 12px;
 }
 
-.com-grid-titles {
-  margin-bottom: -4px;
-}
-
 .com-field-group {
   display: flex;
   flex-direction: column;

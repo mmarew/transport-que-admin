@@ -1,6 +1,7 @@
 export const en = {
   common: {
     loading: "Loading...",
+    required: "(Required)",
     cancel: "Cancel",
     save: "Save",
     submit: "Submit",
@@ -493,6 +494,8 @@ export const en = {
     dispatchMode: "Dispatch Mode",
     fifoQueueOption: "FIFO Queue (Auto-offer to front waiting driver)",
     openBiddingOption: "Open for Bidding (Biddable job for carriers)",
+    specificCompanyOption: "Assign a Specific Company",
+    selectCompany: "Select a company",
     shipperSection: "Shipper",
     orderDetails: "Order Details",
     enterQuantity: "Enter quantity",

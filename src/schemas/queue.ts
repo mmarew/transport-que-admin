@@ -87,6 +87,7 @@ export const dispatchSchema = z.object({
 
 export const createOrderSchema = z
   .object({
+    dispatchMode: z.enum(["fifo", "open_bidding", "specific_company"]),
     isBiddingApproved: z.boolean().optional(),
     shipperPhoneNumber: z
       .string()
@@ -146,6 +147,17 @@ export const createOrderSchema = z
     path: ["deliveryDate"],
   })
   .superRefine((v, ctx) => {
+    if (
+      v.dispatchMode === "specific_company" &&
+      !v.targetCompanyUniqueId?.trim()
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please select a company",
+        path: ["targetCompanyUniqueId"],
+      });
+    }
+
     if (v.shippableItemQtyInQuintal > 0) {
       const cap = v.vehicleTypeUniqueId ? getVehicleCapacity(v.vehicleTypeUniqueId) : null;
       if (cap?.maxQuintal && v.shippableItemQtyInQuintal > cap.maxQuintal) {

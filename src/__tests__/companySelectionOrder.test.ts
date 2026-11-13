@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import appAPIs from "../utils/constant";
-import type { CreateOrderFormValues } from "../schemas/queue";
+import { createOrderSchema, type CreateOrderFormValues } from "../schemas/queue";
 import type { CreateOrderPayload } from "../types/queue";
 
 // Helper reproducing buildOrderPayload from CreateOrderModal
@@ -54,7 +54,8 @@ describe("Company Target Selection & Order Creation Payload", () => {
 
   it("includes targetCompanyUniqueId when requestMode is company_target and company is selected", () => {
     const formValues: CreateOrderFormValues = {
-      isBiddingApproved: true,
+      dispatchMode: "specific_company",
+      isBiddingApproved: false,
       numberOfVehicles: 4,
       requestMode: "company_target",
       targetCompanyUniqueId: "6d63e8c4-dad6-40f5-a387-48e72c9cfcc8",
@@ -101,6 +102,7 @@ describe("Company Target Selection & Order Creation Payload", () => {
 
   it("keeps targetCompanyUniqueId optional (omitted) when no company is selected in company_target mode", () => {
     const formValues: CreateOrderFormValues = {
+      dispatchMode: "open_bidding",
       isBiddingApproved: true,
       numberOfVehicles: 2,
       requestMode: "company_target",
@@ -128,6 +130,7 @@ describe("Company Target Selection & Order Creation Payload", () => {
 
   it("omits targetCompanyUniqueId when requestMode is individual_target even if a company ID was present", () => {
     const formValues: CreateOrderFormValues = {
+      dispatchMode: "fifo",
       isBiddingApproved: false,
       numberOfVehicles: 1,
       requestMode: "individual_target",
@@ -152,5 +155,37 @@ describe("Company Target Selection & Order Creation Payload", () => {
     expect(payload.targetCompanyUniqueId).toBeUndefined();
     expect(payload.requestMode).toBe("individual_target");
   });
-});
 
+  it("requires a company when assigning an order to a specific company", () => {
+    const result = createOrderSchema.safeParse({
+      dispatchMode: "specific_company",
+      isBiddingApproved: false,
+      numberOfVehicles: 1,
+      requestMode: "company_target",
+      targetCompanyUniqueId: "",
+      shipperPhoneNumber: "+251911889404",
+      shippableItemName: "Grain",
+      shippableItemQtyInQuintal: 100,
+      shippingCost: 15000,
+      shippingDate: "2025-04-20T10:54:26.077Z",
+      deliveryDate: "2025-04-20T10:54:26.077Z",
+      vehicleTypeUniqueId: "6f5d559f-8a4d-4106-83da-eb5f42751200",
+      originDescription: "Kombolcha, Ethiopia",
+      originLatitude: "9.0204683",
+      originLongitude: "38.80246",
+      destinationDescription: "Dessie, Ethiopia",
+      destinationLatitude: "35.4218",
+      destinationLongitude: "7.1973",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toContainEqual(
+        expect.objectContaining({
+          path: ["targetCompanyUniqueId"],
+          message: "Please select a company",
+        }),
+      );
+    }
+  });
+});
