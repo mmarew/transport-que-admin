@@ -298,6 +298,31 @@ describe("ordersDataMapper", () => {
     expect(bids[0].companyBidRequestUniqueId).toBe("real-bid-uuid-123");
   });
 
+  it("keeps a directly assigned company bid accepted even when it has a proposal cost", () => {
+    const mockBatch = {
+      batchId: 5,
+      batchUniqueId: "batch-5-uuid",
+      requestMode: "company_target",
+      targetCompanyUniqueId: "company-uuid",
+      targetCompanyName: "Assigned Transport",
+      companyBids: [
+        {
+          companyBidRequestUniqueId: "internal-assignment-bid-uuid",
+          companyUniqueId: "company-uuid",
+          proposedTotalCost: 5000,
+          bidStatus: "accepted_by_shipper",
+          journeyStatusId: 4,
+        },
+      ],
+    };
+
+    const [company] = parseBatchBids(mockBatch);
+    expect(company.companyBidRequestUniqueId).toBe("internal-assignment-bid-uuid");
+    expect(company.journeyStatusId).toBe(4);
+    expect(company.journeyStatus).toBe("accepted");
+    expect(company.bidStatus).toBe("selected");
+  });
+
   it("does not mark submitted company proposals as accepted when batch has multiple bids", () => {
     const mockBatch = {
       batchId: 8,
@@ -724,6 +749,5 @@ describe("ordersDataMapper", () => {
     expect(groups[0].waitingCount).toBe(6);
   });
 });
-
 
 

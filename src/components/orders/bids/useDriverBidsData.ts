@@ -10,6 +10,7 @@ import {
 import type { OrderDisplayItem, ShipperRequestDriverInfo } from "../OrdersTypes";
 import { mapDriverBidsToRows } from "./mapDriverBids";
 import { useGetBidsForOrderQuery, useGetCompanyBidsQuery } from "@/lib/redux/api";
+import { isAcceptedCompanyBidStatus } from "@/utils/companyBidStatus";
 
 export interface UseDriverBidsDataParams {
   order: OrderDisplayItem;
@@ -181,14 +182,19 @@ export function useDriverBidsData({
         (b as any).bidAmount != null ||
         b.numberOfVehiclesOffered != null
       );
+      const hasAcceptedStatus =
+        isAcceptedCompanyBidStatus(rawBidStatus, rawStatus) ||
+        (b.journeyStatusId === 4 && rawBidStatus !== "submitted");
       const isRequested =
-        rawBidStatus === "requested" ||
-        rawStatus === "requested" ||
-        b.journeyStatusId === 2 ||
-        (!hasCompanyProposal && rawBidStatus !== "submitted" && rawBidStatus !== "accepted" && rawStatus !== "accepted");
+        !hasAcceptedStatus &&
+        (rawBidStatus === "requested" ||
+          rawStatus === "requested" ||
+          b.journeyStatusId === 2 ||
+          (!hasCompanyProposal && rawBidStatus !== "submitted" && rawBidStatus !== "accepted" && rawStatus !== "accepted"));
 
       const isPending =
         !isRequested &&
+        !hasAcceptedStatus &&
         (rawBidStatus === "submitted" ||
           rawBidStatus === "pending" ||
           rawStatus === "submitted" ||
@@ -198,10 +204,7 @@ export function useDriverBidsData({
       const isAccepted =
         !isRequested &&
         !isPending &&
-        (rawBidStatus === "selected" ||
-          rawBidStatus === "accepted" ||
-          rawBidStatus === "accepted_by_shipper" ||
-          rawStatus === "accepted" ||
+        (hasAcceptedStatus ||
           (b.journeyStatusId === 4 && rawBidStatus !== "submitted"));
 
       const bidUid =

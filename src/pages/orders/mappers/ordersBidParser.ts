@@ -1,4 +1,5 @@
 import type { ShipperRequestDriverInfo } from "../../../components/orders/OrdersTypes";
+import { isAcceptedCompanyBidStatus } from "../../../utils/companyBidStatus";
 
 /**
  * Extracts bids, offers, or accepted company proposals from a batch object.
@@ -74,6 +75,9 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
       null;
 
     const rawBidStatus = String(b.bidStatus || b.status || "").toLowerCase();
+    const hasAcceptedStatus =
+      isAcceptedCompanyBidStatus(rawBidStatus, b.status) ||
+      (b.journeyStatusId === 4 && rawBidStatus !== "submitted");
     const hasCompanyProposal = Boolean(
       b.proposedTotalCost != null ||
       b.proposedCostPerVehicle != null ||
@@ -84,13 +88,15 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
     );
 
     const isRequested =
-      rawBidStatus === "requested" ||
-      rawBidStatus === "awaiting" ||
-      b.journeyStatusId === 2 ||
-      (!hasCompanyProposal && rawBidStatus !== "submitted" && rawBidStatus !== "accepted");
+      !hasAcceptedStatus &&
+      (rawBidStatus === "requested" ||
+        rawBidStatus === "awaiting" ||
+        b.journeyStatusId === 2 ||
+        (!hasCompanyProposal && rawBidStatus !== "submitted" && rawBidStatus !== "accepted"));
 
     const isPending =
       !isRequested &&
+      !hasAcceptedStatus &&
       (rawBidStatus === "submitted" ||
         rawBidStatus === "pending" ||
         (hasCompanyProposal && rawBidStatus !== "rejected" && rawBidStatus !== "cancelled"));
@@ -98,10 +104,10 @@ export function parseBatchBids(batch: any, t?: any): ShipperRequestDriverInfo[] 
     const isAccepted =
       !isRequested &&
       !isPending &&
-      (b.status === "accepted" ||
+      (hasAcceptedStatus ||
+        b.status === "accepted" ||
         b.bidStatus === "selected" ||
         b.bidStatus === "accepted" ||
-        b.bidStatus === "accepted_by_shipper" ||
         (b.journeyStatusId === 4 && rawBidStatus !== "submitted") ||
         (batch.acceptedOffer && b === batch.acceptedOffer) ||
         (batch.journeyStatusId === 4 && rawBids.length === 1 && !isPending));

@@ -101,6 +101,7 @@ export function OrdersPage() {
   const {
     data: backendOrdersData,
     isLoading: isLoadingOrders,
+    isUninitialized: areOrdersUninitialized,
     refetch: refetchOrders,
   } = useGetShipperRequestsQuery(shipperRequestsArgs, {
     skip: !orgUniqueId,
@@ -109,6 +110,7 @@ export function OrdersPage() {
   const {
     data: backendBatchesData,
     isLoading: isLoadingBatches,
+    isUninitialized: areBatchesUninitialized,
     refetch: refetchBatches,
   } = useGetShipperRequestBatchesQuery(shipperBatchesArgs, {
     skip: !orgUniqueId,
@@ -116,6 +118,7 @@ export function OrdersPage() {
 
   const {
     data: companyBidsData,
+    isUninitialized: areCompanyBidsUninitialized,
     refetch: refetchCompanyBids,
   } = useGetCompanyBidsQuery(
     targetBatchId && isUUID(targetBatchId)
@@ -271,16 +274,31 @@ export function OrdersPage() {
     const now = Date.now();
     if (now - lastRefetchTimeRef.current < 600) return;
     lastRefetchTimeRef.current = now;
-    if (targetBatchId) {
+    if (targetBatchId && !areOrdersUninitialized) {
       refetchOrders();
     }
-    refetchBatches();
-    refetchCompanyBids();
+    if (!areBatchesUninitialized) {
+      refetchBatches();
+    }
+    if (!areCompanyBidsUninitialized) {
+      refetchCompanyBids();
+    }
     if (expandedBatchKey) {
       const uid = findBatchUid(expandedBatchKey);
       if (uid && isUUID(uid)) fetchBatchDetails(uid, true);
     }
-  }, [refetchOrders, refetchBatches, refetchCompanyBids, targetBatchId, expandedBatchKey, findBatchUid, fetchBatchDetails]);
+  }, [
+    areOrdersUninitialized,
+    areBatchesUninitialized,
+    areCompanyBidsUninitialized,
+    refetchOrders,
+    refetchBatches,
+    refetchCompanyBids,
+    targetBatchId,
+    expandedBatchKey,
+    findBatchUid,
+    fetchBatchDetails,
+  ]);
 
   // Live WebSocket subscription for orders
   const { socketConnected, isLive } = useQueueSocket(orgUniqueId, refetchAll);
