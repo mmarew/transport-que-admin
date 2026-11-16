@@ -439,11 +439,23 @@
         </tr>
         <tr>
           <td>3.1</td>
+          <td>System architecture — components and deployment</td>
+        </tr>
+        <tr>
+          <td>3.2</td>
           <td>Level 2 — Architecture layers</td>
         </tr>
         <tr>
           <td>4.1</td>
           <td>Level 1 — Functional decomposition</td>
+        </tr>
+        <tr>
+          <td>6.1</td>
+          <td>Data flow diagram, level 0</td>
+        </tr>
+        <tr>
+          <td>6.2</td>
+          <td>Data flow diagram, level 1</td>
         </tr>
       </table>
     </section>
@@ -575,8 +587,9 @@
       <p>
         A Queue Organization is a physical loading place. Drivers who get there prove they are
         present with a GPS check-in and join a FIFO line. Dispatchers hand queued drivers out to
-        shipper requests, and can move an entry up the order or drop it entirely as long as they
-        give a reason that gets recorded. Queue-org admins look after the place’s profile and its
+        shipper requests, and can move an entry up the order or drop it entirely; the reason is
+        optional, and it is recorded when one is given. Queue-org admins look after the place’s
+        profile and its
         members and decide, order by order, whether bidding is open. Platform admins approve
         origins and keep watch over every organization. All of those business rules are enforced by
         the backend (<code>transportBackEndNative</code>); the console is the layer that renders
@@ -692,7 +705,125 @@
         </li>
       </ul>
 
-      <h3>3.2 Layered model</h3>
+      <h3>3.2 System architecture</h3>
+      <p>
+        The console is the front half of a three-part system. The browser runs a React
+        single-page application delivered as static files. The backend
+        (<code>transportBackEndNative</code>) runs the REST API and the Socket.IO server and is the
+        only component that touches the database. Underneath sit MySQL, the SMS gateway that
+        carries one-time codes, and an optional place-search service. There is no server-side
+        rendering and nothing in between the two: the browser calls the backend directly. That
+        keeps the deployed asset small and leaves the business rules in one place, which is the
+        assumption the rest of this document rests on.
+      </p>
+      <p>
+        Figure 3.1 shows the components and where each one runs. The browser column is the subject
+        of this SDD; the backend column is described only as far as the console depends on it.
+        Every action that changes something leaves the browser as a REST call, and every value on
+        screen arrived from the backend, either in a response or in a pushed event. The client
+        does not invent data.
+      </p>
+
+      <figure>
+        <img
+          src="assets/system-architecture.svg"
+          alt="System architecture: browser, backend and infrastructure components"
+        />
+        <figcaption>
+          <b>Figure 3.1.</b> System architecture — components and deployment. The browser is a
+          static React bundle served over TLS; the backend owns authentication, the business rules
+          and the data; MySQL, the SMS gateway and the optional geocoder are infrastructure reached
+          by the backend. Section 3.3 takes the browser column apart layer by layer.
+        </figcaption>
+      </figure>
+
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Runs on</th>
+            <th>Responsibility</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>React single-page application</td>
+            <td>The user's browser</td>
+            <td>
+              Screens, form validation, the request cache and the socket subscription. It holds
+              no business data of its own.
+            </td>
+          </tr>
+          <tr>
+            <td>Static web host</td>
+            <td><code>queue.dynamicsroute.tech</code></td>
+            <td>
+              Serves the built assets over TLS and returns <code>index.html</code> for any path it
+              does not recognise.
+            </td>
+          </tr>
+          <tr>
+            <td>REST API</td>
+            <td><code>app.dynamicsroute.tech</code> (backend service)</td>
+            <td>
+              Session handling, permission checks, the queue and bidding rules, and persistence
+              through the backend data layer.
+            </td>
+          </tr>
+          <tr>
+            <td>Socket.IO server</td>
+            <td>Same backend process</td>
+            <td>
+              One room per loading place; pushes queue, order and organization events to the
+              consoles that are subscribed.
+            </td>
+          </tr>
+          <tr>
+            <td>MySQL</td>
+            <td>Backend host</td>
+            <td>
+              System of record for users, organizations, memberships, queue entries, orders, bids
+              and audit rows.
+            </td>
+          </tr>
+          <tr>
+            <td>SMS gateway</td>
+            <td>External provider</td>
+            <td>
+              Delivers the six-digit one-time code to the phone number just entered. The backend
+              holds the credentials; the console never sees the code.
+            </td>
+          </tr>
+          <tr>
+            <td>Photon geocoder</td>
+            <td>Optional external service</td>
+            <td>
+              Address search for order origin and destination. When it is unavailable the form
+              falls back to a built-in list of Ethiopian cities.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Two channels join the browser to the backend, and the split matters for the rest of the
+        design. Requests that ask a question or perform a command go over REST and come back as
+        JSON; each one carries the httpOnly session cookie, so the backend can identify the caller
+        and re-check what that caller may do. Changes other people make — a driver checking in, a
+        bid arriving, a loading place being approved — arrive over Socket.IO, addressed to a room
+        for the selected loading place. Without the socket the board would have to poll, which is
+        either too slow for a gate or too chatty for a laptop on a phone hotspot. Without REST the
+        console could not ask for anything it was not already subscribed to.
+      </p>
+      <p>
+        The trust boundary sits between the two columns. Guards in the browser decide which screen
+        to show; they do not decide what a user may do. Role checks, membership checks, the
+        geofence, the nine-vehicle bidding threshold and bid acceptance are enforced by the
+        backend, and the console's job is to present those decisions without contradicting them.
+        Section 8 sets out what that means in practice.
+      </p>
+
+      <h3>3.3 Layered model</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -748,7 +879,7 @@
         </tbody>
       </table>
 
-      <h3>3.3 Technology selection</h3>
+      <h3>3.4 Technology selection</h3>
       <table class="grid">
         <thead>
           <tr>
@@ -847,16 +978,16 @@
         </tbody>
       </table>
 
-      <h3>3.4 Level 2 architecture layers</h3>
+      <h3>3.5 Level 2 architecture layers</h3>
       <figure>
         <img src="assets/l2.svg" alt="Level 2 architecture layers" />
         <figcaption>
-          <b>Figure 3.1.</b> Level 2 — Architecture layers (presentation, application, state/data,
+          <b>Figure 3.2.</b> Level 2 — Architecture layers (presentation, application, state/data,
           API contract, external) and data paths (per <code>assets/l2.mmd</code>).
         </figcaption>
       </figure>
 
-      <h3>3.5 Single-page routing and the guard stack</h3>
+      <h3>3.6 Single-page routing and the guard stack</h3>
       <p>
         One <code>BrowserRouter</code> is mounted in <code>src/main.tsx</code>, and every route is
         declared in <code>src/routes/AppRoutes.tsx</code>. Pages load through
@@ -956,10 +1087,11 @@
           <tr>
             <td>Override / remove with audit</td>
             <td>
-              A dispatcher repositions an entry with a reason (<code
+              A dispatcher repositions an entry (<code
                 >PATCH /queue/entry/:queueUniqueId/override</code
-              >) or removes it (<code>DELETE /queue/entry/:queueUniqueId</code>); both are audited
-              in the backend queue audit trail.
+              >) or removes it (<code>DELETE /queue/entry/:queueUniqueId</code>). Both accept an
+              optional reason of up to 500 characters and both are audited in the backend queue
+              audit trail.
             </td>
             <td>
               <code>src/components/queue/OverrideModal.tsx</code>, <code>ConfirmCancel.tsx</code>,
@@ -1364,17 +1496,435 @@
         </tbody>
       </table>
 
-      <h3>6.3 Data flow (high level)</h3>
+      <h3>6.3 Data flow diagram, level 0</h3>
       <p>
-        When someone acts in the UI, the handler calls an RTK Query hook or mutation, or one of the
-        legacy axios services. The base query works out the API prefix from
-        <code>VITE_API_BASE_URL</code>/<code>VITE_API_URL</code> (trimmed so it always ends in
-        <code>/api</code>) and carries the httpOnly cookie with
-        <code>credentials: "include"</code>. Whatever comes back settles into the RTK Query cache.
-        Socket events for the queue and for organizations then invalidate tags after a short
-        debounce, which pulls the affected queries again. Client state (the auth profile, the
-        selected organization, theme, language, the socket flag) sits in Redux slices, zustand,
-        React Context and localStorage; no token is ever written where JavaScript can read it.
+        The two diagrams in this section use the usual notation: a round-cornered box is a
+        process, a rectangle is an external entity, an open-ended bar is a data store, and an
+        arrow is a flow of data. Figure 6.1 keeps the whole system in a single process, because at
+        this level of detail the console and its backend are one thing: neither is useful without
+        the other, and the console owns no data of its own. What the diagram does show is who
+        exchanges data with that process.
+      </p>
+
+      <figure>
+        <img src="assets/dfd-level-0.svg" alt="Data flow diagram, level 0" />
+        <figcaption>
+          <b>Figure 6.1.</b> Data flow diagram, level 0. The console and the backend form one
+          process. The people and services around it are the four actor groups, the SMS gateway
+          that carries one-time codes and the optional place-search service.
+        </figcaption>
+      </figure>
+
+      <h3>6.4 Data flow diagram, level 1</h3>
+      <p>
+        Figure 6.2 opens that single process into the seven things the system actually does. Each
+        process is numbered and corresponds to a requirement family, so a reviewer can move from a
+        requirement in the SRS to the process that satisfies it and on to the data stores it
+        touches. The seven stores on the right are the tables of record in MySQL; the browser
+        keeps only a request cache and the display profile, neither of which is drawn because
+        neither survives a reload or carries any authority.
+      </p>
+      <p>
+        The vertical line on the left is a conduit, not a process. It stands for the exchanges
+        between the actor boxes and the processes, which would otherwise be eighteen separate
+        arrows crossing each other. Each numbered flow on that conduit is described once in
+        Table 6.1.
+      </p>
+
+      <figure>
+        <img src="assets/dfd-level-1.svg" alt="Data flow diagram, level 1" />
+        <figcaption>
+          <b>Figure 6.2.</b> Data flow diagram, level 1. Seven processes, seven data stores and the
+          actors and external services that exchange data with them. Flow identifiers F1 to F21
+          are defined in Table 6.1.
+        </figcaption>
+      </figure>
+
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Process</th>
+            <th>What it does</th>
+            <th>Requirements</th>
+            <th>Stores</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1.0 Authenticate and manage session</td>
+            <td>
+              Registers a phone number, verifies a one-time code, issues the session cookie, and
+              ends the session on sign-out, deletion or a rejected request.
+            </td>
+            <td><code>FR-AUTH</code>, <code>FR-REG</code></td>
+            <td>D1</td>
+          </tr>
+          <tr>
+            <td>2.0 Manage loading place</td>
+            <td>
+              Creates and edits the loading place, holds its check-in radius, and applies the
+              platform approval decision that opens or closes its queue.
+            </td>
+            <td><code>FR-ORG</code></td>
+            <td>D2</td>
+          </tr>
+          <tr>
+            <td>3.0 Manage staff membership</td>
+            <td>
+              Adds, deactivates, reactivates and removes the people who may work the loading place,
+              and assigns role 11 or 12 within it.
+            </td>
+            <td><code>FR-MEM</code></td>
+            <td>D3</td>
+          </tr>
+          <tr>
+            <td>4.0 Check in drivers</td>
+            <td>
+              Accepts a GPS or gate check-in, applies the geofence, and asks the backend to issue
+              the next queue number for the vehicle type.
+            </td>
+            <td><code>FR-QUE</code> (check-in)</td>
+            <td>D4, D5</td>
+          </tr>
+          <tr>
+            <td>5.0 Dispatch and intervene</td>
+            <td>
+              Dispatches the next driver in a vehicle queue to an eligible order, and records
+              overrides and cancellations with the acting user.
+            </td>
+            <td><code>FR-QUE</code> (dispatch)</td>
+            <td>D4, D5, D6</td>
+          </tr>
+          <tr>
+            <td>6.0 Manage orders and bidding</td>
+            <td>
+              Creates and edits shipper requests, opens or closes bidding on an individual order,
+              reads the bids and records the accepted one.
+            </td>
+            <td><code>FR-ORD</code>, <code>FR-BID</code></td>
+            <td>D6, D7</td>
+          </tr>
+          <tr>
+            <td>7.0 Report and live queue</td>
+            <td>
+              Builds the report figures, the charts and the per-place queue summary, and keeps the
+              live board current from pushed events.
+            </td>
+            <td><code>FR-RPT</code>, <code>FR-NOTIF</code></td>
+            <td>D2, D4, D6</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Store</th>
+            <th>Holds</th>
+            <th>Written by</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>D1 Users</td>
+            <td>Name, phone number, optional email, role id and the verified state of the number.</td>
+            <td>P1</td>
+          </tr>
+          <tr>
+            <td>D2 QueueOrganizations</td>
+            <td>
+              The loading place itself: name, type, address, coordinates, check-in radius,
+              approval state and queue flag.
+            </td>
+            <td>P2, platform approval</td>
+          </tr>
+          <tr>
+            <td>D3 Memberships</td>
+            <td>The link between a user and a loading place, the role inside it and the active flag.</td>
+            <td>P3</td>
+          </tr>
+          <tr>
+            <td>D4 DriverQueue</td>
+            <td>
+              One row per active queue entry: number, status, vehicle and driver, refusal count and
+              the order it is attached to.
+            </td>
+            <td>P4, P5</td>
+          </tr>
+          <tr>
+            <td>D5 Queue history and audit</td>
+            <td>
+              Every change to an entry: which column, the old and new value, who made the change
+              and when, including the optional reason.
+            </td>
+            <td>P4, P5</td>
+          </tr>
+          <tr>
+            <td>D6 ShipperRequests</td>
+            <td>
+              The order and its batch: mode, origin and destination, cost, journey status, loading
+              place and the bidding flag.
+            </td>
+            <td>P5, P6</td>
+          </tr>
+          <tr>
+            <td>D7 DriverBids</td>
+            <td>Each bid: amount, note, status, driver and submission time.</td>
+            <td>P6</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>6.5 Data flow explanation</h3>
+      <p>
+        Table 6.1 is the legend for Figure 6.2. Every arrow in the diagram appears once, with the
+        direction it runs in and what it carries. The four walks through the system that follow the
+        table show how the flows combine in the situations that matter most: signing in, checking a
+        driver in and dispatching them, taking an order through bidding, and reading a report.
+      </p>
+
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Flow</th>
+            <th>From</th>
+            <th>To</th>
+            <th>What moves</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>F1</td>
+            <td>Queue staff</td>
+            <td>P1 Authenticate and manage session</td>
+            <td>Phone number and one-time code in; authenticated session, profile and role out. The session itself is set as an httpOnly cookie by the backend.</td>
+          </tr>
+          <tr>
+            <td>F2</td>
+            <td>Queue staff</td>
+            <td>P2 Manage loading place</td>
+            <td>Loading-place details, address, coordinates and check-in radius in; loading-place list, approval state and queue state out.</td>
+          </tr>
+          <tr>
+            <td>F3</td>
+            <td>Admin / Super Admin</td>
+            <td>P2 Manage loading place</td>
+            <td>Approve, suspend or reject decision in; resulting approval state and queue availability out.</td>
+          </tr>
+          <tr>
+            <td>F4</td>
+            <td>Queue staff</td>
+            <td>P3 Manage staff membership</td>
+            <td>Add, deactivate, reactivate or remove a member in; member list with name, phone number, role and active state out.</td>
+          </tr>
+          <tr>
+            <td>F5</td>
+            <td>Driver mobile app</td>
+            <td>P4 Check in drivers</td>
+            <td>GPS check-in with vehicle and location in; assigned queue number and current position out.</td>
+          </tr>
+          <tr>
+            <td>F6</td>
+            <td>Queue staff</td>
+            <td>P5 Dispatch and intervene</td>
+            <td>Dispatch, override or cancel command in; reordered queue, updated position and entry history out. A manual gate check-in is also accepted here and passed to P4.</td>
+          </tr>
+          <tr>
+            <td>F7</td>
+            <td>Queue staff</td>
+            <td>P6 Manage orders and bidding</td>
+            <td>Create or edit an order, open or close bidding, accept a bid in; order list, bid list and bid outcome out.</td>
+          </tr>
+          <tr>
+            <td>F8</td>
+            <td>Shipper application</td>
+            <td>P6 Manage orders and bidding</td>
+            <td>Freight request in; order status and bid outcome out.</td>
+          </tr>
+          <tr>
+            <td>F9</td>
+            <td>Queue staff</td>
+            <td>P7 Report and live queue</td>
+            <td>Report request and queue-board subscription in; figures, charts and queue summary out.</td>
+          </tr>
+          <tr>
+            <td>F10</td>
+            <td>SMS gateway</td>
+            <td>P1 Authenticate and manage session</td>
+            <td>One-time code delivered for the phone number just entered.</td>
+          </tr>
+          <tr>
+            <td>F11</td>
+            <td>P1</td>
+            <td>D1 Users</td>
+            <td>Read the user record for the phone number; write the last sign-in.</td>
+          </tr>
+          <tr>
+            <td>F12</td>
+            <td>P2</td>
+            <td>D2 QueueOrganizations</td>
+            <td>Read and update the loading-place record, including the approval state and the check-in radius.</td>
+          </tr>
+          <tr>
+            <td>F13</td>
+            <td>P3</td>
+            <td>D3 Memberships</td>
+            <td>Read and update membership rows, including the active flag and the role.</td>
+          </tr>
+          <tr>
+            <td>F14</td>
+            <td>P4</td>
+            <td>D4 DriverQueue</td>
+            <td>Create a queue entry and read the current queue for the loading place.</td>
+          </tr>
+          <tr>
+            <td>F15</td>
+            <td>P4</td>
+            <td>D5 Queue history</td>
+            <td>Record the check-in, with the vehicle, the position and the time.</td>
+          </tr>
+          <tr>
+            <td>F16</td>
+            <td>P5</td>
+            <td>D4 DriverQueue</td>
+            <td>Change the position or status of an entry, or remove it from the waiting line.</td>
+          </tr>
+          <tr>
+            <td>F17</td>
+            <td>P5</td>
+            <td>D5 Queue history</td>
+            <td>Record the override or the cancellation, including the optional reason and the acting user.</td>
+          </tr>
+          <tr>
+            <td>F18</td>
+            <td>P5</td>
+            <td>D6 Shipper requests</td>
+            <td>Attach a dispatched driver to the selected order and write the assignment.</td>
+          </tr>
+          <tr>
+            <td>F19</td>
+            <td>P6</td>
+            <td>D6 Shipper requests</td>
+            <td>Read and update the shipper request: order details, journey status and the bidding flag.</td>
+          </tr>
+          <tr>
+            <td>F20</td>
+            <td>P6</td>
+            <td>D7 Driver bids</td>
+            <td>Read the bids on an order and record the bid the operator accepts.</td>
+          </tr>
+          <tr>
+            <td>F21</td>
+            <td>D2, D4, D6</td>
+            <td>P7 Report and live queue</td>
+            <td>Read organisation, queue and request data for the report figures, the charts and the per-place queue summary.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>Signing in.</strong></p>
+      <ol>
+        <li>
+          The user types a phone number. The console normalises it to <code>+251</code> plus nine
+          digits and asks the backend for a one-time code (F1).
+        </li>
+        <li>
+          The backend creates the code and hands it to the SMS gateway (F10). The console shows six
+          digit boxes and holds the resend action back for sixty seconds.
+        </li>
+        <li>
+          On submit, the backend compares the code with the user record (F11) and sets the session
+          cookie on the response. The console keeps the profile and role from that response and
+          nothing else (F1); the token itself never reaches JavaScript.
+        </li>
+        <li>
+          The socket connects with the same cookie and subscribes to the room for the selected
+          loading place, which is what makes the board live (F9).
+        </li>
+      </ol>
+
+      <p><strong>Checking a driver in and dispatching them.</strong></p>
+      <ol>
+        <li>
+          The driver checks in from the mobile application with a GPS position (F5). The backend
+          measures the distance against the loading place's check-in radius, creates the entry with
+          the next number for that vehicle type (F14) and writes the check-in to the history (F15).
+        </li>
+        <li>
+          The new entry raises a queue event, which the socket pushes to the room. The console
+          invalidates the queue query and refetches, so the driver appears at the end of the line
+          without anyone reloading (F9).
+        </li>
+        <li>
+          A dispatcher picks an eligible order and confirms the dispatch (F6). The backend attaches
+          the entry to that order (F16, F18) and writes both changes to the history (F17).
+        </li>
+        <li>
+          An override or a cancellation follows the same path with different values. The reason is
+          optional in both cases, and the history view shows the previous value, the new value and
+          the person who made the change.
+        </li>
+      </ol>
+
+      <p><strong>Taking an order through bidding.</strong></p>
+      <ol>
+        <li>
+          The operator creates an order and the console sends it (F7). The backend checks the
+          dates and the quantity against the vehicle type and stores the request (F19).
+        </li>
+        <li>
+          Above nine vehicles the request becomes a company-target batch with bidding open. The
+          console shows that switch as it happens instead of letting the operator submit something
+          the backend will reject.
+        </li>
+        <li>
+          Carriers bid from their own application; the bids land in D7. The console reads them
+          cheapest first, as the backend returns them (F20).
+        </li>
+        <li>
+          A Queue Org Admin selects one bid and confirms. The console sends the bid identifier, not
+          the row it was clicked in (F7), and the backend records the winner, marks the rest and
+          returns the outcome (F20).
+        </li>
+        <li>
+          The console refetches the order and displays what the backend decided. It does not rank
+          the bids or choose the winner.
+        </li>
+      </ol>
+
+      <p><strong>Reading a report.</strong></p>
+      <ol>
+        <li>
+          The operator opens Reports; the console requests the data for the scope in view (F9).
+        </li>
+        <li>
+          The backend reads organizations, queue entries and requests (F21) and returns the summary
+          figures, the twelve-month request series and the per-place rows.
+        </li>
+        <li>
+          The page draws the cards, the driver-status donut and the bar chart from that single
+          response. Opening a queue summary reads the same stores for one place, and “Manage Full
+          Queue” leaves the report for the live board.
+        </li>
+      </ol>
+
+      <h3>6.6 The request path inside the client</h3>
+      <p>
+        The diagrams above stop at the edge of the browser. Inside it the path is short and the
+        same every time. A handler calls an RTK Query hook or mutation, or one of the legacy axios
+        services. The base query works out the API prefix from
+        <code>VITE_API_BASE_URL</code>/<code>VITE_API_URL</code>, trimming it so it always ends in
+        <code>/api</code>, and sends the httpOnly cookie with <code>credentials: "include"</code>.
+        The response settles into the RTK Query cache, which keeps unused data for five minutes and
+        refetches on invalidation rather than on window focus.
+      </p>
+      <p>
+        Socket events for the queue and for organizations invalidate cache tags after a short
+        debounce — 100 ms for organization events, 250 ms for queue and order events — so a burst
+        of check-ins produces one refresh instead of one per driver. Client state sits in Redux
+        slices, a persisted zustand store, React Context and localStorage: the auth profile, the
+        selected loading place, the theme, the language and the socket flag. No token is written to
+        any of them.
       </p>
     </section>
 
@@ -1499,7 +2049,7 @@
           </tr>
           <tr>
             <td><code>PATCH /queue/entry/:queueUniqueId/override</code></td>
-            <td>Override position with a reason (audited).</td>
+            <td>Override position; optional reason (audited).</td>
             <td>driver queue</td>
           </tr>
           <tr>
@@ -1612,7 +2162,7 @@
         <code>message</code>/<code>error</code>/<code>details</code>/<code>validation</code> fields
         first and only falls back to its own wording for HTTP status codes
         (400/401/403/404/409/429/5xx). Call sites in the UI show the result as a
-        <code>sonner</code> toast. Two statuses are deliberately treated differently: a
+        <code>sonner</code> toast. Two statuses are handled differently: a
         <code>401</code> means the session is gone and the person has to log in again, so it logs
         them out, while a <code>403</code> means they are signed in but not allowed to do that, so
         it is shown as a permission error and they stay logged in.
@@ -2017,8 +2567,8 @@
             <td>Settings: profile / notifications / 2FA disabled</td>
             <td><span class="tag open">Noted</span></td>
             <td>
-              No profile PATCH and no notification/2FA backend; controls are intentionally disabled
-              rather than faked.
+              No profile PATCH and no notification/2FA backend; the controls are disabled rather
+              than faked.
             </td>
           </tr>
           <tr>

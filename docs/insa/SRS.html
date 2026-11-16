@@ -246,18 +246,6 @@
         page-break-inside: avoid;
       }
 
-      /* Per-requirement source citation line */
-      .src {
-        display: block;
-        margin-top: 1.2mm;
-        color: var(--muted);
-        font-size: 7.6pt;
-        overflow-wrap: anywhere;
-      }
-      .src code {
-        font-size: 7.6pt;
-      }
-
       /* Guard against long tokens overflowing grid cells on print */
       code,
       pre,
@@ -402,14 +390,11 @@
         <p>
           This specification describes the console <em>as implemented</em> in
           the submitted release. Every requirement listed here is present in the
-          shipped web application; we do not specify any forward-looking
-          features. Where a capability is deliberately absent or depends on a
-          backend service that is not yet implemented, the requirement (or its
-          note) says so plainly (§8.5). The submitting entity completes the
-          administrative fields (submitting entity, contact person, approval and
-          dates). Each requirement carries a
-          <span class="src">Source:</span> line pointing at the repository file
-          that implements it.
+          shipped web application; no forward-looking features are specified.
+          Where a capability is absent, or depends on a backend service that is
+          not yet implemented, the requirement or its note says so (§8.5). The
+          submitting entity completes the administrative fields (submitting
+          entity, contact person, approval and dates).
         </p>
       </div>
     </section>
@@ -468,10 +453,10 @@
       <p>
         §3 contains the numbered functional requirements (prefix
         <code>FR-</code>), grouped by application area, each with a priority and
-        a <em>Source</em> citation to the file that implements it. §4 contains
-        the non-functional requirements (<code>NFR-</code>). §6 presents the
-        analysis models (the system use-case model, and the sequence and
-        activity diagrams). §8 defines the queue, bidding and status business
+        the check we used to verify it. §4 contains the non-functional
+        requirements (<code>NFR-</code>), grouped by quality attribute. §6
+        presents the analysis models (the system use-case model, and the sequence
+        and activity diagrams). §8 defines the queue, bidding and status business
         rules that most functional requirements refer to, and it states plainly
         which decisions the console makes and which
         <code>transportBackEndNative</code> (the backend, the system of record)
@@ -513,7 +498,7 @@
           <strong>Requirement identifiers.</strong> Functional requirements are
           identified <code>FR-&lt;AREA&gt;-NN</code> and non-functional
           requirements <code>NFR-&lt;AREA&gt;-NN</code> (for example
-          <code>FR-QUE-09</code>, <code>NFR-SEC-06</code>). Identifiers are
+          <code>FR-QUE-04</code>, <code>NFR-SEC-02</code>). Identifiers are
           stable and are not reused when a requirement is withdrawn.
         </li>
         <li>
@@ -530,10 +515,12 @@
           requirements in §3 and §4 are stated with "shall".
         </li>
         <li>
-          <strong>Source citations.</strong> Each requirement carries a
-          <span class="src">Source:</span> line naming the repository file (and,
-          where useful, the line) that implements it, giving a
-          requirement-to-code link.
+          <strong>Verification.</strong> Every requirement names the check we
+          used: a demonstration in the running release, a test case, or an
+          inspection. The implementing module is recorded once per family in the
+          traceability table in §9.1, which keeps the requirement text readable
+          and separates what the system must do from where the code happens to
+          live.
         </li>
         <li>
           <strong>As-built meaning.</strong> "implemented" means present in the
@@ -890,8 +877,8 @@
             <td>FIFO driver queue (<code>FR-QUE</code>)</td>
             <td>
               Manual/GPS check-in, server-issued queue number, dispatch,
-              override, remove with reason, entry history, per-vehicle-type
-              ordering.
+              override or remove with an optional reason, entry history,
+              per-vehicle-type ordering.
             </td>
           </tr>
           <tr>
@@ -967,8 +954,8 @@
             <td>
               Runs the daily queue. Manually checks drivers in, dispatches
               queued entries to requests, overrides position or removes entries
-              with a reason, and reviews entry history. Long-lived session (365
-              days).
+              and records a reason when one is given, and reviews entry history.
+              Long-lived session (365 days).
             </td>
           </tr>
           <tr>
@@ -1175,2358 +1162,1695 @@
     <section>
       <h1>3. Functional requirements</h1>
       <p>
-        Priority: <span class="tag done">M</span> must have (we cannot release
-        the console without it), <span class="tag open">S</span> should have.
-        Everything below is implemented in version 1.0.0 unless a note says
-        otherwise, and each requirement cites its implementing repository file
-        under <em>Source</em>.
+        This section sets out what the console must do for the staff who run a
+        loading place. Each requirement is a single testable statement about the
+        software's behaviour. Several of them name the Dynamics backend, because
+        it owns the rule behind the requirement and the console has to follow it
+        rather than contradict it.
+      </p>
+      <p>
+        Every requirement has a stable identifier, one testable statement, a
+        priority and the method used to check it.
+        <span class="tag done">M</span> marks a must-have for release 1.0.0 and
+        <span class="tag open">S</span> a should-have. Three verification methods
+        are used: <strong>D</strong> is a demonstration in the running release,
+        <strong>T</strong> is a test case run automatically or against the API,
+        and <strong>I</strong> is an inspection of configuration or build output.
+        The module that implements each family is recorded once in the
+        traceability table in §9.1 rather than repeated in every row.
       </p>
 
-      <h3>3.1 Authentication, session and registration (FR-AUTH)</h3>
+      <h3>3.1 Account registration and sign-in (FR-AUTH)</h3>
+      <p>
+        Staff reach the console by phone number. A new user registers with a
+        name and a phone number; a returning user signs in with the same number
+        and a one-time code delivered by SMS. No password is stored or reset.
+        Once the code is accepted the backend sets the session as an httpOnly
+        cookie, which the browser then sends with each request. The token is
+        never exposed to JavaScript.
+      </p>
+      <p>
+        Two consequences follow. The session is held by the backend, so a
+        <code>401</code> ends it everywhere at once and no screen is left
+        half-signed-in. Only four roles have business in the console: Queue Org
+        Admin (11), Queue Dispatcher (12), Admin (3) and Super Admin (6). A user
+        who has not yet created a loading place is sent to the setup screen
+        before any operational page.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-AUTH-01</code></td>
+            <td>FR-AUTH-01</td>
             <td>
-              Registering a Queue Org Admin account shall go to
-              <code>POST /api/user/createUser</code> with the full name, phone
-              number, email and status fields and backend role 11, before OTP
-              verification.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/authEndpoints.ts</code>,
-                <code>src/utils/constant.ts</code></span
-              >
+              The console shall provide a registration form that asks for full
+              name, phone number and an optional email address, and shall refuse
+              to submit while the name or phone number is missing.
             </td>
             <td>M</td>
+            <td>D — blank-field and valid submissions</td>
           </tr>
           <tr>
-            <td><code>FR-AUTH-02</code></td>
+            <td>FR-AUTH-02</td>
             <td>
-              A returning user shall sign in with a phone number via
-              <code>POST /api/user/loginUser</code>, which dispatches an OTP to
-              the user's phone. This call shall deliberately send
-              <strong>no <code>roleId</code></strong> so the backend resolves
-              the account's own role and a role-12 dispatcher can sign in.
-              <span class="src"
-                >Source: <code>src/utils/constant.ts:16</code>,
-                <code>src/lib/redux/api/authEndpoints.ts</code></span
-              >
+              The console shall normalise an Ethiopian mobile number to
+              <code>+251</code> followed by nine digits, accepting a leading
+              <code>0</code> or <code>251</code> from the user, and shall reject
+              a number that cannot be normalised.
             </td>
             <td>M</td>
+            <td>T — phone formatting suite</td>
           </tr>
           <tr>
-            <td><code>FR-AUTH-03</code></td>
+            <td>FR-AUTH-03</td>
             <td>
-              OTP verification shall go through
-              <code>POST /api/user/verifyUserByOTP</code>, likewise sending no
-              <code>roleId</code>, and only the non-secret
-              <code>userData</code> profile returned by the backend is
-              persisted.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/authEndpoints.ts</code> (verifyOtp
-                <code>onQueryStarted</code>)</span
-              >
+              The console shall sign a returning user in with a phone number and
+              a six-digit one-time code sent by SMS; no password field shall be
+              presented.
             </td>
             <td>M</td>
+            <td>D — sign-in walkthrough</td>
           </tr>
           <tr>
-            <td><code>FR-AUTH-04</code></td>
+            <td>FR-AUTH-04</td>
             <td>
-              The OTP screen shall render six single-digit inputs with automatic
-              advance on entry and back-navigation on delete, and shall enable
-              the verify action only when all six digits are present.
-              <span class="src"
-                >Source: <code>src/components/auth/OtpDigitInputs.tsx</code>,
-                <code>src/components/auth/VerifyOtp.tsx</code></span
-              >
+              The one-time-code screen shall show six single-digit boxes that
+              advance as digits are typed and step back when one is deleted, and
+              shall keep the verify action disabled until all six digits are
+              present.
             </td>
             <td>M</td>
+            <td>D — keyboard entry and paste</td>
           </tr>
           <tr>
-            <td><code>FR-AUTH-05</code></td>
+            <td>FR-AUTH-05</td>
             <td>
-              The OTP screen shall offer a resend action governed by a countdown
-              timer that re-issues the login OTP when it elapses, and shall
-              surface OTP errors through a toast.
-              <span class="src"
-                >Source: <code>src/hooks/useOtpVerification.ts</code>,
-                <code>src/components/auth/VerifyOtp.tsx</code></span
-              >
+              The code screen shall offer a resend action only after a
+              sixty-second countdown, showing the seconds remaining, and shall
+              issue a fresh code when it is used.
             </td>
             <td>S</td>
+            <td>D — wait out the countdown</td>
           </tr>
           <tr>
-            <td><code>FR-AUTH-06</code></td>
+            <td>FR-AUTH-06</td>
             <td>
-              On successful verification the backend shall set the session as an
-              httpOnly, SameSite cookie (JWT); the console shall send it on
-              every request using
-              <code>credentials: "include"</code> and shall never read or store
-              a token in JavaScript (<code>getToken()</code> returns
-              <code>null</code>).
-              <span class="src"
-                >Source: <code>src/lib/redux/api/base.ts</code>,
-                <code>src/lib/api.ts</code>,
-                <code>src/lib/auth.ts:84</code></span
-              >
+              The authenticated session shall be carried in an httpOnly,
+              SameSite cookie set by the backend; the console shall not read,
+              write or persist the session token anywhere in the browser.
             </td>
             <td>M</td>
+            <td>I — cookie flags and storage review</td>
           </tr>
           <tr>
-            <td><code>FR-AUTH-07</code></td>
+            <td>FR-AUTH-07</td>
             <td>
-              Only the non-sensitive user profile shall be persisted, under
-              <code>localStorage["queueadmin:user"]</code>, and on first read
-              any legacy <code>queueadmin:auth</code> record that
-              still held a JWT shall be migrated by dropping the token and
-              keeping only
-              <code>userData</code>.
-              <span class="src">Source: <code>src/lib/auth.ts</code></span>
+              The console shall send the session cookie with every API request
+              and shall treat any <code>401</code> response as the end of the
+              session, clearing local authentication and returning the user to
+              the sign-in screen.
             </td>
             <td>M</td>
+            <td>T — expired-session request</td>
           </tr>
           <tr>
-            <td><code>FR-AUTH-08</code></td>
+            <td>FR-AUTH-08</td>
             <td>
-              The Redux <code>authSlice</code> shall initialize from the stored
-              profile (<code>hydrated: true</code>) so the UI can render
-              optimistically across reloads without a blocking session
-              round-trip.
-              <span class="src"
-                >Source: <code>src/lib/redux/slices/authSlice.ts</code></span
-              >
+              When the user signs out, the console shall ask the backend to clear
+              the session cookie and shall always clear the local profile, even
+              if that request fails or times out.
             </td>
             <td>M</td>
+            <td>D — sign out with the network offline</td>
           </tr>
           <tr>
-            <td><code>FR-AUTH-09</code></td>
+            <td>FR-AUTH-09</td>
             <td>
-              When an authenticated profile is present the console shall connect
-              the Socket.IO client (carrying the phone number); when the profile
-              is cleared it shall disconnect the socket.
-              <span class="src"
-                >Source: <code>src/context/AuthContext.tsx</code>,
-                <code>src/lib/socket.ts</code></span
-              >
+              The console shall admit only authenticated users whose role is 11,
+              12, 3 or 6, sending everyone else to the sign-in screen, and shall
+              route an authenticated user with no loading place to the setup
+              screen before any operational page.
             </td>
             <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-AUTH-10</code></td>
-            <td>
-              Logout shall make a best-effort
-              <code>POST /api/user/logout</code> to clear the server cookie and
-              shall always clear local authentication state (profile and Redux
-              auth) whether or not that call succeeds.
-              <span class="src"
-                >Source: <code>src/context/AuthContext.tsx</code>,
-                <code>src/lib/auth.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-AUTH-11</code></td>
-            <td>
-              The RTK Query base query shall detect any
-              <code>401</code> response and dispatch a global
-              <code>logout()</code>, clearing the auth slice everywhere at once;
-              there is no refresh-token flow, so reauth equals logout.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/base.ts</code>
-                (<code>baseQueryWithReauth</code>)</span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-AUTH-12</code></td>
-            <td>
-              The legacy axios instance shall use
-              <code>withCredentials</code> and a <code>401</code> response
-              interceptor that clears authentication and routes the user back to
-              <code>/login</code>.
-              <span class="src">Source: <code>src/lib/api.ts</code></span>
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-AUTH-13</code></td>
-            <td>
-              A Socket.IO <code>connect_error</code> whose message indicates
-              <code>unauthorized</code> or <code>token</code> shall disconnect
-              the socket and end the session, and shall stop further reconnect
-              attempts.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-AUTH-14</code></td>
-            <td>
-              Route access shall be enforced by a two-stage guard stack:
-              <code>ProtectedRoute</code> shall require an authenticated user
-              and, by default, at least one Queue Organization (redirecting to
-              <code>/setup-org</code> when none exists, with
-              <code>/setup-org</code> itself passing
-              <code>requireOrg={false}</code>); the nested
-              <code>RoleGuard</code> shall admit only roles
-              <code>{11, 12, 3, 6}</code> and otherwise redirect to
-              <code>/login</code>.
-              <span class="src"
-                >Source: <code>src/components/auth/ProtectedRoute.tsx</code>,
-                <code>src/components/auth/RoleGuard.tsx</code>,
-                <code>src/routes/AppRoutes.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-AUTH-15</code></td>
-            <td>
-              While no session exists, the console shall render public routes
-              only (<code>/login</code>, <code>/register</code>) and shall not
-              issue non-public backend traffic; the public endpoints
-              <code>loginUser</code>, <code>createUser</code>,
-              <code>verifyUserByOTP</code> and <code>logout</code> remain
-              reachable.
-              <span class="src"
-                >Source: <code>src/routes/AppRoutes.tsx</code>,
-                <code>src/components/auth/ProtectedRoute.tsx</code></span
-              >
-            </td>
-            <td>M</td>
+            <td>D — one account per role</td>
           </tr>
         </tbody>
       </table>
 
       <h3>3.2 Registration and onboarding (FR-REG)</h3>
+      <p>
+        Registration creates the first Queue Org Admin account for a loading
+        place. The form asks for a name and a phone number, plus an email address
+        if the user wants one recorded. Self-registration always yields role 11,
+        since a person registering without an organisation is setting one up
+        rather than joining one. Dispatcher accounts are created later by a Queue
+        Org Admin through the members screen.
+      </p>
+      <p>
+        After verification the user has an account but belongs to no loading
+        place. Rather than an empty dashboard, the console explains the next step
+        and opens the setup form. A loading place created this way starts as
+        <em>pending</em>, and its queue stays closed until a platform
+        administrator approves it.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-REG-01</code></td>
+            <td>FR-REG-01</td>
             <td>
-              The registration screen shall collect full name and phone number
-              (required) and email (optional), driven by a declarative field
-              configuration with
-              <code>roleId: 11</code> as the default account role.
-              <span class="src"
-                >Source: <code>src/components/auth/Register.tsx</code>,
-                <code>src/lib/authConfig.ts</code></span
-              >
+              A self-registered account shall be created with role 11 (Queue Org
+              Admin) and shall not become usable until the phone number has been
+              verified by one-time code.
             </td>
             <td>M</td>
+            <td>D — register, then inspect the account</td>
           </tr>
           <tr>
-            <td><code>FR-REG-02</code></td>
+            <td>FR-REG-02</td>
             <td>
-              Phone input shall be normalized to Ethiopian E.164 format (<code
-                >+251</code
-              >
-              plus nine digits), stripping a leading <code>0</code> or
-              <code>251</code>, and grouped for readability as the user types.
-              <span class="src"
-                >Source: <code>src/lib/authConfig.ts</code>,
-                <code>src/utils/phoneFormatter.ts</code>,
-                <code>src/components/ui/PhoneNumberInput.tsx</code></span
-              >
+              A successful registration shall move the user straight to the
+              one-time-code screen with the phone number already carried over,
+              so the details are not entered twice.
             </td>
             <td>M</td>
+            <td>D — registration walkthrough</td>
           </tr>
           <tr>
-            <td><code>FR-REG-03</code></td>
+            <td>FR-REG-03</td>
             <td>
-              Registration and login inputs shall be validated with
-              <code>react-hook-form</code> plus <code>zod</code> schemas that
-              constrain length, format and required fields, and that sanitize
-              text and email against injected markup and control characters.
-              <span class="src"
-                >Source: <code>src/schemas/queue.ts</code>,
-                <code>src/components/auth/Login.tsx</code></span
-              >
+              After first verification, a user who belongs to no loading place
+              shall see a short explanation of why setup is required and the
+              organisation form, rather than an empty dashboard.
             </td>
             <td>M</td>
+            <td>D — new account, first sign-in</td>
           </tr>
           <tr>
-            <td><code>FR-REG-04</code></td>
+            <td>FR-REG-04</td>
             <td>
-              Registration submission shall call
-              <code>POST /api/user/createUser</code> and, on success, transition
-              the auth flow to OTP verification.
-              <span class="src"
-                >Source: <code>src/components/auth/Register.tsx</code>,
-                <code>src/lib/redux/api/authEndpoints.ts</code></span
-              >
+              The setup form shall capture the loading-place name, its type, a
+              searchable address, latitude and longitude, and an optional contact
+              phone number.
             </td>
             <td>M</td>
+            <td>D — create a loading place</td>
           </tr>
           <tr>
-            <td><code>FR-REG-05</code></td>
+            <td>FR-REG-05</td>
             <td>
-              When an authenticated user has no Queue Organization, the console
-              shall route them to the onboarding screen
-              (<code>/setup-org</code>) to create their first loading place.
-              <span class="src"
-                >Source: <code>src/components/auth/ProtectedRoute.tsx</code>,
-                <code
-                  >src/components/organization/SetupOrganization.tsx</code
-                ></span
-              >
+              A loading place created during onboarding shall start with
+              approval status <em>pending</em> and its queue disabled until a
+              platform administrator approves it.
             </td>
             <td>M</td>
+            <td>D — check status after creation</td>
           </tr>
           <tr>
-            <td><code>FR-REG-06</code></td>
+            <td>FR-REG-06</td>
             <td>
-              The onboarding screen shall submit a new Queue Organization with
-              name, type, coordinates and optional check-in radius, and the
-              backend shall create it with
-              <code>approvalStatus: "pending"</code>.
-              <span class="src"
-                >Source:
-                <code>src/components/organization/SetupOrganization.tsx</code>,
-                <code
-                  >src/lib/redux/api/queueOrganizationEndpoints.ts</code
-                ></span
-              >
+              After a successful setup the console shall open the dashboard with
+              the new loading place selected and show the pending-approval
+              notice, so the user knows what happens next.
             </td>
             <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-REG-07</code></td>
-            <td>
-              Organization types shall be restricted to the enum
-              <code
-                >customs | factory | cement | depot | mine | farm | port |
-                other</code
-              >.
-              <span class="src"
-                >Source:
-                <code>src/types/queue.ts</code> (<code>QUEUE_ORG_TYPES</code>),
-                <code>src/schemas/queue.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-REG-08</code></td>
-            <td>
-              After onboarding, a pending organization shall display an approval
-              banner explaining that platform approval is required before the
-              queue is enabled.
-              <span class="src"
-                >Source:
-                <code>src/components/dashboard/OrgApprovalBanner.tsx</code>,
-                <code
-                  >src/components/queue-org-manage/StatusBadge.tsx</code
-                ></span
-              >
-            </td>
-            <td>S</td>
+            <td>D — post-setup landing page</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>3.3 Loading-place (organization) management (FR-ORG)</h3>
+      <h3>3.3 Loading-place management (FR-ORG)</h3>
+      <p>
+        The dashboard lists the loading places the signed-in user is entitled to
+        see, with the name, type, address, approval state and queue state needed
+        to choose one. The list can be searched and sorted, and it shows eight
+        rows per page.
+      </p>
+      <p>
+        A Queue Org Admin can edit the profile at any time. Approval is a
+        platform decision: approving a place opens its queue, while suspending or
+        rejecting it closes the queue without deleting the record, so the history
+        and the assigned staff are kept. The check-in radius is the distance from
+        the gate within which a driver's GPS check-in is accepted; it defaults to
+        fifteen kilometres when nobody sets it.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-ORG-01</code></td>
+            <td>FR-ORG-01</td>
             <td>
-              Creating a loading place shall call
-              <code>POST /api/queueOrganization</code> with the profile fields,
-              producing a <code>pending</code> organization.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/queueOrganizationEndpoints.ts</code>,
-                <code>src/utils/constant.ts:25</code></span
-              >
+              The dashboard shall list the loading places available to the user
+              with name, type, location, approval status and queue state, and
+              shall let the user search the list and change its sort order.
             </td>
             <td>M</td>
+            <td>D — list, search and sort</td>
           </tr>
           <tr>
-            <td><code>FR-ORG-02</code></td>
+            <td>FR-ORG-02</td>
             <td>
-              Organizations available to the signed-in user shall be listed via
-              <code>GET /api/queueOrganization</code> and rendered in a
-              dashboard list with pagination and a toolbar.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/queueOrganizationEndpoints.ts</code>,
-                <code>src/hooks/useOrgList.ts</code>,
-                <code>src/components/dashboard/OrgListToolbar.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-ORG-03</code></td>
-            <td>
-              A single organization shall be fetched via
-              <code>GET /api/queueOrganization/:id</code> for the management
-              page.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/queueOrganizationEndpoints.ts</code>,
-                <code
-                  >src/pages/queue-org-manage/QueueOrgManagePage.tsx</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-ORG-04</code></td>
-            <td>
-              Profile edits shall go through
-              <code>PATCH /api/queueOrganization/:id</code> and may change the
-              name, type, coordinates and check-in radius.
-              <span class="src"
-                >Source:
-                <code>src/components/queue-org-manage/OrgProfileForm.tsx</code>,
-                <code
-                  >src/lib/redux/api/queueOrganizationEndpoints.ts</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-ORG-05</code></td>
-            <td>
-              Latitude and longitude for the loading place shall be captured and
-              validated against legal coordinate ranges before
-              submission.
-              <span class="src"
-                >Source: <code>src/schemas/queue.ts</code>,
-                <code
-                  >src/components/queue/order-modal/CoordinatesRow.tsx</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-ORG-06</code></td>
-            <td>
-              An optional
-              <code>checkinRadiusKm</code> (integer) shall be supported, showing
-              a default of
-              15&nbsp;km when unset; a value of 0 disables
-              the radius gate. The authoritative geofence decision remains
-              server-side.
-              <span class="src"
-                >Source:
-                <code>src/components/queue-org-manage/OrgProfileForm.tsx</code>,
-                <code>src/utils/formatters.ts</code>
-                (<code>calculateDistanceKm</code>)</span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-ORG-07</code></td>
-            <td>
-              Great-circle (Haversine) distance
-              between two coordinate pairs shall be computed for on-screen
-              proximity cues only; that client figure is never treated
-              as the geofence authority.
-              <span class="src"
-                >Source: <code>src/utils/formatters.ts</code>,
-                <code>src/components/orders/bids/BidRow.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-ORG-08</code></td>
-            <td>
-              A loading place shall be deleted (soft-delete) via
-              <code>DELETE /api/queueOrganization/:id</code> after confirmation.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/queueOrganizationEndpoints.ts</code>,
-                <code>src/components/queue/ConfirmCancel.tsx</code></span
-              >
+              The list shall show eight loading places per page and shall keep
+              the paging controls visible when more than one page exists.
             </td>
             <td>S</td>
+            <td>D — organisation with more than eight records</td>
           </tr>
           <tr>
-            <td><code>FR-ORG-09</code></td>
+            <td>FR-ORG-03</td>
             <td>
-              The approval workflow runs through
-              <code>PATCH /api/queueOrganization/:id/approve</code> to approve,
-              reject or suspend a loading place. Approval toggles
-              <code>queueEnabled</code>; the backend decides which
-              roles may approve.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/queueOrganizationEndpoints.ts</code>,
-                <code
-                  >src/components/queue-org-manage/AdminApprovalActions.tsx</code
-                ></span
-              >
+              The console shall allow a user to create a loading place with a
+              name, one of the eight supported types, an address, coordinates and
+              an optional phone number, and shall reject a duplicate name with a
+              message that names the conflict.
             </td>
             <td>M</td>
+            <td>D — create, then repeat the same name</td>
           </tr>
           <tr>
-            <td><code>FR-ORG-10</code></td>
+            <td>FR-ORG-04</td>
             <td>
-              Users shall be able to select an active organization,
-              persisted as
-              <code>selectedOrgId</code>; the queue and orders
-              views are scoped to that selection.
-              <span class="src"
-                >Source: <code>src/hooks/useActiveOrg.ts</code>,
-                <code>src/store/queueAdminStore.ts</code>,
-                <code>src/lib/redux/slices/queueSlice.ts</code></span
-              >
+              The console shall default the check-in radius to fifteen kilometres
+              when the field is left empty and shall accept a different radius
+              when one is supplied.
             </td>
             <td>M</td>
+            <td>T — create with and without a radius</td>
           </tr>
           <tr>
-            <td><code>FR-ORG-11</code></td>
+            <td>FR-ORG-05</td>
             <td>
-              The dashboard shall show organization status (pending / approved /
-              rejected / suspended) with a status badge and, for the active
-              organization, a summary view with queue metrics.
-              <span class="src"
-                >Source:
-                <code>src/components/dashboard/ActiveOrgView.tsx</code>,
-                <code>src/components/dashboard/OrgStatusTable.tsx</code>,
-                <code
-                  >src/components/queue-org-manage/StatusBadge.tsx</code
-                ></span
-              >
+              The console shall display the approval state of a loading place
+              wherever the place is shown, and shall state why the queue is
+              closed when the place is pending, rejected or suspended.
             </td>
             <td>M</td>
+            <td>D — one record in each state</td>
           </tr>
           <tr>
-            <td><code>FR-ORG-12</code></td>
+            <td>FR-ORG-06</td>
             <td>
-              The management page shall render a queue details modal that lists
-              the active organization's queue entries and per-entry metrics.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/OrgQueueDetailsModal.tsx</code>,
-                <code
-                  >src/components/queue/org-details/OrgQueueMetricsGrid.tsx</code
-                ></span
-              >
+              A Queue Org Admin shall be able to edit the name, type, phone
+              number, address, latitude and longitude of the loading place, with
+              the save action unavailable until something has actually changed.
+            </td>
+            <td>M</td>
+            <td>D — edit and save the profile</td>
+          </tr>
+          <tr>
+            <td>FR-ORG-07</td>
+            <td>
+              Latitude shall be validated between −90 and 90 and longitude
+              between −180 and 180 before a profile or a new place is saved.
+            </td>
+            <td>M</td>
+            <td>T — invalid coordinate submission</td>
+          </tr>
+          <tr>
+            <td>FR-ORG-08</td>
+            <td>
+              An Admin or Super Admin shall be able to approve, suspend or reject
+              a loading place; approval shall enable its queue, while suspension
+              or rejection shall disable the queue without deleting the record.
+            </td>
+            <td>M</td>
+            <td>D — change status as an administrator</td>
+          </tr>
+          <tr>
+            <td>FR-ORG-09</td>
+            <td>
+              Choosing a loading place shall scope the queue board, the orders
+              area and the reports to that place, and the organisation detail
+              page shall bring its profile, members and live board together in
+              one view.
+            </td>
+            <td>M</td>
+            <td>D — open an organisation and move between tabs</td>
+          </tr>
+          <tr>
+            <td>FR-ORG-10</td>
+            <td>
+              The legacy <code>/organizations</code> address and any unknown
+              in-app path shall resolve to the dashboard instead of a dead page.
             </td>
             <td>S</td>
+            <td>D — open both addresses directly</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>3.4 Membership management (FR-MEM)</h3>
+      <h3>3.4 Staff membership (FR-MEM)</h3>
+      <p>
+        Membership is what grants access. Holding a queue role is not enough on
+        its own; a user sees a loading place only while an active membership row
+        ties them to it. The effect is immediate, so deactivating a member
+        withdraws access on their next request and no password reset is involved.
+      </p>
+      <p>
+        Only a Queue Org Admin manages members. A dispatcher sees the member
+        list but has no add, deactivate or remove controls. Deactivation can be
+        reversed; removal is confirmed first and ends the membership.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-MEM-01</code></td>
+            <td>FR-MEM-01</td>
             <td>
-              An organization's members shall be listed via
-              <code>GET /api/queueOrganization/:id/members</code>, showing user,
-              role (11/12) and active status.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/queueOrganizationEndpoints.ts</code>,
-                <code
-                  >src/components/queue-org-manage/MembersTable.tsx</code
-                ></span
-              >
+              The members view shall list each member's name, phone number, role
+              and active or inactive state for the selected loading place.
             </td>
             <td>M</td>
+            <td>D — open the members table</td>
           </tr>
           <tr>
-            <td><code>FR-MEM-02</code></td>
+            <td>FR-MEM-02</td>
             <td>
-              Adding a member shall call
-              <code>POST /api/queueOrganization/:id/members</code> with the
-              <code>userUniqueId</code> in the request
-              <strong>body</strong> (not the path).
-              <span class="src"
-                >Source: <code>src/utils/constant.ts:30</code>,
-                <code
-                  >src/lib/redux/api/queueOrganizationEndpoints.ts</code
-                ></span
-              >
+              A Queue Org Admin shall be able to add a person to the loading
+              place by their user identifier and assign either Queue Org Admin
+              (11) or Queue Dispatcher (12).
             </td>
             <td>M</td>
+            <td>D — add one member of each role</td>
           </tr>
           <tr>
-            <td><code>FR-MEM-03</code></td>
+            <td>FR-MEM-03</td>
             <td>
-              Deactivating a membership shall go through
-              <code
-                >PATCH
-                /api/queueOrganization/:id/members/:membershipId/deactivate</code
-              >, revoking access immediately.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/queueOrganizationEndpoints.ts</code>,
-                <code
-                  >src/components/queue-org-manage/MembersTable.tsx</code
-                ></span
-              >
+              The console shall ask for confirmation before deactivating a
+              member, and an inactive member shall be unable to act on the
+              loading place until reactivated.
             </td>
             <td>M</td>
+            <td>D — deactivate, then use the account</td>
           </tr>
           <tr>
-            <td><code>FR-MEM-04</code></td>
+            <td>FR-MEM-04</td>
             <td>
-              A membership shall be reactivated via
-              <code
-                >PATCH
-                /api/queueOrganization/:id/members/:membershipId/reactivate</code
-              >.
-              <span class="src"
-                >Source:
-                <code
-                  >src/lib/redux/api/queueOrganizationEndpoints.ts</code
-                ></span
-              >
+              A Queue Org Admin shall be able to reactivate a previously
+              deactivated member without recreating the membership.
             </td>
             <td>S</td>
+            <td>D — reactivate the same account</td>
           </tr>
           <tr>
-            <td><code>FR-MEM-05</code></td>
+            <td>FR-MEM-05</td>
             <td>
-              Removing a membership shall use
-              <code
-                >DELETE /api/queueOrganization/:id/members/:membershipId</code
-              >
-              after confirmation.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/queueOrganizationEndpoints.ts</code>,
-                <code>src/components/queue/ConfirmCancel.tsx</code></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-MEM-06</code></td>
-            <td>
-              Because membership is the permission, the members view shall
-              reflect the active flag and role exactly as returned by the
-              backend, and the backend shall require an active membership row on
-              every queue request.
-              <span class="src"
-                >Source:
-                <code>src/components/queue-org-manage/MembersTable.tsx</code>,
-                <code>src/types/queue.ts</code></span
-              >
+              The console shall ask for confirmation before removing a
+              membership, and removal shall be distinct from deactivation in the
+              interface so the two are not confused.
             </td>
             <td>M</td>
+            <td>D — remove a membership</td>
           </tr>
           <tr>
-            <td><code>FR-MEM-07</code></td>
+            <td>FR-MEM-06</td>
             <td>
-              Member rows shall expose deactivate/reactivate/remove actions; the
-              console shall invalidate the members query after each lifecycle
-              mutation.
-              <span class="src"
-                >Source:
-                <code>src/components/queue-org-manage/MembersTable.tsx</code>,
-                <code
-                  >src/lib/redux/api/queueOrganizationEndpoints.ts</code
-                ></span
-              >
+              Membership changes shall take effect on the member's next request,
+              and a Queue Dispatcher shall see the member list read-only with no
+              add, deactivate, reactivate or remove controls.
             </td>
             <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-MEM-08</code></td>
-            <td>
-              Member roles shall be presented using the shared labels
-              for role 11 (Queue Org Admin) and role 12 (Queue Dispatcher).
-              <span class="src"
-                >Source:
-                <code>src/components/queue-org-manage/MembersTable.tsx</code>,
-                <code>src/types/queue.ts:34</code></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- ============ 3. FUNCTIONAL REQUIREMENTS (CONTINUED) ============ -->
-    <section>
-      <h1>
-        3. Functional requirements
-        <span style="font-size: 11pt">(continued)</span>
-      </h1>
-
-      <h3>3.5 FIFO driver queue (FR-QUE)</h3>
-      <table class="grid">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Requirement</th>
-            <th>Pri</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>FR-QUE-01</code></td>
-            <td>
-              The queue snapshot for an organization and
-              date shall be fetched via
-              <code>GET /api/queue/status</code>, returning entries grouped by
-              vehicle type.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/driverQueueEndpoints.ts</code>,
-                <code>src/utils/constant.ts:38</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-02</code></td>
-            <td>
-              The queue board shall offer a date selector and refetch the
-              snapshot when the selected date changes, using the organization's
-              real (not display) identifier.
-              <span class="src"
-                >Source: <code>src/components/queue/QueueBoardHeader.tsx</code>,
-                <code>src/components/queue/QueueBoard.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-03</code></td>
-            <td>
-              Check-in of a vehicle-driver into the queue shall go through
-              <code>POST /api/queue/manualCheckin</code>; the backend returns
-              the server-issued <code>queueNumber</code> that fixes the entry's
-              FIFO position.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/driverQueueEndpoints.ts</code>,
-                <code>src/components/queue/CheckinModal.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-04</code></td>
-            <td>
-              Manual check-in shall be offered only where the organization is
-              approved and the queue is enabled; the backend remains
-              authoritative over whether a check-in is accepted.
-              <span class="src"
-                >Source: <code>src/components/queue/CheckinModal.tsx</code>,
-                <code
-                  >src/components/dashboard/OrgApprovalBanner.tsx</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-05</code></td>
-            <td>
-              The check-in form shall search the driver directory via
-              <code>GET /api/queue/driverDirectory</code> (queue-staff only),
-              returning active driver/vehicle assignments.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/vehicleEndpoints.ts</code>,
-                <code
-                  >src/components/queue/checkin/CheckinDriverSearch.tsx</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-06</code></td>
-            <td>
-              The check-in search shall merge the driver directory with the
-              current queue so that already-queued drivers are visible and not
-              duplicated.
-              <span class="src"
-                >Source:
-                <code
-                  >src/components/queue/checkin/useCheckinData.ts</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-07</code></td>
-            <td>
-              Check-in input (driver, vehicle, position) shall be validated with
-              a
-              <code>zod</code> schema before submission, and the selected driver
-              and vehicle identifiers shall be sent explicitly.
-              <span class="src"
-                >Source: <code>src/schemas/queue.ts</code>,
-                <code>src/components/queue/CheckinModal.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-08</code></td>
-            <td>
-              The check-in screen shall provide a position section and show a
-              Haversine proximity cue relative to the organization, labelled as
-              an aid rather than the geofence decision.
-              <span class="src"
-                >Source:
-                <code
-                  >src/components/queue/checkin/CheckinPositionSection.tsx</code
-                >, <code>src/utils/formatters.ts</code></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-09</code></td>
-            <td>
-              Queue entries shall be ordered by the server-issued
-              <code>queueNumber</code>
-              (first-in-first-out) within each vehicle type; the console never
-              reorders entries locally.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/table/QueueDesktopTable.tsx</code>,
-                <code>src/utils/journeyStatus.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-10</code></td>
-            <td>
-              The queue board shall present entries grouped into
-              per-vehicle-type cards (<code>QueueVehicleTypeCard</code>) for
-              at-a-glance monitoring.
-              <span class="src"
-                >Source: <code>src/components/queue/QueueBoard.tsx</code>,
-                <code>src/components/queue/QueueVehicleTypeCard.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-11</code></td>
-            <td>
-              The board shall provide an all-drivers aggregate view across
-              vehicle types.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/QueueAllDriversCard.tsx</code></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-12</code></td>
-            <td>
-              On desktop the queue renders as a table showing each
-              entry's driver, vehicle type, status and FIFO number, with per-row
-              actions.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/table/QueueDesktopTable.tsx</code>,
-                <code>src/components/queue/QueueTable.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-13</code></td>
-            <td>
-              A dedicated mobile queue view (cards)
-              shall exist alongside the desktop table.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/table/QueueMobileTable.tsx</code>,
-                <code>src/components/queue/QueueCard.tsx</code></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-14</code></td>
-            <td>
-              Dispatching a queued entry to a shipper request shall call
-              <code>POST /api/queue/dispatch</code>, sending the entry and the
-              target request.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/driverQueueEndpoints.ts</code>,
-                <code>src/components/queue/DispatchModal.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-15</code></td>
-            <td>
-              The dispatch order selector shall offer only orders eligible for
-              dispatch (journey status&nbsp;1), using the shared journey-status
-              mapping.
-              <span class="src"
-                >Source:
-                <code
-                  >src/components/queue/dispatch/OrderSelectDropdown.tsx</code
-                >, <code>src/utils/journeyStatus.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-16</code></td>
-            <td>
-              The dispatch modal shall show a top-card summary and an order
-              summary for the pending dispatch before confirmation.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/dispatch/DispatchTopCards.tsx</code>,
-                <code
-                  >src/components/queue/dispatch/DispatchOrderSummary.tsx</code
-                ></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-17</code></td>
-            <td>
-              A queue entry's optional
-              <code>targetedShipperUserUUID</code> shall be displayed and
-              carried through dispatch as the reserved shipper target.
-              <span class="src"
-                >Source:
-                <code
-                  >src/components/queue/table/buildShipperRequestDetail.ts</code
-                >,
-                <code
-                  >src/components/queue/shipper-requests/ShipperRequestOverview.tsx</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-18</code></td>
-            <td>
-              Overriding a queue entry's position shall go through
-              <code>PATCH /api/queue/entry/:queueUniqueId/override</code>
-              and shall require a reason; the backend queue
-              audit trail records the change.
-              <span class="src"
-                >Source: <code>src/components/queue/OverrideModal.tsx</code>,
-                <code>src/lib/redux/api/driverQueueEndpoints.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-19</code></td>
-            <td>
-              Removing a queue entry shall use
-              <code>DELETE /api/queue/entry/:queueUniqueId</code> after a
-              confirmation step; the removal is audited.
-              <span class="src"
-                >Source: <code>src/components/queue/ConfirmCancel.tsx</code>,
-                <code>src/lib/redux/api/driverQueueEndpoints.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-QUE-20</code></td>
-            <td>
-              The entry change history from
-              <code>GET /api/queue/entry/:queueUniqueId/history</code> shall be
-              rendered (column,
-              old value, performed by, performed at), and entry
-              statuses (<code
-                >waiting | offered | loaded | removed | completed</code
-              >) and the refusal count shall be displayed
-              exactly as returned by the backend.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/EntryHistoryModal.tsx</code>,
-                <code>src/types/queue.ts</code></span
-              >
-            </td>
-            <td>M</td>
+            <td>D — sign in as both roles</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>3.6 Bidding on the shipper's behalf (FR-BID)</h3>
+      <h3>3.5 Driver check-in and the FIFO queue (FR-QUE)</h3>
+      <p>
+        The queue board shows the loading place as it currently stands, grouped
+        by vehicle type: drivers waiting, drivers offered a job, and drivers
+        loading or finished. A second view lists every driver in one table. A
+        badge reports whether the socket is connected; while it reads
+        “Connecting”, the screen keeps showing the last confirmed snapshot.
+      </p>
+      <p>
+        Drivers normally check in from the mobile application. The console keeps
+        a manual path for the gate: a dispatcher can search the driver directory
+        by name, phone number or vehicle-driver identifier, or paste a complete
+        identifier from a ticket. The modal flags a driver who is already
+        waiting. Queue numbers come from the server, and the console never
+        renumbers or reorders the line on its own.
+      </p>
+      <p>
+        Dispatch, override and cancellation are separate actions, each with its
+        own confirmation. Dispatch attaches the driver at the front of the chosen
+        vehicle queue to one eligible order selected by the operator. Override
+        moves an entry to a new position and takes an optional reason.
+        Cancellation removes a driver from the line, also with an optional
+        reason. All three are recorded in the entry history.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-BID-01</code></td>
+            <td>FR-QUE-01</td>
             <td>
-              Approving or closing bidding per order shall call
-              <code>POST /api/queue/bidding/approve</code>, sending the
-              <code>shipperRequestUniqueIds</code> list and the
-              <code>approved</code> flag.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/driverQueueEndpoints.ts</code>,
-                <code
-                  >src/components/orders/bids/BiddingBoardToggle.tsx</code
-                ></span
-              >
+              The queue board shall display the current queue for the selected
+              loading place, in the order returned by the server, with the
+              waiting, offered, loading and loaded counts for each vehicle type.
             </td>
             <td>M</td>
+            <td>D — compare board with queue snapshot</td>
           </tr>
           <tr>
-            <td><code>FR-BID-02</code></td>
+            <td>FR-QUE-02</td>
             <td>
-              The bidding gate shall be applied <strong>per order</strong>, not
-              per batch, so each order carries its own
-              <code>isBiddingApproved</code> state.
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/BiddingBoardToggle.tsx</code>,
-                <code>src/components/orders/OrdersTable.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-BID-03</code></td>
-            <td>
-              The bidding toggle shall be presented only to the Queue Org Admin
-              role (11); the backend independently enforces approval permission.
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/BiddingBoardToggle.tsx</code>,
-                <code>src/components/auth/RoleGuard.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-BID-04</code></td>
-            <td>
-              Driver bids for an order shall be fetched from
-              <code
-                >GET /api/queue/bidding/order/:shipperRequestUniqueId/bids</code
-              > and presented cheapest-first, as ranked by the backend.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/driverQueueEndpoints.ts</code>,
-                <code>src/components/orders/DriverBidsModal.tsx</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-BID-05</code></td>
-            <td>
-              The bids view shall provide a toolbar for refreshing and filtering
-              the bid list.
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/BidsToolbar.tsx</code>,
-                <code
-                  >src/components/orders/bids/useDriverBidsFilter.ts</code
-                ></span
-              >
+              The board shall offer two views, “By Vehicle Type” and “All
+              Drivers”, and shall open in the vehicle-type view.
             </td>
             <td>S</td>
+            <td>D — switch between the two views</td>
           </tr>
           <tr>
-            <td><code>FR-BID-06</code></td>
+            <td>FR-QUE-03</td>
             <td>
-              Heterogeneous bid payloads shall be normalized into a
-              single UI shape before rendering.
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/mapDriverBids.ts</code></span
-              >
+              The board shall show a live indicator when the real-time connection
+              is open and a connecting indicator when it is not, so the operator
+              can tell fresh data from a stale snapshot.
             </td>
             <td>M</td>
+            <td>D — stop and restore the socket</td>
           </tr>
           <tr>
-            <td><code>FR-BID-07</code></td>
+            <td>FR-QUE-04</td>
             <td>
-              The bids view shall show an order summary card (origin,
-              destination, vehicle type, requested quantity) alongside the bids.
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/OrderSummaryCard.tsx</code>,
-                <code
-                  >src/components/orders/bids/BidOfferComparison.tsx</code
-                ></span
-              >
+              Manual check-in shall let a dispatcher search for a registered
+              driver by name, phone number or vehicle-driver identifier once at
+              least two characters have been typed, or paste a complete
+              vehicle-driver identifier directly.
+            </td>
+            <td>M</td>
+            <td>D — search by each field and paste an ID</td>
+          </tr>
+          <tr>
+            <td>FR-QUE-05</td>
+            <td>
+              The check-in form shall mark a driver who is already waiting and
+              shall prevent a second active entry for the same driver at the same
+              loading place.
+            </td>
+            <td>M</td>
+            <td>D — check the same driver in twice</td>
+          </tr>
+          <tr>
+            <td>FR-QUE-06</td>
+            <td>
+              A manual check-in shall record the vehicle type and an optional
+              ticket number; when the ticket is left blank the driver shall be
+              placed at the end of the line with the next server-assigned number.
+            </td>
+            <td>M</td>
+            <td>D — check in with and without a ticket</td>
+          </tr>
+          <tr>
+            <td>FR-QUE-07</td>
+            <td>
+              Before a check-in is submitted the console shall show the distance
+              from the loading place against its configured radius as a
+              proximity cue; the authoritative geofence decision shall remain
+              with the backend.
+            </td>
+            <td>M</td>
+            <td>D — check in inside and outside the radius</td>
+          </tr>
+          <tr>
+            <td>FR-QUE-08</td>
+            <td>
+              The queue number shall be issued by the server; the console shall
+              display that number and shall not calculate, renumber or reorder
+              queue positions on its own.
+            </td>
+            <td>M</td>
+            <td>I — compare two clients on the same queue</td>
+          </tr>
+          <tr>
+            <td>FR-QUE-09</td>
+            <td>
+              Dispatch shall attach the driver at the front of the chosen vehicle
+              queue to one eligible order selected by the operator, and shall show
+              the selected order and driver for confirmation before sending the
+              request.
+            </td>
+            <td>M</td>
+            <td>D — dispatch a waiting driver</td>
+          </tr>
+          <tr>
+            <td>FR-QUE-10</td>
+            <td>
+              A dispatcher shall be able to move a queue entry to a new position
+              of one or higher, with an optional reason of up to 500 characters,
+              and the change shall be recorded in the entry history.
+            </td>
+            <td>M</td>
+            <td>D — override a position, then read history</td>
+          </tr>
+          <tr>
+            <td>FR-QUE-11</td>
+            <td>
+              A dispatcher shall be able to cancel a driver from the queue after
+              confirming the action, with an optional reason, and the driver shall
+              disappear from the waiting line without deleting the historical
+              record.
+            </td>
+            <td>M</td>
+            <td>D — cancel an entry, then reopen history</td>
+          </tr>
+          <tr>
+            <td>FR-QUE-12</td>
+            <td>
+              The entry history shall show every recorded change to a queue
+              entry, including the previous value, the new value, the person who
+              made the change and the time it happened.
+            </td>
+            <td>M</td>
+            <td>D — inspect an entry with several changes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>3.6 Bidding oversight (FR-BID)</h3>
+      <p>
+        Bidding is switched on per order. A shipper may want one load auctioned
+        and the next handled first come, first served, so the control sits on
+        each order and affects that order only. Opening or closing it requires
+        role 11, and the backend enforces that, which is why the other roles see
+        the control disabled instead of an action that would be refused.
+      </p>
+      <p>
+        The console does not rank or award bids. It requests the bids for an
+        order, lists them cheapest first with amount, note, status and time, and
+        submits the identifier of the bid the operator selects. The backend
+        records the outcome and the console refetches the order to show it.
+      </p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Requirement</th>
+            <th>Pri</th>
+            <th>Verified by</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>FR-BID-01</td>
+            <td>
+              The console shall show an open-or-close bidding control on an
+              individual order, enabled for a Queue Org Admin (role 11) and
+              disabled for every other role.
+            </td>
+            <td>M</td>
+            <td>D — one account per role</td>
+          </tr>
+          <tr>
+            <td>FR-BID-02</td>
+            <td>
+              Opening bidding shall make that order available to carriers; closing
+              it shall return the order to the ordinary queue, and the two orders
+              in one batch shall be able to hold different states at the same
+              time.
+            </td>
+            <td>M</td>
+            <td>D — open one order and leave its neighbour closed</td>
+          </tr>
+          <tr>
+            <td>FR-BID-03</td>
+            <td>
+              The bids view shall list each bid's amount, note, status and
+              submission time, ordered cheapest first as returned by the backend.
+            </td>
+            <td>M</td>
+            <td>D — open an order with several bids</td>
+          </tr>
+          <tr>
+            <td>FR-BID-04</td>
+            <td>
+              A Queue Org Admin shall be able to accept one bid on the shipper's
+              behalf by selecting it explicitly and confirming, and the console
+              shall send the bid identifier rather than a position in the list.
+            </td>
+            <td>M</td>
+            <td>D — accept a bid and inspect the request</td>
+          </tr>
+          <tr>
+            <td>FR-BID-05</td>
+            <td>
+              After acceptance the console shall show the backend's outcome,
+              including the selected bid and the bids that were not selected,
+              without deciding the result itself.
+            </td>
+            <td>M</td>
+            <td>D — compare response with the bids list</td>
+          </tr>
+          <tr>
+            <td>FR-BID-06</td>
+            <td>
+              A company-target batch shall show its aggregated bids, and creating
+              an order for more than nine vehicles shall automatically place it in
+              company-target mode with bidding open.
+            </td>
+            <td>M</td>
+            <td>D — create a ten-vehicle order</td>
+          </tr>
+          <tr>
+            <td>FR-BID-07</td>
+            <td>
+              When the backend refuses a bidding action the console shall show the
+              refusal as a permission error and shall not present the change as
+              successful.
             </td>
             <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-BID-08</code></td>
-            <td>
-              Individual bid rows shall display the driver, amount, distance and
-              originating request, and shall expose accept actions per bid.
-              <span class="src"
-                >Source: <code>src/components/orders/bids/BidRow.tsx</code>,
-                <code
-                  >src/components/orders/bids/BidActionButtons.tsx</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-BID-09</code></td>
-            <td>
-              Accepting a driver's offer shall call
-              <code>PUT /api/shipper/acceptDriverOffer</code> with the
-              explicit <code>shipperRequestUniqueId</code> and
-              <code>driverRequestUniqueId</code> (plus an optional
-              <code>journeyDecisionUniqueId</code>).
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/useAcceptDriverBid.ts</code>,
-                <code>src/lib/redux/api/driverQueueEndpoints.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-BID-10</code></td>
-            <td>
-              If a required identifier is missing or invalid, acceptance shall
-              <strong>hard-fail</strong>
-              with a visible error; the console shall never reconstruct or guess
-              an identifier (no fuzzy match).
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/orderIdLookup.ts</code>,
-                <code
-                  >src/components/orders/bids/useAcceptDriverBid.ts</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-BID-11</code></td>
-            <td>
-              After a successful acceptance the console shall invalidate the
-              affected order, bid and queue tags so all dependent views refetch
-              authoritative state, and shall surface the outcome through a
-              toast.
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/useAcceptDriverBid.ts</code>,
-                <code>src/lib/redux/api/driverQueueEndpoints.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-BID-12</code></td>
-            <td>
-              When no bids are available the console shall render an explicit
-              empty state rather than a blank list.
-              <span class="src"
-                >Source:
-                <code>src/components/orders/bids/BidEmptyState.tsx</code></span
-              >
-            </td>
-            <td>S</td>
+            <td>T — request as role 12</td>
           </tr>
         </tbody>
       </table>
 
       <h3>3.7 Orders and shipper requests (FR-ORD)</h3>
+      <p>
+        An order is a shipper request that a loading place may serve. The Orders
+        area separates work in progress from completed work with two tabs, shows
+        ten batches per page, and expands a batch to list the orders inside it.
+        Creating an order is the only place where an operator acts on a shipper's
+        behalf, so the form applies the rules the backend will apply: the shipping
+        date cannot be in the past, the delivery date cannot precede it, and the
+        quantity must fit the chosen vehicle type.
+      </p>
+      <p>
+        A request of more than nine vehicles is treated as a company-target batch
+        with bidding open; nine or fewer stay individual. The form performs that
+        switch as the count changes rather than letting the operator submit a
+        request the backend would reject. From the orders table an operator can
+        also open a driver's details, edit an order, or delete one after
+        confirming.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-ORD-01</code></td>
+            <td>FR-ORD-01</td>
             <td>
-              Shipper requests (all or single, scoped to
-              the organization) shall be listed via
-              <code>GET /api/user/getShipperRequest4allOrSingleUser</code>.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/shipperRequestEndpoints.ts</code>,
-                <code>src/pages/orders/OrdersPage.tsx</code></span
-              >
+              The Orders area shall present ongoing and completed work in two
+              tabs and shall show ten order batches per page with working paging
+              controls.
             </td>
             <td>M</td>
+            <td>D — switch tabs and page through the list</td>
           </tr>
           <tr>
-            <td><code>FR-ORD-02</code></td>
+            <td>FR-ORD-02</td>
             <td>
-              Company-target batches shall be listed via
-              <code>GET /api/shipperRequestBatch</code> with
-              <code>requestMode=company_target</code> and
-              <code>includeBids=true</code>, rendering master rows with
-              sub-rows.
-              <span class="src"
-                >Source:
-                <code>src/lib/redux/api/shipperRequestEndpoints.ts</code>,
-                <code>src/components/orders/BatchMasterRow.tsx</code></span
-              >
+              The console shall allow an order to be created with a shipper phone
+              number, vehicle type, item name, quantity in quintals, shipping and
+              delivery dates, origin, destination, shipping cost, request mode and
+              dispatch mode.
             </td>
             <td>M</td>
+            <td>D — create one order of each mode</td>
           </tr>
           <tr>
-            <td><code>FR-ORD-03</code></td>
+            <td>FR-ORD-03</td>
             <td>
-              A modal shall create a shipper request or batch order by
-              calling
-              <code>POST /api/shipperRequest/createRequest</code> with origin,
-              destination, vehicle type, quantity, dates and request mode.
-              <span class="src"
-                >Source: <code>src/components/queue/CreateOrderModal.tsx</code>,
-                <code>src/lib/redux/api/shipperRequestEndpoints.ts</code></span
-              >
+              The order form shall reject a shipping date earlier than today, a
+              delivery date earlier than the shipping date, and a quantity above
+              the capacity of the selected vehicle type, with a message that says
+              which limit was crossed.
             </td>
             <td>M</td>
+            <td>T — boundary dates and quantities</td>
           </tr>
           <tr>
-            <td><code>FR-ORD-04</code></td>
+            <td>FR-ORD-04</td>
             <td>
-              When the requested number of vehicles exceeds nine in individual
-              mode, the modal shall automatically switch the request to
-              <code>company_target</code> and open it for bidding by default.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/CreateOrderModal.tsx</code>
-                (auto-switch effect)</span
-              >
+              Raising the vehicle count above nine in individual mode shall switch
+              the request to company-target mode with bidding open, and switching
+              back to individual mode shall restore a single vehicle and close
+              bidding.
             </td>
             <td>M</td>
+            <td>D — move the count across the boundary</td>
           </tr>
           <tr>
-            <td><code>FR-ORD-05</code></td>
+            <td>FR-ORD-05</td>
             <td>
-              If the operator switches back to individual mode while more than
-              nine vehicles are set, the modal shall reset the quantity to one.
-              <span class="src"
-                >Source:
-                <code>src/components/queue/CreateOrderModal.tsx</code>
-                (<code>handleRequestModeChange</code>)</span
-              >
+              The console shall let an operator edit an existing order and save
+              the changes after the same validation applied at creation.
+            </td>
+            <td>M</td>
+            <td>D — edit and save an order</td>
+          </tr>
+          <tr>
+            <td>FR-ORD-06</td>
+            <td>
+              The console shall ask for confirmation before deleting an order and
+              shall remove it from the list only after the backend confirms the
+              deletion.
+            </td>
+            <td>M</td>
+            <td>D — delete an order</td>
+          </tr>
+          <tr>
+            <td>FR-ORD-07</td>
+            <td>
+              The driver details page shall bring together the driver's current
+              order, location map, recent activity, cost information, vehicle and
+              licence details, and an edit action for the driver record.
             </td>
             <td>S</td>
+            <td>D — open a driver from an order</td>
           </tr>
           <tr>
-            <td><code>FR-ORD-06</code></td>
+            <td>FR-ORD-08</td>
             <td>
-              Orders shall be rendered across a desktop table, cards list and
-              dedicated mobile views with status chips and pagination.
-              <span class="src"
-                >Source: <code>src/components/orders/OrdersTable.tsx</code>,
-                <code>src/components/orders/OrdersCardsList.tsx</code>,
-                <code>src/components/orders/OrdersMobileCards.tsx</code></span
-              >
+              The Orders area shall let the operator search and filter the list
+              and expand a batch to see the orders it contains.
             </td>
             <td>M</td>
+            <td>D — search, filter and expand a batch</td>
           </tr>
           <tr>
-            <td><code>FR-ORD-07</code></td>
+            <td>FR-ORD-09</td>
             <td>
-              Edit and delete modals shall be provided for orders, with
-              confirmation before deletion.
-              <span class="src"
-                >Source: <code>src/components/orders/OrdersEditModal.tsx</code>,
-                <code>src/components/orders/OrdersDeleteModal.tsx</code></span
-              >
+              Order and queue rows shall show the journey status supplied by the
+              backend, using the status names staff already know, rather than a
+              separate set of queue-only labels.
+            </td>
+            <td>M</td>
+            <td>D — compare labels with the status list</td>
+          </tr>
+          <tr>
+            <td>FR-ORD-10</td>
+            <td>
+              A “New Order” action shall be available from both the Orders area
+              and the live queue board, and shall open the same order form.
             </td>
             <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-ORD-08</code></td>
-            <td>
-              Order creation shall offer a vehicle-type select backed by
-              <code>GET /api/admin/vehicleTypes</code> (with a built-in fallback
-              list) and shall show the derived vehicle capacity.
-              <span class="src"
-                >Source:
-                <code
-                  >src/components/queue/order-modal/VehicleTypeSelect.tsx</code
-                >, <code>src/utils/vehicleType.ts</code>,
-                <code>src/lib/redux/api/vehicleEndpoints.ts</code></span
-              >
-            </td>
-            <td>M</td>
+            <td>D — open it from both places</td>
           </tr>
         </tbody>
       </table>
 
       <h3>3.8 Reporting (FR-RPT)</h3>
+      <p>
+        Reports cover the questions a manager asks after a shift: how many
+        drivers are in each state, how request volume has moved over the year, and
+        how each loading place is doing. Summary cards carry the headline numbers,
+        a donut shows driver status and a bar chart shows twelve months of
+        requests. All of it is derived from the same organisation, queue and
+        request data used elsewhere in the console.
+      </p>
+      <p>
+        The organisation report table below the charts shows five places per page
+        and opens a read-only queue summary without leaving the page. From that
+        summary, “Manage Full Queue” opens the live board for the same place.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-RPT-01</code></td>
+            <td>FR-RPT-01</td>
             <td>
-              The reports page shall render KPI cards summarizing organizations,
-              queue and request counts.
-              <span class="src"
-                >Source: <code>src/pages/reports/ReportsPage.tsx</code>,
-                <code>src/components/reports/KpiCards.tsx</code></span
-              >
+              The reports page shall show summary cards for total drivers,
+              waiting drivers, active orders and completed work for the selected
+              scope.
             </td>
             <td>M</td>
+            <td>D — compare cards with the underlying lists</td>
           </tr>
           <tr>
-            <td><code>FR-RPT-02</code></td>
+            <td>FR-RPT-02</td>
             <td>
-              The reports page shall render a donut chart of the queue/order
-              distribution.
-              <span class="src"
-                >Source:
-                <code>src/components/reports/DonutChart.tsx</code></span
-              >
+              The reports page shall show a driver-status breakdown as a donut
+              chart and request volume for the last twelve months as a bar chart.
             </td>
             <td>S</td>
+            <td>D — visual check against a known month</td>
           </tr>
           <tr>
-            <td><code>FR-RPT-03</code></td>
+            <td>FR-RPT-03</td>
             <td>
-              The reports page shall render a monthly bar chart derived from
-              request dates.
-              <span class="src"
-                >Source:
-                <code>src/components/reports/MonthlyBarChart.tsx</code></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-RPT-04</code></td>
-            <td>
-              The reports page shall list a per-organization report with per-row
-              drill-down.
-              <span class="src"
-                >Source: <code>src/components/reports/OrgReportsList.tsx</code>,
-                <code>src/components/reports/OrgReportRow.tsx</code></span
-              >
+              The organisation report table shall list five loading places per
+              page, with search and sort, and shall show each place's approval
+              state and queue activity.
             </td>
             <td>M</td>
+            <td>D — page through more than five places</td>
           </tr>
           <tr>
-            <td><code>FR-RPT-05</code></td>
+            <td>FR-RPT-04</td>
             <td>
-              Report metrics shall be computed client-side from the fetched
-              organization, queue and shipper-request lists; this is a declared
-              limitation for scale (§7.5).
-              <span class="src"
-                >Source: <code>src/hooks/useReportsMetrics.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-RPT-06</code></td>
-            <td>
-              The dashboard shall derive its headline counts client-side from
-              the same fetched lists (limit 100), consistent with the reports
-              computation.
-              <span class="src"
-                >Source:
-                <code>src/pages/dashboard/QueueDashboardPage.tsx</code>,
-                <code>src/hooks/useOrgList.ts</code></span
-              >
+              Opening a queue summary from the report shall show the waiting,
+              offered, loading and total driver counts for that place together
+              with its current entries, without navigating away from the report.
             </td>
             <td>S</td>
+            <td>D — open and close the summary</td>
+          </tr>
+          <tr>
+            <td>FR-RPT-05</td>
+            <td>
+              The queue summary shall offer a “Manage Full Queue” action that
+              opens the live board for the same loading place.
+            </td>
+            <td>S</td>
+            <td>D — follow the action</td>
+          </tr>
+          <tr>
+            <td>FR-RPT-06</td>
+            <td>
+              Reports shall include only the loading places the signed-in user is
+              entitled to see, using the same access rule as the dashboard.
+            </td>
+            <td>M</td>
+            <td>D — compare two accounts with different access</td>
           </tr>
         </tbody>
       </table>
-    </section>
 
-    <!-- ============ 3. FUNCTIONAL REQUIREMENTS (CONTINUED 2) ============ -->
-    <section>
-      <h1>
-        3. Functional requirements
-        <span style="font-size: 11pt">(continued)</span>
-      </h1>
-
-      <h3>3.9 Real-time and notifications (FR-NOTIF)</h3>
+      <h3>3.9 Real-time synchronisation (FR-NOTIF)</h3>
+      <p>
+        Queue and organisation changes are pushed from the backend over Socket.IO
+        rather than polled. When an event arrives the affected queries are
+        invalidated and refetched, and a short delay lets a burst settle so ten
+        simultaneous check-ins cause one redraw instead of ten.
+      </p>
+      <p>
+        A dropped connection is not an error state. The last snapshot stays on
+        screen, the badge reads “Connecting”, and the client retries five times
+        with a growing delay. If the handshake is rejected because the session is
+        no longer valid, retrying would achieve nothing, so the console stops and
+        ends the session.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-NOTIF-01</code></td>
+            <td>FR-NOTIF-01</td>
             <td>
-              The Socket.IO connection shall be opened with
-              <code>withCredentials: true</code> and an
-              <code>auth</code> payload of <code>{ user, phoneNumber }</code>.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
+              The console shall open the real-time connection when a user is
+              authenticated and shall close it when the user signs out or the
+              session ends.
             </td>
             <td>M</td>
+            <td>D — sign in and out, observe the socket</td>
           </tr>
           <tr>
-            <td><code>FR-NOTIF-02</code></td>
+            <td>FR-NOTIF-02</td>
             <td>
-              The socket identity shall be derived from the account role: roles
-              3 and 6 map to
-              <code>admin</code>; queue staff (roles 11 and 12) share the
-              <code>queueOrgAdmin</code> identity used by the backend fan-out.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
+              The console shall subscribe to the selected loading place's queue
+              room, unsubscribe when the selection changes, and restore the
+              subscription automatically after a reconnect.
             </td>
             <td>M</td>
+            <td>D — switch organisations while connected</td>
           </tr>
           <tr>
-            <td><code>FR-NOTIF-03</code></td>
+            <td>FR-NOTIF-03</td>
             <td>
-              Subscription to a Queue Organization room shall go through
-              <code>queue:subscribe</code>, keyed by
-              <code>queueOrganizationUniqueId</code> and an optional
-              <code>queueDate</code>, with reference counting so the room is
-              unsubscribed only when the last consumer leaves.
-              <span class="src"
-                >Source: <code>src/lib/socket.ts</code>,
-                <code>src/hooks/useQueueSocket.ts</code></span
-              >
+              A lost connection shall be retried up to five times with a delay
+              starting at two seconds and capped at ten seconds, while the screen
+              continues to show the last confirmed data.
             </td>
             <td>M</td>
+            <td>D — stop the backend and watch the retries</td>
           </tr>
           <tr>
-            <td><code>FR-NOTIF-04</code></td>
+            <td>FR-NOTIF-04</td>
             <td>
-              Unsubscription shall use
-              <code>queue:unsubscribe</code> when a component no longer needs
-              the room.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
+              A handshake rejected as unauthorised shall end the session and stop
+              further reconnection attempts instead of retrying indefinitely.
             </td>
             <td>M</td>
+            <td>T — connect with an expired session</td>
           </tr>
           <tr>
-            <td><code>FR-NOTIF-05</code></td>
+            <td>FR-NOTIF-05</td>
             <td>
-              The socket shall reconnect with up to five attempts, a randomized
-              delay between 1.5&nbsp;s and 5&nbsp;s, and a 20&nbsp;s timeout,
-              and shall re-subscribe active rooms on (re)connect.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
+              Queue events shall be coalesced before refetching: organisation
+              changes after 100 milliseconds and queue or order changes after 250
+              milliseconds, so a burst produces one refresh rather than one per
+              event.
             </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-NOTIF-06</code></td>
-            <td>
-              A
-              <code>queue:subscribed</code> acknowledgement shall be treated as
-              confirmation that the room is live, and shall set the shared
-              <code>socketConnected</code> flag.
-              <span class="src"
-                >Source: <code>src/lib/socket.ts</code>,
-                <code>src/store/queueAdminStore.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-NOTIF-07</code></td>
-            <td>
-              Inbound queue events shall be parsed for a
-              <code>messageTypes</code> value; acknowledgements and ping/pong
-              frames shall be ignored, so no spurious refetches occur.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-NOTIF-08</code></td>
-            <td>
-              Organization events shall debounce 100&nbsp;ms and then invalidate
-              the
-              <code>QueueOrganizations</code> tag.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-NOTIF-09</code></td>
-            <td>
-              All other queue events shall debounce 250&nbsp;ms and then
-              invalidate
-              <code>QueueStatus</code>, <code>DriverQueue</code> and
-              <code>ShipperRequests</code>, triggering authoritative refetches
-              rather than per-event cache patching.
-              <span class="src"
-                >Source: <code>src/lib/socket.ts</code>,
-                <code>src/hooks/useQueueSocket.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-NOTIF-10</code></td>
-            <td>
-              Operation outcomes and errors shall reach the
-              user through
-              <code>sonner</code> toasts rendered at the application root.
-              <span class="src"
-                >Source: <code>src/App.tsx</code>,
-                <code>src/utils/parseError.ts</code></span
-              >
-            </td>
-            <td>M</td>
+            <td>S</td>
+            <td>I — event handler review and burst check</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>3.10 Settings, profile and appearance (FR-SET)</h3>
+      <h3>3.10 Settings and profile (FR-SET)</h3>
+      <p>
+        Settings shows the profile returned by the backend and provides the
+        appearance and language choices, which are stored on the device and
+        survive a reload. It also carries the two account actions that belong at
+        the end of a session: sign out and delete account.
+      </p>
+      <p>
+        Push notifications, email notifications and two-factor authentication
+        appear on the page but have no backend endpoint in this release, so they
+        are shown as unavailable. They are listed here so that the specification
+        and the screen agree on what release 1.0.0 does not include.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-SET-01</code></td>
+            <td>FR-SET-01</td>
             <td>
-              A settings page shall be provided, composed of profile,
-              preferences and account sections, with dedicated mobile settings
-              views.
-              <span class="src"
-                >Source: <code>src/pages/settings/SettingsPage.tsx</code>,
-                <code
-                  >src/components/settings/MobileSettingsView.tsx</code
-                ></span
-              >
+              The settings page shall show the signed-in user's name, phone
+              number, email address and role as returned by the backend.
             </td>
             <td>M</td>
+            <td>D — open settings for two roles</td>
           </tr>
           <tr>
-            <td><code>FR-SET-02</code></td>
+            <td>FR-SET-02</td>
             <td>
-              A light/dark theme toggle shall be provided; it applies
-              the
-              <code>dark</code> class to the document root and persists the
-              preference under <code>app_dark_mode</code>.
-              <span class="src"
-                >Source: <code>src/contexts/ThemeContext.tsx</code>,
-                <code>src/dark.css</code></span
-              >
+              The user shall be able to switch between light and dark appearance,
+              and the choice shall persist across reloads and sessions on that
+              device.
+            </td>
+            <td>S</td>
+            <td>D — switch, reload and return</td>
+          </tr>
+          <tr>
+            <td>FR-SET-03</td>
+            <td>
+              The user shall be able to choose English or Amharic, and the change
+              shall take effect immediately and persist on that device.
+            </td>
+            <td>S</td>
+            <td>D — change language and reload</td>
+          </tr>
+          <tr>
+            <td>FR-SET-04</td>
+            <td>
+              The settings page shall provide a sign-out action with the same
+              behaviour as signing out from the navigation.
             </td>
             <td>M</td>
+            <td>D — sign out from settings</td>
           </tr>
           <tr>
-            <td><code>FR-SET-03</code></td>
+            <td>FR-SET-05</td>
             <td>
-              An English/Amharic language selector shall be provided,
-              persisting the preference under <code>app_language</code>.
-              <span class="src"
-                >Source: <code>src/i18n/index.ts</code>,
-                <code>src/components/ui/LanguageSelector.tsx</code></span
-              >
+              The settings page shall provide an account-deletion action behind a
+              confirmation dialog, and a successful deletion shall end the
+              session and return the user to sign-in.
             </td>
             <td>M</td>
+            <td>D — delete a test account</td>
           </tr>
           <tr>
-            <td><code>FR-SET-04</code></td>
+            <td>FR-SET-06</td>
             <td>
-              Internationalization shall be configured with
-              <code>escapeValue: false</code> because React performs output
-              escaping, and components shall use inline fallback strings.
-              <span class="src"
-                >Source: <code>src/i18n/index.ts</code>,
-                <code>src/i18n/en.ts</code>, <code>src/i18n/am.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-SET-05</code></td>
-            <td>
-              The profile section shall display the signed-in user's stored
-              profile; because no profile-update endpoint exists, the edit
-              controls shall be disabled rather than faked.
-              <span class="src"
-                >Source: <code>src/pages/settings/SettingsPage.tsx</code>,
-                <code
-                  >src/components/settings/DesktopProfileSection.tsx</code
-                ></span
-              >
+              Push notifications, email notifications and two-factor
+              authentication shall be shown as unavailable and shall not be
+              presented as working controls.
             </td>
             <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-SET-06</code></td>
-            <td>
-              Push, email and two-factor controls shall be disabled with a
-              visible explanation, since no notification-preference or 2FA
-              backend endpoint exists.
-              <span class="src"
-                >Source: <code>src/pages/settings/SettingsPage.tsx:101</code>,
-                <code
-                  >src/components/settings/DesktopPreferences.tsx</code
-                ></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-SET-07</code></td>
-            <td>
-              The settings page shall provide a danger zone with a
-              delete-account confirmation modal.
-              <span class="src"
-                >Source: <code>src/components/settings/DangerZone.tsx</code>,
-                <code
-                  >src/components/settings/DeleteAccountModal.tsx</code
-                ></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>FR-SET-08</code></td>
-            <td>
-              Mobile account and preferences sections shall be exposed
-              alongside the desktop layout.
-              <span class="src"
-                >Source:
-                <code>src/components/settings/MobileAccountSection.tsx</code>,
-                <code
-                  >src/components/settings/MobilePreferencesSection.tsx</code
-                ></span
-              >
-            </td>
-            <td>S</td>
+            <td>I — settings page review</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>3.11 Security compliance dashboard (FR-SECP)</h3>
+      <h3>3.11 Security compliance workspace (FR-SECP)</h3>
+      <p>
+        The last feature area reproduces the INSA Secure Website Management
+        Standard inside the console so the team can work through the same document
+        the auditor uses. It is a reference and a self-assessment aid, not a
+        certificate of compliance. Checklist marks stay in the browser on the
+        machine where they were entered, and the page states that nothing is sent
+        to the backend.
+      </p>
+      <p>
+        The workspace has four tabs: an overview of the standard, the five focus
+        areas with their requirements, the Annex A vulnerabilities and the Annex B
+        test checklist. The compliance score is the share of checklist items
+        marked pass, so an untouched checklist reads zero.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>FR-SECP-01</code></td>
+            <td>FR-SECP-01</td>
             <td>
-              The security-compliance dashboard shall be rendered from the
-              INSA Secure Website Management Standard content held in
-              <code>src/data/insaStandard.ts</code>.
-              <span class="src"
-                >Source: <code>src/pages/security/SecurityPage.tsx</code>,
-                <code>src/data/insaStandard.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-SECP-02</code></td>
-            <td>
-              The dashboard shall present five focus areas (requirement
-              gathering, design, implementation, hosting, operation &amp;
-              management) with thirty-five requirements.
-              <span class="src"
-                >Source: <code>src/data/insaStandard.ts</code>,
-                <code
-                  >src/components/security/FocusAreaAccordion.tsx</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-SECP-03</code></td>
-            <td>
-              The dashboard shall present the eight common vulnerabilities
-              (Annex A) in a table.
-              <span class="src"
-                >Source: <code>src/data/insaStandard.ts</code>,
-                <code
-                  >src/components/security/VulnerabilityTable.tsx</code
-                ></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-SECP-04</code></td>
-            <td>
-              The dashboard shall present a 102-item security-test checklist
-              (Annex B) that a reviewer can mark pass/fail, with the results
-              persisted locally.
-              <span class="src"
-                >Source:
-                <code>src/components/security/SecurityChecklist.tsx</code>,
-                <code>src/hooks/useSecurityChecklist.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>FR-SECP-05</code></td>
-            <td>
-              The dashboard shall compute and display a compliance score and
-              summary cards from the marked checklist items.
-              <span class="src"
-                >Source: <code>src/utils/securityChecklist.ts</code>,
-                <code
-                  >src/components/security/SecurityScoreCards.tsx</code
-                ></span
-              >
+              The security workspace shall present the purpose, scope and guiding
+              principles of the INSA Secure Website Management Standard and shall
+              name the version it is based on.
             </td>
             <td>S</td>
+            <td>D — open the overview tab</td>
+          </tr>
+          <tr>
+            <td>FR-SECP-02</td>
+            <td>
+              The workspace shall list the five focus areas with their
+              requirements, marking each requirement as mandatory or recommended
+              and allowing the areas to be expanded and collapsed.
+            </td>
+            <td>S</td>
+            <td>D — open each focus area</td>
+          </tr>
+          <tr>
+            <td>FR-SECP-03</td>
+            <td>
+              The workspace shall list the Annex A vulnerabilities with their
+              possible threats.
+            </td>
+            <td>S</td>
+            <td>D — open the vulnerabilities tab</td>
+          </tr>
+          <tr>
+            <td>FR-SECP-04</td>
+            <td>
+              The workspace shall present the Annex B test checklist, allow each
+              test to be marked pass or fail, filter by status or search text, and
+              show progress for each group.
+            </td>
+            <td>S</td>
+            <td>D — mark, filter and search tests</td>
+          </tr>
+          <tr>
+            <td>FR-SECP-05</td>
+            <td>
+              The workspace shall compute and display a compliance score from the
+              marked tests, keep the marks in local browser storage, and provide a
+              reset action that clears them all after confirmation.
+            </td>
+            <td>S</td>
+            <td>D — score, reload and reset</td>
           </tr>
         </tbody>
       </table>
-    </section>
 
-    <!-- ============ 4. NON-FUNCTIONAL REQUIREMENTS ============ -->
-    <section>
       <h1>4. Non-functional requirements</h1>
       <p>
-        The non-functional requirements are grouped by family, and each one
-        cites the repository file that implements it. Where a quality depends
-        on the hosting environment rather than this code asset, the requirement
-        says so explicitly.
+        The requirements in this section describe how well the console must
+        behave. They are grouped by quality attribute, and each one is stated so
+        that it can be checked: a limit, a measurable target, or a clear statement
+        of which component carries the responsibility. Some of them record a
+        boundary — HTTP security headers, for example, are set by the hosting
+        layer rather than by this application — because a specification that
+        claimed otherwise would be wrong.
+      </p>
+      <p>
+        Figures taken from the implementation are the figures release 1.0.0 uses.
+        Where a figure is a target rather than a measurement, the verification
+        column names the measurement.
       </p>
 
       <h3>4.1 Security (NFR-SEC)</h3>
+      <p>
+        The security posture rests on one decision: the browser is not trusted
+        with the session. The token stays in an httpOnly cookie, the server
+        re-checks every request, and the route guards exist to keep the interface
+        consistent rather than to enforce access. Bypassing a guard therefore
+        yields a screen, not a permission.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>NFR-SEC-01</code></td>
+            <td>NFR-SEC-01</td>
             <td>
-              Authentication shall rely on an httpOnly, SameSite session cookie
-              set by the backend; no JWT shall be readable from JavaScript, and
-              <code>getToken()</code> shall return <code>null</code>.
-              <span class="src"
-                >Source: <code>src/lib/auth.ts</code>,
-                <code>src/lib/redux/api/base.ts</code></span
-              >
+              The session token shall live only in an httpOnly, SameSite cookie
+              and shall never be readable from JavaScript or written to local or
+              session storage.
             </td>
             <td>M</td>
+            <td>I — cookie flags and storage inspection</td>
           </tr>
           <tr>
-            <td><code>NFR-SEC-02</code></td>
+            <td>NFR-SEC-02</td>
             <td>
-              Every backend request shall send the cookie with
-              <code>credentials: "include"</code> and shall not set an
-              <code>Authorization</code> header.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/base.ts</code>,
-                <code>src/lib/api.ts</code></span
-              >
+              All application traffic shall use HTTPS, and the production host
+              shall set transport-security and content-security headers; those
+              headers are a hosting responsibility and are not configured by this
+              code asset.
             </td>
             <td>M</td>
+            <td>I — response headers from production</td>
           </tr>
           <tr>
-            <td><code>NFR-SEC-03</code></td>
+            <td>NFR-SEC-03</td>
             <td>
-              Any <code>401</code> shall trigger a single global logout so an
-              expired session cannot leave the app in a half-authenticated
-              state.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/base.ts</code>,
-                <code>src/lib/api.ts</code></span
-              >
+              Every backend request shall be authorised on the server against the
+              user's role and active membership; client route guards shall not be
+              treated as an access control.
             </td>
             <td>M</td>
+            <td>T — direct API call with a lower-privilege session</td>
           </tr>
           <tr>
-            <td><code>NFR-SEC-04</code></td>
+            <td>NFR-SEC-04</td>
             <td>
-              A socket handshake rejected as unauthorized shall end the session
-              and stop reconnect attempts.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
+              An expired or rejected session shall produce a single, global sign-
+              out rather than a partly authenticated screen, and an unauthorised
+              socket handshake shall end the session and stop retries.
             </td>
             <td>M</td>
+            <td>T — expire a session during use</td>
           </tr>
           <tr>
-            <td><code>NFR-SEC-05</code></td>
+            <td>NFR-SEC-05</td>
             <td>
-              Client route guards shall be a usability boundary only; every
-              request shall be re-authorized by the backend against role and
-              active membership.
-              <span class="src"
-                >Source: <code>src/components/auth/ProtectedRoute.tsx</code>,
-                <code>src/components/auth/RoleGuard.tsx</code></span
-              >
+              Every form shall validate and sanitise its input against a declared
+              schema covering type, length, format, enumerations and numeric
+              ranges before sending it, and rendered values shall be escaped by
+              the framework.
             </td>
             <td>M</td>
+            <td>T — invalid and injected input cases</td>
           </tr>
           <tr>
-            <td><code>NFR-SEC-06</code></td>
+            <td>NFR-SEC-06</td>
             <td>
-              All forms shall validate and sanitize input with <code>zod</code>,
-              stripping HTML tags, control characters and collapsing whitespace
-              before submission.
-              <span class="src">Source: <code>src/schemas/queue.ts</code></span>
+              Browser storage shall hold only non-sensitive values: the display
+              profile, the selected loading place, the theme and the language. A
+              legacy record that once held a token shall be removed when it is
+              read.
             </td>
             <td>M</td>
+            <td>I — storage inspection after sign-in</td>
           </tr>
           <tr>
-            <td><code>NFR-SEC-07</code></td>
+            <td>NFR-SEC-07</td>
             <td>
-              JavaScript-accessible storage shall hold only non-sensitive values
-              (<code>queueadmin:user</code>, <code>app_dark_mode</code>,
-              <code>app_language</code>, persisted <code>selectedOrgId</code>),
-              and legacy token records shall be purged on read.
-              <span class="src"
-                >Source: <code>src/lib/auth.ts</code>,
-                <code>src/store/queueAdminStore.ts</code></span
-              >
+              A production build shall contain no source maps and no server
+              secret, API key or private credential; configuration exposed to the
+              browser shall contain public values only.
             </td>
             <td>M</td>
+            <td>I — inspect the build output</td>
           </tr>
           <tr>
-            <td><code>NFR-SEC-08</code></td>
+            <td>NFR-SEC-08</td>
             <td>
-              Production builds shall disable source maps.
-              <span class="src"
-                >Source:
-                <code>vite.config.ts</code> (<code>sourcemap</code>)</span
-              >
+              User-facing errors shall be phrased in plain language and shall not
+              reveal stack traces, SQL, file paths or internal service names.
             </td>
             <td>M</td>
-          </tr>
-          <tr>
-            <td><code>NFR-SEC-09</code></td>
-            <td>
-              <span class="fill">Honest limitation:</span> this repository does
-              not configure a Content Security Policy or other HTTP security
-              headers; header hardening is a server-level responsibility,
-              recorded in §7.5.
-              <span class="src"
-                >Source: <code>index.html</code> (no meta CSP),
-                <code>docs/queue-admin-gap-analysis.md</code></span
-              >
-            </td>
-            <td>S</td>
-          </tr>
-          <tr>
-            <td><code>NFR-SEC-10</code></td>
-            <td>
-              Error handling shall mask internal details by normalizing server
-              and client errors into human-readable messages, mapping status
-              codes to safe fallbacks.
-              <span class="src"
-                >Source: <code>src/utils/parseError.ts</code></span
-              >
-            </td>
-            <td>M</td>
+            <td>D — force 400, 403, 409 and 500 responses</td>
           </tr>
         </tbody>
       </table>
 
       <h3>4.2 Performance and efficiency (NFR-PERF)</h3>
+      <p>
+        The console is used at a gate, often on a laptop tethered to a phone, so
+        the performance requirements favour restraint over raw speed. Routes load
+        only when visited, server data is cached for five minutes, and real-time
+        bursts are coalesced into one refresh. Every list is bounded, which keeps
+        both the browser and the reader within limits.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>NFR-PERF-01</code></td>
+            <td>NFR-PERF-01</td>
             <td>
-              Every route shall be lazily loaded so each page ships in its own
-              dynamic-import chunk behind a suspense fallback.
-              <span class="src"
-                >Source: <code>src/routes/AppRoutes.tsx</code>,
-                <code>src/main.tsx</code></span
-              >
+              Each route shall load as its own code-split chunk behind a loading
+              fallback, so opening the console does not download the orders,
+              reports and settings pages before they are needed.
             </td>
             <td>M</td>
+            <td>I — inspect the production chunks</td>
           </tr>
           <tr>
-            <td><code>NFR-PERF-02</code></td>
+            <td>NFR-PERF-02</td>
             <td>
-              The production build shall split vendor libraries into separate
-              manual chunks (vendor, redux, icons) to improve caching and first
-              load.
-              <span class="src">Source: <code>vite.config.ts</code></span>
+              On the reference environment (a mid-range laptop on a 20 Mbps
+              connection with a cold cache) the dashboard shall become
+              interactive within three seconds, and the largest contentful paint
+              shall be at or below 2.5 seconds when measured with Lighthouse.
             </td>
             <td>S</td>
+            <td>M — Lighthouse on the staging build</td>
           </tr>
           <tr>
-            <td><code>NFR-PERF-03</code></td>
+            <td>NFR-PERF-03</td>
             <td>
-              Cached server state shall be retained for 300&nbsp;s (<code
-                >keepUnusedDataFor: 300</code
-              >) to avoid redundant fetches.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/base.ts</code></span
-              >
+              Queries shall retain unused server data for 300 seconds, and the
+              console shall not refetch on window focus or on socket reconnect;
+              freshness comes from explicit invalidation and pushed events.
             </td>
             <td>M</td>
+            <td>I — cache configuration review</td>
           </tr>
           <tr>
-            <td><code>NFR-PERF-04</code></td>
+            <td>NFR-PERF-04</td>
             <td>
-              The client shall disable refetch-on-focus and
-              refetch-on-reconnect, relying on explicit invalidation and the
-              realtime channel instead.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/base.ts</code></span
-              >
+              Repeated real-time events shall be coalesced into one refetch per
+              affected data set, using a 100-millisecond window for organisation
+              events and 250 milliseconds for queue and order events.
             </td>
             <td>M</td>
+            <td>T — burst of simulated events</td>
           </tr>
           <tr>
-            <td><code>NFR-PERF-05</code></td>
+            <td>NFR-PERF-05</td>
             <td>
-              Realtime events shall be debounced and coalesced (100&nbsp;ms /
-              250&nbsp;ms) so a burst of events produces a single refetch per
-              affected tag.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
+              List sizes shall be bounded: no API list page above 100 items, eight
+              loading places per dashboard page, five report rows per page and ten
+              order batches per page.
             </td>
             <td>M</td>
+            <td>I — paging constants and list responses</td>
           </tr>
           <tr>
-            <td><code>NFR-PERF-06</code></td>
+            <td>NFR-PERF-06</td>
             <td>
-              Distance comparisons shall be computed in constant time per
-              coordinate pair, and list computations shall be bounded by the API
-              list limits (100 items).
-              <span class="src"
-                >Source: <code>src/utils/formatters.ts</code>,
-                <code>src/hooks/useOrgList.ts</code></span
-              >
+              A click that starts work shall produce visible feedback within 100
+              milliseconds, and a request in flight shall disable its submit
+              control so the action cannot be sent twice.
             </td>
-            <td>S</td>
+            <td>M</td>
+            <td>D — slow-network walkthrough</td>
           </tr>
         </tbody>
       </table>
 
       <h3>4.3 Usability and accessibility (NFR-USA)</h3>
+      <p>
+        The operators work quickly, sometimes in daylight, sometimes one-handed.
+        That calls for large touch targets, visible state and a confirmation
+        before anything destructive. The same screens have to work on a phone,
+        which is where many dispatchers first see them.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>NFR-USA-01</code></td>
+            <td>NFR-USA-01</td>
             <td>
-              Desktop and mobile layouts shall be responsive
-              across the queue, orders, reports, settings and dashboard.
-              <span class="src"
-                >Source: <code>src/index.css</code>,
-                <code>src/components/common/MobileHeader.tsx</code></span
-              >
+              Every operational screen shall remain usable from 360 to 1920
+              pixels wide without horizontal scrolling, and touch targets shall be
+              at least 44 by 44 pixels.
             </td>
             <td>M</td>
+            <td>D — phone, tablet and desktop widths</td>
           </tr>
           <tr>
-            <td><code>NFR-USA-02</code></td>
+            <td>NFR-USA-02</td>
             <td>
-              Interactive controls and modals shall expose ARIA roles/labels and
-              keyboard handling, including a modal accessibility hook.
-              <span class="src"
-                >Source: <code>src/hooks/useModalA11y.ts</code>,
-                <code>src/components/ui/Modal.tsx</code></span
-              >
+              All actions shall be reachable from the keyboard, keyboard focus
+              shall be visible, and a modal shall keep focus inside itself and
+              close on Escape.
             </td>
             <td>M</td>
+            <td>D — keyboard-only walkthrough</td>
           </tr>
           <tr>
-            <td><code>NFR-USA-03</code></td>
+            <td>NFR-USA-03</td>
             <td>
-              The interface shall be available in English and Amharic.
-              <span class="src"
-                >Source: <code>src/i18n/en.ts</code>,
-                <code>src/i18n/am.ts</code>,
-                <code>src/i18n/index.ts</code></span
-              >
+              Icon-only buttons, tabs, dialogs and form fields shall expose an
+              accessible name or role, and each page shall have a sensible heading
+              order.
             </td>
             <td>M</td>
+            <td>I — accessibility inspection</td>
           </tr>
           <tr>
-            <td><code>NFR-USA-04</code></td>
+            <td>NFR-USA-04</td>
             <td>
-              A persisted light/dark theme shall be offered.
-              <span class="src"
-                >Source: <code>src/contexts/ThemeContext.tsx</code></span
-              >
+              All user-facing text shall be available in English and Amharic,
+              with English as the fallback when a translation is missing, and the
+              chosen language shall persist on the device.
             </td>
             <td>S</td>
+            <td>D — switch language across the console</td>
           </tr>
           <tr>
-            <td><code>NFR-USA-05</code></td>
+            <td>NFR-USA-05</td>
             <td>
-              All user-initiated operations shall give immediate feedback
-              (loading state plus toast).
-              <span class="src"
-                >Source: <code>src/components/ui/SubmitButton.tsx</code>,
-                <code>src/App.tsx</code></span
-              >
+              Every asynchronous view shall have a loading state, an empty state
+              and a readable error state; a failed request shall not leave a
+              blank region behind.
             </td>
             <td>M</td>
+            <td>D — force loading, empty and error cases</td>
           </tr>
           <tr>
-            <td><code>NFR-USA-06</code></td>
+            <td>NFR-USA-06</td>
             <td>
-              Data views shall render explicit loading and empty states rather
-              than blank regions.
-              <span class="src"
-                >Source: <code>src/components/dashboard/OrgListState.tsx</code>,
-                <code>src/components/orders/bids/BidEmptyState.tsx</code></span
-              >
+              Destructive actions shall require confirmation, and every completed
+              or failed operation shall report its outcome in a toast that names
+              what happened.
             </td>
-            <td>S</td>
+            <td>M</td>
+            <td>D — delete, cancel and override flows</td>
           </tr>
         </tbody>
       </table>
 
       <h3>4.4 Compatibility and portability (NFR-COMP)</h3>
+      <p>
+        The console is a static single-page application, so compatibility
+        concerns browsers and hosting. The current and previous major versions of
+        Chrome, Edge, Firefox and Safari are supported, and nothing older. The
+        host must serve the built files over TLS and return the application shell
+        for unknown paths, so a direct link to an order or a driver page still
+        loads.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>NFR-COMP-01</code></td>
+            <td>NFR-COMP-01</td>
             <td>
-              The application shall run on modern evergreen browsers that
-              support ES
-              modules and the Fetch API.
-              <span class="src"
-                >Source: <code>vite.config.ts</code>,
-                <code>package.json</code></span
-              >
+              The console shall run on the current and previous major versions of
+              Chrome, Edge, Firefox and Safari, and shall not require a plug-in or
+              browser extension.
             </td>
             <td>M</td>
+            <td>D — smoke test on each browser</td>
           </tr>
           <tr>
-            <td><code>NFR-COMP-02</code></td>
+            <td>NFR-COMP-02</td>
             <td>
-              The static build shall be served with an SPA fallback so deep
-              links resolve, with the in-app <code>*</code> route redirecting to
-              <code>/dashboard</code>.
-              <span class="src"
-                >Source: <code>src/routes/AppRoutes.tsx</code>,
-                <code>vite.config.ts</code></span
-              >
+              The production host shall serve the application shell for any
+              in-app path, so a deep link to an order, driver or report opens the
+              correct page after a full reload.
             </td>
             <td>M</td>
+            <td>D — open a deep link in a new tab</td>
           </tr>
           <tr>
-            <td><code>NFR-COMP-03</code></td>
+            <td>NFR-COMP-03</td>
             <td>
-              The API base URL shall be resolved from environment configuration
-              at build time (<code>VITE_API_BASE_URL</code>, falling back to
-              <code>VITE_API_URL</code> then <code>/api</code>), so the same
-              source targets dev and production without code change.
-              <span class="src"
-                >Source: <code>src/utils/baseUrl.ts</code>,
-                <code>.env.example</code></span
-              >
+              The application shall use standard browser capabilities (DOM, Fetch,
+              WebSocket and local storage) and shall not depend on a specific
+              operating system.
             </td>
             <td>M</td>
+            <td>I — dependency and API review</td>
+          </tr>
+          <tr>
+            <td>NFR-COMP-04</td>
+            <td>
+              The API and socket addresses shall be supplied as build-time
+              configuration, so pointing the same build at another environment
+              does not require a source change.
+            </td>
+            <td>S</td>
+            <td>I — environment file review</td>
           </tr>
         </tbody>
       </table>
 
       <h3>4.5 Reliability and availability (NFR-REL)</h3>
+      <p>
+        The reliability requirements are about not losing the operator's place.
+        The session survives a reload, a dropped socket costs freshness rather
+        than the screen, and a failed action leaves the previous state intact. No
+        availability percentage is claimed for the client; the backend and the
+        hosting carry that, and the console is built to behave sensibly when they
+        are unavailable.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>NFR-REL-01</code></td>
+            <td>NFR-REL-01</td>
             <td>
-              Rendering shall be optimistic, based on the stored profile, so
-              a reload does not block on a session round-trip.
-              <span class="src"
-                >Source: <code>src/lib/redux/slices/authSlice.ts</code>,
-                <code>src/context/AuthContext.tsx</code></span
-              >
+              Reloading the page or reopening the console shall keep the user
+              signed in while the session cookie is valid, without asking for the
+              one-time code again.
             </td>
             <td>M</td>
+            <td>D — reload on each main page</td>
           </tr>
           <tr>
-            <td><code>NFR-REL-02</code></td>
+            <td>NFR-REL-02</td>
             <td>
-              Only a real <code>401</code> shall end the session; a timeout, an
-              offline browser, a <code>4xx</code> other than 401, or a
-              <code>5xx</code> shall not terminate the session.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/base.ts</code>,
-                <code>src/utils/parseError.ts</code></span
-              >
+              If the real-time connection drops, the console shall keep the last
+              confirmed data visible, show the connecting state, and recover
+              automatically when the connection returns.
             </td>
             <td>M</td>
+            <td>D — interrupt and restore the socket</td>
           </tr>
           <tr>
-            <td><code>NFR-REL-03</code></td>
+            <td>NFR-REL-03</td>
             <td>
-              The realtime channel shall recover from transient disconnects by
-              reconnecting and re-subscribing without a page reload.
-              <span class="src">Source: <code>src/lib/socket.ts</code></span>
+              A failed create, update or delete shall leave the interface in its
+              previous state and shall show the reason; the console shall not
+              display an optimistic result that the backend did not confirm.
             </td>
             <td>M</td>
+            <td>T — reject a mutation at the API</td>
           </tr>
           <tr>
-            <td><code>NFR-REL-04</code></td>
+            <td>NFR-REL-04</td>
             <td>
-              After every mutation the console shall invalidate the affected
-              tags so that local state reconciles with the backend even if a
-              prior optimistic view was stale.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/*.ts</code></span
-              >
+              The queue board shall render the server's snapshot at load and after
+              each pushed change; it shall not hold or display a locally
+              reordered queue.
             </td>
             <td>M</td>
-          </tr>
-          <tr>
-            <td><code>NFR-REL-05</code></td>
-            <td>
-              <span class="fill">Honest limitation:</span> we do not
-              declare a React error boundary, so an uncaught render error is not
-              contained in-app. This is recorded in §7.5 as a known gap.
-              <span class="src"
-                >Source: <code>src/main.tsx</code>,
-                <code>src/App.tsx</code></span
-              >
-            </td>
-            <td>S</td>
+            <td>I — compare two clients on one queue</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>4.6 Maintainability (NFR-MNT)</h3>
+      <h3>4.6 Maintainability and supportability (NFR-MNT)</h3>
+      <p>
+        The console is maintained by a small team, so the code has to be
+        predictable to someone who did not write it: one place for endpoint paths,
+        one for route definitions, typed contracts, and a build that fails on a
+        type error or a lint warning. The documents in this submission are
+        maintained alongside the code for the same reason.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>NFR-MNT-01</code></td>
+            <td>NFR-MNT-01</td>
             <td>
-              All REST endpoint paths shall live in a single source of truth,
-              <code>src/utils/constant.ts</code>, and constants shall be
-              maintained only when they point at a real backend route with at
-              least one consumer.
-              <span class="src"
-                >Source: <code>src/utils/constant.ts</code></span
-              >
+              The production build shall run the TypeScript compiler and shall
+              fail on a type error, an unused local or an unused parameter, and
+              the lint step shall fail on any warning.
             </td>
             <td>M</td>
+            <td>I — build and lint output</td>
           </tr>
           <tr>
-            <td><code>NFR-MNT-02</code></td>
+            <td>NFR-MNT-02</td>
             <td>
-              The API layer shall be strongly typed; endpoint modules inject
-              into one base
-              <code>api</code> and expose generated hooks from a shared barrel.
-              <span class="src"
-                >Source: <code>src/lib/redux/api/index.ts</code>,
-                <code>src/lib/redux/api/types.ts</code></span
-              >
+              API paths, route definitions, domain types and translation keys
+              shall each live in a single declared module, so a change is made in
+              one place rather than searched for across components.
             </td>
             <td>M</td>
+            <td>I — source structure review</td>
           </tr>
           <tr>
-            <td><code>NFR-MNT-03</code></td>
+            <td>NFR-MNT-03</td>
             <td>
-              Error handling shall be centralized so no feature re-implements
-              message extraction.
-              <span class="src"
-                >Source: <code>src/utils/parseError.ts</code></span
-              >
+              The highest-risk logic — queue mutations, order mapping, journey
+              status, phone formatting, the INSA content and the security
+              checklist — shall have automated tests that run with one command.
             </td>
             <td>M</td>
+            <td>T — run the test suite</td>
           </tr>
           <tr>
-            <td><code>NFR-MNT-04</code></td>
+            <td>NFR-MNT-04</td>
             <td>
-              Features shall be modular by area (queue, orders, organization,
-              reports, security, settings) with co-located components and
-              styles.
-              <span class="src"
-                >Source: <code>src/components/*</code>,
-                <code>src/pages/*</code></span
-              >
+              Each release shall be accompanied by an SRS, a design document, a
+              technical specification and a user guide that describe the release
+              as built, not as planned.
             </td>
             <td>S</td>
+            <td>I — document set review</td>
           </tr>
           <tr>
-            <td><code>NFR-MNT-05</code></td>
+            <td>NFR-MNT-05</td>
             <td>
-              The project shall maintain an automated test suite (98 tests
-              across 7 files covering queue mutations, orders mapping, journey
-              status, phone formatting, INSA standard and the security
-              checklist).
-              <span class="src"
-                >Source: <code>src/__tests__/*.test.ts</code></span
-              >
-            </td>
-            <td>M</td>
-          </tr>
-          <tr>
-            <td><code>NFR-MNT-06</code></td>
-            <td>
-              The visual system shall be token-based hand-written CSS with a
-              dark theme, avoiding a utility-framework dependency.
-              <span class="src"
-                >Source: <code>src/index.css</code>,
-                <code>src/dark.css</code></span
-              >
+              Dependency versions shall be pinned in the lockfile, and the Node
+              and Vite versions used for a release shall be recorded so the build
+              can be reproduced.
             </td>
             <td>S</td>
+            <td>I — lockfile and build notes</td>
           </tr>
         </tbody>
       </table>
 
       <h3>4.7 Privacy and data protection (NFR-PRIV)</h3>
+      <p>
+        The console handles staff identity and commercial freight data.
+        Collection is kept narrow: a name, a phone number, an optional email, a
+        role, and the organisation, queue and order records needed to do the work.
+        There is no analytics, advertising or tracking script and no third-party
+        cookie. Personal data is shown only to signed-in users who already have
+        access to the relevant loading place.
+      </p>
       <table class="grid">
         <thead>
           <tr>
             <th>ID</th>
             <th>Requirement</th>
             <th>Pri</th>
+            <th>Verified by</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>NFR-PRIV-01</code></td>
+            <td>NFR-PRIV-01</td>
             <td>
-              Only the data needed to operate the
-              loading place and queue shall be collected (profile, organization,
-              membership, queue
-              and order data); no advertising or third-party
-              analytics are embedded.
-              <span class="src"
-                >Source: <code>package.json</code>,
-                <code>index.html</code></span
-              >
+              The console shall collect and display only the personal data needed
+              to operate a loading place: name, phone number, optional email,
+              role, membership and the queue or order records associated with the
+              work.
             </td>
             <td>M</td>
+            <td>I — field inventory across forms</td>
           </tr>
           <tr>
-            <td><code>NFR-PRIV-02</code></td>
+            <td>NFR-PRIV-02</td>
             <td>
-              Only non-sensitive data shall persist in the browser; personal
-              data at rest shall remain on the backend.
-              <span class="src"
-                >Source: <code>src/lib/auth.ts</code>,
-                <code>src/store/queueAdminStore.ts</code></span
-              >
+              The application shall not include analytics, advertising, session
+              recording or third-party tracking cookies.
             </td>
             <td>M</td>
+            <td>I — network and dependency review</td>
           </tr>
           <tr>
-            <td><code>NFR-PRIV-03</code></td>
+            <td>NFR-PRIV-03</td>
             <td>
-              No authentication token or credential shall be written to
-              <code>localStorage</code> or <code>sessionStorage</code>.
-              <span class="src">Source: <code>src/lib/auth.ts</code></span>
+              Personal data shall be shown only to authenticated users with access
+              to the relevant loading place, and shall not be placed in page URLs,
+              browser history or client-side logs.
             </td>
             <td>M</td>
+            <td>I — route and log inspection</td>
           </tr>
           <tr>
-            <td><code>NFR-PRIV-04</code></td>
+            <td>NFR-PRIV-04</td>
             <td>
-              Personal data shall be processed by the backend as data
-              controller; the console shall display it only within an authorized
-              session and shall clear it on logout.
-              <span class="src"
-                >Source: <code>src/context/AuthContext.tsx</code>,
-                <code>src/lib/auth.ts</code></span
-              >
+              A user shall be able to request deletion of their account from the
+              settings page; the backend may retain queue and audit records where
+              operational or legal obligations require it, and the interface shall
+              not promise more than that.
             </td>
-            <td>M</td>
+            <td>S</td>
+            <td>D — delete a test account</td>
           </tr>
         </tbody>
       </table>
-    </section>
 
-    <!-- ============ 5. EXTERNAL INTERFACE REQUIREMENTS ============ -->
-    <section>
       <h1>5. External interface requirements</h1>
 
       <h3>5.1 User interfaces</h3>
@@ -3747,7 +3071,7 @@
           </tr>
           <tr>
             <td><code>PATCH /queue/entry/:queueUniqueId/override</code></td>
-            <td>Override position with a reason (audited).</td>
+            <td>Override position; optional reason (audited).</td>
             <td>driver queue</td>
           </tr>
           <tr>
@@ -4416,8 +3740,9 @@
           <tr>
             <td><code>BR-Q-03</code></td>
             <td>
-              An entry may be positioned by an override, which requires a reason
-              and is written to the backend audit trail.
+              An entry may be positioned by an override, which may carry a
+              reason of up to 500 characters; either way the change is written
+              to the backend audit trail.
             </td>
             <td>Backend (audits); the console collects the reason.</td>
           </tr>
@@ -4736,7 +4061,7 @@
         <tbody>
           <tr>
             <td>FR-AUTH</td>
-            <td>15</td>
+            <td>9</td>
             <td>
               <code>authEndpoints.ts</code>, <code>useOtpVerification.ts</code>,
               <code>AuthContext.tsx</code>, <code>lib/auth.ts</code>,
@@ -4745,7 +4070,7 @@
           </tr>
           <tr>
             <td>FR-REG</td>
-            <td>8</td>
+            <td>6</td>
             <td>
               <code>Register.tsx</code>, <code>authConfig.ts</code>,
               <code>SetupOrganization.tsx</code>, <code>schemas/queue.ts</code>
@@ -4753,7 +4078,7 @@
           </tr>
           <tr>
             <td>FR-ORG</td>
-            <td>12</td>
+            <td>10</td>
             <td>
               <code>queueOrganizationEndpoints.ts</code>,
               <code>QueueOrgManagePage.tsx</code>,
@@ -4762,7 +4087,7 @@
           </tr>
           <tr>
             <td>FR-MEM</td>
-            <td>8</td>
+            <td>6</td>
             <td>
               <code>queueOrganizationEndpoints.ts</code>,
               <code>MembersTable.tsx</code>
@@ -4770,7 +4095,7 @@
           </tr>
           <tr>
             <td>FR-QUE</td>
-            <td>20</td>
+            <td>12</td>
             <td>
               <code>driverQueueEndpoints.ts</code>,
               <code>components/queue/*</code>,
@@ -4779,7 +4104,7 @@
           </tr>
           <tr>
             <td>FR-BID</td>
-            <td>12</td>
+            <td>7</td>
             <td>
               <code>components/orders/bids/*</code>,
               <code>DriverBidsModal.tsx</code>,
@@ -4788,7 +4113,7 @@
           </tr>
           <tr>
             <td>FR-ORD</td>
-            <td>8</td>
+            <td>10</td>
             <td>
               <code>OrdersPage.tsx</code>, <code>CreateOrderModal.tsx</code>,
               <code>shipperRequestEndpoints.ts</code>
@@ -4804,7 +4129,7 @@
           </tr>
           <tr>
             <td>FR-NOTIF</td>
-            <td>10</td>
+            <td>5</td>
             <td>
               <code>lib/socket.ts</code>, <code>useQueueSocket.ts</code>,
               <code>App.tsx</code>
@@ -4812,7 +4137,7 @@
           </tr>
           <tr>
             <td>FR-SET</td>
-            <td>8</td>
+            <td>6</td>
             <td>
               <code>SettingsPage.tsx</code>, <code>ThemeContext.tsx</code>,
               <code>i18n/*</code>
@@ -4828,7 +4153,7 @@
           </tr>
           <tr>
             <td>NFR-SEC / PERF / USA / COMP / REL / MNT / PRIV</td>
-            <td>40</td>
+            <td>37</td>
             <td>
               <code>base.ts</code>, <code>parseError.ts</code>,
               <code>schemas/queue.ts</code>, <code>vite.config.ts</code>,
@@ -4844,8 +4169,9 @@
         order mapping, journey-status mapping, phone formatting, the INSA
         standard content and the security checklist. Tests are colocated under
         <code>src/__tests__/</code> and run with the project test script. The
-        requirements above cite the files those tests exercise, which gives a
-        requirement-to-code-to-test chain.
+        traceability table in §9.1 names the modules those tests exercise, which
+        gives a requirement-to-code-to-test chain without repeating file paths in
+        every requirement.
       </p>
 
       <h3>9.3 Document control</h3>
@@ -4943,43 +4269,43 @@
           <tr>
             <td><code>FR-AUTH</code></td>
             <td>Authentication, session and registration</td>
-            <td>15</td>
+            <td>9</td>
             <td>§3.1</td>
           </tr>
           <tr>
             <td><code>FR-REG</code></td>
             <td>Registration and onboarding</td>
-            <td>8</td>
+            <td>6</td>
             <td>§3.2</td>
           </tr>
           <tr>
             <td><code>FR-ORG</code></td>
             <td>Loading-place (organization) management</td>
-            <td>12</td>
+            <td>10</td>
             <td>§3.3</td>
           </tr>
           <tr>
             <td><code>FR-MEM</code></td>
             <td>Membership management</td>
-            <td>8</td>
+            <td>6</td>
             <td>§3.4</td>
           </tr>
           <tr>
             <td><code>FR-QUE</code></td>
             <td>FIFO driver queue</td>
-            <td>20</td>
+            <td>12</td>
             <td>§3.5</td>
           </tr>
           <tr>
             <td><code>FR-BID</code></td>
             <td>Bidding on the shipper's behalf</td>
-            <td>12</td>
+            <td>7</td>
             <td>§3.6</td>
           </tr>
           <tr>
             <td><code>FR-ORD</code></td>
             <td>Orders and shipper requests</td>
-            <td>8</td>
+            <td>10</td>
             <td>§3.7</td>
           </tr>
           <tr>
@@ -4991,13 +4317,13 @@
           <tr>
             <td><code>FR-NOTIF</code></td>
             <td>Real-time and notifications</td>
-            <td>10</td>
+            <td>5</td>
             <td>§3.9</td>
           </tr>
           <tr>
             <td><code>FR-SET</code></td>
             <td>Settings, profile and appearance</td>
-            <td>8</td>
+            <td>6</td>
             <td>§3.10</td>
           </tr>
           <tr>
@@ -5009,7 +4335,7 @@
           <tr>
             <td><code>NFR-SEC</code></td>
             <td>Security</td>
-            <td>10</td>
+            <td>8</td>
             <td>§4.1</td>
           </tr>
           <tr>
@@ -5027,13 +4353,13 @@
           <tr>
             <td><code>NFR-COMP</code></td>
             <td>Compatibility and portability</td>
-            <td>5</td>
+            <td>4</td>
             <td>§4.4</td>
           </tr>
           <tr>
             <td><code>NFR-REL</code></td>
             <td>Reliability and availability</td>
-            <td>5</td>
+            <td>4</td>
             <td>§4.5</td>
           </tr>
           <tr>
@@ -5045,7 +4371,7 @@
           <tr>
             <td><code>NFR-PRIV</code></td>
             <td>Privacy and data protection</td>
-            <td>5</td>
+            <td>4</td>
             <td>§4.7</td>
           </tr>
         </tbody>
