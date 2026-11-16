@@ -87,7 +87,10 @@ export const dispatchSchema = z.object({
 
 export const createOrderSchema = z
   .object({
-    dispatchMode: z.enum(["fifo", "open_bidding", "specific_company"]),
+    dispatchMode: z
+      .enum(["fifo", "open_bidding", "specific_company"])
+      .default("fifo")
+      .optional(),
     isBiddingApproved: z.boolean().optional(),
     shipperPhoneNumber: z
       .string()

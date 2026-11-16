@@ -377,7 +377,7 @@ export function CreateOrderModal({
               {t("orders.dispatchMode", "Dispatch Mode")}
             </label>
             <CustomSelect
-              value={dispatchMode}
+              value={dispatchMode || "fifo"}
               onChange={handleDispatchModeChange}
               options={[
                 {
